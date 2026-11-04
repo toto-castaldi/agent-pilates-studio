@@ -1,0 +1,5 @@
+name: pilates-postgres
+version: 1.0.0
+description: PostgreSQL query tool using the restricted agent role
+provides_tools:
+  - studio_sql_query

@@ -1,0 +1,5 @@
+**
+!hermes/
+!hermes/Dockerfile
+!hermes/gateway-launcher.sh
+!hermes/entrypoint.sh

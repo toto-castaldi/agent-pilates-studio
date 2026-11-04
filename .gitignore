@@ -3,6 +3,7 @@
 .claude/settings.local.json
 
 # Local configuration and secrets
+.local/
 .env
 .env.*
 !.env.example

@@ -10,14 +10,21 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "lint": "biome lint src test",
+    "lint": "biome lint src test integration scripts prisma.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "npm run build --silent && node --test \"dist/test/**/*.test.js\"",
+    "test:db": "npm run build --silent && node --test dist/integration/postgres.test.js",
+    "test:hermes": "npm run build --silent && node --test dist/integration/hermes.test.js",
+    "db:init-secrets": "node scripts/init-secrets.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
     "build": "npm run clean --silent && tsc"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5",
     "@types/node": "24.13.6",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1",
+    "prisma": "7.10.1",
     "typescript": "5.9.3"
   }
 }
