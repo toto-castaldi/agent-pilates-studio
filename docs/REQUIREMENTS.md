@@ -46,9 +46,9 @@ Requirement IDs: `REQ-<AREA>-NNN`. Areas used in this project:
 
 ## 6. Non-functional requirements
 
-#### REQ-NFR-001 — `<Title, e.g. Reproducibility>`
+#### REQ-NFR-001 — Quality gate riproducibile
 
-`<Quality attribute and how it is verified.>`
+Il progetto deve offrire installazione delle dipendenze da lockfile e comandi per lint, controllo dei tipi, test e build; l'esecuzione da ambiente pulito deve essere verificabile.
 
 ## 7. Release acceptance — v0.1.0
 

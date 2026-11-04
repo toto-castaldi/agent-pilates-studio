@@ -8,11 +8,11 @@
 
 | Version | State | Phase   | Progress            |
 | ------- | ----- | ------- | ------------------- |
-| v0.1.0  | Open  | Kickoff | 0/2 items done (0%) |
+| v0.1.0  | Open  | Kickoff | 0/3 items done (0%) |
 
 | Item state  | Count |
 | ----------- | ----: |
-| Todo        |     2 |
+| Todo        |     3 |
 | In Progress |     0 |
 | Blocked     |     0 |
 | Done        |     0 |

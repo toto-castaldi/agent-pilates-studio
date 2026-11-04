@@ -34,6 +34,18 @@
   - `README.md` presents the project instead of the template; `CHANGELOG.md` and `.gitignore` are adapted to the project.
   - `STATUS.md` is consistent with `BACKLOG.md`.
 
+#### TEC-002 — Scaffold TypeScript e quality gate
+
+- **Epic:** EPIC-001 — Project foundation
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** TEC-001
+- **Requirements:** REQ-NFR-001
+- **Design references:** TECHNICAL-DESIGN §1, §3, §8, §9
+- **Acceptance criteria:**
+  - Il progetto contiene uno scaffold TypeScript con Node.js LTS, npm e lockfile; le versioni scelte sono documentate.
+  - Da un ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
+  - È presente almeno un test eseguibile e sono documentati prerequisiti e comandi; non sono introdotte funzionalità di dominio non richieste.
+
 ### EPIC-002 — Agente e integrazioni
 
 **Scope:** integrazione di Hermes con database, modello e canali di comunicazione.
@@ -56,7 +68,7 @@
 The order is not a time plan.
 
 1. TEC-001.
-2. SPIKE-001.
+2. SPIKE-001 e TEC-002.
 
 ## Unassigned backlog
 
