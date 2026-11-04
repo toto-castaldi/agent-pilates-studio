@@ -8,14 +8,14 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Stack verificato; operatività e CI da realizzare | 3/5 items done (60%) |
+| v0.1.0 | Open | Stack e CI definiti; operatività da realizzare | 4/5 items done (80%) |
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 2 |
+| Todo | 1 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 3 |
+| Done | 4 |
 
 ## In progress
 
@@ -29,6 +29,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | 2026-11-05 |
 | SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo | 2026-11-05 |
 | TEC-002 | EPIC-001 — Fondamenta del progetto | Scaffold TypeScript e quality gate | 2026-11-04 |
 | TEC-001 | EPIC-001 — Fondamenta del progetto | Kickoff | 2026-11-04 |
@@ -37,7 +38,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | P1 |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | P1 |
 
 ## Closed versions
