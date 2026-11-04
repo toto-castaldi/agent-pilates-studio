@@ -9,6 +9,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 ### Added
 
 - Baseline documentale del progetto, requisiti e piano iniziale (TEC-001).
+- Scaffold TypeScript e quality gate locale con lint, controllo dei tipi, test e build (TEC-002).
 
 ### Changed
 

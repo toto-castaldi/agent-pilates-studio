@@ -39,7 +39,7 @@
 #### TEC-002 — Scaffold TypeScript e quality gate
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Type:** Task · **Priority:** P0 · **Status:** Done
 - **Branch:** `task/TEC-002-scaffold-typescript-quality-gate`
 - **Dependencies:** TEC-001
 - **Requirements:** REQ-NFR-001
@@ -48,6 +48,7 @@
   - Il progetto contiene uno scaffold TypeScript con Node.js LTS, npm e lockfile; le versioni scelte sono documentate.
   - Da un ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
   - È presente almeno un test eseguibile e sono documentati prerequisiti e comandi; non sono introdotte funzionalità di dominio non richieste.
+- **Outcome:** Scaffold TypeScript con Node.js LTS, npm, Biome e test smoke; quality gate verificato da directory pulita. Completato il 2026-11-04.
 
 #### TEC-006 — Integrazione continua
 

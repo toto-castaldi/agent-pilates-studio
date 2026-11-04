@@ -9,7 +9,7 @@ Questo documento registra le scelte iniziali e le decisioni aperte. Il comportam
 | Decision | Choice | Rationale |
 | -------- | ------ | --------- |
 | Runtime locale e produzione | Docker Compose; server Linux già predisposto in produzione | Avvio e gestione coerenti nei due ambienti. |
-| Codice del progetto | TypeScript, Node.js LTS e npm | Stack concordato; la versione precisa e lo scaffold saranno definiti da TEC-002. Hermes mantiene i propri prerequisiti. |
+| Codice del progetto | TypeScript 5.9.3, Node.js LTS 24.14.0 e npm 11.9.0 | Stack e versioni di riferimento dello scaffold definiti da TEC-002; dipendenze fissate nel lockfile. Hermes mantiene i propri prerequisiti. |
 | Dati | PostgreSQL e migrazioni Prisma | Database relazionale e schema gestito tramite codice e migrazioni versionate. |
 | Agente e modello | Hermes con OpenRouter; modello configurabile | Separare l'ambiente agentico dal provider; il modello proposto `gpt-6.1-terra` e la compatibilità richiedono verifica. |
 | Canale | API WhatsApp Business tramite app Meta esistente | Usare la configurazione Meta già disponibile; modalità di collegamento da verificare. |
@@ -58,16 +58,15 @@ I dettagli di isolamento, gestione dei segreti nei processi, validazione Meta e 
 
 ## 8. Test strategy
 
-TEC-002 crea i comandi di installazione, lint, controllo dei tipi, test e build. I test unitari verificano la logica al livello più economico; quelli di integrazione usano PostgreSQL reale per migrazioni e privilegi. I test dei webhook includono autenticazione e accessi negati. Le prove end-to-end reali con Meta e OpenRouter richiedono configurazione, rete e credenziali esterne e sono documentate separatamente; non sostituiscono i test automatici. TEC-005 verifica anche aggiornamento, persistenza e ripristino; TEC-006 configura la CI senza deploy automatico.
+TEC-002 usa Biome 2.6.5 per il lint di `src/` e `test/`, TypeScript per controllo dei tipi e build e il test runner integrato di Node.js per i test; `npm test` ricompila prima di eseguirli. I test unitari verificano la logica al livello più economico; quelli di integrazione usano PostgreSQL reale per migrazioni e privilegi. I test dei webhook includono autenticazione e accessi negati. Le prove end-to-end reali con Meta e OpenRouter richiedono configurazione, rete e credenziali esterne e sono documentate separatamente; non sostituiscono i test automatici. TEC-005 verifica anche aggiornamento, persistenza e ripristino; TEC-006 configura la CI senza deploy automatico.
 
 ## 9. Configuration and local runtime
 
-L'ambiente locale usa Docker Compose; la produzione presume un server Linux con Docker/Compose e un endpoint HTTPS pubblico già disponibili. DNS, certificati e provisioning del server sono fuori scope. I nomi delle variabili, i file di esempio e i comandi operativi saranno definiti dagli item di implementazione; non inserire segreti reali. Le versioni precise di Node.js e degli altri componenti saranno fissate dagli item responsabili.
+L'ambiente locale usa Docker Compose; la produzione presume un server Linux con Docker/Compose e un endpoint HTTPS pubblico già disponibili. DNS, certificati e provisioning del server sono fuori scope. I nomi delle variabili, i file di esempio e i comandi operativi saranno definiti dagli item di implementazione; non inserire segreti reali. Node.js 24.14.0 è indicato in `.nvmrc`; gli intervalli supportati di Node.js e npm sono in `package.json`. Le versioni degli altri componenti saranno fissate dagli item responsabili.
 
 ## 10. Open decisions
 
 - Installazione e versionamento di Hermes; supporto OpenRouter e disponibilità del modello indicato; integrazione WhatsApp Business, webhook e accesso sicuro a PostgreSQL — SPIKE-001. Eventuali alternative o variazioni di scope richiedono accordo con l'utente.
-- Versione precisa di Node.js LTS e strumenti di lint, test e build — TEC-002.
 - Provisioning dei ruoli PostgreSQL ed esecuzione delle migrazioni Prisma — TEC-003, informato da SPIKE-001.
 - Configurazione concreta di Hermes, del modello e dell'accesso dell'agente ai dati — TEC-004, informato da SPIKE-001.
 - Adattatore WhatsApp, autenticazione del webhook e gestione dei numeri autorizzati — US-001, informato da SPIKE-001.
