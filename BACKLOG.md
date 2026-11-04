@@ -63,6 +63,19 @@
   - Il rapporto valuta accesso DML a PostgreSQL, isolamento delle credenziali di migrazione e impedimento del DDL, con indicazione delle verifiche necessarie.
   - Il rapporto espone prerequisiti, rischi, eventuali costi, raccomandazioni e decisioni ancora da concordare; non include segreti.
 
+#### TEC-004 — Ambiente Hermes e accesso ai dati
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** SPIKE-001, TEC-003
+- **Requirements:** REQ-AGENT-001, REQ-AGENT-002, REQ-DB-002, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §1, §2, §3, §5, §6, §7, §8, §9
+- **Acceptance criteria:**
+  - Hermes e PostgreSQL si avviano localmente con Docker Compose, versioni fissate e configurazione documentata senza segreti reali.
+  - Con credenziali configurate, una prova documentata ottiene una risposta tramite OpenRouter; il modello è configurabile e l'identificativo effettivo è verificato.
+  - Una prova tramite l'agente verifica DML e rifiuto del DDL su PostgreSQL reale; l'agente non riceve credenziali di migrazione.
+  - I log e la configurazione rispettano REQ-NFR-002; errori e prerequisiti sono documentati.
+
 ### EPIC-003 — Dati e operatività
 
 **Scope:** database, migrazioni, installazione, aggiornamento e continuità operativa.
@@ -87,6 +100,7 @@ The order is not a time plan.
 1. TEC-001.
 2. SPIKE-001 e TEC-002.
 3. TEC-003.
+4. TEC-004.
 
 ## Unassigned backlog
 
