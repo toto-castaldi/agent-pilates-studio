@@ -69,7 +69,8 @@
 #### SPIKE-001 — Verifica delle integrazioni di Hermes
 
 - **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Type:** Spike · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `spike/SPIKE-001-verifica-integrazioni-hermes`
 - **Dependencies:** TEC-001, TEC-002
 - **Design references:** TECHNICAL-DESIGN §1, §3, §5, §6, §7, §9, §10
 - **Description:** Verificare con documentazione ed eventuali prove circoscritte come installare Hermes e integrarlo con i servizi previsti, senza assumere che il supporto esista.
