@@ -18,4 +18,10 @@ Questa prova non sostituisce una procedura operativa documentata, un backup dell
 
 Con il gateway spento, una richiesta pubblica con parametro di verifica **sintetico** ha ricevuto 502; il parametro sintetico è stato rilevato nel journal del servizio cloudflared. La ricerca del token reale attuale nel solo journal locale dal 2026-11-03 non ha dato riscontro; non è una verifica dei log esterni o di altre copie. L'accesso alla configurazione del proxy condiviso richiede l'operatore. Prima dell'attivazione occorre concordare una mitigazione che non registri segreti, verificarla nei casi di successo ed errore e valutare l'impatto sugli altri servizi e sui log esterni.
 
+### Mitigazione mirata da verificare
+
+Su richiesta dell'operatore è stata valutata una mitigazione circoscritta, senza abbassare il livello di log degli altri servizi: `LogFilterPatterns` di systemd può scartare dal journal le righe di cloudflared che contengono l'hostname del webhook. Il server usa systemd 259; `systemd-analyze verify` ha accettato la sintassi e un confronto ERE su righe sintetiche ha distinto l'hostname interessato da un altro. **Il filtro non è stato installato né provato su un servizio systemd reale.**
+
+Il filtro elimina l'intera riga corrispondente, quindi anche la relativa diagnostica; può scartare righe di altri servizi che menzionino lo stesso hostname. Non protegge log su file, trace, streaming remoto, log Cloudflare o eventuali righe sensibili senza hostname. Sono necessari: verifica delle opzioni effettive di cloudflared, prova su unità temporanea, prova con vero 502 sintetico dopo l'eventuale installazione, controllo di log non interessati e verifica dei sistemi esterni. Le modifiche al servizio condiviso richiedono l'operatore e comportano un riavvio del tunnel; il gateway resta spento.
+
 Restano da realizzare e verificare la procedura di deploy e aggiornamento, il ripristino utilizzabile dall'operatore, la diagnostica sicura e le prove di produzione previste dai criteri di TEC-005.
