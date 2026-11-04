@@ -62,6 +62,8 @@ SPIKE-001 ha verificato isolamento dei segreti di migrazione, webhook e allowlis
 
 ## 8. Test strategy
 
+Per gli host Linux con Docker ma senza Node.js, TEC-005 introduce un'immagine temporanea di migrazione costruita da Node.js 24.14.0 fissato per digest e dal lockfile. L'installazione delle dipendenze precede il montaggio del solo segreto di migrazione; l'immagine usa la rete host per raggiungere PostgreSQL su loopback e non viene montata in Hermes. Il contesto Docker esclude configurazione locale e segreti. La prova PostgreSQL verifica anche questo percorso.
+
 Il progetto usa Biome 2.6.5 per il lint del codice TypeScript e degli script, TypeScript per controllo dei tipi e build e il test runner integrato di Node.js per i test; `npm test` ricompila prima di eseguirli. `npm run test:db` esegue le prove di migrazione e privilegi su PostgreSQL reale e verifica il plugin SQL tramite il registro Hermes. `npm run test:hermes` avvia lo stack in una rete Docker isolata e verifica gateway nativo, autenticazione e autorizzazione con dati sintetici e protezioni dei log. I test unitari verificano la logica al livello più economico; quelli di integrazione usano PostgreSQL reale per migrazioni e privilegi. I test dei webhook includono autenticazione e accessi negati. Le prove end-to-end reali con Meta e OpenRouter richiedono configurazione, rete e credenziali esterne e sono documentate separatamente; non sostituiscono i test automatici. TEC-005 verifica anche aggiornamento, persistenza e ripristino; TEC-006 configura la CI senza deploy automatico.
 
 ## 9. Configuration and local runtime
