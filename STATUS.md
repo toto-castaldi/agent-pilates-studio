@@ -8,24 +8,24 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Stack in verifica, prove esterne in attesa | 2/5 items done (40%) |
+| v0.1.0 | Open | Stack in verifica, prove esterne in corso | 2/5 items done (40%) |
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 2 |
-| In Progress | 0 |
-| Blocked | 1 |
+| In Progress | 1 |
+| Blocked | 0 |
 | Done | 2 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo | `spike/SPIKE-001-verifica-integrazioni-hermes` |
 
 ## Blocked
 
-| Item | Epic | Title | Reason |
-| ---- | ---- | ----- | ------ |
-| SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo | In attesa di configurazione e prove reali con Meta/OpenRouter e HTTPS pubblico. |
+None.
 
 ## Recently completed
 
