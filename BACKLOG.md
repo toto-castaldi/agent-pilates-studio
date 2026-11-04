@@ -53,7 +53,7 @@
 #### TEC-006 — Integrazione continua
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Done
 - **Branch:** `task/TEC-006-integrazione-continua`
 - **Dependencies:** TEC-002, SPIKE-001
 - **Requirements:** REQ-NFR-001, REQ-NFR-003
@@ -62,6 +62,7 @@
   - GitHub Actions esegue installazione, lint, controllo dei tipi, test e build, inclusi test di integrazione con PostgreSQL reale.
   - La pipeline segnala l'esito negativo dei controlli e non effettua deploy automatico.
   - Le prove end-to-end con credenziali e servizi esterni sono documentate separatamente; nessun segreto reale viene inserito nel repository o nei log.
+- **Outcome:** Workflow GitHub Actions con quality gate e test Docker per PostgreSQL e gateway Hermes, senza deploy né segreti reali. Sintassi, contratto e comandi verificati localmente; la prima esecuzione su GitHub richiede la pubblicazione del branch. Completato il 2026-11-05.
 
 ### EPIC-002 — Agente e integrazioni
 
