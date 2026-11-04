@@ -22,7 +22,8 @@
 #### TEC-001 — Kickoff
 
 - **Epic:** EPIC-001 — Project foundation
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-001-kickoff`
 - **Dependencies:** none
 - **Design references:** PROCESS §3, §4, §5; AGENTS (all sections)
 - **Description:** Initialize the project from the template by interviewing the user. Run the `kickoff` skill.

@@ -12,14 +12,16 @@
 
 | Item state  | Count |
 | ----------- | ----: |
-| Todo        |     8 |
-| In Progress |     0 |
+| Todo        |     7 |
+| In Progress |     1 |
 | Blocked     |     0 |
 | Done        |     0 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-001 | EPIC-001 — Project foundation | Kickoff | `task/TEC-001-kickoff` |
 
 ## Blocked
 
@@ -31,9 +33,7 @@ None.
 
 ## Next ready items
 
-| Priority | Item    | Epic                            | Title   |
-| -------- | ------- | ------------------------------- | ------- |
-| P0       | TEC-001 | EPIC-001 — Project foundation   | Kickoff |
+None.
 
 ## Closed versions
 
