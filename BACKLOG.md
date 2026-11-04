@@ -53,7 +53,8 @@
 #### TEC-006 — Integrazione continua
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-006-integrazione-continua`
 - **Dependencies:** TEC-002, SPIKE-001
 - **Requirements:** REQ-NFR-001, REQ-NFR-003
 - **Design references:** TECHNICAL-DESIGN §7, §8, §9

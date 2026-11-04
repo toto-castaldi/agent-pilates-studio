@@ -12,14 +12,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 2 |
-| In Progress | 0 |
+| Todo | 1 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 3 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | `task/TEC-006-integrazione-continua` |
 
 ## Blocked
 
@@ -37,7 +39,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | P1 |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | P1 |
 
 ## Closed versions
