@@ -76,6 +76,20 @@
   - Una prova tramite l'agente verifica DML e rifiuto del DDL su PostgreSQL reale; l'agente non riceve credenziali di migrazione.
   - I log e la configurazione rispettano REQ-NFR-002; errori e prerequisiti sono documentati.
 
+#### US-001 — Conversazione WhatsApp Business
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** SPIKE-001, TEC-004
+- **Requirements:** REQ-WA-001, REQ-WA-002, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §2, §3, §6, §7, §8, §9
+- **Description:** Come interlocutore autorizzato, voglio conversare con l'agente su WhatsApp, così da ricevere risposte tramite il canale abituale.
+- **Acceptance criteria:**
+  - Usando l'app Meta configurata, un messaggio di un numero autorizzato riceve una risposta tramite Hermes e OpenRouter; è documentata una prova reale end-to-end.
+  - Le richieste webhook prive di autenticazione valida sono rifiutate; i messaggi da numeri non autorizzati non raggiungono l'agente.
+  - I test verificano webhook e autorizzazione, compresi casi negativi; i log non contengono messaggi, numeri o credenziali.
+  - Prerequisiti, configurazione e prova sono documentati senza segreti reali.
+
 ### EPIC-003 — Dati e operatività
 
 **Scope:** database, migrazioni, installazione, aggiornamento e continuità operativa.
@@ -101,6 +115,7 @@ The order is not a time plan.
 2. SPIKE-001 e TEC-002.
 3. TEC-003.
 4. TEC-004.
+5. US-001.
 
 ## Unassigned backlog
 

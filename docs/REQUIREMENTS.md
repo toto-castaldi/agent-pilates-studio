@@ -24,6 +24,7 @@ This document is the reference for the *what*. The *how* is in `docs/TECHNICAL-D
 
 - Database relazionale con migrazioni versionate e permessi distinti per agente e gestione dello schema.
 - Ambiente locale Hermes con accesso a OpenRouter e al database.
+- Conversazione WhatsApp Business riservata ai numeri autorizzati.
 
 ### Out of scope for v0.1.0
 
@@ -39,6 +40,7 @@ Requirement IDs: `REQ-<AREA>-NNN`. Areas used in this project:
 | ---- | ------- |
 | DB | Database e migrazioni |
 | AGENT | Ambiente agente e modello |
+| WA | Comunicazione WhatsApp Business |
 
 ### Database e migrazioni
 
@@ -59,6 +61,16 @@ L'operatore deve poter avviare localmente Hermes e il database con Docker Compos
 #### REQ-AGENT-002 — Modello e dati
 
 Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database con i privilegi dell'agente definiti in REQ-DB-002. L'identificativo iniziale del modello proposto è `gpt-6.1-terra`, soggetto a verifica.
+
+### Comunicazione WhatsApp Business
+
+#### REQ-WA-001 — Conversazione
+
+Un interlocutore autorizzato deve poter inviare un messaggio tramite WhatsApp Business e ricevere una risposta generata dall'agente attraverso OpenRouter, usando l'app Meta già configurata.
+
+#### REQ-WA-002 — Accesso e webhook
+
+Solo i numeri presenti nella configurazione di autorizzazione possono interagire con l'agente. Le richieste del webhook devono essere autenticate e quelle non valide rifiutate.
 
 ## 6. Non-functional requirements
 

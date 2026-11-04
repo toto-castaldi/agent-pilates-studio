@@ -46,6 +46,7 @@ This document describes the *how*. Requirements are in `docs/REQUIREMENTS.md`. S
 
 Decisions still to be closed and the backlog items that will close them:
 
+- Adattatore, validazione del webhook e gestione dei numeri autorizzati WhatsApp — US-001, informato da SPIKE-001.
 - Configurazione concreta di Hermes, del modello e dell'accesso dell'agente ai dati — TEC-004, informato da SPIKE-001.
 - Meccanismi di provisioning dei ruoli PostgreSQL e di esecuzione delle migrazioni Prisma — TEC-003, informato da SPIKE-001.
 - Versione precisa di Node.js LTS e impostazione di lint, test e build — TEC-002.
