@@ -63,6 +63,17 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     migrator = new Client({ host: postgresHost, port: 5432, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await migrator.connect();
     await migrator.query('CREATE TABLE app.stack_probe (id int PRIMARY KEY, value text NOT NULL)');
+    const allowlistFile = join(directory, 'whatsapp-allowed-users');
+    await writeFile(allowlistFile, '');
+    try {
+      assert.throws(() => compose('run', '--rm', '--no-deps', 'hermes'), (error: unknown) => {
+        const output = error as { stdout?: string; stderr?: string };
+        assert.match(`${output.stdout ?? ''}${output.stderr ?? ''}`, /required Hermes secret file is missing or empty/);
+        return true;
+      });
+    } finally {
+      await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
+    }
     compose('up', '-d', '--wait', '--wait-timeout', '120', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     const gatewayHost = address(gatewayId);

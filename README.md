@@ -4,7 +4,7 @@ Progetto per installare e aggiornare [Hermes Agent](https://hermes-agent.nousres
 
 ## Stato
 
-La v0.1.0 include una configurazione locale Compose per PostgreSQL e Hermes, con OpenRouter, il gateway WhatsApp Cloud nativo e un tool SQL diretto. Una richiesta diretta a OpenRouter è riuscita; la conversazione reale tramite Hermes e Meta è ancora da verificare.
+La v0.1.0 include una configurazione locale Compose per PostgreSQL e Hermes, con OpenRouter, il gateway WhatsApp Cloud nativo e un tool SQL diretto. Una prova reale ha verificato la conversazione WhatsApp tramite Hermes e OpenRouter e l'accesso SQL con il ruolo limitato.
 
 ## Scaffold e verifiche locali
 
@@ -83,7 +83,11 @@ Per una prova locale isolata del gateway nativo, della configurazione del plugin
 npm run test:hermes
 ```
 
-Il test usa solo credenziali e messaggi sintetici, una rete Docker senza accesso esterno e risorse temporanee dedicate. Non sostituisce una prova reale con Meta e OpenRouter. La risposta WhatsApp libera è soggetta alla finestra di 24 ore prevista da Meta.
+Il test usa solo credenziali e messaggi sintetici, una rete Docker senza accesso esterno e risorse temporanee dedicate. Non sostituisce una prova reale con Meta e OpenRouter. La risposta WhatsApp libera è soggetta alla finestra di 24 ore prevista da Meta. Al primo contatto Hermes può inviare un avviso sul proprio canale home; non occorre configurarlo per usare il webhook.
+
+Per verificare una configurazione reale, avviare il proxy HTTPS e inviare dal numero autorizzato un messaggio di prova; confermare la risposta sul dispositivo. Per verificare anche i privilegi si può chiedere al modello di eseguire `SELECT current_user` e di tentare `CREATE TEMP TABLE spike_permission_probe (id integer)`: il primo restituisce il ruolo agente e il secondo deve essere rifiutato. Non includere numeri, messaggi o credenziali nei rapporti.
+
+Se il servizio non diventa sano o non risponde, verificare con `docker compose ps` che PostgreSQL e Hermes siano avviati, che tutti i file dei segreti richiesti esistano e abbiano permessi `0600`, che il percorso del proxy corrisponda a `WHATSAPP_WEBHOOK_PATH` e che le credenziali esterne siano valide. Non stampare i segreti per diagnostica. I dettagli dei log non sono disponibili con l'attuale mitigazione della privacy.
 
 ## Prerequisiti previsti per l'ambiente completo
 
