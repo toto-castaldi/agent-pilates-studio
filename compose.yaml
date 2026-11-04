@@ -1,0 +1,103 @@
+name: agent-pilates-v010
+
+services:
+  postgres:
+    image: postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285
+    command: ["postgres", "-c", "hba_file=/etc/pilates/pg_hba.conf"]
+    environment:
+      POSTGRES_USER: studio_admin
+      POSTGRES_DB: studio
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin
+    secrets:
+      - db_admin
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/pg_hba.conf:/etc/pilates/pg_hba.conf:ro
+    logging:
+      driver: none
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studio_admin -d studio"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  db-bootstrap:
+    image: postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/scripts/bootstrap.sh"]
+    volumes:
+      - ./db/bootstrap:/scripts:ro
+    secrets:
+      - db_admin
+      - db_migrator
+      - db_agent
+    logging:
+      driver: none
+    restart: "no"
+
+  hermes:
+    build:
+      context: .
+      dockerfile: hermes/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
+      WHATSAPP_CLOUD_WEBHOOK_HOST: 0.0.0.0
+      WHATSAPP_CLOUD_WEBHOOK_PATH: ${WHATSAPP_WEBHOOK_PATH:-/whatsapp/webhook}
+    secrets:
+      - db_agent
+      - openrouter_key
+      - whatsapp_access_token
+      - whatsapp_app_secret
+      - whatsapp_verify_token
+      - whatsapp_allowed_users
+      - whatsapp_phone_number_id
+    ports:
+      - "127.0.0.1:${WHATSAPP_WEBHOOK_PORT:-18090}:8090"
+    volumes:
+      - hermes_data:/opt/data
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
+      - ./hermes/plugins/pilates-postgres:/opt/data/plugins/pilates-postgres:ro
+    tmpfs:
+      - /run/pilates-agent:mode=0700
+    logging:
+      driver: none
+    healthcheck:
+      test: ["CMD", "/opt/hermes/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    restart: unless-stopped
+
+secrets:
+  db_admin:
+    file: ${SECRETS_DIR:-./.local/secrets}/db-admin
+  db_migrator:
+    file: ${SECRETS_DIR:-./.local/secrets}/db-migrator
+  db_agent:
+    file: ${SECRETS_DIR:-./.local/secrets}/db-agent
+  openrouter_key:
+    file: ${SECRETS_DIR:-./.local/secrets}/openrouter-key
+  whatsapp_access_token:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-access-token
+  whatsapp_app_secret:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-app-secret
+  whatsapp_verify_token:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-verify-token
+  whatsapp_allowed_users:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-allowed-users
+  whatsapp_phone_number_id:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-phone-number-id
+
+volumes:
+  postgres_data:
+  hermes_data:

@@ -1,0 +1,17 @@
+model:
+  default: "${PILATES_MODEL}"
+  provider: openrouter
+plugins:
+  enabled:
+    - pilates-postgres
+agent:
+  disabled_toolsets:
+    - terminal
+    - file
+    - code_execution
+    - browser
+    - skills
+    - delegation
+    - cronjob
+    - computer_use
+    - connections

@@ -10,6 +10,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 - Baseline documentale del progetto, requisiti e piano iniziale (TEC-001).
 - Scaffold TypeScript e quality gate locale con lint, controllo dei tipi, test e build (TEC-002).
+- Stack locale Compose con PostgreSQL, migrazioni Prisma, Hermes e gateway WhatsApp Cloud nativo; tool SQL diretto e verifiche locali e reali delle integrazioni e dei privilegi (SPIKE-001).
 
 ### Changed
 

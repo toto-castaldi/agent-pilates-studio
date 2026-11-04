@@ -69,7 +69,8 @@
 #### SPIKE-001 — Verifica delle integrazioni e stack locale completo
 
 - **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Type:** Spike · **Priority:** P0 · **Status:** Done
+- **Branch:** `spike/SPIKE-001-verifica-integrazioni-hermes`
 - **Dependencies:** TEC-001, TEC-002
 - **Requirements:** REQ-DB-001, REQ-DB-002, REQ-AGENT-001, REQ-AGENT-002, REQ-WA-001, REQ-WA-002, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §1, §2, §3, §4, §5, §6, §7, §8, §9, §10
@@ -86,6 +87,7 @@
   - Usando l'app Meta configurata, un messaggio di un numero autorizzato riceve una risposta tramite Hermes e OpenRouter; è documentata una prova reale end-to-end.
   - Le richieste webhook prive di autenticazione valida sono rifiutate; i messaggi da numeri non autorizzati non raggiungono l'agente. I test verificano webhook e autorizzazione, compresi casi negativi.
   - Prerequisiti, configurazione senza segreti, comandi per avvio, migrazione e test, errori e prove sono documentati. Log e configurazione rispettano REQ-NFR-002: i log non contengono messaggi, numeri o credenziali.
+- **Outcome:** Stack locale con Hermes, PostgreSQL e gateway WhatsApp nativo; migrazioni e privilegi verificati su PostgreSQL reale, risposta WhatsApp tramite OpenRouter e invocazione SQL del modello provate. Mitigazione dei log e limiti operativi documentati. Completato il 2026-11-05.
 
 ### EPIC-003 — Dati e operatività
 

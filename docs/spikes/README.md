@@ -9,3 +9,4 @@ A spike is a backlog item of type `Spike` (`SPIKE-NNN`) that answers explicit qu
 
 | Spike | Title | Outcome |
 | ----- | ----- | ------- |
+| [SPIKE-001](SPIKE-001-integrazioni-stack.md) | Verifica delle integrazioni e stack locale completo | Positive — integrazioni verificate; operatività e CI restano agli item successivi. |

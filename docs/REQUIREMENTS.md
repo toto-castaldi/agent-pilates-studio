@@ -59,7 +59,7 @@ L'operatore deve poter inizializzare e aggiornare lo schema tramite migrazioni v
 
 #### REQ-DB-002 — Privilegi dell'agente
 
-L'agente deve poter eseguire operazioni DML sui dati, ma non DDL; le credenziali per le migrazioni devono essere distinte e non disponibili all'agente.
+L'agente deve poter eseguire operazioni DML sui dati, ma non DDL sugli oggetti dello schema; le credenziali per le migrazioni devono essere distinte e non disponibili all'agente. È accettata l'eccezione standard PostgreSQL per cui il ruolo di login può modificare la propria password: l'operatore deve poterla ripristinare senza esporre all'agente credenziali amministrative o di migrazione.
 
 ### Ambiente agente
 
@@ -117,7 +117,7 @@ GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su
 - Sul server di produzione predisposto l'operatore installa e aggiorna l'ambiente; i dati persistono dopo riavvio e aggiornamento. Un backup viene ripristinato e verificato con dati di prova.
 - Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; GitHub Actions esegue le verifiche previste senza deploy automatico.
 
-Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. Il modello effettivo e la fattibilità delle integrazioni sono da verificare con SPIKE-001; eventuali cambi di scope richiedono accordo.
+Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. SPIKE-001 ha verificato il modello effettivo e le integrazioni in una prova reale; eventuali cambi di scope richiedono accordo.
 
 ## 8. Withdrawn requirements
 
