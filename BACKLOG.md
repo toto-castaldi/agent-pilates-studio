@@ -34,11 +34,29 @@
   - `README.md` presents the project instead of the template; `CHANGELOG.md` and `.gitignore` are adapted to the project.
   - `STATUS.md` is consistent with `BACKLOG.md`.
 
+### EPIC-002 — Agente e integrazioni
+
+**Scope:** integrazione di Hermes con database, modello e canali di comunicazione.
+
+#### SPIKE-001 — Verifica delle integrazioni di Hermes
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** TEC-001
+- **Design references:** TECHNICAL-DESIGN §1, §3, §5, §6, §7, §9, §10
+- **Description:** Verificare con documentazione ed eventuali prove circoscritte come installare Hermes e integrarlo con i servizi previsti, senza assumere che il supporto esista.
+- **Acceptance criteria:**
+  - Un rapporto in `docs/spikes/` documenta installazione e versionamento di Hermes, integrazione con OpenRouter e disponibilità dell'identificativo di modello `gpt-6.1-terra`.
+  - Il rapporto valuta il collegamento alle API WhatsApp Business tramite l'app Meta esistente, webhook, HTTPS, autorizzazione dei numeri e alternative se non direttamente supportato.
+  - Il rapporto valuta accesso DML a PostgreSQL, isolamento delle credenziali di migrazione e impedimento del DDL, con indicazione delle verifiche necessarie.
+  - Il rapporto espone prerequisiti, rischi, eventuali costi, raccomandazioni e decisioni ancora da concordare; non include segreti.
+
 ## Dependencies and suggested order
 
 The order is not a time plan.
 
 1. TEC-001.
+2. SPIKE-001.
 
 ## Unassigned backlog
 

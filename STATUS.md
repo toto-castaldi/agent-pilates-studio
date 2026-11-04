@@ -2,17 +2,17 @@
 
 > Short snapshot updated automatically by the agent at every item or version transition (`docs/PROCESS.md` §7). The canonical source for details, dependencies and acceptance criteria is `BACKLOG.md`.
 
-**Last update:** `<YYYY-MM-DD>`
+**Last update:** 2026-11-04
 
 ## Current version
 
 | Version | State | Phase   | Progress            |
 | ------- | ----- | ------- | ------------------- |
-| v0.1.0  | Open  | Kickoff | 0/1 items done (0%) |
+| v0.1.0  | Open  | Kickoff | 0/2 items done (0%) |
 
 | Item state  | Count |
 | ----------- | ----: |
-| Todo        |     1 |
+| Todo        |     2 |
 | In Progress |     0 |
 | Blocked     |     0 |
 | Done        |     0 |

@@ -46,4 +46,4 @@ This document describes the *how*. Requirements are in `docs/REQUIREMENTS.md`. S
 
 Decisions still to be closed and the backlog items that will close them:
 
-- `<decision>` — `<item ID>`
+- Installazione e versionamento di Hermes; compatibilità con OpenRouter, modello indicato, API WhatsApp Business e accesso sicuro a PostgreSQL — SPIKE-001.
