@@ -8,18 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Fondamenta da realizzare | 1/8 items done (12,5%) |
+| v0.1.0 | Open | Scaffold e quality gate in corso | 1/8 items done (12,5%) |
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 7 |
-| In Progress | 0 |
+| Todo | 6 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 1 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-002 | EPIC-001 — Fondamenta del progetto | Scaffold TypeScript e quality gate | `task/TEC-002-scaffold-typescript-quality-gate` |
 
 ## Blocked
 
@@ -33,9 +35,7 @@ None.
 
 ## Next ready items
 
-| Priority | Item | Epic | Title |
-| -------- | ---- | ---- | ----- |
-| P0 | TEC-002 | EPIC-001 — Fondamenta del progetto | Scaffold TypeScript e quality gate |
+None.
 
 ## Closed versions
 

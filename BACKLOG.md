@@ -39,7 +39,8 @@
 #### TEC-002 — Scaffold TypeScript e quality gate
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-002-scaffold-typescript-quality-gate`
 - **Dependencies:** TEC-001
 - **Requirements:** REQ-NFR-001
 - **Design references:** TECHNICAL-DESIGN §1, §3, §8, §9
