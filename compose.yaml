@@ -51,6 +51,7 @@ services:
     environment:
       PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
       WHATSAPP_CLOUD_WEBHOOK_HOST: 0.0.0.0
+      WHATSAPP_CLOUD_WEBHOOK_PATH: ${WHATSAPP_WEBHOOK_PATH:-/whatsapp/webhook}
     secrets:
       - db_agent
       - openrouter_key

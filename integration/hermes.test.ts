@@ -29,6 +29,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     SECRETS_DIR: directory,
     POSTGRES_PORT: '0',
     WHATSAPP_WEBHOOK_PORT: '0',
+    WHATSAPP_WEBHOOK_PATH: '/webhooks/whatsapp',
     PILATES_MODEL: 'openai/gpt-6.1-terra',
   };
   const compose = (...args: string[]) =>
@@ -94,7 +95,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.deepEqual(tool.results.slice(4).map((item) => item.sqlstate), ['42501', '42501']);
     execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_migrator && test ! -e /run/secrets/db_admin'], { stdio: 'pipe' });
 
-    const endpoint = `http://${gatewayHost}:8090/whatsapp/webhook`;
+    const endpoint = `http://${gatewayHost}:8090/webhooks/whatsapp`;
+    assert.equal((await fetch(`http://${gatewayHost}:8090/whatsapp/webhook`)).status, 404);
     assert.equal((await fetch(`${endpoint}?hub.mode=subscribe&hub.verify_token=synthetic-verify-token&hub.challenge=ok`)).status, 200);
     assert.equal((await fetch(`${endpoint}?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=ok`)).status, 403);
     const payload = (sender: string, type: 'text' | 'interactive', text: string) => {

@@ -44,4 +44,6 @@ None.
 
 ## Notes
 
-- TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001; integrazioni e modello proposto restano da verificare.
+- TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La richiesta diretta a OpenRouter con il modello previsto è riuscita; restano la conversazione reale WhatsApp → Hermes → OpenRouter e la chiamata SQL generata dal modello.
+- L'utente ha autorizzato il riuso delle credenziali e del callback di sviluppo di `pi-agent-pilates-studio`. PostgreSQL e Hermes sono avviati localmente; il percorso webhook configurato supera l'handshake locale. Nessun tunnel è stato avviato. Riprendere verificando la disponibilità del callback condiviso, poi usare il port-forward `pnpm tunnel 18090` dal progetto precedente e concordare la prova WhatsApp. La allowlist locale contiene un solo destinatario: il secondo registrato su Meta non era presente nel `.env` consultato.
+- Configurazione e segreti reali restano locali e ignorati da Git; il branch pubblicato non li contiene.

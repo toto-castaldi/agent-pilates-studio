@@ -27,7 +27,7 @@ Il flusso è un obiettivo architetturale, non una dichiarazione di supporto dell
 - **Runtime e configurazione:** servizi Compose, versioni fissate e configurazione esterna; TEC-002 e SPIKE-001.
 - **Dati e migrazioni:** PostgreSQL, ruoli e migrazioni Prisma; SPIKE-001. L'agente esegue SQL direttamente tramite un piccolo plugin nativo Hermes, senza MCP; il ruolo PostgreSQL limita i privilegi.
 - **Agente e modello:** installazione Hermes, configurazione OpenRouter e accesso ai dati con ruolo limitato; SPIKE-001.
-- **Canale WhatsApp:** gateway WhatsApp Cloud nativo di Hermes con app Meta, validazione webhook e autorizzazione dei numeri; SPIKE-001.
+- **Canale WhatsApp:** gateway WhatsApp Cloud nativo di Hermes con app Meta, validazione webhook e autorizzazione dei numeri; percorso del webhook configurabile per riutilizzare un callback HTTPS esistente; SPIKE-001.
 - **Operatività e CI:** installazione, aggiornamento, recupero, osservabilità e verifiche automatiche; TEC-005 e TEC-006.
 
 I confini concreti dei componenti, inclusi eventuali adattatori, saranno definiti dagli item indicati; non si assume che Hermes includa già le integrazioni richieste.
