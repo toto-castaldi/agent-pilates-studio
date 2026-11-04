@@ -1,42 +1,44 @@
-# Product Backlog — `<project-name>`
+# Product Backlog — agent-pilates-studio
 
 ## Management
 
-- Process: `docs/PROCESS.md` (versions, epics, item types, fields, states, priorities, branches).
+- Process: `docs/PROCESS.md` (versioni, epic, item, stati e branch).
 - Requirements: `docs/REQUIREMENTS.md` · Technical design: `docs/TECHNICAL-DESIGN.md`.
-- `STATUS.md` is updated together with this file at every item or version transition.
+- `STATUS.md` viene aggiornato insieme al backlog per ogni transizione.
 - States: `Todo`, `In Progress`, `Blocked`, `Done`.
-- Priorities: **P0** foundations/invariants, **P1** core functionality, **P2** completion and polish.
-- No Sprints, no time estimates.
+- Priorities: **P0** fondamenta e vincoli, **P1** funzionalità essenziali, **P2** completamento e rifiniture.
+- Nessuno sprint o stima temporale.
 
 ## Version v0.1.0
 
 **State:** Open
 
-**Goal:** `<one or two sentences describing what v0.1.0 delivers; defined during the kickoff>`
+**Goal:** Rendere riproducibili installazione, prova locale e aggiornamento di Hermes con PostgreSQL, OpenRouter e WhatsApp Business, con sicurezza e operatività di base.
 
-### EPIC-001 — Project foundation
+### EPIC-001 — Fondamenta del progetto
 
-**Scope:** project initialization, scaffold, quality gate, local runtime and process tooling.
+**Scope:** inizializzazione, scaffold, quality gate e integrazione continua.
 
 #### TEC-001 — Kickoff
 
-- **Epic:** EPIC-001 — Project foundation
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P0 · **Status:** Done
+- **Branch:** `task/TEC-001-kickoff`
 - **Dependencies:** none
 - **Design references:** PROCESS §3, §4, §5; AGENTS (all sections)
-- **Description:** Initialize the project from the template by interviewing the user. Run the `kickoff` skill.
+- **Description:** Inizializzare la documentazione del progetto attraverso l'intervista e la pianificazione concordata.
 - **Acceptance criteria:**
-  - `AGENTS.md` is filled in (project, language, scope, stack, domain rules, quality gate, DoD additions) and the "template not initialized" notice is removed.
-  - `docs/REQUIREMENTS.md` contains goal, actors, glossary, in/out of scope, first functional and non-functional requirements with stable IDs and the release acceptance criteria of v0.1.0.
-  - `docs/TECHNICAL-DESIGN.md` contains the initial architectural decisions and the open decisions to be closed by backlog items.
-  - `BACKLOG.md` contains the goal of v0.1.0, its epics and its items with dependencies, requirements and acceptance criteria; ideas outside v0.1.0 are in the unassigned backlog.
-  - `README.md` presents the project instead of the template; `CHANGELOG.md` and `.gitignore` are adapted to the project.
-  - `STATUS.md` is consistent with `BACKLOG.md`.
+  - `AGENTS.md` definisce progetto, lingua, scope, stack, regole, quality gate e aggiunte alla DoD; l'avviso del template non inizializzato è rimosso.
+  - `docs/REQUIREMENTS.md` contiene obiettivo, attori, glossario, scope, requisiti con ID stabili e accettazione della v0.1.0.
+  - `docs/TECHNICAL-DESIGN.md` contiene scelte iniziali e decisioni aperte associate agli item.
+  - `BACKLOG.md` contiene obiettivo, epic e item con dipendenze, riferimenti e criteri; le eventuali idee future sono nel backlog non assegnato.
+  - `README.md` presenta il progetto; `CHANGELOG.md` e `.gitignore` sono adattati.
+  - `STATUS.md` è coerente con `BACKLOG.md`.
+- **Outcome:** Baseline documentale, requisiti, design e backlog iniziale concordati e verificati; nessun codice applicativo. Completato il 2026-11-04.
 
 #### TEC-002 — Scaffold TypeScript e quality gate
 
-- **Epic:** EPIC-001 — Project foundation
+- **Epic:** EPIC-001 — Fondamenta del progetto
 - **Type:** Task · **Priority:** P0 · **Status:** Todo
 - **Dependencies:** TEC-001
 - **Requirements:** REQ-NFR-001
@@ -48,7 +50,7 @@
 
 #### TEC-006 — Integrazione continua
 
-- **Epic:** EPIC-001 — Project foundation
+- **Epic:** EPIC-001 — Fondamenta del progetto
 - **Type:** Task · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** TEC-002, TEC-003, TEC-004, US-001
 - **Requirements:** REQ-NFR-001, REQ-NFR-003
@@ -66,7 +68,7 @@
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Type:** Spike · **Priority:** P0 · **Status:** Todo
-- **Dependencies:** TEC-001
+- **Dependencies:** TEC-001, TEC-002
 - **Design references:** TECHNICAL-DESIGN §1, §3, §5, §6, §7, §9, §10
 - **Description:** Verificare con documentazione ed eventuali prove circoscritte come installare Hermes e integrarlo con i servizi previsti, senza assumere che il supporto esista.
 - **Acceptance criteria:**
@@ -134,17 +136,18 @@
 
 ## Dependencies and suggested order
 
-The order is not a time plan.
+L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
 
 1. TEC-001.
-2. SPIKE-001 e TEC-002.
-3. TEC-003.
-4. TEC-004.
-5. US-001.
-6. TEC-005 e TEC-006.
+2. TEC-002.
+3. SPIKE-001.
+4. TEC-003.
+5. TEC-004.
+6. US-001.
+7. TEC-005 e TEC-006.
 
 ## Unassigned backlog
 
-Ideas not assigned to any version. They need requirements before they can be designed.
+Le idee non assegnate richiedono requisiti prima della progettazione.
 
-- `<idea>`
+Nessuna idea per ora.

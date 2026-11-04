@@ -1,63 +1,16 @@
-# agile-project-template
+# agent-pilates-studio
 
-Template repository for projects developed with coding agents (pi, Claude Code) following a simplified Scrum process: requirements, technical design, product backlog with versions, epics and items, one branch per item, a Definition of Done and versioned releases.
+Progetto per installare e aggiornare [Hermes Agent](https://hermes-agent.nousresearch.com/), provarlo in locale e collegarlo a PostgreSQL, OpenRouter e WhatsApp Business.
 
-> This README describes the template. The `kickoff` skill replaces it with the presentation of the new project.
+## Stato
 
-## Create a new project
+La v0.1.0 è in fase di progettazione: questa repository contiene la baseline documentale, non ancora un'applicazione o procedure di installazione funzionanti. La compatibilità delle integrazioni deve essere verificata.
 
-1. On GitHub, **New repository → Start with a template → `toto-castaldi/agile-project-template`**, or:
+## Prerequisiti previsti
 
-   ```bash
-   gh repo create <owner>/<name> --template toto-castaldi/agile-project-template --private --clone
-   ```
+- Node.js LTS e npm per il codice del progetto; versioni precise da definire.
+- Docker e Docker Compose per l'ambiente locale e il server Linux di produzione.
+- Un endpoint HTTPS pubblico già disponibile per i webhook Meta.
+- App Meta WhatsApp Business configurata e credenziali per i servizi esterni; non inserire credenziali nel repository.
 
-2. Open the project with your coding agent and run the kickoff:
-   - pi: `/skill:kickoff`
-   - Claude Code: `/kickoff`
-
-   The agent interviews you, plans each initial backlog item on `main` in its own commit, and then completes the project documentation in branch `task/TEC-001-kickoff`.
-3. Review the result and ask the agent to merge it (`merge-task`).
-
-## What's inside
-
-```text
-AGENTS.md                  project-specific rules for agents (filled at kickoff)
-CLAUDE.md                  imports AGENTS.md and docs/PROCESS.md for Claude Code
-BACKLOG.md                 product backlog: versions, epics, items
-STATUS.md                  short snapshot of the project, updated at every transition
-CHANGELOG.md               changes per released version
-docs/PROCESS.md            the shared process (identical in every project)
-docs/REQUIREMENTS.md       the *what*: scope, actors, glossary, REQ-* requirements
-docs/TECHNICAL-DESIGN.md   the *how*: numbered sections referenced by items
-docs/adr/                  architecture decision records
-docs/spikes/               spike reports
-.agents/skills/            process skills (pi reads them natively)
-.claude/skills             symlink to .agents/skills for Claude Code
-```
-
-## Skills
-
-| Skill | When |
-| --- | --- |
-| `kickoff` | Initialize a new project (`TEC-001`) |
-| `add-item` | Add one new user story, task, spike or bug on `main` |
-| `start-task` | Start an item: branch from `main`, `In Progress` |
-| `finish-task` | Verify the Definition of Done and complete the item in its branch |
-| `merge-task` | Merge into `main` (only on explicit request) |
-| `close-version` | Close a version with CHANGELOG and tag (only on explicit request) |
-
-## Process in a nutshell
-
-- Item types: User Story `US-NNN`, Task `TEC-NNN`, Spike `SPIKE-NNN`, Bug `BUG-NNN`, grouped by thematic epics `EPIC-NNN`.
-- States: `Todo`, `In Progress`, `Blocked`, `Done`. Priorities: `P0`, `P1`, `P2`. No sprints, no estimates.
-- Add each new backlog item directly on a clean, up-to-date `main` in one documentation-only commit; no branch, merge or automatic push for the addition.
-- Develop items on `us/`, `task/`, `spike/` or `fix/` branches; use `backlog/` for other grooming and `release/` for releases. Merge `--no-ff` only on request.
-- Commits: `type(ID): description` in the project language.
-- Rules and structural labels in English; project content in the project language.
-
-Full rules: [`docs/PROCESS.md`](docs/PROCESS.md).
-
-## Updating the process in existing projects
-
-`docs/PROCESS.md` and `.agents/skills/` are project-agnostic. To bring process improvements from the template into an existing project, copy them over in a `task/` item and check the `Process version` at the top of `docs/PROCESS.md`.
+I comandi effettivi di installazione, configurazione, verifica e deploy saranno documentati quando disponibili.

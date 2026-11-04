@@ -18,4 +18,8 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Stack-specific ignores are added during the kickoff
+# Node.js and TypeScript
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo

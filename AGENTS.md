@@ -1,71 +1,63 @@
 # AGENTS.md
 
-> **Template not initialized.** This project was created from `agile-project-template` and has not been kicked off yet. The only item that may be started is `TEC-001 — Kickoff` (run the `kickoff` skill); its initial backlog planning takes place on `main` before starting the item branch. Remove this notice during the kickoff.
-
 ## 0. Process
 
-This project follows the shared process in [`docs/PROCESS.md`](docs/PROCESS.md). Read it before doing any work: it defines backlog, items, states, branches, commits, merges, `STATUS.md` updates, the Definition of Done and version closing.
-
-This file contains only project-specific rules. Where it conflicts with `docs/PROCESS.md`, the process wins unless the deviation is listed in [Process overrides](#8-process-overrides).
-
-At the start of every session read `STATUS.md`, then the relevant parts of `BACKLOG.md`.
+Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicite nella sezione 8. All'inizio di ogni sessione leggere `STATUS.md` e le parti pertinenti di `BACKLOG.md`.
 
 ## 1. Project
 
-- **Name:** `<project-name>`
-- **Summary:** `<one or two sentences: what the project does and for whom>`
-- **Current version:** v0.1.0 — see `STATUS.md`.
+- **Name:** `agent-pilates-studio`
+- **Summary:** piattaforma per installare, aggiornare e provare Hermes con database relazionale, OpenRouter e WhatsApp Business.
+- **Current version:** v0.1.0 — vedere `STATUS.md`.
 - **Requirements:** `docs/REQUIREMENTS.md` · **Design:** `docs/TECHNICAL-DESIGN.md`
 
 ## 2. Language
 
-- **Project language:** `<e.g. Italian>`
-- Write project content (requirements, design, backlog text, status notes, README, CHANGELOG, commit descriptions, user-facing messages) in the project language, as defined in `docs/PROCESS.md` §2.
-- Code identifiers and code comments: `<e.g. English>`.
+- **Project language:** italiano, secondo `docs/PROCESS.md` §2.
+- Identificatori e commenti nel codice: inglese.
 
 ## 3. Scope
 
-The scope of the current version is defined in `docs/REQUIREMENTS.md`. Do not implement anything listed there as out of scope without first updating requirements and backlog and agreeing the scope change with the user.
+Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
-`<Optional: two or three bullets with the most important scope boundaries the agent must keep in mind.>`
+- Nessuna funzionalità o tabella di dominio dello studio nella v0.1.0 senza nuovi requisiti.
+- Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
+- Niente deploy automatico o monitoraggio avanzato nella v0.1.0.
 
 ## 4. Stack and architecture
 
-Unless a different decision is recorded in the backlog and in the technical design:
-
-- `<language, runtime and version>`
-- `<package manager>`
-- `<frameworks and main libraries>`
-- `<database / storage>`
-- `<test framework>`
-- `<local runtime, e.g. Docker Compose>`
-
-Architecture and module boundaries: `<short description, details in TECHNICAL-DESIGN §N>`.
+- TypeScript, Node.js LTS e npm per il codice del progetto; Hermes mantiene i propri prerequisiti.
+- PostgreSQL e migrazioni Prisma; Docker Compose in locale e su server Linux predisposto.
+- OpenRouter, API WhatsApp Business e GitHub Actions; compatibilità Hermes da verificare con SPIKE-001.
+- Framework di test e versioni precise da definire con TEC-002 e dagli item pertinenti.
+- Confini dei componenti e decisioni aperte: `docs/TECHNICAL-DESIGN.md` §§1–3, 10.
 
 ## 5. Domain rules
 
-`<Invariants and business rules the agent must never violate, grouped by topic. Keep them short; the full specification is in docs/REQUIREMENTS.md.>`
+- L'agente può eseguire DML ma non DDL; usare credenziali distinte per le migrazioni, non disponibili all'agente. Verificare i privilegi su PostgreSQL reale.
+- Solo i numeri autorizzati in configurazione possono interagire; i webhook non autenticati devono essere rifiutati.
+- I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
 
 ## 6. Quality gate
 
-The quality gate used by the Definition of Done:
+Per il solo kickoff documentale TEC-001, prima che lo scaffold esista: verificare la coerenza dei documenti e delle coperture del backlog ed eseguire `git diff --check` e `git diff --cached --check`.
+
+Da TEC-002 in poi, lo scaffold deve fornire e far passare:
 
 ```bash
-<install command>
-<lint command>
-<typecheck command>
-<test command>
-<build command>
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
-Test guidelines: `<which test levels are expected (unit, integration, end-to-end) and any rule such as "do not mock the database to claim constraints are verified">`.
+Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi; le prove end-to-end reali Meta/OpenRouter richiedono servizi e credenziali esterni e sono documentate separatamente. Non usare un database simulato come prova dei privilegi. TEC-002 precede gli altri item, così il gate è disponibile.
 
 ## 7. Definition of Done additions
 
-In addition to `docs/PROCESS.md` §8:
-
-- `<e.g. migrations are reproducible from a clean environment>`
-- `<e.g. .env.example is updated when configuration changes>`
+- Quando una modifica introduce configurazione, aggiornare gli esempi senza segreti e le istruzioni necessarie.
+- Quando cambia una migrazione o un privilegio, verificarlo su PostgreSQL reale; non affidarsi solo a test simulati.
 
 ## 8. Process overrides
 
@@ -73,6 +65,6 @@ None.
 
 ## 9. Security and configuration
 
-- Never commit secrets. Local configuration lives in `<e.g. .env>`, with a committed `<e.g. .env.example>` containing no real secrets.
-- Do not log tokens, credentials or sensitive personal data.
-- `<project-specific security rules>`
+- Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
+- Non registrare nei log credenziali, messaggi o numeri di telefono.
+- Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare l'elenco dei numeri consentiti.
