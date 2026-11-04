@@ -107,6 +107,19 @@
   - Test su PostgreSQL reale verificano le operazioni DML consentite e il rifiuto di DDL con le credenziali dell'agente.
   - Prerequisiti, configurazione senza segreti e comandi per avvio, migrazione e test sono documentati.
 
+#### TEC-005 — Deploy e continuità operativa
+
+- **Epic:** EPIC-003 — Dati e operatività
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-003, TEC-004, US-001
+- **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
+- **Acceptance criteria:**
+  - Una procedura documentata installa e aggiorna intenzionalmente l'ambiente con versioni fissate su un server Linux predisposto con Docker Compose e HTTPS pubblico.
+  - Una prova verifica il funzionamento in produzione e la persistenza dei dati dopo riavvio e aggiornamento.
+  - Backup e ripristino vengono eseguiti e verificati con dati di prova; prerequisiti e passaggi sono documentati senza segreti.
+  - Sono documentati e verificati stato e disponibilità dei servizi e consultazione dei log nel rispetto di REQ-NFR-002.
+
 ## Dependencies and suggested order
 
 The order is not a time plan.
@@ -116,6 +129,7 @@ The order is not a time plan.
 3. TEC-003.
 4. TEC-004.
 5. US-001.
+6. TEC-005.
 
 ## Unassigned backlog
 

@@ -25,6 +25,7 @@ This document is the reference for the *what*. The *how* is in `docs/TECHNICAL-D
 - Database relazionale con migrazioni versionate e permessi distinti per agente e gestione dello schema.
 - Ambiente locale Hermes con accesso a OpenRouter e al database.
 - Conversazione WhatsApp Business riservata ai numeri autorizzati.
+- Installazione e aggiornamento in produzione, persistenza, backup e ripristino, osservabilità essenziale.
 
 ### Out of scope for v0.1.0
 
@@ -41,6 +42,7 @@ Requirement IDs: `REQ-<AREA>-NNN`. Areas used in this project:
 | DB | Database e migrazioni |
 | AGENT | Ambiente agente e modello |
 | WA | Comunicazione WhatsApp Business |
+| OPS | Operatività e continuità |
 
 ### Database e migrazioni
 
@@ -71,6 +73,20 @@ Un interlocutore autorizzato deve poter inviare un messaggio tramite WhatsApp Bu
 #### REQ-WA-002 — Accesso e webhook
 
 Solo i numeri presenti nella configurazione di autorizzazione possono interagire con l'agente. Le richieste del webhook devono essere autenticate e quelle non valide rifiutate.
+
+### Operatività
+
+#### REQ-OPS-001 — Installazione e aggiornamento
+
+L'operatore deve poter installare e aggiornare intenzionalmente l'ambiente di produzione su un server Linux predisposto, con versioni fissate e procedura riproducibile.
+
+#### REQ-OPS-002 — Persistenza e recupero
+
+I dati del database devono persistere tra riavvii e aggiornamenti; l'operatore deve poter eseguire e verificare un backup e un ripristino.
+
+#### REQ-OPS-003 — Osservabilità essenziale
+
+L'operatore deve poter verificare stato e disponibilità dei servizi e consultare i log nel rispetto di REQ-NFR-002.
 
 ## 6. Non-functional requirements
 
