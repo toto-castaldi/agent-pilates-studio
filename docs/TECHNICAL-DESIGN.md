@@ -46,5 +46,6 @@ This document describes the *how*. Requirements are in `docs/REQUIREMENTS.md`. S
 
 Decisions still to be closed and the backlog items that will close them:
 
+- Meccanismi di provisioning dei ruoli PostgreSQL e di esecuzione delle migrazioni Prisma — TEC-003, informato da SPIKE-001.
 - Versione precisa di Node.js LTS e impostazione di lint, test e build — TEC-002.
 - Installazione e versionamento di Hermes; compatibilità con OpenRouter, modello indicato, API WhatsApp Business e accesso sicuro a PostgreSQL — SPIKE-001.

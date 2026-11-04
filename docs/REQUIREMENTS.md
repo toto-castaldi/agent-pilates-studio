@@ -22,7 +22,7 @@ This document is the reference for the *what*. The *how* is in `docs/TECHNICAL-D
 
 ### In scope for v0.1.0
 
-- `<capability>`
+- Database relazionale con migrazioni versionate e permessi distinti per agente e gestione dello schema.
 
 ### Out of scope for v0.1.0
 
@@ -36,13 +36,17 @@ Requirement IDs: `REQ-<AREA>-NNN`. Areas used in this project:
 
 | Area | Meaning |
 | ---- | ------- |
-| `<AREA>` | `<functional area>` |
+| DB | Database e migrazioni |
 
-### `<Functional area>`
+### Database e migrazioni
 
-#### REQ-`<AREA>`-001 — `<Title>`
+#### REQ-DB-001 — Migrazioni versionate
 
-`<The system must … Describe observable behavior, not implementation.>`
+L'operatore deve poter inizializzare e aggiornare lo schema tramite migrazioni versionate; non sono richieste tabelle di dominio iniziali.
+
+#### REQ-DB-002 — Privilegi dell'agente
+
+L'agente deve poter eseguire operazioni DML sui dati, ma non DDL; le credenziali per le migrazioni devono essere distinte e non disponibili all'agente.
 
 ## 6. Non-functional requirements
 

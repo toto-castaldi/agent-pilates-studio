@@ -63,12 +63,30 @@
   - Il rapporto valuta accesso DML a PostgreSQL, isolamento delle credenziali di migrazione e impedimento del DDL, con indicazione delle verifiche necessarie.
   - Il rapporto espone prerequisiti, rischi, eventuali costi, raccomandazioni e decisioni ancora da concordare; non include segreti.
 
+### EPIC-003 — Dati e operatività
+
+**Scope:** database, migrazioni, installazione, aggiornamento e continuità operativa.
+
+#### TEC-003 — PostgreSQL, migrazioni e privilegi
+
+- **Epic:** EPIC-003 — Dati e operatività
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** TEC-002, SPIKE-001
+- **Requirements:** REQ-DB-001, REQ-DB-002
+- **Design references:** TECHNICAL-DESIGN §1, §3, §4, §5, §7, §8, §9
+- **Acceptance criteria:**
+  - PostgreSQL è avviabile localmente e Prisma applica migrazioni versionate da uno stato pulito e su uno schema esistente; non sono introdotte tabelle di dominio non richieste.
+  - Le credenziali dell'agente sono separate da quelle delle migrazioni, che non sono disponibili all'agente.
+  - Test su PostgreSQL reale verificano le operazioni DML consentite e il rifiuto di DDL con le credenziali dell'agente.
+  - Prerequisiti, configurazione senza segreti e comandi per avvio, migrazione e test sono documentati.
+
 ## Dependencies and suggested order
 
 The order is not a time plan.
 
 1. TEC-001.
 2. SPIKE-001 e TEC-002.
+3. TEC-003.
 
 ## Unassigned backlog
 
