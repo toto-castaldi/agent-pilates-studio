@@ -26,6 +26,7 @@ This document is the reference for the *what*. The *how* is in `docs/TECHNICAL-D
 - Ambiente locale Hermes con accesso a OpenRouter e al database.
 - Conversazione WhatsApp Business riservata ai numeri autorizzati.
 - Installazione e aggiornamento in produzione, persistenza, backup e ripristino, osservabilità essenziale.
+- Verifiche automatiche del progetto con GitHub Actions.
 
 ### Out of scope for v0.1.0
 
@@ -97,6 +98,10 @@ Il progetto deve offrire installazione delle dipendenze da lockfile e comandi pe
 #### REQ-NFR-002 — Segreti e dati nei log
 
 Credenziali e segreti non devono essere inclusi nel repository; i log non devono contenere credenziali, messaggi o numeri di telefono. La configurazione di esempio non deve contenere segreti reali.
+
+#### REQ-NFR-003 — Integrazione continua
+
+GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su PostgreSQL reale, senza deploy automatico. Le prove che richiedono servizi esterni e credenziali reali devono essere documentate separatamente.
 
 ## 7. Release acceptance — v0.1.0
 

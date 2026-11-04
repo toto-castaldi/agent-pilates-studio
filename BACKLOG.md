@@ -46,6 +46,18 @@
   - Da un ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
   - È presente almeno un test eseguibile e sono documentati prerequisiti e comandi; non sono introdotte funzionalità di dominio non richieste.
 
+#### TEC-006 — Integrazione continua
+
+- **Epic:** EPIC-001 — Project foundation
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-002, TEC-003, TEC-004, US-001
+- **Requirements:** REQ-NFR-001, REQ-NFR-003
+- **Design references:** TECHNICAL-DESIGN §7, §8, §9
+- **Acceptance criteria:**
+  - GitHub Actions esegue installazione, lint, controllo dei tipi, test e build, inclusi test di integrazione con PostgreSQL reale.
+  - La pipeline segnala l'esito negativo dei controlli e non effettua deploy automatico.
+  - Le prove end-to-end con credenziali e servizi esterni sono documentate separatamente; nessun segreto reale viene inserito nel repository o nei log.
+
 ### EPIC-002 — Agente e integrazioni
 
 **Scope:** integrazione di Hermes con database, modello e canali di comunicazione.
@@ -129,7 +141,7 @@ The order is not a time plan.
 3. TEC-003.
 4. TEC-004.
 5. US-001.
-6. TEC-005.
+6. TEC-005 e TEC-006.
 
 ## Unassigned backlog
 
