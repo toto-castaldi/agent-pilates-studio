@@ -96,7 +96,8 @@
 #### TEC-005 — Deploy e continuità operativa
 
 - **Epic:** EPIC-003 — Dati e operatività
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-005-deploy-continuita-operativa`
 - **Dependencies:** SPIKE-001
 - **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
