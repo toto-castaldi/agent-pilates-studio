@@ -1,27 +1,25 @@
 # Project status
 
-> Short snapshot updated automatically by the agent at every item or version transition (`docs/PROCESS.md` §7). The canonical source for details, dependencies and acceptance criteria is `BACKLOG.md`.
+Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipendenze.
 
 **Last update:** 2026-11-04
 
 ## Current version
 
-| Version | State | Phase   | Progress            |
-| ------- | ----- | ------- | ------------------- |
-| v0.1.0  | Open  | Kickoff | 0/8 items done (0%) |
+| Version | State | Phase | Progress |
+| ------- | ----- | ----- | -------- |
+| v0.1.0 | Open | Fondamenta da realizzare | 1/8 items done (12,5%) |
 
-| Item state  | Count |
-| ----------- | ----: |
-| Todo        |     7 |
-| In Progress |     1 |
-| Blocked     |     0 |
-| Done        |     0 |
+| Item state | Count |
+| ---------- | ----: |
+| Todo | 7 |
+| In Progress | 0 |
+| Blocked | 0 |
+| Done | 1 |
 
 ## In progress
 
-| Item | Epic | Title | Branch |
-| ---- | ---- | ----- | ------ |
-| TEC-001 | EPIC-001 — Project foundation | Kickoff | `task/TEC-001-kickoff` |
+None.
 
 ## Blocked
 
@@ -29,11 +27,15 @@ None.
 
 ## Recently completed
 
-None.
+| Item | Epic | Title | Date |
+| ---- | ---- | ----- | ---- |
+| TEC-001 | EPIC-001 — Fondamenta del progetto | Kickoff | 2026-11-04 |
 
 ## Next ready items
 
-None.
+| Priority | Item | Epic | Title |
+| -------- | ---- | ---- | ----- |
+| P0 | TEC-002 | EPIC-001 — Fondamenta del progetto | Scaffold TypeScript e quality gate |
 
 ## Closed versions
 
@@ -41,4 +43,4 @@ None.
 
 ## Notes
 
-- Project created from `agile-project-template`; run the `kickoff` skill to start.
+- Integrazioni Hermes e modello proposto da verificare con SPIKE-001.

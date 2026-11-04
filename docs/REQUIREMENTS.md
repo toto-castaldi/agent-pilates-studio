@@ -1,42 +1,48 @@
-# Requirements — `<project-name>`
+# Requirements — agent-pilates-studio
 
 **Target version:** v0.1.0
 
-**State:** `<draft | baseline>`
+**State:** baseline
 
-This document is the reference for the *what*. The *how* is in `docs/TECHNICAL-DESIGN.md`. Every change of scope or behavior is recorded here before updating backlog and implementation (`docs/PROCESS.md` §3, §5).
+Questo documento definisce il comportamento richiesto; le scelte tecniche sono in `docs/TECHNICAL-DESIGN.md`.
 
 ## 1. Goal
 
-`<What problem the project solves, for whom, and what success looks like for v0.1.0.>`
+Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in produzione di un ambiente agentico Hermes, con database relazionale, modello tramite OpenRouter e comunicazione WhatsApp Business. Il successo della v0.1.0 è dimostrato dagli scenari di accettazione della release.
 
 ## 2. Actors
 
-- **`<Actor>`:** `<who they are, what they can do>`
+- **Operatore:** ruolo generico che configura, installa, aggiorna e gestisce l'ambiente; l'identità concreta è da definire.
+- **Interlocutore autorizzato:** ruolo generico associato a un numero configurato, che comunica con l'agente tramite WhatsApp; l'identità concreta è da definire.
+- **Agente:** Hermes, che elabora le richieste tramite il modello e accede ai dati con i privilegi assegnati.
 
 ## 3. Glossary
 
-- **`<Term>`:** `<definition used consistently in requirements, backlog and code>`
+- **Hermes:** software agentico da installare e configurare.
+- **DML:** operazioni di lettura e modifica dei dati, incluse selezione, inserimento, aggiornamento ed eliminazione.
+- **DDL:** operazioni di definizione o modifica degli oggetti dello schema, inclusi creazione, alterazione ed eliminazione.
+- **Migrazione:** modifica versionata e riproducibile dello schema, eseguita con credenziali diverse da quelle dell'agente.
+- **Numero autorizzato:** numero presente nella configurazione di accesso a WhatsApp.
 
 ## 4. Scope
 
 ### In scope for v0.1.0
 
-- Database relazionale con migrazioni versionate e permessi distinti per agente e gestione dello schema.
-- Ambiente locale Hermes con accesso a OpenRouter e al database.
+- Ambiente locale Hermes e PostgreSQL con accesso a OpenRouter e al database.
+- Migrazioni versionate e permessi distinti per agente e gestione dello schema.
 - Conversazione WhatsApp Business riservata ai numeri autorizzati.
-- Installazione e aggiornamento in produzione, persistenza, backup e ripristino, osservabilità essenziale.
-- Verifiche automatiche del progetto con GitHub Actions.
+- Installazione e aggiornamento intenzionale in produzione, persistenza, backup e ripristino, osservabilità essenziale.
+- Verifiche automatiche con GitHub Actions.
 
 ### Out of scope for v0.1.0
 
-Do not introduce these without first updating this document and the backlog:
+Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
-- `<excluded capability>`
+- Funzionalità specifiche dello studio Pilates e tabelle di dominio non richieste.
+- Creazione del server, installazione dei suoi prerequisiti Docker/Compose, gestione di DNS o certificati HTTPS.
+- Deploy automatico e piattaforme di monitoraggio avanzato.
 
 ## 5. Functional requirements
-
-Requirement IDs: `REQ-<AREA>-NNN`. Areas used in this project:
 
 | Area | Meaning |
 | ---- | ------- |
@@ -105,9 +111,13 @@ GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su
 
 ## 7. Release acceptance — v0.1.0
 
-The version can be closed only when:
+- Da un ambiente pulito l'operatore avvia localmente Hermes e PostgreSQL, applica le migrazioni e verifica il quality gate.
+- Su PostgreSQL reale l'agente può eseguire DML e non DDL; le credenziali di migrazione non sono disponibili all'agente.
+- Con l'app Meta configurata, HTTPS pubblico e credenziali valide, un numero autorizzato invia un messaggio WhatsApp e riceve una risposta tramite Hermes e OpenRouter; numeri non autorizzati e webhook non autenticati sono respinti.
+- Sul server di produzione predisposto l'operatore installa e aggiorna l'ambiente; i dati persistono dopo riavvio e aggiornamento. Un backup viene ripristinato e verificato con dati di prova.
+- Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; GitHub Actions esegue le verifiche previste senza deploy automatico.
 
-- `<end-to-end scenario or verifiable criterion>`
+Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. Il modello effettivo e la fattibilità delle integrazioni sono da verificare con SPIKE-001; eventuali cambi di scope richiedono accordo.
 
 ## 8. Withdrawn requirements
 

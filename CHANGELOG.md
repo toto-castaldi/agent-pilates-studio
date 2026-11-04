@@ -1,12 +1,14 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+Le modifiche rilevanti del progetto sono documentate qui.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/). Entries are written in the project language and reference the backlog item ID.
+Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il progetto usa [Semantic Versioning](https://semver.org/). Ogni voce riporta l'ID dell'item.
 
 ## [Unreleased]
 
 ### Added
+
+- Baseline documentale del progetto, requisiti e piano iniziale (TEC-001).
 
 ### Changed
 
