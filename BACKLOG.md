@@ -54,7 +54,7 @@
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
 - **Type:** Task · **Priority:** P1 · **Status:** Todo
-- **Dependencies:** TEC-002, TEC-003, TEC-004, US-001
+- **Dependencies:** TEC-002, SPIKE-001
 - **Requirements:** REQ-NFR-001, REQ-NFR-003
 - **Design references:** TECHNICAL-DESIGN §7, §8, §9
 - **Acceptance criteria:**
@@ -66,68 +66,36 @@
 
 **Scope:** integrazione di Hermes con database, modello e canali di comunicazione.
 
-#### SPIKE-001 — Verifica delle integrazioni di Hermes
+#### SPIKE-001 — Verifica delle integrazioni e stack locale completo
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Type:** Spike · **Priority:** P0 · **Status:** Todo
 - **Dependencies:** TEC-001, TEC-002
-- **Design references:** TECHNICAL-DESIGN §1, §3, §5, §6, §7, §9, §10
-- **Description:** Verificare con documentazione ed eventuali prove circoscritte come installare Hermes e integrarlo con i servizi previsti, senza assumere che il supporto esista.
+- **Requirements:** REQ-DB-001, REQ-DB-002, REQ-AGENT-001, REQ-AGENT-002, REQ-WA-001, REQ-WA-002, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §1, §2, §3, §4, §5, §6, §7, §8, §9, §10
+- **Description:** Verificare le integrazioni di Hermes e realizzare uno stack locale completo e avviabile, con PostgreSQL, OpenRouter e WhatsApp Business. I criteri originari di TEC-003, TEC-004 e US-001 confluiscono qui; la deroga per l'implementazione nello spike è registrata in AGENTS §8.
 - **Acceptance criteria:**
   - Un rapporto in `docs/spikes/` documenta installazione e versionamento di Hermes, integrazione con OpenRouter e disponibilità dell'identificativo di modello `gpt-6.1-terra`.
   - Il rapporto valuta il collegamento alle API WhatsApp Business tramite l'app Meta esistente, webhook, HTTPS, autorizzazione dei numeri e alternative se non direttamente supportato.
   - Il rapporto valuta accesso DML a PostgreSQL, isolamento delle credenziali di migrazione e impedimento del DDL, con indicazione delle verifiche necessarie.
   - Il rapporto espone prerequisiti, rischi, eventuali costi, raccomandazioni e decisioni ancora da concordare; non include segreti.
-
-#### TEC-004 — Ambiente Hermes e accesso ai dati
-
-- **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
-- **Dependencies:** SPIKE-001, TEC-003
-- **Requirements:** REQ-AGENT-001, REQ-AGENT-002, REQ-DB-002, REQ-NFR-002
-- **Design references:** TECHNICAL-DESIGN §1, §2, §3, §5, §6, §7, §8, §9
-- **Acceptance criteria:**
   - Hermes e PostgreSQL si avviano localmente con Docker Compose, versioni fissate e configurazione documentata senza segreti reali.
+  - Prisma applica migrazioni versionate da uno stato pulito e su uno schema esistente; non sono introdotte tabelle di dominio non richieste.
+  - Le credenziali dell'agente sono separate da quelle delle migrazioni, che non sono disponibili all'agente. Test su PostgreSQL reale e una prova tramite l'agente verificano DML consentito e rifiuto del DDL.
   - Con credenziali configurate, una prova documentata ottiene una risposta tramite OpenRouter; il modello è configurabile e l'identificativo effettivo è verificato.
-  - Una prova tramite l'agente verifica DML e rifiuto del DDL su PostgreSQL reale; l'agente non riceve credenziali di migrazione.
-  - I log e la configurazione rispettano REQ-NFR-002; errori e prerequisiti sono documentati.
-
-#### US-001 — Conversazione WhatsApp Business
-
-- **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
-- **Dependencies:** SPIKE-001, TEC-004
-- **Requirements:** REQ-WA-001, REQ-WA-002, REQ-NFR-002
-- **Design references:** TECHNICAL-DESIGN §2, §3, §6, §7, §8, §9
-- **Description:** Come interlocutore autorizzato, voglio conversare con l'agente su WhatsApp, così da ricevere risposte tramite il canale abituale.
-- **Acceptance criteria:**
   - Usando l'app Meta configurata, un messaggio di un numero autorizzato riceve una risposta tramite Hermes e OpenRouter; è documentata una prova reale end-to-end.
-  - Le richieste webhook prive di autenticazione valida sono rifiutate; i messaggi da numeri non autorizzati non raggiungono l'agente.
-  - I test verificano webhook e autorizzazione, compresi casi negativi; i log non contengono messaggi, numeri o credenziali.
-  - Prerequisiti, configurazione e prova sono documentati senza segreti reali.
+  - Le richieste webhook prive di autenticazione valida sono rifiutate; i messaggi da numeri non autorizzati non raggiungono l'agente. I test verificano webhook e autorizzazione, compresi casi negativi.
+  - Prerequisiti, configurazione senza segreti, comandi per avvio, migrazione e test, errori e prove sono documentati. Log e configurazione rispettano REQ-NFR-002: i log non contengono messaggi, numeri o credenziali.
 
 ### EPIC-003 — Dati e operatività
 
 **Scope:** database, migrazioni, installazione, aggiornamento e continuità operativa.
 
-#### TEC-003 — PostgreSQL, migrazioni e privilegi
-
-- **Epic:** EPIC-003 — Dati e operatività
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
-- **Dependencies:** TEC-002, SPIKE-001
-- **Requirements:** REQ-DB-001, REQ-DB-002
-- **Design references:** TECHNICAL-DESIGN §1, §3, §4, §5, §7, §8, §9
-- **Acceptance criteria:**
-  - PostgreSQL è avviabile localmente e Prisma applica migrazioni versionate da uno stato pulito e su uno schema esistente; non sono introdotte tabelle di dominio non richieste.
-  - Le credenziali dell'agente sono separate da quelle delle migrazioni, che non sono disponibili all'agente.
-  - Test su PostgreSQL reale verificano le operazioni DML consentite e il rifiuto di DDL con le credenziali dell'agente.
-  - Prerequisiti, configurazione senza segreti e comandi per avvio, migrazione e test sono documentati.
-
 #### TEC-005 — Deploy e continuità operativa
 
 - **Epic:** EPIC-003 — Dati e operatività
 - **Type:** Task · **Priority:** P1 · **Status:** Todo
-- **Dependencies:** TEC-003, TEC-004, US-001
+- **Dependencies:** SPIKE-001
 - **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
 - **Acceptance criteria:**
@@ -142,11 +110,16 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 1. TEC-001.
 2. TEC-002.
-3. SPIKE-001.
-4. TEC-003.
-5. TEC-004.
-6. US-001.
-7. TEC-005 e TEC-006.
+3. SPIKE-001, che include ricerca e stack locale completo.
+4. TEC-005 e TEC-006.
+
+## Items confluiti
+
+Su richiesta dell'utente, i seguenti item non sono più assegnati separatamente alla v0.1.0: i loro criteri sono confluiti in SPIKE-001 e non sono considerati completati fino alla sua chiusura. Gli ID restano riservati; il dettaglio originario è disponibile nella storia Git.
+
+- TEC-003 — PostgreSQL, migrazioni e privilegi.
+- TEC-004 — Ambiente Hermes e accesso ai dati.
+- US-001 — Conversazione WhatsApp Business.
 
 ## Unassigned backlog
 

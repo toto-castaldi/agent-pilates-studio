@@ -8,11 +8,11 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Verifica delle integrazioni da avviare | 2/8 items done (25%) |
+| v0.1.0 | Open | Verifica e realizzazione dello stack da avviare | 2/5 items done (40%) |
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 6 |
+| Todo | 3 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 2 |
@@ -36,7 +36,7 @@ None.
 
 | Priority | Item | Epic | Title |
 | -------- | ---- | ---- | ----- |
-| P0 | SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni di Hermes |
+| P0 | SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo |
 
 ## Closed versions
 
@@ -44,4 +44,4 @@ None.
 
 ## Notes
 
-- Integrazioni Hermes e modello proposto da verificare con SPIKE-001.
+- TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001; integrazioni e modello proposto restano da verificare.
