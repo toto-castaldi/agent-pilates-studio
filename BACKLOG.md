@@ -87,7 +87,7 @@
   - Usando l'app Meta configurata, un messaggio di un numero autorizzato riceve una risposta tramite Hermes e OpenRouter; è documentata una prova reale end-to-end.
   - Le richieste webhook prive di autenticazione valida sono rifiutate; i messaggi da numeri non autorizzati non raggiungono l'agente. I test verificano webhook e autorizzazione, compresi casi negativi.
   - Prerequisiti, configurazione senza segreti, comandi per avvio, migrazione e test, errori e prove sono documentati. Log e configurazione rispettano REQ-NFR-002: i log non contengono messaggi, numeri o credenziali.
-- **Blocked by:** Decisione dell'utente sulla modifica della propria password consentita da PostgreSQL al ruolo agente; per la chiusura sono inoltre necessarie le prove reali con credenziali e servizi Meta/OpenRouter.
+- **Blocked by:** Configurazione e prove reali con credenziali e servizi Meta/OpenRouter e HTTPS pubblico; l'eccezione PostgreSQL sulla modifica della propria password è stata accettata dall'utente e registrata in REQ-DB-002.
 
 ### EPIC-003 — Dati e operatività
 

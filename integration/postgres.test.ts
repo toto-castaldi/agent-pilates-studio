@@ -145,6 +145,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       'CREATE TEMP TABLE forbidden (id int)',
       'CREATE TABLE public.forbidden (id int)',
       'CREATE SCHEMA forbidden',
+      "ALTER ROLE studio_migrator PASSWORD 'synthetic-new-password'",
       'SET ROLE studio_migrator',
       'SELECT * FROM public._prisma_migrations',
       'SELECT app.privilege_probe_function()',
@@ -159,6 +160,10 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     // This availability risk is documented and must not be mistaken for schema DDL permission.
     assert.equal((await agent.query("ALTER ROLE studio_agent PASSWORD 'synthetic-new-password'")).command, 'ALTER');
     compose('run', '--rm', 'db-bootstrap');
+    await agent.end();
+    agent = new Client({ ...connection, user: 'studio_agent', password: passwords.agent });
+    await agent.connect();
+    assert.equal((await agent.query('SELECT current_user')).rows[0].current_user, 'studio_agent');
   } finally {
     await agent?.end();
     await migrator?.end();

@@ -39,7 +39,7 @@ L'immagine Hermes esaminata non contiene `psql`, `psycopg` né `psycopg2`; conti
 
 Il test `npm run test:db` ha applicato migrazioni su un PostgreSQL reale isolato, sia iniziali sia su schema esistente, e verificato DML, rifiuto del DDL sugli schemi, rifiuto di `TRUNCATE`, accesso ai metadati, esecuzione di una funzione e `SET ROLE` verso il migratore. `pg_hba.conf` impedisce inoltre all'agente di connettersi agli altri database del cluster, inclusi quelli creati successivamente. Nello stesso test il plugin supera `hermes plugins doctor` e viene invocato tramite il registro dei tool dell'immagine Hermes reale: usa il ruolo `studio_agent`, esegue DML e riceve `42501` per DDL sugli schemi, tabelle temporanee e metadati delle migrazioni. Non è ancora una prova di chiamata generata dal modello.
 
-**Decisione aperta sui privilegi:** il test su PostgreSQL reale conferma che un ruolo di login senza `CREATEROLE` può comunque cambiare la propria password con `ALTER ROLE`. PostgreSQL consente anche alcune altre operazioni sul proprio ruolo; quindi non si può descrivere il ruolo come capace *esclusivamente* di DML in senso assoluto. Questa operazione non modifica le tabelle, ma può interrompere la connettività dell'agente. PostgreSQL non offre un semplice `REVOKE` per eliminarla; si attende una decisione dell'utente prima di considerare accettabile questa limitazione o introdurre una protezione aggiuntiva.
+**Decisione sui privilegi:** il test su PostgreSQL reale conferma che un ruolo di login senza `CREATEROLE` può comunque cambiare la propria password con `ALTER ROLE`. PostgreSQL consente anche alcune altre operazioni sul proprio ruolo; quindi non si può descrivere il ruolo come capace *esclusivamente* di DML in senso assoluto. Questa operazione non modifica le tabelle, ma può interrompere la connettività dell'agente. PostgreSQL non offre un semplice `REVOKE` per eliminarla. L'utente ha accettato il comportamento standard e il rischio di interruzione; il test verifica che l'operatore può ripristinare la password eseguendo nuovamente il bootstrap e ricollegarsi con il segreto originale. La modifica della password del ruolo migratore è negata all'agente. L'eccezione è registrata in REQ-DB-002.
 
 ## Limits, costs and risks
 
@@ -47,12 +47,11 @@ Il test `npm run test:db` ha applicato migrazioni su un PostgreSQL reale isolato
 - Docker e Docker Compose sono disponibili nell'ambiente di lavoro; l'immagine di Hermes scaricata occupa circa 3,2 GB. Hermes e PostgreSQL sono fissati per versione e digest nella configurazione Compose.
 - Il terminale dell'agente non costituisce di per sé un confine di sicurezza: evitare socket Docker, credenziali amministrative e mount sensibili accessibili all'agente; verificare anche eventuali percorsi indiretti.
 - Le sessioni SQLite contengono conversazioni: non sono log, ma sono dati sensibili da proteggere. Nessuna chiave, numero o messaggio reale va inserito nel repository o nei log.
-- La configurazione dello stack passa le prove locali sintetiche, ma resta aperta la decisione sulle operazioni che PostgreSQL consente al ruolo su sé stesso. Mancano inoltre la prova reale Meta/OpenRouter e la chiamata SQL generata dal modello. Questi risultati parziali non soddisfano i criteri di chiusura.
+- La configurazione dello stack passa le prove locali sintetiche; l'utente ha accettato l'eccezione standard PostgreSQL sulla modifica della propria password. Mancano la prova reale Meta/OpenRouter e la chiamata SQL generata dal modello. Questi risultati parziali non soddisfano i criteri di chiusura.
 
 ## Recommendations
 
 - Fissare release e digest delle immagini, isolare la migrazione e applicare privilegi minimi effettivi su PostgreSQL.
-- Concordare con l'utente come trattare la modifica della propria password consentita da PostgreSQL prima di considerare adeguato il ruolo.
 - Mantenere la mitigazione dei log e definire una diagnostica sicura in TEC-005; verificare con l'app Meta effettiva firma, allowlist e risposta reale.
 - Documentare configurazione e prove senza segreti; scegliere eventuali alternative con l'utente se le integrazioni richieste non risultano compatibili.
 

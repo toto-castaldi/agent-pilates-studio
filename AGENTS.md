@@ -34,7 +34,7 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 
 ## 5. Domain rules
 
-- L'agente può eseguire DML ma non DDL; usare credenziali distinte per le migrazioni, non disponibili all'agente. Verificare i privilegi su PostgreSQL reale.
+- L'agente può eseguire DML ma non DDL sugli schemi; usare credenziali distinte per le migrazioni, non disponibili all'agente. È accettata l'eccezione PostgreSQL che permette al ruolo di cambiare la propria password. Verificare i privilegi su PostgreSQL reale.
 - Solo i numeri autorizzati in configurazione possono interagire; i webhook non autenticati devono essere rifiutati.
 - I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
 

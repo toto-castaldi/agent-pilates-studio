@@ -8,7 +8,7 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Stack in verifica, decisione sui privilegi in attesa | 2/5 items done (40%) |
+| v0.1.0 | Open | Stack in verifica, prove esterne in attesa | 2/5 items done (40%) |
 
 | Item state | Count |
 | ---------- | ----: |
@@ -25,7 +25,7 @@ None.
 
 | Item | Epic | Title | Reason |
 | ---- | ---- | ----- | ------ |
-| SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo | In attesa della decisione sulla modifica della propria password consentita al ruolo PostgreSQL; prove reali Meta/OpenRouter da eseguire. |
+| SPIKE-001 | EPIC-002 — Agente e integrazioni | Verifica delle integrazioni e stack locale completo | In attesa di configurazione e prove reali con Meta/OpenRouter e HTTPS pubblico. |
 
 ## Recently completed
 

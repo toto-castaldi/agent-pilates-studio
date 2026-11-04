@@ -4,7 +4,7 @@ Progetto per installare e aggiornare [Hermes Agent](https://hermes-agent.nousres
 
 ## Stato
 
-La v0.1.0 include una configurazione locale Compose per PostgreSQL e Hermes, con OpenRouter, il gateway WhatsApp Cloud nativo e un tool SQL diretto. La soluzione è ancora in verifica: resta aperta una limitazione dei privilegi PostgreSQL e le prove reali con OpenRouter e Meta non sono ancora state eseguite.
+La v0.1.0 include una configurazione locale Compose per PostgreSQL e Hermes, con OpenRouter, il gateway WhatsApp Cloud nativo e un tool SQL diretto. La soluzione è ancora in verifica: le prove reali con OpenRouter e Meta non sono ancora state eseguite.
 
 ## Scaffold e verifiche locali
 
@@ -71,7 +71,9 @@ docker compose ps
 
 Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni non segrete sono in `.env.example`, copiabile in `.env`. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** `/whatsapp/webhook` a quella porta senza alterare il corpo della richiesta. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi.
 
-Il plugin nativo `studio_sql_query` riceve una singola query SQL ed eventuali parametri `$1`, `$2`, ecc. Hermes si collega direttamente come `studio_agent`: PostgreSQL autorizza DML e rifiuta il DDL sugli schemi. Non si usa MCP. **Limitazione aperta:** PostgreSQL permette comunque al ruolo di modificare la propria password, con il rischio di interrompere l'accesso; non sono privilegi esclusivamente DML in senso assoluto. È in attesa di decisione prima dell'uso con dati reali. I dati delle sessioni di Hermes sono in un volume SQLite separato da PostgreSQL e devono essere protetti.
+Il plugin nativo `studio_sql_query` riceve una singola query SQL ed eventuali parametri `$1`, `$2`, ecc. Hermes si collega direttamente come `studio_agent`: PostgreSQL autorizza DML e rifiuta il DDL sugli schemi. Non si usa MCP. **Eccezione accettata:** PostgreSQL permette comunque al ruolo di modificare la propria password, con il rischio di interrompere l'accesso; non sono privilegi esclusivamente DML in senso assoluto. I dati delle sessioni di Hermes sono in un volume SQLite separato da PostgreSQL e devono essere protetti.
+
+Se la password del ruolo agente è stata cambiata accidentalmente, l'operatore può ripristinare quella contenuta nel file `db-agent` conservato esternamente, rieseguendo `docker compose run --rm db-bootstrap`. Il comando riallinea anche il ruolo di migrazione al relativo file di segreto: conservare entrambi i file originali e non rendere disponibile all'agente quello di migrazione.
 
 **Privacy e diagnostica:** la release Hermes usata può inserire numeri e messaggi nei log. Per evitarlo, il processo gateway è eseguito senza output e logging Python; i container Hermes e PostgreSQL usano il logging driver Docker `none`. Non sono quindi disponibili log dettagliati di questi due servizi: verificare almeno `docker compose ps` e lo stato di salute. La diagnostica sicura e la continuità operativa restano da completare; non aggirare queste protezioni con comandi o profili Hermes alternativi senza rivalutare la privacy.
 
