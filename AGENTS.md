@@ -61,7 +61,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 ## 8. Process overrides
 
-None.
+- Per SPIKE-001, su richiesta dell'utente, lo spike comprende anche l'implementazione dello stack locale e i criteri originariamente assegnati a TEC-003, TEC-004 e US-001, confluiti nello spike. In deroga a `docs/PROCESS.md` §§1, 4.3 e 4.4, l'item può comprendere il lavoro originariamente suddiviso in più item e il suo codice implementativo può essere committato e, previa richiesta esplicita, integrato dal branch dello spike; non è limitato alla sola ricerca. Restano obbligatori il rapporto, tutti i criteri di accettazione, la Definition of Done e le altre regole di sicurezza e di merge.
 
 ## 9. Security and configuration
 
