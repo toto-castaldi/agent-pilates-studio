@@ -175,7 +175,8 @@
 #### SPIKE-002 — Identità del mittente e contesto dell'agente
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Type:** Spike · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `spike/SPIKE-002-identita-mittente-contesto-agente`
 - **Dependencies:** none
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §5, §6, §7, §10
