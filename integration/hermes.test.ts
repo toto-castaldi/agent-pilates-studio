@@ -75,14 +75,23 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await migrator.connect();
     await migrator.query('CREATE TABLE app.stack_probe (id int PRIMARY KEY, value text NOT NULL)');
     const allowlistFile = join(directory, 'whatsapp-allowed-users');
-    await writeFile(allowlistFile, '');
+    const assertSafePreflight = () => assert.throws(() => compose('run', '--rm', '--no-deps', 'hermes'), (error: unknown) => {
+      const output = error as { stdout?: string; stderr?: string };
+      const combined = `${output.stdout ?? ''}${output.stderr ?? ''}`;
+      assert.match(combined, /hermes_preflight_failed/);
+      assert.doesNotMatch(combined, /synthetic-app-secret|synthetic-access-token|synthetic-invalid-allowlist/);
+      return true;
+    });
     try {
-      assert.throws(() => compose('run', '--rm', '--no-deps', 'hermes'), (error: unknown) => {
-        const output = error as { stdout?: string; stderr?: string };
-        assert.match(`${output.stdout ?? ''}${output.stderr ?? ''}`, /required Hermes secret file is missing or empty/);
-        return true;
-      });
+      await writeFile(allowlistFile, '');
+      assertSafePreflight();
+      await writeFile(allowlistFile, 'synthetic-invalid-allowlist');
+      assertSafePreflight();
+      await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
+      await chmod(allowlistFile, 0o644);
+      assertSafePreflight();
     } finally {
+      await chmod(allowlistFile, 0o600);
       await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
     }
     compose('up', '-d', '--wait', '--wait-timeout', '120', 'hermes');
@@ -140,10 +149,22 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     const allowed = payload('15555550102', 'text', 'synthetic-allowed-message');
     assert.equal((await post(allowed, signed(allowed))).status, 200);
     await delay(8_000);
+    await assert.rejects(migrator.query("SELECT 'synthetic-postgres-credential'::integer"), (error: unknown) => {
+      assert.equal((error as { code?: string }).code, '22P02');
+      return true;
+    });
 
-    for (const container of [databaseId, gatewayId]) {
+    for (const [container, expected] of [[databaseId, 'postgres_launch'], [gatewayId, 'hermes_launch']]) {
       const logDriver = execFileSync('docker', ['inspect', '--format', '{{.HostConfig.LogConfig.Type}}', container], { encoding: 'utf8' }).trim();
-      assert.equal(logDriver, 'none');
+      assert.equal(logDriver, 'local');
+      const options = JSON.parse(execFileSync('docker', ['inspect', '--format', '{{json .HostConfig.LogConfig.Config}}', container], { encoding: 'utf8' })) as Record<string, string>;
+      assert.equal(options['max-size'], '1m');
+      assert.equal(options['max-file'], '3');
+      const log = execFileSync('docker', ['logs', container], { encoding: 'utf8', stdio: 'pipe' });
+      assert.deepEqual(log.trim().split('\n'), [expected]);
+      for (const forbidden of [...Object.values(secrets), '15555550101', '15555550102', 'synthetic-unauthorized-message', 'synthetic-allowed-message', 'synthetic-postgres-credential']) {
+        assert.equal(log.includes(forbidden), false);
+      }
     }
     const inspection = [
       'import json',
@@ -185,6 +206,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     const newDatabaseId = compose('ps', '-q', 'postgres').trim();
     assert.notEqual(newDatabaseId, databaseId);
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{.Image}}', newDatabaseId], { encoding: 'utf8' }).trim(), sourceImage);
+    assert.equal(execFileSync('docker', ['logs', newDatabaseId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'postgres_launch');
     migrator = new Client({ host: address(newDatabaseId), port: 5432, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await migrator.connect();
     assert.equal((await migrator.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
