@@ -214,6 +214,21 @@
   - L'harness è escluso da `npm test` e dalla CI, richiede credenziali OpenRouter esterne e si arresta con un messaggio chiaro se mancano; non scrive segreti nei log e rimuove le risorse isolate al termine.
   - README e documentazione descrivono prerequisiti, costi indicativi, esecuzione, interpretazione degli esiti e registrazione dei risultati delle prove reali.
 
+#### US-002 — Registrare una regola di allenamento
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-010, TEC-011, TEC-012
+- **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §3, §4, §5
+- **Description:** Come titolare o collaboratore, voglio comunicare all'agente via WhatsApp l'abitudine settimanale di un cliente, così che venga registrata come regola con autore e data.
+- **Acceptance criteria:**
+  - Un messaggio come "Antonio Rossi si allena tutti i venerdì alle 9" registra una regola attiva con testo pulito, venerdì alle 09:00, il cliente collegato, la data di inserimento e l'autore ricavato dal sistema; l'agente risponde con un riepilogo.
+  - Una regola con più giorni e orari ("Cristina Neri il lunedì alle 8 e il giovedì alle 15") e una di gruppo ("Marco Bianchi e Lucia Verdi insieme il martedì alle 18") sono registrate con tutti gli slot e i clienti; la scomposizione è decisa dall'agente.
+  - Un cliente nuovo viene creato con nome e cognome, chiedendo il cognome se manca; con il solo nome l'agente usa l'unico cliente corrispondente oppure chiede il cognome se ce ne sono più di uno.
+  - L'agente chiede conferma solo in caso di ambiguità, ad esempio orario o giorno mancanti, e altrimenti registra senza conferma.
+  - Test su PostgreSQL reale verificano il percorso di scrittura e che l'autore non possa essere indicato dal modello; gli scenari di questi casi sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -229,6 +244,7 @@ v0.2.0:
 2. TEC-010.
 3. TEC-011.
 4. TEC-012.
+5. US-002.
 
 ## Items confluiti
 
