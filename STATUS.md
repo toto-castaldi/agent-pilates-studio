@@ -25,7 +25,7 @@ None.
 
 | Item | Epic | Reason | Branch |
 | ---- | ---- | ------ | ------ |
-| TEC-005 | EPIC-003 — Dati e operatività | Il filtro locale del proxy è verificato con 502 sintetici; restano da verificare log e streaming esterni Cloudflare prima di attivare il gateway. | `task/TEC-005-deploy-continuita-operativa` |
+| TEC-005 | EPIC-003 — Dati e operatività | Il filtro locale è verificato con 502 sintetici; restano da verificare altri log esterni e formati locali prima di attivare il gateway. | `task/TEC-005-deploy-continuita-operativa` |
 
 ## Recently completed
 
@@ -48,4 +48,4 @@ None.
 ## Notes
 
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.
-- La diagnostica sicura resta a TEC-005; il filtro locale del proxy è attivo, i log esterni restano da verificare. I segreti restano esterni e ignorati da Git.
+- Il filtro locale del proxy è attivo; diagnostica sicura e altri log esterni restano da verificare. Lo streaming remoto del tunnel condiviso è vietato operativamente; i segreti restano esterni e ignorati da Git.
