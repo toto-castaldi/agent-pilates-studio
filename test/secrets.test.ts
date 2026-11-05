@@ -17,7 +17,7 @@ test('secret initialization is private and never replaces existing passwords', a
     const first = await readFile(passwordFile, 'utf8');
     assert.match(first, /^[a-f0-9]{64}\n$/);
     assert.equal((await stat(directory)).mode & 0o077, 0);
-    for (const name of ['db-admin', 'db-migrator', 'db-agent', 'whatsapp-verify-token']) {
+    for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'whatsapp-verify-token']) {
       assert.equal((await stat(join(directory, name))).mode & 0o077, 0);
     }
     run();

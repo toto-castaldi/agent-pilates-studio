@@ -6,6 +6,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+### Added
+
+- Schema della pianificazione e broker isolato per attribuire inserimenti e disattivazioni ai mittenti WhatsApp autenticati, con prove di concorrenza e replay (TEC-010).
+
 ### Changed
 
 - Allineati documentazione e test all'avvio diretto Pi, preservando le impostazioni personali e verificando il quality gate (TEC-014).

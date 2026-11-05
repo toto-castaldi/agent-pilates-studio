@@ -210,7 +210,8 @@
 #### TEC-010 — Schema della pianificazione settimanale
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** Done
+- **Branch:** `task/TEC-010-schema-pianificazione-settimanale`
 - **Dependencies:** SPIKE-002
 - **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §4, §5, §8, §10
@@ -221,6 +222,7 @@
   - Il ruolo dell'agente può leggere e inserire clienti, regole, slot e legami; sulla tabella delle regole non ha `DELETE` e può aggiornare solo i campi di disattivazione, una sola volta; sulle altre tabelle mantiene il DML previsto da REQ-DB-002 e il DDL resta rifiutato.
   - Test su PostgreSQL reale verificano migrazione da uno stato pulito e dallo schema della v0.1.0, vincoli, unicità dei clienti, rifiuto di `DELETE` e di riscrittura delle regole, autore non falsificabile e rifiuto del DDL, con soli dati sintetici.
   - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte.
+- **Outcome:** Migrazione, vincoli e privilegi per clienti, regole, slot e legami; broker isolato e propagazione dell'autore da webhook WhatsApp firmati, con rifiuto di falsificazioni e replay. Verificati upgrade dalla v0.1.0, PostgreSQL reale, turni concorrenti con gateway reale e modello sintetico, avvio, recupero e quality gate; nessuna nuova prova Meta/OpenRouter reale. Completato il 2026-11-05.
 
 #### TEC-011 — Contesto dell'agente dello studio
 
