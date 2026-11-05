@@ -48,4 +48,4 @@ None.
 ## Notes
 
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.
-- La diagnostica sicura e la verifica della configurazione dei log del proxy esterno restano a TEC-005; i segreti reali rimangono locali e ignorati da Git.
+- La diagnostica sicura e la verifica della configurazione dei log del proxy esterno restano a TEC-005; è concordato il divieto operativo di streaming dei log del tunnel condiviso. I segreti reali rimangono locali e ignorati da Git.

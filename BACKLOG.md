@@ -116,13 +116,14 @@
 - **Epic:** EPIC-003 — Dati e operatività
 - **Type:** Task · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** SPIKE-001
-- **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002
+- **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002, REQ-NFR-004
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
 - **Acceptance criteria:**
   - Una procedura documentata installa e aggiorna intenzionalmente l'ambiente con versioni fissate su un server Linux predisposto con Docker Compose e HTTPS pubblico.
   - Una prova verifica il funzionamento in produzione e la persistenza dei dati dopo riavvio e aggiornamento.
   - Backup e ripristino vengono eseguiti e verificati con dati di prova; prerequisiti e passaggi sono documentati senza segreti.
   - Sono documentati e verificati stato e disponibilità dei servizi e consultazione dei log nel rispetto di REQ-NFR-002.
+  - La procedura operativa documenta il divieto di avviare lo streaming remoto dei log del tunnel condiviso, dal dashboard o da CLI, e chiarisce che è una regola operativa, non un blocco tecnico (REQ-NFR-004).
 
 ## Dependencies and suggested order
 
