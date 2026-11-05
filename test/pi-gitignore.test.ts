@@ -25,6 +25,10 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
     }
     for (const path of [
       '.pi/auth.json',
+      '.pi/credentials.json',
+      '.pi/models.json',
+      '.pi/mcp.json',
+      '.pi/logs/private.log',
       '.pi/local/settings.json',
       '.pi/local/auth.json',
       '.pi/local/sessions/example.jsonl',
@@ -35,6 +39,8 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       '.pi/prompts/private.md',
       '.pi/extensions/unreviewed.ts',
       '.pi/skills/private/SKILL.md',
+      '.env',
+      '.local/secrets/db-admin',
     ]) {
       assert.equal(isIgnored(path), true, `${path} must remain ignored`);
     }

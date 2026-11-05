@@ -30,35 +30,18 @@ Le prove end-to-end con servizi e credenziali reali si eseguono separatamente co
 
 ## Configurazione Pi
 
-Avviare Pi dalla directory del progetto con:
+Con Pi installato, avviarlo direttamente dalla radice del progetto:
 
 ```bash
-sh scripts/pi.sh
-# Per scegliere una sessione: sh scripts/pi.sh --resume
+pi
+# Per scegliere una sessione: pi --resume
 ```
 
-Lo script usa la directory personale `.pi/local/`, ignorata da Git, e avvia Pi nella radice del progetto. Sostituisce `PI_CODING_AGENT_DIR` e rimuove l'eventuale `PI_CODING_AGENT_SESSION_DIR` ereditata, per isolare le sessioni; l'opzione esplicita Pi `--session-dir` continua a prevalere. Usare lo script a ogni avvio: lanciare direttamente `pi` con `PI_CODING_AGENT_DIR=./.pi` fa nuovamente coincidere le impostazioni personali con quelle versionate. Una sessione già avviata va chiusa e riaperta: `/reload` non cambia la sua directory personale.
+Il repository versiona `.pi/settings.json` e le skill in `.agents/skills/`. Dopo aver verificato le risorse, accordare fiducia al progetto in Pi per caricare le impostazioni e le risorse locali. La configurazione può includere preferenze e riferimenti a pacchetti o percorsi dell'ambiente dell'operatore: la disponibilità di tali risorse su un altro computer non è garantita. Rivedere le modifiche al file versionato prima di condividerle e non inserirvi credenziali.
 
-Il repository condivide `.pi/settings.json`, il template `.pi/prompts/avvio.md` e le skill in `.agents/skills/`. Pi legge anche `.pi/local/settings.json`: le risorse dei due livelli vengono combinate e, per le preferenze, quelle di progetto prevalgono. Per consentire modifiche personali persistenti, mantenere modello, tema e preferenze d'interfaccia solo nel file personale. `pi install --local` e altre operazioni esplicite sulla configurazione di progetto possono modificare il file condiviso: revisionarne sempre il diff.
+Pi usa normalmente `~/.pi/agent` come directory personale; `PI_CODING_AGENT_DIR` può indicarne un'altra. Le impostazioni del progetto prevalgono sulle preferenze personali e le liste di risorse vengono combinate. `PI_CODING_AGENT_SESSION_DIR` o `--session-dir` possono cambiare la posizione delle sessioni. Nessun launcher del progetto impone la separazione: se la directory personale coincide con la `.pi` del progetto, le modifiche alle preferenze possono aggiornare `.pi/settings.json` versionato. Sessioni, autenticazione, log e altri dati locali possono essere sensibili: proteggerli e non inserirli in Git.
 
-Dopo aver verificato le risorse e accordato fiducia al progetto in Pi, usare `/avvio` per ottenere un riepilogo e le prossime attività. Alcune estensioni e skill condivise puntano a percorsi dell'ambiente originale e potrebbero non essere disponibili altrove; i pacchetti possono richiedere l'installazione. La configurazione non garantisce da sola la portabilità. Non inserire credenziali nel file condiviso; eventuali estensioni locali vanno revisionate e ammesse singolarmente.
-
-### Migrazione dei dati Pi precedenti
-
-La nuova directory personale parte vuota. Prima di migrare, **chiudere tutte le sessioni Pi del progetto** e conservare una copia privata dei dati. Lo script crea `.pi/local/` se manca; in alternativa, dalla radice del progetto:
-
-```bash
-umask 077
-mkdir -p .pi/local
-# Copia solo i file esistenti, senza sovrascrivere quelli già presenti (cp GNU).
-for file in auth.json trust.json pi-voice.json models.json sessions; do
-  if [ -e ".pi/$file" ]; then cp -an ".pi/$file" .pi/local/; fi
-done
-```
-
-La copia non sincronizza sessioni già presenti nella destinazione: verificarle con `sh scripts/pi.sh --resume` prima di rimuovere qualsiasi originale. Altri file personali o di estensioni vanno valutati e copiati separatamente; cache e dipendenze possono essere ricreate. I file originali restano intatti e consentono il ritorno alla configurazione precedente. Proteggere entrambe le copie: autenticazione, sessioni e configurazioni di estensioni possono contenere dati sensibili e restano fuori da Git.
-
-Se si desidera recuperare preferenze personali da una precedente versione di `.pi/settings.json`, copiarle manualmente in `.pi/local/settings.json` senza copiare le liste di risorse condivise; non sovrascrivere preferenze personali già presenti. Per verificare con Pi installato, senza credenziali reali né rete, eseguire `npm run test:pi`: la prova usa una directory temporanea, un'estensione sintetica e Pi in modalità RPC.
+Per verificare Pi installato in modalità offline e senza credenziali reali, eseguire `npm run test:pi`. La prova avvia Pi direttamente in directory temporanee con impostazioni ed estensioni sintetiche: verifica caricamento delle risorse e precedenza, sia con directory distinte sia quando coincidono. Non ispeziona né modifica la configurazione personale esistente e non verifica la disponibilità delle risorse esterne configurate dall'operatore. La modalità offline disabilita l'attività di rete automatica di Pi, ma non è una sandbox di rete.
 
 ## Avvio locale con un comando
 

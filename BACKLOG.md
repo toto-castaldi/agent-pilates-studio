@@ -173,7 +173,7 @@
 #### TEC-014 — Allineamento delle verifiche alla configurazione Pi
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Type:** Task · **Priority:** P0 · **Status:** Done
 - **Branch:** `task/TEC-014-allineamento-verifiche-configurazione-pi`
 - **Dependencies:** TEC-013
 - **Requirements:** REQ-NFR-001, REQ-NFR-002, REQ-NFR-003, REQ-NFR-007
@@ -184,6 +184,7 @@
   - Le verifiche Git continuano a proteggere sessioni, autenticazione, log, credenziali e dati locali; nessun segreto o dato personale è inserito nel repository o esposto nei risultati. Impostazioni e dati personali esistenti non sono modificati senza accordo.
   - Il README e la documentazione pertinente descrivono l'avvio e le risorse Pi effettive senza indicare procedure o file rimossi; le eventuali limitazioni non verificate sono esplicite.
   - Da ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`; la CI continua a eseguire il quality gate senza deploy automatico.
+- **Outcome:** Test e README allineati all'avvio diretto Pi, senza ripristinare i file rimossi o leggere le impostazioni personali. Verificati regole Git, contratto CI e quality gate da clone pulito; Pi 1.5.0 offline ha superato due prove sintetiche con directory distinte e coincidenti. L'esecuzione remota GitHub e la disponibilità delle risorse personali esterne non sono state verificate. Completato il 2026-11-05.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
