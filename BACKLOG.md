@@ -17,7 +17,7 @@
 
 ### EPIC-001 — Fondamenta del progetto
 
-**Scope:** inizializzazione, scaffold, quality gate e integrazione continua.
+**Scope:** inizializzazione, strumenti di sviluppo, scaffold, quality gate e integrazione continua.
 
 #### TEC-001 — Kickoff
 
@@ -53,7 +53,8 @@
 #### TEC-006 — Integrazione continua
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** Done
+- **Branch:** `task/TEC-006-integrazione-continua`
 - **Dependencies:** TEC-002, SPIKE-001
 - **Requirements:** REQ-NFR-001, REQ-NFR-003
 - **Design references:** TECHNICAL-DESIGN §7, §8, §9
@@ -61,6 +62,23 @@
   - GitHub Actions esegue installazione, lint, controllo dei tipi, test e build, inclusi test di integrazione con PostgreSQL reale.
   - La pipeline segnala l'esito negativo dei controlli e non effettua deploy automatico.
   - Le prove end-to-end con credenziali e servizi esterni sono documentate separatamente; nessun segreto reale viene inserito nel repository o nei log.
+- **Outcome:** Workflow GitHub Actions con quality gate e test Docker per PostgreSQL e gateway Hermes, senza deploy né segreti reali. Sintassi, contratto e comandi verificati localmente; la prima esecuzione su GitHub richiede la pubblicazione del branch. Completato il 2026-11-05.
+
+#### TEC-007 — Allowlist Git per la configurazione Pi
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P1 · **Status:** Done
+- **Branch:** `task/TEC-007-allowlist-git-configurazione-pi`
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-002
+- **Design references:** PROCESS §3, §6; AGENTS §9
+- **Description:** Consentire il versionamento selettivo della configurazione e delle risorse Pi approvate, mantenendo esclusi i dati locali personali.
+- **Acceptance criteria:**
+  - `.gitignore` consente di versionare `.pi/settings.json` e `.pi/prompts/avvio.md`; le eventuali estensioni locali sono ammesse singolarmente dopo revisione, non tramite inclusione indiscriminata di `.pi`.
+  - Il template `/avvio` e la configurazione condivisa sono versionati dopo verifica; non contengono segreti o credenziali. Eventuali riferimenti personali nella configurazione sono segnalati prima della condivisione.
+  - Le skill esistenti in `.agents/skills/` rimangono versionate senza duplicazioni. Sessioni, autenticazione, log, cache e dipendenze installate di Pi restano esclusi da Git.
+  - Le regole di inclusione ed esclusione sono verificate con `git check-ignore` o test equivalenti e l'uso della configurazione condivisa è documentato senza segreti.
+- **Outcome:** Allowlist per configurazione Pi e template `/avvio`, con esclusione dei dati locali e delle estensioni non approvate; regole verificate con test Git e quality gate. I riferimenti personali esterni rimangono documentati come limite di portabilità. Completato il 2026-11-05.
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -115,7 +133,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 1. TEC-001.
 2. TEC-002.
 3. SPIKE-001, che include ricerca e stack locale completo.
-4. TEC-005 e TEC-006.
+4. TEC-005, TEC-006 e TEC-007 (quest'ultimo senza dipendenze).
 
 ## Items confluiti
 

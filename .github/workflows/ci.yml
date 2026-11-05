@@ -1,0 +1,40 @@
+name: Integrazione continua
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality gate e integrazione
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Configura Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Installa dipendenze
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Controllo dei tipi
+        run: npm run typecheck
+      - name: Test unitari
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Prepara immagini di integrazione
+        run: |
+          docker compose pull postgres
+          docker compose build hermes
+      - name: Test PostgreSQL reale e plugin SQL
+        run: npm run test:db
+      - name: Test gateway Hermes
+        run: npm run test:hermes

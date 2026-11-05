@@ -20,7 +20,7 @@ Questo documento registra le scelte iniziali e le decisioni aperte. Il comportam
 
 L'operatore configura e avvia l'ambiente locale o di produzione, applica le migrazioni con credenziali dedicate e gestisce aggiornamenti e recupero. L'interlocutore autorizzato invia messaggi tramite WhatsApp Business; il componente di integrazione verifica il webhook e l'autorizzazione, inoltra la richiesta a Hermes e restituisce la risposta. Hermes usa OpenRouter e può accedere a PostgreSQL con il solo ruolo agente.
 
-SPIKE-001 ha realizzato lo stack locale e verificato questo flusso in una prova reale con l'app Meta e OpenRouter; la continuità operativa e la CI sono affidate agli item successivi.
+SPIKE-001 ha realizzato lo stack locale e verificato questo flusso in una prova reale con l'app Meta e OpenRouter; la continuità operativa resta affidata a TEC-005 e la CI è stata configurata da TEC-006.
 
 ## 3. Modules
 
@@ -64,7 +64,9 @@ SPIKE-001 ha verificato isolamento dei segreti di migrazione, webhook e allowlis
 
 Per gli host Linux con Docker ma senza Node.js, TEC-005 introduce un'immagine temporanea di migrazione costruita da Node.js 24.14.0 fissato per digest e dal lockfile. L'installazione delle dipendenze precede il montaggio del solo segreto di migrazione; l'immagine usa la rete host per raggiungere PostgreSQL su loopback e non viene montata in Hermes. Il contesto Docker esclude configurazione locale e segreti. La prova PostgreSQL verifica anche questo percorso.
 
-Il progetto usa Biome 2.6.5 per il lint del codice TypeScript e degli script, TypeScript per controllo dei tipi e build e il test runner integrato di Node.js per i test; `npm test` ricompila prima di eseguirli. `npm run test:db` esegue le prove di migrazione e privilegi su PostgreSQL reale e verifica il plugin SQL tramite il registro Hermes. `npm run test:hermes` avvia lo stack in una rete Docker isolata e verifica gateway nativo, autenticazione e autorizzazione con dati sintetici e protezioni dei log. I test unitari verificano la logica al livello più economico; quelli di integrazione usano PostgreSQL reale per migrazioni e privilegi. I test dei webhook includono autenticazione e accessi negati. Le prove end-to-end reali con Meta e OpenRouter richiedono configurazione, rete e credenziali esterne e sono documentate separatamente; non sostituiscono i test automatici. TEC-005 verifica anche aggiornamento, persistenza e ripristino; TEC-006 configura la CI senza deploy automatico.
+Il progetto usa Biome 2.6.5 per il lint del codice TypeScript e degli script, TypeScript per controllo dei tipi e build e il test runner integrato di Node.js per i test; `npm test` ricompila prima di eseguirli. `npm run test:db` esegue le prove di migrazione e privilegi su PostgreSQL reale e verifica il plugin SQL tramite il registro Hermes. `npm run test:hermes` avvia lo stack in una rete Docker isolata e verifica gateway nativo, autenticazione e autorizzazione con dati sintetici e protezioni dei log. I test unitari verificano la logica al livello più economico; quelli di integrazione usano PostgreSQL reale per migrazioni e privilegi. I test dei webhook includono autenticazione e accessi negati. Le prove end-to-end reali con Meta e OpenRouter richiedono configurazione, rete e credenziali esterne e sono documentate separatamente; non sostituiscono i test automatici. TEC-005 verifica anche aggiornamento, persistenza e ripristino.
+
+TEC-006 configura GitHub Actions su push, pull request e avvio manuale: un job Linux esegue il quality gate e i due test di integrazione, preparando prima le immagini Docker fissate dal progetto. Il job usa soltanto dati sintetici, permessi di lettura del repository e action fissate per commit; non esegue deploy e non richiede segreti GitHub. Un test del contratto interpreta il workflow con `yaml` 2.9.1 e verifica trigger, comandi, permessi e assenza di condizioni che permettano di saltare o ignorare i controlli.
 
 ## 9. Configuration and local runtime
 
@@ -73,4 +75,3 @@ L'ambiente locale usa Docker Compose; la produzione presume un server Linux con 
 ## 10. Open decisions
 
 - Procedura di deploy, aggiornamento, backup/ripristino e verifica della disponibilità — TEC-005.
-- Configurazione CI e separazione delle prove con servizi esterni — TEC-006.
