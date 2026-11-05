@@ -48,4 +48,4 @@ None.
 ## Notes
 
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.
-- Il filtro locale del proxy è attivo; diagnostica sicura e altri log esterni restano da verificare. Lo streaming remoto del tunnel condiviso è vietato operativamente; i segreti restano esterni e ignorati da Git.
+- Il filtro locale del proxy è attivo; i log applicativi limitati a eventi fissi e il ripristino di stato Hermes sintetico sono stati verificati in prove isolate, anche su `jarvis`. Restano da verificare i log esterni e la produzione. Lo streaming remoto del tunnel condiviso è vietato operativamente; i segreti restano esterni e ignorati da Git.
