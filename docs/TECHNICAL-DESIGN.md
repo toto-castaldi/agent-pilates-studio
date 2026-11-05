@@ -75,3 +75,4 @@ L'ambiente locale usa Docker Compose; la produzione presume un server Linux con 
 ## 10. Open decisions
 
 - Procedura di deploy, aggiornamento, backup/ripristino e verifica della disponibilità — TEC-005.
+- Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato; REQ-NFR-002 resta vincolante.
