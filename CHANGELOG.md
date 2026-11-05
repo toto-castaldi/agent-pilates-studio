@@ -15,6 +15,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 - Backup quiescente e ripristino isolato di PostgreSQL e del volume Hermes, con procedura operativa e verifica anche su dati reali (TEC-005).
 - Test isolato di aggiornamento tra versioni di PostgreSQL e Hermes con persistenza dei dati sintetici (TEC-005).
 - Workflow GitHub Actions per il quality gate e i test di integrazione PostgreSQL e Hermes, senza deploy automatico (TEC-006).
+- Avvio locale con un comando, configurazione privata, migrazioni e healthcheck, con test su PostgreSQL e Hermes isolati (TEC-009).
 
 ### Changed
 

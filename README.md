@@ -24,7 +24,7 @@ Il lint con Biome controlla codice, test e script; il test smoke usa il test run
 
 ## Integrazione continua
 
-Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa la versione di Node.js indicata in `.nvmrc`, esegue i cinque comandi del quality gate e poi `npm run test:db` e `npm run test:hermes` con Docker Compose. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. Un test automatico controlla trigger, comandi e configurazione essenziale del workflow.
+Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa la versione di Node.js indicata in `.nvmrc`, esegue i cinque comandi del quality gate e poi i test `test:db`, `test:hermes`, `test:upgrade` e `test:start` con Docker Compose. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. Un test automatico controlla trigger, comandi e configurazione essenziale del workflow.
 
 Le prove end-to-end con servizi e credenziali reali si eseguono separatamente come descritto in [Hermes e WhatsApp Cloud](#hermes-e-whatsapp-cloud); non fanno parte della CI.
 
@@ -34,7 +34,33 @@ Il repository condivide `.pi/settings.json`, il template `.pi/prompts/avvio.md` 
 
 La configurazione condivisa contiene preferenze e percorsi dell'ambiente originale: alcune estensioni e skill esterne potrebbero non essere disponibili su altre macchine. Non garantisce quindi, da sola, l'installazione o il funzionamento di tali risorse. Pi può aggiornare le proprie impostazioni: controllare il diff prima di condividere modifiche. Non inserire credenziali in `.pi/settings.json`; autenticazione, sessioni, log, cache e dipendenze installate rimangono locali e ignorati da Git. Eventuali estensioni locali vanno revisionate e ammesse singolarmente.
 
-## Database locale
+## Avvio locale con un comando
+
+Servono Node.js 24.14.0 e npm 11.9.0, Docker e Docker Compose funzionanti, rete per immagini e dipendenze e credenziali Meta/OpenRouter. Da un clone nuovo, copiare l'esempio e renderlo privato, quindi compilare `.env` con un editor locale, senza inserire i valori nella cronologia della shell o in chat:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+# Compilare .env privatamente prima del comando seguente.
+npm run start:local
+```
+
+Impostare tre password database casuali e distinte di almeno 16 caratteri, i valori Meta/OpenRouter, il verify token configurato anche su Meta e l'allowlist di numeri internazionali in sole cifre, separati da virgole. `WHATSAPP_PHONE_NUMBER_ID` è l'identificativo Meta, non un numero telefonico. L'esempio non contiene valori reali. `.env` e la directory `.local/secrets/` contengono credenziali: mantenerli privati, fuori da Git e conservarne copie cifrate. Se si usa `SECRETS_DIR`, la directory deve essere privata (`0700`) e i suoi file privati (`0600`).
+
+Il comando reinstalla le dipendenze dal lockfile a ogni avvio, crea i file segreti senza sovrascriverli, avvia PostgreSQL, configura i ruoli, applica le migrazioni e avvia Hermes; aspetta gli healthcheck. Non elimina volumi. Se i file di segreto esistono già, i rispettivi valori in `.env` devono coincidere: in particolare, per uno stack esistente l'operatore deve riportare privatamente in `.env` le credenziali già conservate, senza rigenerarle. Una differenza arresta il comando prima del bootstrap; la rotazione è un'operazione distinta e intenzionale. Usare un solo operatore alla volta.
+
+In caso di configurazione non valida o errore il comando termina con esito negativo, senza stampare output grezzo o dati sensibili; verificare in privato configurazione, permessi, disponibilità Docker e porte. I servizi già avviati possono restare attivi dopo un errore. Verificare e arrestare senza eliminare i dati:
+
+```bash
+docker compose --env-file /dev/null ps
+docker compose --env-file /dev/null stop
+```
+
+Questi comandi non caricano `.env`; usare lo stesso eventuale nome di progetto Compose impostato nell'ambiente per l'avvio. La salute locale non verifica Meta, OpenRouter o la raggiungibilità pubblica. Il port forwarding verso `jarvis` e il proxy HTTPS sono esterni al comando. Non pubblicare `/health`; la prova temporanea conclusa non autorizza l'uso pubblico continuativo. L'audit privacy del proxy resta aperto e **non** va avviato lo streaming remoto dei log del tunnel condiviso, nemmeno per diagnostica.
+
+Per verificare il percorso con credenziali sintetiche e risorse Docker isolate: `npm run test:start`. Il test usa PostgreSQL reale, una rete interna per Hermes e rimuove solo il proprio progetto e i propri volumi temporanei; non prova le integrazioni reali Meta/OpenRouter.
+
+## Database locale — procedura manuale alternativa
 
 Servono Docker e Docker Compose funzionanti. Dalla directory del progetto, dopo `npm ci`:
 
@@ -83,7 +109,7 @@ docker compose up -d --build --wait hermes
 docker compose ps
 ```
 
-Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni non segrete sono in `.env.example`, copiabile in `.env`. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** il percorso del webhook a quella porta senza alterare il corpo della richiesta. Il percorso predefinito è `/whatsapp/webhook`; impostare `WHATSAPP_WEBHOOK_PATH` per usare un percorso già configurato. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi.
+Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni e le credenziali del comando unico sono descritte in `.env.example`; la procedura manuale continua a usare i file di segreto separati. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** il percorso del webhook a quella porta senza alterare il corpo della richiesta. Il percorso predefinito è `/whatsapp/webhook`; impostare `WHATSAPP_WEBHOOK_PATH` per usare un percorso già configurato. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi.
 
 Il plugin nativo `studio_sql_query` riceve una singola query SQL ed eventuali parametri `$1`, `$2`, ecc. Hermes si collega direttamente come `studio_agent`: PostgreSQL autorizza DML e rifiuta il DDL sugli schemi. Non si usa MCP. **Eccezione accettata:** PostgreSQL permette comunque al ruolo di modificare la propria password, con il rischio di interrompere l'accesso; non sono privilegi esclusivamente DML in senso assoluto. I dati delle sessioni di Hermes sono in un volume SQLite separato da PostgreSQL e devono essere protetti.
 

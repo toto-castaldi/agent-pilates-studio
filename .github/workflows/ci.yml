@@ -40,3 +40,5 @@ jobs:
         run: npm run test:hermes
       - name: Test aggiornamento isolato tra versioni
         run: npm run test:upgrade
+      - name: Test avvio locale con un comando
+        run: npm run test:start

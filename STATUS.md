@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Avvio locale semplificato da realizzare; accettazione privacy da verificare | 6/7 items done (86%) |
+| v0.1.0 | Open | Attività assegnate completate; accettazione privacy da verificare | 7/7 items done (100%) |
 
 I conteggi riguardano la v0.1.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 1 |
+| Todo | 0 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 6 |
+| Done | 7 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | 2026-11-05 |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | 2026-11-05 |
 | TEC-007 | EPIC-001 — Fondamenta del progetto | Allowlist Git per la configurazione Pi | 2026-11-05 |
 | TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | 2026-11-05 |
@@ -42,7 +43,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.

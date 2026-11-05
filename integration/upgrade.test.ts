@@ -31,6 +31,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
   const oldDockerfile = join(directory, 'Dockerfile.old');
   const env = {
     ...process.env,
+    COMPOSE_ENV_FILES: '/dev/null',
     SECRETS_DIR: directory,
     POSTGRES_PORT: '0',
     WHATSAPP_WEBHOOK_PORT: '0',
