@@ -1,6 +1,6 @@
 # TEC-005 — Procedura operativa e recupero
 
-**Stato:** procedura in sviluppo. Il gateway pubblico resta spento finché non siano verificati i log locali ed esterni nel rispetto di REQ-NFR-002; le prove di produzione e la diagnostica sicura non sono ancora completate. Questo documento non è una dichiarazione di rilascio.
+**Stato:** procedura in sviluppo. L'operatore ha autorizzato solo una prova pubblica temporanea e controllata con il rischio residuo dei log descritto in REQ-NFR-002; le prove di produzione e la diagnostica completa non sono ancora completate. Questo documento non è una dichiarazione di rilascio o un'autorizzazione all'uso continuativo.
 
 ## Prerequisiti e sicurezza
 
@@ -10,7 +10,7 @@
 - Usare un progetto Compose esplicito, dedicato e un solo operatore alla volta; riservare i nomi dei progetti e dei volumi per evitare corse con altri processi. Non interrompere o rimuovere risorse di altri progetti. Non usare `docker compose down --volumes` sul progetto di produzione.
 - **REQ-NFR-004:** non avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né tramite `cloudflared tail` o strumenti equivalenti. È un divieto operativo, non un blocco tecnico; non garantisce la sicurezza degli altri log.
 - L'operatore ha dichiarato che non sono configurate esportazioni Cloudflare e che non verranno configurate. Questa scelta non disabilita necessariamente la conservazione di eventi da parte di Cloudflare: verificare separatamente i dataset, i campi raccolti e gli altri sistemi di log.
-- Le richieste di verifica possono contenere token nell'URL. Prima di esporre il webhook o interromperne l'origine, verificare la protezione dei log del proxy e dei sistemi esterni, anche durante gli errori; non pubblicare `/health`. Il filtro locale documentato in `TEC-005-prove-preliminari.md` non dimostra l'assenza di ogni fuga.
+- Le richieste di verifica possono contenere token nell'URL. Prima di esporre il webhook o interromperne l'origine, verificare le mitigazioni disponibili del proxy e dei sistemi esterni, anche durante gli errori; non pubblicare `/health`. Il filtro locale documentato in `TEC-005-prove-preliminari.md` non dimostra l'assenza di ogni fuga. L'operatore ha accettato temporaneamente il rischio residuo solo per una prova controllata; se si rileva un'esposizione, interrompere la prova e coordinare la rotazione dei segreti coinvolti.
 
 ## Installazione intenzionale
 
@@ -29,7 +29,7 @@
    ```
 
    `scripts/migrate-docker.sh` non legge `.env`: le variabili `SECRETS_DIR` e `POSTGRES_PORT` vanno esportate esplicitamente. Il bootstrap e la migrazione usano credenziali separate, mai montate nel container dell'agente.
-3. Solo dopo aver verificato i log del proxy e dei servizi esterni, il percorso HTTPS e i segreti, avviare il gateway intenzionalmente con `docker compose -p "$PROJECT" up -d --build --wait hermes`. Verificare stato e salute con `docker compose -p "$PROJECT" ps`. Una prova reale Meta/OpenRouter richiede i servizi esterni e l'interlocutore autorizzato; non riportare messaggi, numeri o token nei risultati.
+3. Solo dopo i controlli e con autorizzazione esplicita, avviare il gateway intenzionalmente con `docker compose -p "$PROJECT" up -d --build --wait hermes`. Per la prova temporanea autorizzata applicare i limiti di REQ-NFR-002, verificare percorso HTTPS e segreti, e fermare il gateway alla conclusione. Verificare stato e salute con `docker compose -p "$PROJECT" ps`. Una prova reale Meta/OpenRouter richiede i servizi esterni e l'interlocutore autorizzato; non riportare messaggi, numeri o token nei risultati.
 
 ## Backup quiescente
 

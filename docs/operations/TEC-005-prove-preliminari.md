@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-05
 
-**Stato:** attività ripresa per ampliare le prove e individuare una soluzione o un debito esplicito; non costituisce una procedura di produzione completa. L'attivazione del gateway resta sospesa finché non siano soddisfatte o esplicitamente riconsiderate le condizioni di sicurezza.
+**Stato:** attività ripresa; l'operatore ha autorizzato una prova pubblica temporanea e controllata, accettando il rischio residuo dei log descritto in REQ-NFR-002. Non costituisce una procedura di produzione completa né un'autorizzazione all'uso continuativo.
 
 ## Installazione parziale
 
@@ -56,6 +56,6 @@ La versione di cloudflared rilevata sul server è `2026.10.7`; l'ispezione del c
 
 Le prove coprono alcuni successi ed errori sintetici e l'operatore esclude esportazioni Cloudflare; non dimostrano quali dati Cloudflare conservi internamente né coprono ogni formato di errore locale. Resta possibile che il verify token o altri dati sensibili compaiano in log non osservati. Il debito consiste nel verificare conservazione, campi e retention Cloudflare applicabili all'account, censire ulteriori destinazioni e formati locali e, se necessario, adottare e provare una mitigazione che non esponga token, numeri o messaggi, mantenendo il divieto di streaming remoto. Eventuali token esposti dovranno essere ruotati in modo coordinato con Meta.
 
-L'operatore ha chiesto di trovare una soluzione o rinviare questo approfondimento come debito. Questa registrazione nella documentazione del branch non è ancora un item nel backlog: `docs/PROCESS.md` §6.1 richiede di aggiungerlo su `main` dopo accordo, senza cambiare branch o integrare automaticamente il lavoro in corso. L'eventuale prova pubblica prima della verifica completa richiede una decisione esplicita sul rischio residuo; non è una dimostrazione di conformità a REQ-NFR-002.
+L'operatore ha chiesto di trovare una soluzione o rinviare questo approfondimento come debito e ha autorizzato una prova pubblica temporanea e controllata, accettando il rischio residuo. La prova non è una dimostrazione di conformità completa a REQ-NFR-002 né un'autorizzazione all'uso continuativo. Questa registrazione nella documentazione del branch non è ancora un item nel backlog: `docs/PROCESS.md` §6.1 richiede di aggiungerlo su `main` dopo accordo, senza cambiare branch o integrare automaticamente il lavoro in corso.
 
 Restano da completare e verificare le procedure di deploy e aggiornamento, il ripristino utilizzabile dall'operatore e le prove di produzione previste dai criteri di TEC-005.

@@ -117,7 +117,7 @@
 - **Type:** Task · **Priority:** P1 · **Status:** In Progress
 - **Branch:** `task/TEC-005-deploy-continuita-operativa`
 - **Dependencies:** SPIKE-001
-- **Description:** Proseguire il lavoro operativo senza attivare il gateway pubblico finché non siano verificati gli altri log esterni e i formati locali. Lo streaming remoto dei log del tunnel è vietato da REQ-NFR-004.
+- **Description:** Completare il lavoro operativo. L'operatore autorizza una sola prova pubblica controllata con il rischio residuo dei log del proxy documentato in REQ-NFR-002; l'audit completo è un debito da riportare sul backlog di `main`. Restano obbligatori le mitigazioni disponibili e il divieto di streaming remoto di REQ-NFR-004; la prova non autorizza l'uso continuativo.
 - **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002, REQ-NFR-004
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
 - **Acceptance criteria:**
