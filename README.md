@@ -30,9 +30,35 @@ Le prove end-to-end con servizi e credenziali reali si eseguono separatamente co
 
 ## Configurazione Pi
 
-Il repository condivide `.pi/settings.json`, il template `.pi/prompts/avvio.md` e le skill in `.agents/skills/`. Dopo aver verificato le risorse e accordato fiducia al progetto in Pi, usare `/avvio` per ottenere un riepilogo e le prossime attività; in una sessione già aperta, usare prima `/reload`.
+Avviare Pi dalla directory del progetto con:
 
-La configurazione condivisa contiene preferenze e percorsi dell'ambiente originale: alcune estensioni e skill esterne potrebbero non essere disponibili su altre macchine. Non garantisce quindi, da sola, l'installazione o il funzionamento di tali risorse. Pi può aggiornare le proprie impostazioni: controllare il diff prima di condividere modifiche. Non inserire credenziali in `.pi/settings.json`; autenticazione, sessioni, log, cache e dipendenze installate rimangono locali e ignorati da Git. Eventuali estensioni locali vanno revisionate e ammesse singolarmente.
+```bash
+sh scripts/pi.sh
+# Per scegliere una sessione: sh scripts/pi.sh --resume
+```
+
+Lo script usa la directory personale `.pi/local/`, ignorata da Git, e avvia Pi nella radice del progetto. Sostituisce `PI_CODING_AGENT_DIR` e rimuove l'eventuale `PI_CODING_AGENT_SESSION_DIR` ereditata, per isolare le sessioni; l'opzione esplicita Pi `--session-dir` continua a prevalere. Usare lo script a ogni avvio: lanciare direttamente `pi` con `PI_CODING_AGENT_DIR=./.pi` fa nuovamente coincidere le impostazioni personali con quelle versionate. Una sessione già avviata va chiusa e riaperta: `/reload` non cambia la sua directory personale.
+
+Il repository condivide `.pi/settings.json`, il template `.pi/prompts/avvio.md` e le skill in `.agents/skills/`. Pi legge anche `.pi/local/settings.json`: le risorse dei due livelli vengono combinate e, per le preferenze, quelle di progetto prevalgono. Per consentire modifiche personali persistenti, mantenere modello, tema e preferenze d'interfaccia solo nel file personale. `pi install --local` e altre operazioni esplicite sulla configurazione di progetto possono modificare il file condiviso: revisionarne sempre il diff.
+
+Dopo aver verificato le risorse e accordato fiducia al progetto in Pi, usare `/avvio` per ottenere un riepilogo e le prossime attività. Alcune estensioni e skill condivise puntano a percorsi dell'ambiente originale e potrebbero non essere disponibili altrove; i pacchetti possono richiedere l'installazione. La configurazione non garantisce da sola la portabilità. Non inserire credenziali nel file condiviso; eventuali estensioni locali vanno revisionate e ammesse singolarmente.
+
+### Migrazione dei dati Pi precedenti
+
+La nuova directory personale parte vuota. Prima di migrare, **chiudere tutte le sessioni Pi del progetto** e conservare una copia privata dei dati. Lo script crea `.pi/local/` se manca; in alternativa, dalla radice del progetto:
+
+```bash
+umask 077
+mkdir -p .pi/local
+# Copia solo i file esistenti, senza sovrascrivere quelli già presenti (cp GNU).
+for file in auth.json trust.json pi-voice.json models.json sessions; do
+  if [ -e ".pi/$file" ]; then cp -an ".pi/$file" .pi/local/; fi
+done
+```
+
+La copia non sincronizza sessioni già presenti nella destinazione: verificarle con `sh scripts/pi.sh --resume` prima di rimuovere qualsiasi originale. Altri file personali o di estensioni vanno valutati e copiati separatamente; cache e dipendenze possono essere ricreate. I file originali restano intatti e consentono il ritorno alla configurazione precedente. Proteggere entrambe le copie: autenticazione, sessioni e configurazioni di estensioni possono contenere dati sensibili e restano fuori da Git.
+
+Se si desidera recuperare preferenze personali da una precedente versione di `.pi/settings.json`, copiarle manualmente in `.pi/local/settings.json` senza copiare le liste di risorse condivise; non sovrascrivere preferenze personali già presenti. Per verificare con Pi installato, senza credenziali reali né rete, eseguire `npm run test:pi`: la prova usa una directory temporanea, un'estensione sintetica e Pi in modalità RPC.
 
 ## Avvio locale con un comando
 
