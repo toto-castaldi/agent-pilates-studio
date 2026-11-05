@@ -151,6 +151,21 @@
 
 **Goal:** Il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
+### EPIC-001 — Fondamenta del progetto
+
+#### TEC-013 — Separazione della configurazione Pi condivisa e personale
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** TEC-007
+- **Design references:** PROCESS §3, §6; AGENTS §9
+- **Description:** Separare le risorse Pi condivise dalle preferenze e dallo stato personali, mantenendo l'isolamento per progetto senza sporcare il file versionato durante l'uso ordinario.
+- **Acceptance criteria:**
+  - Le risorse condivise approvate, inclusi tool ed estensioni configurati, restano versionate e caricabili; preferenze e stato modificati dall'uso di Pi sono mantenuti separatamente e ignorati da Git.
+  - L'avvio usa directory distinte per impostazioni personali e di progetto; una prova ripetibile con Pi verifica che modifiche di preferenze personali non cambino `.pi/settings.json` versionato e che le risorse condivise restino disponibili.
+  - Sessioni, autenticazione, configurazione privata e altri dati locali esistenti non sono persi o esposti; la procedura di migrazione è reversibile, non include credenziali e non elimina automaticamente i dati originali.
+  - README documenta avvio, precedenza delle impostazioni, migrazione e limiti di portabilità; test ripetibili verificano separazione e regole Git usando dati sintetici.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -268,6 +283,8 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 4. TEC-005, TEC-006, TEC-007 (quest'ultimo senza dipendenze) e TEC-009.
 
 v0.2.0:
+
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato.
 
 1. SPIKE-002.
 2. TEC-010.
