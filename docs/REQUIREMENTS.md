@@ -109,13 +109,17 @@ Credenziali e segreti non devono essere inclusi nel repository; i log non devono
 
 GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su PostgreSQL reale, senza deploy automatico. Le prove che richiedono servizi esterni e credenziali reali devono essere documentate separatamente.
 
+#### REQ-NFR-004 — Divieto operativo di streaming dei log del tunnel
+
+Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né tramite `cloudflared tail` o strumenti equivalenti. Il divieto è una regola operativa, non un blocco tecnico; non sostituisce i requisiti di protezione degli altri log e dei dati previsti da REQ-NFR-002.
+
 ## 7. Release acceptance — v0.1.0
 
 - Da un ambiente pulito l'operatore avvia localmente Hermes e PostgreSQL, applica le migrazioni e verifica il quality gate.
 - Su PostgreSQL reale l'agente può eseguire DML e non DDL; le credenziali di migrazione non sono disponibili all'agente.
 - Con l'app Meta configurata, HTTPS pubblico e credenziali valide, un numero autorizzato invia un messaggio WhatsApp e riceve una risposta tramite Hermes e OpenRouter; numeri non autorizzati e webhook non autenticati sono respinti.
 - Sul server di produzione predisposto l'operatore installa e aggiorna l'ambiente; i dati persistono dopo riavvio e aggiornamento. Un backup viene ripristinato e verificato con dati di prova.
-- Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; GitHub Actions esegue le verifiche previste senza deploy automatico.
+- Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; la procedura documenta il divieto operativo di streaming dei log del tunnel condiviso; GitHub Actions esegue le verifiche previste senza deploy automatico.
 
 Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. SPIKE-001 ha verificato il modello effettivo e le integrazioni in una prova reale; eventuali cambi di scope richiedono accordo.
 
