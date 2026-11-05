@@ -10,3 +10,4 @@ A spike is a backlog item of type `Spike` (`SPIKE-NNN`) that answers explicit qu
 | Spike | Title | Outcome |
 | ----- | ----- | ------- |
 | [SPIKE-001](SPIKE-001-integrazioni-stack.md) | Verifica delle integrazioni e stack locale completo | Positive — integrazioni verificate; operatività e CI restano agli item successivi. |
+| [SPIKE-002](SPIKE-002-identita-mittente-contesto-agente.md) | Identità del mittente e contesto dell'agente | Positive — percorso e alternative studiati; integrazione e verifiche restano a TEC-010 e TEC-011. |
