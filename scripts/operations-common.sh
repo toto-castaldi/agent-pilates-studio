@@ -21,4 +21,6 @@ hermes_must_be_stopped() {
   local active
   active=$(compose ps -q --status running --status paused --status restarting --status removing hermes)
   [[ -z "$active" ]] || fail 'Stop Hermes before taking a backup.'
+  active=$(compose ps -q --status running --status paused --status restarting --status removing author-broker)
+  [[ -z "$active" ]] || fail 'Stop author-broker before taking a backup.'
 }

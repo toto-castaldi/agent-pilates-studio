@@ -41,7 +41,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
-    await writeFile(join(dir, 'compose.override.yaml'), 'services:\n  postgres:\n    networks: [default, private]\n  hermes:\n    networks: [private]\nnetworks:\n  private:\n    internal: true\n');
+    await writeFile(join(dir, 'compose.override.yaml'), 'services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  hermes:\n    networks: [private]\nnetworks:\n  private:\n    internal: true\n');
     await writeFile(join(dir, '.env'), config, { mode: 0o600 });
     start(); // No node_modules or volumes: also exercises dependency preparation.
     const db = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
@@ -81,6 +81,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     try { assert.equal((await fresh.query('SELECT current_user AS role')).rows[0].role, 'studio_agent'); } finally { await fresh.end(); }
   } finally {
     try { compose('down', '--volumes', '--remove-orphans'); } catch { /* Best-effort cleanup of the synthetic project. */ }
+    spawnSync('docker', ['image', 'rm', `${project}-hermes`], { stdio: 'ignore', timeout: 90_000 });
     await rm(dir, { recursive: true, force: true });
   }
 });

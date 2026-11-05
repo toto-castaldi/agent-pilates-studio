@@ -15,6 +15,15 @@ CREATE TABLE studio_private.author_context (
 REVOKE ALL ON studio_private.author_context FROM PUBLIC, studio_agent;
 GRANT SELECT, INSERT, DELETE ON studio_private.author_context TO studio_broker;
 
+-- Durable replay markers contain only a digest; they outlive the signed-message
+-- acceptance window even if the broker or gateway is restarted.
+CREATE TABLE studio_private.consumed_messages (
+  message_hash text PRIMARY KEY,
+  expires_at timestamptz NOT NULL
+);
+REVOKE ALL ON studio_private.consumed_messages FROM PUBLIC, studio_agent;
+GRANT SELECT, INSERT, DELETE ON studio_private.consumed_messages TO studio_broker;
+
 CREATE TABLE app.clients (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   first_name text NOT NULL CHECK (btrim(first_name) <> ''),
@@ -116,6 +125,8 @@ CREATE TRIGGER training_rules_author BEFORE INSERT OR UPDATE ON app.training_rul
 FOR EACH ROW EXECUTE FUNCTION studio_private.apply_author();
 CREATE TRIGGER training_rules_no_delete BEFORE DELETE ON app.training_rules
 FOR EACH ROW EXECUTE FUNCTION studio_private.prevent_rule_delete();
+CREATE TRIGGER training_rules_no_truncate BEFORE TRUNCATE ON app.training_rules
+FOR EACH STATEMENT EXECUTE FUNCTION studio_private.prevent_rule_delete();
 
 -- The initial migration grants DML on new app tables by default. Narrow rules
 -- explicitly: the agent can deactivate, but cannot rewrite or delete them.

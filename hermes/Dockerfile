@@ -3,5 +3,8 @@ USER root
 RUN mv /opt/hermes/libexec/hermes /opt/hermes/libexec/hermes-upstream
 COPY --chmod=0755 hermes/gateway-launcher.sh /opt/hermes/libexec/hermes
 COPY --chmod=0755 hermes/entrypoint.sh /opt/pilates/entrypoint.sh
+COPY --chmod=0755 hermes/broker-entrypoint.sh /opt/pilates/broker-entrypoint.sh
+COPY --chmod=0644 hermes/author_broker.py /opt/pilates/author_broker.py
+COPY --chmod=0644 hermes/pilates_trusted.py /opt/hermes/pilates_trusted.py
 ENTRYPOINT ["/opt/pilates/entrypoint.sh"]
 CMD ["gateway", "run"]

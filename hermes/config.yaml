@@ -4,6 +4,12 @@ model:
 plugins:
   enabled:
     - pilates-postgres
+platform_toolsets:
+  whatsapp_cloud:
+    - studio-postgres
+tools:
+  tool_search:
+    enabled: "off"
 agent:
   disabled_toolsets:
     - terminal

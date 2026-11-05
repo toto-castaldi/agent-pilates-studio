@@ -17,6 +17,8 @@ if fd > 2:
     os.close(fd)
 sys.argv[0] = "hermes"
 site.addsitedir(os.environ["HERMES_SITE"])
+import pilates_trusted
+pilates_trusted.install()
 from hermes_cli.main import main
 sys.exit(main())
 ' "$@"

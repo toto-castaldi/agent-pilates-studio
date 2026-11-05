@@ -42,16 +42,46 @@ services:
       - db_admin
       - db_migrator
       - db_agent
+      - db_broker
     logging:
       driver: none
     restart: "no"
 
+  author-broker:
+    image: ${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes
+    build:
+      context: .
+      dockerfile: hermes/Dockerfile
+    entrypoint: ["/opt/pilates/broker-entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    secrets:
+      - db_broker
+      - bridge_token
+      - whatsapp_app_secret
+      - whatsapp_allowed_users
+      - whatsapp_phone_number_id
+    tmpfs:
+      - /run/pilates-broker:mode=0700
+    logging:
+      driver: none
+    healthcheck:
+      test: ["CMD", "/opt/hermes/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=3).read()"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
   hermes:
+    image: ${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes
     build:
       context: .
       dockerfile: hermes/Dockerfile
     depends_on:
       postgres:
+        condition: service_healthy
+      author-broker:
         condition: service_healthy
     environment:
       PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
@@ -59,6 +89,7 @@ services:
       WHATSAPP_CLOUD_WEBHOOK_PATH: ${WHATSAPP_WEBHOOK_PATH:-/whatsapp/webhook}
     secrets:
       - db_agent
+      - bridge_token
       - openrouter_key
       - whatsapp_access_token
       - whatsapp_app_secret
@@ -93,6 +124,10 @@ secrets:
     file: ${SECRETS_DIR:-./.local/secrets}/db-migrator
   db_agent:
     file: ${SECRETS_DIR:-./.local/secrets}/db-agent
+  db_broker:
+    file: ${SECRETS_DIR:-./.local/secrets}/db-broker
+  bridge_token:
+    file: ${SECRETS_DIR:-./.local/secrets}/bridge-token
   openrouter_key:
     file: ${SECRETS_DIR:-./.local/secrets}/openrouter-key
   whatsapp_access_token:

@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
@@ -78,6 +79,19 @@ try {
       await privateFile(resolve(directory, name));
       if ((await readFile(resolve(directory, name), 'utf8')).trim() !== config[key]) throw new SafeError('Un segreto è cambiato durante l’avvio.');
     }
+  }
+  // Additional service credentials are generated once and never silently rotated.
+  for (const name of ['db-broker', 'bridge-token']) {
+    const path = resolve(directory, name);
+    try {
+      await writeFile(path, `${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+    await privateFile(path);
+    const value = (await readFile(path, 'utf8')).trim();
+    if (!/^[a-f0-9]{64}$/.test(value) || passwords.includes(value)) throw new SafeError(`Segreto non valido: ${name}.`);
+    passwords.push(value);
   }
   // Compose receives only non-secret configuration; .env is not interpolated by Compose.
   const env = { ...process.env, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model };

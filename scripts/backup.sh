@@ -28,7 +28,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if ! compose exec -T --interactive=false postgres pg_dump --no-password -U studio_admin -d studio -Fc > "$destination/postgres.dump" 2>/dev/null; then
+if ! compose exec -T --interactive=false postgres pg_dump --no-password -U studio_admin -d studio -Fc --exclude-table-data=studio_private.author_context > "$destination/postgres.dump" 2>/dev/null; then
   fail 'PostgreSQL backup failed.'
 fi
 if ! docker run --rm --network none --read-only --cap-drop ALL --cap-add DAC_OVERRIDE \

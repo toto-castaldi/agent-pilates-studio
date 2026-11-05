@@ -18,6 +18,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     'db-admin': randomBytes(32).toString('hex'),
     'db-migrator': databasePassword,
     'db-agent': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'),
+    'bridge-token': randomBytes(32).toString('hex'),
     'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',
@@ -99,9 +101,21 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     const gatewayHost = address(gatewayId);
     assert.ok(gatewayId && gatewayHost);
+    const brokerId = compose('ps', '-q', 'author-broker').trim();
+    const brokerHost = address(brokerId);
+    const proof = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ changes: [{ field: 'messages', value: {
+      metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
+      contacts: [{ wa_id: '15555550102', profile: { name: 'Synthetic Profile' } }],
+      messages: [{ from: '15555550102', id: 'wamid.synthetic.tool', timestamp: String(Math.floor(Date.now() / 1000)), type: 'text' }],
+    } }] }] });
+    const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(proof).digest('hex')}`;
+    assert.equal((await fetch(`http://${brokerHost}:8091/v1/evidence`, { method: 'POST', body: proof, headers: { 'X-Pilates-Bridge': secrets['bridge-token'], 'X-Hub-Signature-256': signature } })).status, 204);
+    execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_broker'], { stdio: 'pipe' });
+    execFileSync('docker', ['exec', brokerId, 'sh', '-c', 'test ! -e /run/secrets/db_agent && test ! -e /run/secrets/db_migrator && test ! -e /run/secrets/db_admin'], { stdio: 'pipe' });
 
     const python = [
-      'import json',
+      'import json, secrets',
+      'from pilates_trusted import current_turn',
       'from hermes_cli.plugins import discover_plugins',
       'from hermes_cli.config import load_config',
       'from hermes_cli.tools_config import _get_platform_tools',
@@ -109,15 +123,18 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       'discover_plugins()',
       'config = load_config()',
       "calls = [{'query': 'SELECT current_user AS role'}, {'query': 'INSERT INTO app.stack_probe VALUES ($1, $2)', 'parameters': [1, 'synthetic']}, {'query': 'UPDATE app.stack_probe SET value = $1 WHERE id = $2', 'parameters': ['updated', 1]}, {'query': 'DELETE FROM app.stack_probe WHERE id = $1', 'parameters': [1]}, {'query': 'CREATE TABLE app.forbidden (id int)'}, {'query': 'SELECT * FROM public._prisma_migrations'}]",
-      "print(json.dumps({'loaded': registry.get_entry('studio_sql_query') is not None, 'enabled': 'studio-postgres' in _get_platform_tools(config, 'whatsapp_cloud'), 'model': config.get('model'), 'results': [json.loads(registry.dispatch('studio_sql_query', call)) for call in calls]}))",
+      "untrusted = json.loads(registry.dispatch('studio_sql_query', calls[0]))",
+      "current_turn.set(('wamid.synthetic.tool', '15555550102', secrets.token_hex(32)))",
+      "print(json.dumps({'loaded': registry.get_entry('studio_sql_query') is not None, 'enabled': sorted(_get_platform_tools(config, 'whatsapp_cloud')), 'untrusted': untrusted, 'model': config.get('model'), 'results': [json.loads(registry.dispatch('studio_sql_query', call)) for call in calls]}))",
     ].join('\n');
     const result = execFileSync('docker', [
       'exec', '--user', '10000', '-e', 'PILATES_DB_PASSWORD_FILE=/run/pilates-agent/db_agent', gatewayId,
       '/opt/hermes/.venv/bin/python', '-c', python,
     ], { encoding: 'utf8', stdio: 'pipe', timeout: 90_000 });
-    const tool = JSON.parse(result) as { loaded: boolean; enabled: boolean; model: { default: string; provider: string }; results: Array<{ rows?: Array<Record<string, unknown>>; status?: string; sqlstate?: string }> };
+    const tool = JSON.parse(result) as { loaded: boolean; enabled: string[]; untrusted: { error?: string }; model: { default: string; provider: string }; results: Array<{ rows?: Array<Record<string, unknown>>; status?: string; sqlstate?: string }> };
     assert.equal(tool.loaded, true);
-    assert.equal(tool.enabled, true);
+    assert.deepEqual(tool.enabled, ['studio-postgres']);
+    assert.equal(tool.untrusted.error, 'An authenticated WhatsApp turn is required.');
     assert.equal(tool.model.default, 'openai/gpt-6.1-terra');
     assert.equal(tool.model.provider, 'openrouter');
     assert.equal(tool.results[0].rows?.[0].role, 'studio_agent');
@@ -196,6 +213,10 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await assert.rejects(access(backupDirectory));
     await migrator.query("INSERT INTO app.stack_probe VALUES (77, 'backup-synthetic')");
     compose('stop', 'hermes');
+    expectFailure(backup, /Stop author-broker before taking a backup/);
+    compose('stop', 'author-broker');
+    // A backup must never restore an ephemeral PID/transaction binding.
+    await migrator.query("INSERT INTO studio_private.author_context VALUES (1, 1, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 hour')");
 
     // Rehearse persistence across a restart and a same-image container replacement.
     await migrator.end();
@@ -239,6 +260,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     restored = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await restored.connect();
     assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await restoredAgent.connect();
     assert.equal((await restoredAgent.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');

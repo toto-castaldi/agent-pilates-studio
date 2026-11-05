@@ -19,6 +19,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     'db-admin': randomBytes(32).toString('hex'),
     'db-migrator': password,
     'db-agent': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'),
+    'bridge-token': randomBytes(32).toString('hex'),
     'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',

@@ -12,7 +12,7 @@ if [ -f /opt/data/.env ] && grep -Eqi '^[[:space:]]*(export[[:space:]]+)?(WHATSA
   exit 1
 fi
 
-for name in db_agent openrouter_key whatsapp_access_token whatsapp_app_secret whatsapp_verify_token whatsapp_allowed_users whatsapp_phone_number_id; do
+for name in db_agent bridge_token openrouter_key whatsapp_access_token whatsapp_app_secret whatsapp_verify_token whatsapp_allowed_users whatsapp_phone_number_id; do
   if [ ! -s "/run/secrets/$name" ]; then
     exit 1
   fi
@@ -24,6 +24,7 @@ done
 # Only the agent role's password is made readable to the unprivileged gateway.
 install -d -m 0700 -o 10000 -g 10000 /run/pilates-agent
 install -m 0600 -o 10000 -g 10000 /run/secrets/db_agent /run/pilates-agent/db_agent
+install -m 0600 -o 10000 -g 10000 /run/secrets/bridge_token /run/pilates-agent/bridge_token
 export PILATES_DB_PASSWORD_FILE=/run/pilates-agent/db_agent
 export OPENROUTER_API_KEY="$(cat /run/secrets/openrouter_key)"
 export WHATSAPP_CLOUD_ACCESS_TOKEN="$(cat /run/secrets/whatsapp_access_token)"

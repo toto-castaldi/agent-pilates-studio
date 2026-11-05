@@ -38,6 +38,8 @@ jobs:
         run: npm run test:db
       - name: Test gateway Hermes
         run: npm run test:hermes
+      - name: Test identità autenticata e broker
+        run: npm run test:author
       - name: Test aggiornamento isolato tra versioni
         run: npm run test:upgrade
       - name: Test avvio locale con un comando

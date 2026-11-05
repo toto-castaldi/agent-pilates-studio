@@ -15,7 +15,7 @@ if (!info.isDirectory() || (info.mode & 0o077) !== 0) {
   throw new Error('The secrets directory must not be accessible to group or other users.');
 }
 
-for (const name of ['db-admin', 'db-migrator', 'db-agent', 'whatsapp-verify-token']) {
+for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'whatsapp-verify-token']) {
   try {
     await writeFile(resolve(directory, name), `${randomBytes(32).toString('hex')}\n`, {
       flag: 'wx',
