@@ -29,7 +29,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - **Lezione:** lezione di Pilates di un'ora, individuale o di gruppo, tenuta in qualsiasi giorno della settimana.
 - **Regola di allenamento:** abitudine settimanale ricorrente di uno o più clienti, ad esempio "Antonio Rossi si allena tutti i venerdì alle 9", espressa in un testo in linguaggio naturale pulito e comprensibile, con i giorni, gli orari e i clienti derivati dal testo.
 - **Regola attiva:** regola non disattivata; solo le regole attive determinano la pianificazione.
-- **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel contesto dell'agente.
+- **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel file `SOUL.md` dell'agente.
 
 ## 4. Scope
 
@@ -142,7 +142,7 @@ L'autore di ogni inserimento e disattivazione è l'utilizzatore che ha inviato i
 
 #### REQ-STUDIO-004 — Consultazione della pianificazione
 
-Un utilizzatore deve poter chiedere conversando chi si allena in un giorno, una fascia oraria o un orario (ad esempio "venerdì mattina mi dici nelle lezioni chi si allena?"), quando si allena un cliente e il riepilogo della settimana. Le risposte si basano sulle sole regole attive e sui dati strutturati, raggruppate per giorno e orario; l'assenza di risultati è indicata esplicitamente. Le fasce orarie hanno limiti fissi definiti nel contesto dell'agente. Su richiesta l'agente indica autore e data di inserimento o disattivazione di una regola.
+Un utilizzatore deve poter chiedere conversando chi si allena in un giorno, una fascia oraria o un orario (ad esempio "venerdì mattina mi dici nelle lezioni chi si allena?"), quando si allena un cliente e il riepilogo della settimana. Le risposte si basano sulle sole regole attive e sui dati strutturati, raggruppate per giorno e orario; l'assenza di risultati è indicata esplicitamente. Le fasce orarie hanno limiti fissi definiti nel file `SOUL.md` versionato nel progetto e usato da Hermes; le regole di comportamento dell'agente stanno in quel file e non sono duplicate nel codice. Su richiesta l'agente indica autore e data di inserimento o disattivazione di una regola.
 
 #### REQ-STUDIO-005 — Aggiornamento e storico delle regole
 
