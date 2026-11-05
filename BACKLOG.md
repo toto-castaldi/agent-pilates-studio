@@ -185,6 +185,21 @@
   - Test su PostgreSQL reale verificano migrazione da uno stato pulito e dallo schema della v0.1.0, vincoli, unicità dei clienti, rifiuto di `DELETE` e di riscrittura delle regole, autore non falsificabile e rifiuto del DDL, con soli dati sintetici.
   - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte.
 
+#### TEC-011 — Contesto dell'agente dello studio
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** SPIKE-002, TEC-010
+- **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-004, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9, §10
+- **Description:** Fornire all'agente, tramite `SOUL.md` o il meccanismo raccomandato da SPIKE-002, un contesto versionato che lo renda l'assistente dello studio Pilates.
+- **Acceptance criteria:**
+  - Il contesto è versionato nel repository, senza segreti né dati reali, ed è caricato da Hermes in locale e in produzione; persiste tra riavvii e aggiornamenti e le sue modifiche si applicano con il normale aggiornamento.
+  - Il contesto definisce il ruolo di assistente per titolare e collaboratori, la lingua italiana, risposte brevi adatte a WhatsApp, la data corrente con fuso orario Europe/Rome e le fasce orarie fisse: mattina dalle 06:00 alle 12:59, pomeriggio dalle 13:00 alle 17:59, sera dalle 18:00 in poi, salvo diversa decisione registrata.
+  - Il contesto descrive lo schema di TEC-010 e le politiche: testo delle regole pulito e comprensibile, derivazione dei dati strutturati, scomposizione decisa dall'agente, riconoscimento dei clienti per nome con richiesta del cognome se ambiguo o mancante, conferma solo in caso di ambiguità, disattivazione autonoma comunicata con motivo, nessuna cancellazione o riscrittura, risposte basate sulle sole regole attive.
+  - I toolset non necessari restano disabilitati e l'agente non riporta numeri di telefono nelle risposte se non richiesto.
+  - Un test automatico verifica che il contesto sia incluso nell'immagine o nel volume Hermes previsto, che citi tabelle e colonne esistenti nella migrazione e che non contenga segreti; README e design descrivono come modificarlo.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -198,6 +213,7 @@ v0.2.0:
 
 1. SPIKE-002.
 2. TEC-010.
+3. TEC-011.
 
 ## Items confluiti
 
