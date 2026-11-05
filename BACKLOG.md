@@ -146,6 +146,18 @@ Su richiesta dell'utente, i seguenti item non sono più assegnati separatamente 
 
 ## Unassigned backlog
 
-Le idee non assegnate richiedono requisiti prima della progettazione.
+Gli item non assegnati devono essere pianificati prima dell'implementazione; i requisiti applicabili restano vincolanti.
 
-Nessuna idea per ora.
+#### TEC-008 — Audit privacy dei log del proxy
+
+- **Epic:** EPIC-003 — Dati e operatività
+- **Type:** Task · **Priority:** P1 · **Status:** Todo · **Version:** Non assegnata
+- **Dependencies:** TEC-005
+- **Description:** Debito tecnico concordato: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La mancata assegnazione a una versione non modifica REQ-NFR-002 né autorizza l'uso continuativo del gateway.
+- **Requirements:** REQ-NFR-002, REQ-NFR-004
+- **Design references:** TECHNICAL-DESIGN §7
+- **Acceptance criteria:**
+  - Sono documentati, con evidenze verificabili e senza riportare dati sensibili, configurazione, campi raccolti, destinazioni e tempi di conservazione dei log pertinenti Cloudflare e locali; le parti non osservabili restano esplicitamente non verificate.
+  - Prove ripetibili con soli indicatori sintetici coprono i formati locali individuati e i principali esiti del proxy; non viene avviato lo streaming remoto dei log del tunnel condiviso, come previsto da REQ-NFR-004.
+  - Eventuali esposizioni individuate sono rimosse o mitigate con misure documentate e verifiche di regressione, senza compromettere gli altri servizi del tunnel condiviso; le modifiche infrastrutturali richiedono le autorizzazioni pertinenti.
+  - Sono documentati l'esito rispetto a REQ-NFR-002, i limiti residui e le eventuali decisioni ancora necessarie per l'accettazione della release, senza dichiarare conformità non dimostrata.

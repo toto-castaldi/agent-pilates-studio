@@ -79,4 +79,4 @@ L'ambiente locale usa Docker Compose; la produzione presume un server Linux con 
 ## 10. Open decisions
 
 - Procedura di deploy, aggiornamento, backup/ripristino e verifica della disponibilità — TEC-005.
-- Debito tecnico individuato su richiesta dell'operatore: completare l'audit dei dati conservati da Cloudflare e dei formati di log locali non coperti dalle prove sintetiche. I rischi, le verifiche effettuate e il lavoro residuo sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'item dedicato va registrato su `main` secondo PROCESS §6.1. L'indagine rinviata non costituisce prova di conformità completa; REQ-NFR-002 documenta la sola prova temporanea autorizzata.
+- Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
