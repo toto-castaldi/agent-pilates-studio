@@ -15,6 +15,8 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Versionamento selettivo della configurazione e del template Pi, con esclusione dei dati locali e delle estensioni non approvate (TEC-007).
+
 ### Fixed
 
 ### Removed

@@ -1,5 +1,9 @@
-# Local agent state and credentials
-.pi/
+# Local agent state and credentials; allow only reviewed Pi resources
+.pi/*
+!.pi/settings.json
+!.pi/prompts/
+.pi/prompts/*
+!.pi/prompts/avvio.md
 .claude/settings.local.json
 
 # Local configuration and secrets
