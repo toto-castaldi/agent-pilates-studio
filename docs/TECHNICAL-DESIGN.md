@@ -30,7 +30,7 @@ SPIKE-001 ha realizzato lo stack locale e verificato questo flusso in una prova 
 - **Canale WhatsApp:** gateway WhatsApp Cloud nativo di Hermes con app Meta, validazione webhook e autorizzazione dei numeri; percorso del webhook configurabile per riutilizzare un callback HTTPS esistente; SPIKE-001.
 - **Operatività e CI:** installazione, aggiornamento, recupero, osservabilità e verifiche automatiche; TEC-005 e TEC-006.
 
-Hermes fornisce l'adattatore WhatsApp Cloud nativo; il progetto aggiunge un plugin SQL diretto e protezioni della configurazione e dei log.
+Hermes fornisce l'adattatore WhatsApp Cloud nativo; il progetto aggiunge un plugin SQL diretto e protezioni della configurazione e dei log. SPIKE-002 raccomanda di estendere il percorso gateway–dispatcher–plugin per propagare l'identità autenticata per turno fuori dagli argomenti controllati dal modello; la configurazione corrente non lo fa. Il rapporto documenta una prova esplorativa e i limiti di concorrenza e sicurezza da verificare in TEC-010.
 
 ## 4. Data model
 
@@ -43,6 +43,7 @@ Hermes usa anche SQLite per le proprie sessioni; questo archivio è distinto da 
 - L'agente può eseguire DML, non DDL; il vincolo va applicato e verificato sul database reale, non solo nelle istruzioni all'agente.
 - Credenziali e privilegi delle migrazioni sono separati e non disponibili all'agente. I ruoli PostgreSQL sono distinti per amministrazione, migrazione e agente; solo quest'ultimo riceve DML nello schema applicativo. Il ruolo agente non possiede schemi né può creare tabelle temporanee; `pg_hba.conf` limita il suo accesso al database applicativo. PostgreSQL consente però al ruolo di login di cambiare la propria password anche senza `CREATEROLE`: l'utente ha accettato questa eccezione standard, che non consente DDL sugli schemi. Il bootstrap eseguito dall'operatore ripristina la password a partire dal file esterno. SPIKE-001 ha verificato il plugin tramite il registro dei tool Hermes contro PostgreSQL reale e con una chiamata generata dal modello durante una conversazione WhatsApp reale.
 - Solo numeri configurati possono interagire; le richieste webhook non autentiche sono rifiutate.
+- Per l'autore di clienti e regole, SPIKE-002 raccomanda un contesto protetto associato a connessione e transazione, registrato da un broker fidato con privilegi distinti e letto da trigger; un GUC modificabile dal ruolo agente non basta. L'integrazione, l'isolamento del broker e le prove avversarie sono affidati a TEC-010; il meccanismo non è ancora implementato.
 - Aggiornamenti e riavvii preservano i dati; una procedura di ripristino deve essere verificata.
 
 ## 6. Integrations
@@ -51,6 +52,7 @@ Hermes usa anche SQLite per le proprie sessioni; questo archivio è distinto da 
 - **OpenRouter:** provider configurato esternamente; SPIKE-001 ha verificato l'ID `openai/gpt-6.1-terra` e una risposta reale tramite Hermes. Il modello resta configurabile.
 - **WhatsApp Business:** gateway nativo con l'app Meta esistente; SPIKE-001 ha verificato webhook, allowlist e una conversazione reale.
 - **PostgreSQL:** plugin SQL nativo e privilegi distinti verificati su PostgreSQL reale, anche tramite una chiamata generata dal modello in SPIKE-001.
+- **Contesto dello studio:** SPIKE-002 raccomanda `SOUL.md` versionato, montato in sola lettura sotto `HERMES_HOME`, refresh esplicito dei prompt delle sessioni e data/ora Europe/Rome generate per ogni chiamata in contesto effimero. La prova isolata e i limiti sono nel rapporto; configurazione definitiva e verifiche spettano a TEC-011.
 
 ## 7. Security and observability
 
@@ -79,6 +81,6 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 ## 10. Open decisions
 
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
-- Propagazione affidabile dell'identità del mittente WhatsApp (numero e nome del profilo) dal gateway Hermes al plugin SQL, in modo che l'autore registrato non sia falsificabile dal modello; caricamento in Hermes del file `SOUL.md` versionato nel progetto, con data e fuso orario Europe/Rome — SPIKE-002.
+- Meccanismo raccomandato da SPIKE-002: propagazione per turno e contesto database protetto da broker, con prove avversarie e concorrenza ancora da completare — TEC-010. Caricamento in sola lettura di `SOUL.md`, refresh delle sessioni e data per chiamata Europe/Rome da integrare e verificare — TEC-011.
 - Modello dati della pianificazione (clienti, regole, slot e legami), privilegi per tabella e colonna che impediscono cancellazione e riscrittura delle regole, e applicazione dell'autore ricavato dal sistema — TEC-010.
 - Struttura, caricamento e aggiornamento del file `SOUL.md` dell'agente dello studio, fonte unica delle regole di comportamento come le fasce orarie — TEC-011.

@@ -175,7 +175,8 @@
 #### SPIKE-002 — Identità del mittente e contesto dell'agente
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Type:** Spike · **Priority:** P0 · **Status:** Done
+- **Branch:** `spike/SPIKE-002-identita-mittente-contesto-agente`
 - **Dependencies:** none
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §5, §6, §7, §10
@@ -186,6 +187,7 @@
   - Il rapporto indica come Hermes carichi il file `SOUL.md` versionato nel progetto (posizione in `HERMES_HOME`, copia nell'immagine o montaggio in sola lettura, controlli anti-injection), come fornire data corrente e fuso orario Europe/Rome, come le modifiche raggiungano le sessioni già aperte e come il file interagisca con la memoria e le sessioni SQLite di Hermes; il file deve persistere tra riavvii e aggiornamenti.
   - Una prova locale con webhook e dati sintetici dimostra la propagazione dell'identità fino al plugin e verifica che numeri, nomi e messaggi non compaiano nei log (REQ-NFR-002).
   - Il rapporto contiene raccomandazioni per TEC-010, TEC-011 e US-002 e non include segreti né dati reali; il codice esplorativo non viene integrato.
+- **Outcome:** Rapporto su identità autenticata, contesto database protetto, `SOUL.md` e sessioni; prove sintetiche del gateway e su PostgreSQL reale, con limiti e raccomandazioni per gli item successivi. Quality gate superato dopo il ripristino delle risorse Pi condivise. Completato il 2026-11-05.
 
 #### TEC-010 — Schema della pianificazione settimanale
 

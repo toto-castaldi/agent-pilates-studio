@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Documentate le opzioni per identità del mittente, contesto dello studio e sessioni Hermes; ripristinate le risorse Pi condivise (SPIKE-002).
 - Separazione della configurazione Pi condivisa dalle preferenze e sessioni personali, con avvio isolato e procedura di migrazione (TEC-013).
 
 ## [0.1.0] - 2026-11-05
