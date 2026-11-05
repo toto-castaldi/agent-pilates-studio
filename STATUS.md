@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Ricerca completata; schema della pianificazione pronto | 2/8 items done (25%) |
+| v0.2.0 | Open | Schema della pianificazione in corso | 2/8 items done (25%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 6 |
-| In Progress | 0 |
+| Todo | 5 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 2 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-010 | EPIC-004 — Pianificazione delle lezioni | Schema della pianificazione settimanale | `task/TEC-010-schema-pianificazione-settimanale` |
 
 ## Blocked
 
@@ -45,7 +47,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-010 | EPIC-004 — Pianificazione delle lezioni | Schema della pianificazione settimanale | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.

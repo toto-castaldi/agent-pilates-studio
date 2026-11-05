@@ -192,7 +192,8 @@
 #### TEC-010 — Schema della pianificazione settimanale
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-010-schema-pianificazione-settimanale`
 - **Dependencies:** SPIKE-002
 - **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §4, §5, §8, §10
