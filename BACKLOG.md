@@ -79,6 +79,7 @@
   - Le skill esistenti in `.agents/skills/` rimangono versionate senza duplicazioni. Sessioni, autenticazione, log, cache e dipendenze installate di Pi restano esclusi da Git.
   - Le regole di inclusione ed esclusione sono verificate con `git check-ignore` o test equivalenti e l'uso della configurazione condivisa è documentato senza segreti.
 - **Outcome:** Allowlist per configurazione Pi e template `/avvio`, con esclusione dei dati locali e delle estensioni non approvate; regole verificate con test Git e quality gate. I riferimenti personali esterni rimangono documentati come limite di portabilità. Completato il 2026-11-05.
+- **Nota successiva:** l'operatore ha intenzionalmente rimosso il template; l'allineamento della documentazione e delle verifiche è affidato a TEC-014 (REQ-NFR-007).
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -167,6 +168,21 @@
   - Sessioni, autenticazione, configurazione privata e altri dati locali esistenti non sono persi o esposti; la procedura di migrazione è reversibile, non include credenziali e non elimina automaticamente i dati originali.
   - README documenta avvio, precedenza delle impostazioni, migrazione e limiti di portabilità; test ripetibili verificano separazione e regole Git usando dati sintetici.
 - **Outcome:** Avvio Pi con directory personale ignorata, risorse condivise mantenute e preferenze separate; migrazione reversibile documentata. Verificati quality gate, regole Git, scrittura personale e caricamento di estensione e tool sintetici con Pi reale offline; verificata anche la presenza dei tool esterni configurati nell'ambiente originale. I percorsi di skill esterne mancanti rimangono un limite preesistente. Completato il 2026-11-05.
+- **Nota successiva:** l'operatore ha intenzionalmente modificato la configurazione e rimosso il launcher; i criteri sopra descrivono l'assetto storico. TEC-014 deve allineare verifiche e documentazione alla decisione successiva (REQ-NFR-007).
+
+#### TEC-014 — Allineamento delle verifiche alla configurazione Pi
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** TEC-013
+- **Requirements:** REQ-NFR-001, REQ-NFR-002, REQ-NFR-003, REQ-NFR-007
+- **Design references:** PROCESS §3, §6; AGENTS §6, §9
+- **Description:** Allineare test e documentazione alle modifiche intenzionali dell'operatore alla configurazione Pi, senza ripristinare il launcher e il template rimossi né modificare impostazioni e dati personali senza accordo.
+- **Acceptance criteria:**
+  - I test automatici Pi e la prova con Pi reale offline non richiedono `scripts/pi.sh` né il template `/avvio` rimossi; verificano in modo ripetibile, con dati sintetici, l'assetto effettivamente concordato senza limitarsi a sopprimere i controlli falliti.
+  - Le verifiche Git continuano a proteggere sessioni, autenticazione, log, credenziali e dati locali; nessun segreto o dato personale è inserito nel repository o esposto nei risultati. Impostazioni e dati personali esistenti non sono modificati senza accordo.
+  - Il README e la documentazione pertinente descrivono l'avvio e le risorse Pi effettive senza indicare procedure o file rimossi; le eventuali limitazioni non verificate sono esplicite.
+  - Da ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`; la CI continua a eseguire il quality gate senza deploy automatico.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
@@ -288,7 +304,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010.
 
 1. SPIKE-002.
 2. TEC-010.

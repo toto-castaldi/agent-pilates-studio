@@ -80,6 +80,7 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 
 ## 10. Open decisions
 
+- Allineamento delle verifiche automatiche e della documentazione Pi alla configurazione intenzionalmente modificata dall'operatore, senza ripristinare il launcher e il template rimossi o modificare dati personali senza accordo — TEC-014 (REQ-NFR-007).
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
 - Meccanismo raccomandato da SPIKE-002: propagazione per turno e contesto database protetto da broker, con prove avversarie e concorrenza ancora da completare — TEC-010. Caricamento in sola lettura di `SOUL.md`, refresh delle sessioni e data per chiamata Europe/Rome da integrare e verificare — TEC-011.
 - Modello dati della pianificazione (clienti, regole, slot e legami), privilegi per tabella e colonna che impediscono cancellazione e riscrittura delle regole, e applicazione dell'autore ricavato dal sistema — TEC-010.

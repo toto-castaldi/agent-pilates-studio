@@ -178,6 +178,10 @@ I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole d
 
 Il comportamento dell'agente nei casi d'uso STUDIO deve essere verificato con scenari conversazionali documentati con dati sintetici, che indicano richiesta, risposta attesa e stato atteso del database, e con un harness automatico eseguibile su richiesta con il modello reale tramite OpenRouter. L'harness non fa parte della CI né del quality gate e richiede credenziali esterne; vincoli e privilegi del database restano verificati da test automatici su PostgreSQL reale.
 
+#### REQ-NFR-007 — Configurazione Pi e verifiche coerenti
+
+La documentazione e i test dello sviluppo devono descrivere e verificare la configurazione Pi effettivamente voluta dall'operatore, senza ripristinare il launcher `scripts/pi.sh` o il template `/avvio` che l'operatore ha intenzionalmente rimosso. Le impostazioni esistenti e i dati personali non vengono modificati senza accordo; sessioni, autenticazione, log e segreti restano esclusi da Git. Le prove automatiche usano dati sintetici e il quality gate resta obbligatorio (REQ-NFR-001 e REQ-NFR-002).
+
 ## 7. Release acceptance — v0.2.0
 
 - Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
