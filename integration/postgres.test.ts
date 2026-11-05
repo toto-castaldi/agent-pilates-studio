@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
 
@@ -15,7 +15,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     agent: randomBytes(32).toString('hex'),
   };
   const project = `pilates-test-${randomBytes(8).toString('hex')}`;
-  const env = { ...process.env, SECRETS_DIR: directory, POSTGRES_PORT: '0' };
+  const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0' };
   const compose = (...args: string[]) =>
     execFileSync('docker', ['compose', '-p', project, '-f', 'compose.yaml', ...args], {
       env,
@@ -44,8 +44,13 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     const port = Number(published.slice(published.lastIndexOf(':') + 1));
     assert.ok(Number.isInteger(port) && port > 0);
     const migrationEnv = { ...env, POSTGRES_PORT: String(port) };
+    // Run the migration from an isolated working directory without the operator's .env.
+    for (const path of ['node_modules', 'prisma', 'prisma.config.ts']) {
+      await symlink(resolve(path), join(directory, path));
+    }
     const migrate = () =>
-      execFileSync(process.execPath, ['scripts/migrate.mjs'], {
+      execFileSync(process.execPath, [resolve('scripts/migrate.mjs')], {
+        cwd: directory,
         env: migrationEnv,
         encoding: 'utf8',
         stdio: 'pipe',

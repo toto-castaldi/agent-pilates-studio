@@ -29,7 +29,7 @@ test('CI runs the complete gate on push, pull requests and manual dispatch witho
     assert.equal(step.if, undefined);
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(job.steps.length, 11);
+  assert.equal(job.steps.length, 12);
   assert.match(job.steps[0].uses ?? '', /^actions\/checkout@[0-9a-f]{40}$/);
   assert.match(job.steps[1].uses ?? '', /^actions\/setup-node@[0-9a-f]{40}$/);
   assert.equal(job.steps[1].with?.['node-version-file'], '.nvmrc');
@@ -43,6 +43,7 @@ test('CI runs the complete gate on push, pull requests and manual dispatch witho
     'npm run test:db',
     'npm run test:hermes',
     'npm run test:upgrade',
+    'npm run test:start',
   ]);
   assert.doesNotMatch(source, /\$\{\{\s*secrets\./i);
 });

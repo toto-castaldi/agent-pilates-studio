@@ -28,6 +28,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
   const override = join(directory, 'compose.override.yaml');
   const env = {
     ...process.env,
+    COMPOSE_ENV_FILES: '/dev/null',
     SECRETS_DIR: directory,
     POSTGRES_PORT: '0',
     WHATSAPP_WEBHOOK_PORT: '0',
