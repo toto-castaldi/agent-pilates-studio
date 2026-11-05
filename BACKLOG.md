@@ -243,6 +243,21 @@
   - Le risposte usano i dati strutturati e ignorano le regole disattivate; su richiesta indicano autore e data di inserimento di una regola.
   - Gli scenari sono aggiunti al catalogo di TEC-012 con regole sintetiche, comprese regole disattivate e fasce al confine, ed eseguiti con il modello reale, con esito registrato.
 
+#### US-004 — Aggiornare e disattivare le regole
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** US-002
+- **Requirements:** REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §5
+- **Description:** Come titolare o collaboratore, voglio comunicare all'agente i cambiamenti nelle abitudini dei clienti, così che la pianificazione resti aggiornata senza perdere lo storico.
+- **Acceptance criteria:**
+  - Una comunicazione esplicita ("Cristina Neri ha smesso") disattiva le regole attive interessate registrando data, autore ricavato dal sistema e motivo; l'agente comunica cosa ha disattivato.
+  - Una comunicazione implicita ("Antonio Rossi da ora viene il giovedì alle 9 invece del venerdì") registra la nuova regola e disattiva autonomamente quella superata con motivo; l'agente comunica entrambe le operazioni.
+  - Nessuna regola viene cancellata o riscritta; una disattivazione già avvenuta non viene modificata. Una regola di gruppo che cambia per un solo cliente viene disattivata e sostituita da regole che descrivono la nuova situazione.
+  - Su richiesta l'agente mostra lo storico delle regole di un cliente, comprese quelle disattivate, con date, autori e motivi.
+  - Gli scenari, compresi i casi espliciti, impliciti e di gruppo, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-010 coprono il rifiuto di cancellazione e riscrittura.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -259,7 +274,7 @@ v0.2.0:
 3. TEC-011.
 4. TEC-012.
 5. US-002.
-6. US-003.
+6. US-003 e US-004, entrambi dopo US-002.
 
 ## Items confluiti
 
