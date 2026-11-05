@@ -3,3 +3,11 @@
 !hermes/Dockerfile
 !hermes/gateway-launcher.sh
 !hermes/entrypoint.sh
+!package.json
+!package-lock.json
+!prisma.config.ts
+!prisma/
+!prisma/**
+!scripts/
+!scripts/migrate.mjs
+!scripts/migrator.Dockerfile

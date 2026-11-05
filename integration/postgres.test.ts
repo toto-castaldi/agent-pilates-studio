@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
 
-test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 180_000 }, async () => {
+test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-db-test-'));
   const passwords = {
     admin: randomBytes(32).toString('hex'),
@@ -51,6 +51,13 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
         stdio: 'pipe',
         timeout: 90_000,
       });
+    // The Linux server migration path has no host Node.js installation.
+    execFileSync('sh', ['scripts/migrate-docker.sh'], {
+      env: migrationEnv,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 300_000,
+    });
     migrate();
 
     const connection = { host: '127.0.0.1', port, database: 'studio' };

@@ -105,6 +105,8 @@ Il progetto deve offrire installazione delle dipendenze da lockfile e comandi pe
 
 Credenziali e segreti non devono essere inclusi nel repository; i log non devono contenere credenziali, messaggi o numeri di telefono. La configurazione di esempio non deve contenere segreti reali.
 
+Per la sola prova pubblica controllata di TEC-005, l'operatore ha autorizzato temporaneamente il rischio residuo dovuto all'audit incompleto dei log Cloudflare e di alcuni formati locali del proxy. Restano obbligatori il filtro locale verificato, la soppressione dell'output sensibile dei servizi, l'assenza di esportazioni Cloudflare e il divieto di streaming di REQ-NFR-004. Non registrare intenzionalmente dati sensibili; in caso di esposizione rilevata, interrompere la prova e coordinare la rotazione dei segreti coinvolti. L'autorizzazione non dimostra la conformità completa né autorizza un uso continuativo senza una decisione separata; l'approfondimento va tracciato come debito tecnico.
+
 #### REQ-NFR-003 — Integrazione continua
 
 GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su PostgreSQL reale, senza deploy automatico. Le prove che richiedono servizi esterni e credenziali reali devono essere documentate separatamente.
@@ -121,7 +123,7 @@ Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudfla
 - Sul server di produzione predisposto l'operatore installa e aggiorna l'ambiente; i dati persistono dopo riavvio e aggiornamento. Un backup viene ripristinato e verificato con dati di prova.
 - Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; la procedura documenta il divieto operativo di streaming dei log del tunnel condiviso; GitHub Actions esegue le verifiche previste senza deploy automatico.
 
-Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. SPIKE-001 ha verificato il modello effettivo e le integrazioni in una prova reale; eventuali cambi di scope richiedono accordo.
+Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. SPIKE-001 ha verificato il modello effettivo e le integrazioni in una prova reale; eventuali cambi di scope richiedono accordo. La chiusura di TEC-005 e il rinvio dell'audit a TEC-008 non dimostrano l'accettazione privacy della release né autorizzano l'uso continuativo.
 
 ## 8. Withdrawn requirements
 

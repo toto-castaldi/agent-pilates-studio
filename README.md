@@ -47,6 +47,8 @@ npm run db:migrate
 
 I primi due comandi Docker non richiedono privilegi di migrazione nell'agente: `db-bootstrap` è un contenitore temporaneo con credenziali separate. Il comando di migrazione usa il file della sola credenziale di migrazione sul computer dell'operatore. Non montare la directory completa dei segreti nel contenitore dell'agente.
 
+Su un host Linux con Docker ma senza Node.js, dopo aver creato i file dei segreti e avviato PostgreSQL e `db-bootstrap`, la migrazione può essere eseguita con `sh scripts/migrate-docker.sh`. Il comando costruisce un'immagine da Node.js 24.14.0 fissato per digest e dal lockfile, installando le dipendenze **prima** di montare il solo segreto di migrazione. Usa la rete host per raggiungere PostgreSQL su loopback; non è destinato a Docker Desktop. Impostare esplicitamente `SECRETS_DIR` e `POSTGRES_PORT` nell'ambiente se diversi dai valori predefiniti: lo script non legge `.env`.
+
 `db:init-secrets` crea password casuali e un verify token WhatsApp in `.local/secrets/`, ignorata da Git, senza sovrascrivere quelli già presenti. Proteggere e conservare questi file: cancellare o sostituire la password amministrativa non la cambia nel database già inizializzato. Il progetto Compose si chiama `agent-pilates-v010`; i suoi volumi conservano i dati. `docker compose down` arresta i servizi senza eliminarli: non usare `down --volumes` se i dati devono essere conservati.
 
 PostgreSQL ascolta solo su `127.0.0.1:55432`; impostare `POSTGRES_PORT` se la porta è occupata. `SECRETS_DIR` può indicare una directory privata alternativa, usata coerentemente nei comandi. Prisma applica le migrazioni versionate; lo schema `app` è riservato ai dati applicativi, senza tabelle di dominio iniziali. L'archivio delle sessioni di Hermes è separato.
@@ -87,7 +89,7 @@ Il plugin nativo `studio_sql_query` riceve una singola query SQL ed eventuali pa
 
 Se la password del ruolo agente è stata cambiata accidentalmente, l'operatore può ripristinare quella contenuta nel file `db-agent` conservato esternamente, rieseguendo `docker compose run --rm db-bootstrap`. Il comando riallinea anche il ruolo di migrazione al relativo file di segreto: conservare entrambi i file originali e non rendere disponibile all'agente quello di migrazione.
 
-**Privacy e diagnostica:** la release Hermes usata può inserire numeri e messaggi nei log. Per evitarlo, il processo gateway è eseguito senza output e logging Python; i container Hermes e PostgreSQL usano il logging driver Docker `none`. Non sono quindi disponibili log dettagliati di questi due servizi: verificare almeno `docker compose ps` e lo stato di salute. La diagnostica sicura e la continuità operativa restano da completare; non aggirare queste protezioni con comandi o profili Hermes alternativi senza rivalutare la privacy.
+**Privacy e diagnostica:** Hermes e PostgreSQL possono registrare messaggi, numeri o dati SQL. I loro entrypoint sopprimono l'output dei processi e inviano al logging Docker `local` soltanto gli eventi fissi `hermes_launch`, `hermes_preflight_failed` e `postgres_launch`, con rotazione limitata. Consultarli con `docker compose logs --tail=20 hermes postgres` e verificare stato e salute con `docker compose ps`; un evento di avvio non prova che il servizio sia sano. Non sono disponibili dettagli diagnostici degli errori. I test usano dati sintetici e non dimostrano l'assenza di ogni possibile fuga; non aggirare le protezioni con comandi o profili alternativi senza rivalutare la privacy.
 
 Per una prova locale isolata del gateway nativo, della configurazione del plugin, delle firme webhook, dell'allowlist e dell'assenza dei dati sintetici dai log:
 
@@ -97,7 +99,9 @@ npm run test:hermes
 
 Il test usa solo credenziali e messaggi sintetici, una rete Docker senza accesso esterno e risorse temporanee dedicate. Non sostituisce una prova reale con Meta e OpenRouter. La risposta WhatsApp libera è soggetta alla finestra di 24 ore prevista da Meta. Al primo contatto Hermes può inviare un avviso sul proprio canale home; non occorre configurarlo per usare il webhook.
 
-Per verificare una configurazione reale, avviare il proxy HTTPS e inviare dal numero autorizzato un messaggio di prova; confermare la risposta sul dispositivo. Per verificare anche i privilegi si può chiedere al modello di eseguire `SELECT current_user` e di tentare `CREATE TEMP TABLE spike_permission_probe (id integer)`: il primo restituisce il ruolo agente e il secondo deve essere rifiutato. Non includere numeri, messaggi o credenziali nei rapporti.
+`npm run test:upgrade` verifica in un progetto Docker temporaneo e isolato un aggiornamento reale da PostgreSQL 17.9 a 17.10 e da Hermes 0.22.6 a 0.22.7, con credenziali e dati sintetici. Il test scarica immagini aggiuntive e non dimostra la compatibilità di altre versioni o degli aggiornamenti maggiori.
+
+**Per la sola prova temporanea autorizzata**, dopo i controlli e con le mitigazioni descritte nella procedura operativa, per verificare una configurazione reale avviare il proxy HTTPS e inviare dal numero autorizzato un messaggio di prova; confermare la risposta sul dispositivo. Per verificare anche i privilegi si può chiedere al modello di eseguire `SELECT current_user` e di tentare `CREATE TEMP TABLE spike_permission_probe (id integer)`: il primo restituisce il ruolo agente e il secondo deve essere rifiutato. Non includere numeri, messaggi o credenziali nei rapporti.
 
 Se il servizio non diventa sano o non risponde, verificare con `docker compose ps` che PostgreSQL e Hermes siano avviati, che tutti i file dei segreti richiesti esistano e abbiano permessi `0600`, che il percorso del proxy corrisponda a `WHATSAPP_WEBHOOK_PATH` e che le credenziali esterne siano valide. Non stampare i segreti per diagnostica. I dettagli dei log non sono disponibili con l'attuale mitigazione della privacy.
 
@@ -107,4 +111,4 @@ Se il servizio non diventa sano o non risponde, verificare con `docker compose p
 - Un endpoint HTTPS pubblico già disponibile per i webhook Meta.
 - App Meta WhatsApp Business configurata e credenziali per i servizi esterni; non inserire credenziali nel repository.
 
-Le procedure di installazione in produzione, aggiornamento, backup e ripristino saranno documentate e verificate separatamente.
+La [procedura operativa](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. La sola prova pubblica temporanea autorizzata è conclusa; l'audit completo dei log del proxy resta nel debito TEC-008 e l'uso continuativo non è autorizzato.

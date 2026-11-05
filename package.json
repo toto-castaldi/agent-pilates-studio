@@ -15,6 +15,7 @@
     "test": "npm run build --silent && node --test \"dist/test/**/*.test.js\"",
     "test:db": "npm run build --silent && node --test dist/integration/postgres.test.js",
     "test:hermes": "npm run build --silent && node --test dist/integration/hermes.test.js",
+    "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
     "db:init-secrets": "node scripts/init-secrets.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "build": "npm run clean --silent && tsc"
