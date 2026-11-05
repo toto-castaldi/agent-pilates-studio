@@ -1,60 +1,86 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-test('real Pi keeps personal writes separate while loading a project extension', () => {
-  const project = mkdtempSync(join(tmpdir(), 'pi-settings-integration-'));
+interface Response {
+  id?: string;
+  success?: boolean;
+  data?: { commands?: { name: string }[] };
+}
+
+function runPi(project: string, home: string, agentDirectory: string): Response[] {
+  const input = [
+    { id: 'commands', type: 'get_commands' },
+    { id: 'change', type: 'set_steering_mode', mode: 'all' },
+  ].map((record) => JSON.stringify(record)).join('\n');
+  // No inherited credentials or Pi state: all files and configuration are synthetic.
+  const result = spawnSync('pi', ['--mode', 'rpc', '--no-session', '--approve', '--offline', '--no-mcp', '--no-context-files'], {
+    cwd: project,
+    input: `${input}\n`,
+    encoding: 'utf8',
+    timeout: 60_000,
+    env: {
+      PATH: process.env.PATH,
+      HOME: home,
+      PI_CODING_AGENT_DIR: agentDirectory,
+      PI_TELEMETRY: '0',
+      PI_SKIP_VERSION_CHECK: '1',
+      OPENAI_API_KEY: 'synthetic-test-key',
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim().split('\n').map((line) => JSON.parse(line) as Response);
+}
+
+test('direct Pi startup loads project and personal resources without changing project settings when directories differ', { timeout: 90_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-settings-integration-'));
+  const project = join(root, 'project');
+  const agent = join(root, 'agent');
   try {
-    mkdirSync(join(project, 'scripts'));
-    mkdirSync(join(project, '.pi'));
-    copyFileSync('scripts/pi.sh', join(project, 'scripts', 'pi.sh'));
+    mkdirSync(join(project, '.pi'), { recursive: true });
+    mkdirSync(agent);
     const settingsPath = join(project, '.pi', 'settings.json');
-    const settings = `${JSON.stringify({ extensions: ['./synthetic-extension.js'], defaultTools: ['read'] }, null, 2)}\n`;
+    const settings = `${JSON.stringify({ extensions: ['./synthetic-project.js'], defaultTools: ['read'] }, null, 2)}\n`;
     writeFileSync(settingsPath, settings);
+    writeFileSync(join(agent, 'settings.json'), JSON.stringify({ extensions: ['./synthetic-personal.js'], defaultTools: ['bash'] }));
+    writeFileSync(join(agent, 'synthetic-personal.js'), 'export default function(pi) { pi.registerCommand("synthetic-personal", { description: "Synthetic", handler: async () => {} }); }\n');
     writeFileSync(
-      join(project, '.pi', 'synthetic-extension.js'),
-      'import { writeFileSync } from "node:fs"; export default function(pi) { pi.registerCommand("synthetic-check", { description: "Synthetic", handler: async () => {} }); pi.on("session_start", async () => writeFileSync("active-tools.json", JSON.stringify(pi.getActiveTools()))); }\n',
+      join(project, '.pi', 'synthetic-project.js'),
+      'import { writeFileSync } from "node:fs"; export default function(pi) { pi.registerCommand("synthetic-project", { description: "Synthetic", handler: async () => {} }); pi.on("session_start", async () => writeFileSync("active-tools.json", JSON.stringify(pi.getActiveTools()))); }\n',
     );
-    const input = [
-      { id: 'commands', type: 'get_commands' },
-      { id: 'change', type: 'set_steering_mode', mode: 'all' },
-    ]
-      .map((record) => JSON.stringify(record))
-      .join('\n');
-    const result = spawnSync('sh', [join(project, 'scripts', 'pi.sh'), '--mode', 'rpc', '--no-session', '--approve', '--offline', '--no-mcp'], {
-      cwd: project,
-      input: `${input}\n`,
-      encoding: 'utf8',
-      timeout: 30000,
-      env: {
-        PATH: process.env.PATH,
-        HOME: project,
-        PI_TELEMETRY: '0',
-        PI_SKIP_VERSION_CHECK: '1',
-        OPENAI_API_KEY: 'synthetic-test-key',
-      },
-    });
-    assert.equal(result.status, 0, result.stderr);
-    const responses = result.stdout
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line) as { id?: string; success?: boolean; data?: { commands?: { name: string }[] } });
+    const responses = runPi(project, root, agent);
     assert.equal(responses.find((response) => response.id === 'change')?.success, true);
     const commands = responses.find((response) => response.id === 'commands');
     assert.equal(commands?.success, true);
-    assert.ok(commands?.data?.commands?.some((command) => command.name === 'synthetic-check'));
+    assert.ok(commands?.data?.commands?.some((command) => command.name === 'synthetic-project'));
+    assert.ok(commands?.data?.commands?.some((command) => command.name === 'synthetic-personal'));
     const activeTools = JSON.parse(readFileSync(join(project, 'active-tools.json'), 'utf8')) as string[];
     assert.ok(activeTools.includes('read'));
     assert.ok(!activeTools.includes('bash'));
     assert.equal(readFileSync(settingsPath, 'utf8'), settings);
-    const personal = JSON.parse(readFileSync(join(project, '.pi', 'local', 'settings.json'), 'utf8')) as {
-      steeringMode?: string;
-    };
+    const personal = JSON.parse(readFileSync(join(agent, 'settings.json'), 'utf8')) as { steeringMode?: string };
     assert.equal(personal.steeringMode, 'all');
   } finally {
-    rmSync(project, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('direct Pi startup can update project settings if its agent directory is the project .pi directory', { timeout: 90_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-same-settings-integration-'));
+  const project = join(root, 'project');
+  const agent = join(project, '.pi');
+  try {
+    mkdirSync(agent, { recursive: true });
+    const settingsPath = join(agent, 'settings.json');
+    writeFileSync(settingsPath, JSON.stringify({ steeringMode: 'one-at-a-time' }));
+    const responses = runPi(project, root, agent);
+    assert.equal(responses.find((response) => response.id === 'change')?.success, true);
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as { steeringMode?: string };
+    assert.equal(settings.steeringMode, 'all');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
