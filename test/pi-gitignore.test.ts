@@ -25,6 +25,9 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
     }
     for (const path of [
       '.pi/auth.json',
+      '.pi/local/settings.json',
+      '.pi/local/auth.json',
+      '.pi/local/sessions/example.jsonl',
       '.pi/trust.json',
       '.pi/sessions/example.jsonl',
       '.pi/pi-voice.log',

@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Pianificazione delle lezioni e configurazione Pi: item definiti, nessuno avviato | 0/8 items done (0%) |
+| v0.2.0 | Open | Configurazione Pi completata; pianificazione delle lezioni da avviare | 1/8 items done (12.5%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 8 |
+| Todo | 7 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 0 |
+| Done | 1 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-013 | EPIC-001 — Fondamenta del progetto | Separazione della configurazione Pi condivisa e personale | 2026-11-05 |
 | TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | 2026-11-05 |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | 2026-11-05 |
 | TEC-007 | EPIC-001 — Fondamenta del progetto | Allowlist Git per la configurazione Pi | 2026-11-05 |
@@ -45,7 +46,6 @@ None.
 | ---- | ---- | ----- | -------- |
 | SPIKE-002 | EPIC-004 — Pianificazione delle lezioni | Identità del mittente e contesto dell'agente | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
-| TEC-013 | EPIC-001 — Fondamenta del progetto | Separazione della configurazione Pi condivisa e personale | P2 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
