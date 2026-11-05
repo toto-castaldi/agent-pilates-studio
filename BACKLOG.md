@@ -156,7 +156,8 @@
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-013-separazione-configurazione-pi`
 - **Dependencies:** TEC-007
 - **Design references:** PROCESS §3, §6; AGENTS §9
 - **Description:** Separare le risorse Pi condivise dalle preferenze e dallo stato personali, mantenendo l'isolamento per progetto senza sporcare il file versionato durante l'uso ordinario.
