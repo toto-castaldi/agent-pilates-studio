@@ -56,6 +56,25 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
         stdio: 'pipe',
         timeout: 90_000,
       });
+    // Exercise the real upgrade from the v0.1.0 migration with existing data.
+    const legacyMigrations = join(directory, 'legacy-migrations');
+    await mkdir(legacyMigrations);
+    await cp('prisma/migrations/migration_lock.toml', join(legacyMigrations, 'migration_lock.toml'));
+    await cp('prisma/migrations/20261104000000_init', join(legacyMigrations, '20261104000000_init'), { recursive: true });
+    const legacyConfig = join(directory, 'legacy.config.mjs');
+    await writeFile(legacyConfig, `export default { schema: ${JSON.stringify(join(process.cwd(), 'prisma/schema.prisma'))}, migrations: { path: ${JSON.stringify(legacyMigrations)} }, datasource: { url: process.env.DATABASE_URL } };\n`);
+    const legacyUrl = new URL(`postgresql://127.0.0.1:${port}/studio?schema=public`);
+    legacyUrl.username = 'studio_migrator';
+    legacyUrl.password = passwords.migrator;
+    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--config', legacyConfig], {
+      env: { ...env, DATABASE_URL: legacyUrl.toString() }, stdio: 'pipe', timeout: 90_000,
+    });
+    const legacy = new Client({ host: '127.0.0.1', port, database: 'studio', user: 'studio_migrator', password: passwords.migrator });
+    await legacy.connect();
+    try {
+      await legacy.query('CREATE TABLE app.legacy_probe (value text NOT NULL)');
+      await legacy.query("INSERT INTO app.legacy_probe VALUES ('synthetic-preserved')");
+    } finally { await legacy.end(); }
     // The Linux server migration path has no host Node.js installation.
     execFileSync('sh', ['scripts/migrate-docker.sh'], {
       env: migrationEnv,
@@ -70,6 +89,86 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     agent = new Client({ ...connection, user: 'studio_agent', password: passwords.agent });
     await migrator.connect();
     await agent.connect();
+    assert.equal((await agent.query('SELECT value FROM app.legacy_probe')).rows[0].value, 'synthetic-preserved');
+
+    // The protected context is installed here by the migration owner only as a
+    // test fixture. The production broker and gateway propagation are not
+    // implemented here; this fixture does not prove their isolation.
+    await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'NoContext')"), { code: '42501' });
+    await assert.rejects(agent.query('SELECT * FROM studio_private.author_context'), { code: '42501' });
+    await assert.rejects(agent.query('SET ROLE studio_broker'), { code: '42501' });
+    await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name, created_by_phone) SELECT 'Synthetic', 'Forged', set_config('spike.author', '15555550199', true)"), { code: '42501' });
+    await agent.query('BEGIN');
+    const expired = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, NULL, clock_timestamp() - interval '1 second')", [expired.pid, expired.txid, '15555550103']);
+    await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'Expired')"), { code: '42501' });
+    await agent.query('ROLLBACK');
+    await agent.query('BEGIN');
+    const binding = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, $4, clock_timestamp() + interval '1 minute')", [binding.pid, binding.txid, '15555550102', 'Synthetic Profile']);
+    const client = await agent.query("INSERT INTO app.clients (first_name, last_name, created_by_phone, created_by_name) VALUES ('Synthetic', 'Client', 'forged', 'forged') RETURNING *");
+    assert.equal(client.rows[0].created_by_phone, '15555550102');
+    assert.equal(client.rows[0].created_by_name, 'Synthetic Profile');
+    const rule = await agent.query("INSERT INTO app.training_rules (rule_text, created_by_phone) SELECT 'Synthetic rule', set_config('spike.author', 'forged', true) RETURNING *");
+    assert.equal(rule.rows[0].created_by_phone, '15555550102');
+    await agent.query('SAVEPOINT invalid_insert');
+    await assert.rejects(agent.query("INSERT INTO app.training_rules (rule_text, deactivated_at, deactivation_reason) VALUES ('Synthetic', clock_timestamp(), 'Synthetic reason')"), { code: '23514' });
+    await agent.query('ROLLBACK TO SAVEPOINT invalid_insert');
+    await agent.query('SAVEPOINT invalid_deactivation');
+    await assert.rejects(agent.query('UPDATE app.training_rules SET deactivated_at = clock_timestamp() WHERE id = $1', [rule.rows[0].id]), { code: '23514' });
+    await agent.query('ROLLBACK TO SAVEPOINT invalid_deactivation');
+    await agent.query('INSERT INTO app.rule_clients (rule_id, client_id) VALUES ($1, $2)', [rule.rows[0].id, client.rows[0].id]);
+    await agent.query("INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, 5, '09:00')", [rule.rows[0].id]);
+    const otherAgent = new Client({ ...connection, user: 'studio_agent', password: passwords.agent });
+    await otherAgent.connect();
+    try {
+      // The still-live context belongs to the first connection, not this one.
+      await assert.rejects(otherAgent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'OtherConnection')"), { code: '42501' });
+    } finally { await otherAgent.end(); }
+    await agent.query('COMMIT');
+    await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'Stale')"), { code: '42501' });
+    await assert.rejects(agent.query('DELETE FROM app.training_rules WHERE id = $1', [rule.rows[0].id]), { code: '42501' });
+    await assert.rejects(agent.query("UPDATE app.clients SET created_by_phone = 'forged' WHERE id = $1", [client.rows[0].id]), { code: '42501' });
+    await assert.rejects(migrator.query('DELETE FROM app.training_rules WHERE id = $1', [rule.rows[0].id]), { code: '42501' });
+    await assert.rejects(agent.query("UPDATE app.training_rules SET rule_text = 'rewritten' WHERE id = $1", [rule.rows[0].id]), { code: '42501' });
+    await assert.rejects(agent.query("INSERT INTO app.rule_slots VALUES ($1, 8, '09:00')", [rule.rows[0].id]), { code: '23514' });
+    const concurrent = new Client({ ...connection, user: 'studio_agent', password: passwords.agent });
+    await concurrent.connect();
+    try {
+      await Promise.all([agent.query('BEGIN'), concurrent.query('BEGIN')]);
+      const [a, b] = await Promise.all([
+        agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid'),
+        concurrent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid'),
+      ]);
+      for (const [binding, phone] of [[a.rows[0], '15555550102'], [b.rows[0], '15555550103']] as const) {
+        await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, NULL, clock_timestamp() + interval '1 minute')", [binding.pid, binding.txid, phone]);
+      }
+      const [firstInsert, secondInsert] = await Promise.all([
+        agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'ConcurrentOne') RETURNING created_by_phone"),
+        concurrent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'ConcurrentTwo') RETURNING created_by_phone"),
+      ]);
+      assert.equal(firstInsert.rows[0].created_by_phone, '15555550102');
+      assert.equal(secondInsert.rows[0].created_by_phone, '15555550103');
+      await Promise.all([agent.query('ROLLBACK'), concurrent.query('ROLLBACK')]);
+    } finally { await concurrent.end(); }
+    await agent.query('BEGIN');
+    const second = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, NULL, clock_timestamp() + interval '1 minute')", [second.pid, second.txid, '15555550103']);
+    const deactivated = await agent.query("UPDATE app.training_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'Synthetic reason', deactivated_by_phone = 'forged' WHERE id = $1 RETURNING *", [rule.rows[0].id]);
+    assert.equal(deactivated.rows[0].deactivated_by_phone, '15555550103');
+    assert.equal(deactivated.rows[0].deactivated_by_name, null);
+    await agent.query('COMMIT');
+    await agent.query('BEGIN');
+    const third = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, NULL, clock_timestamp() + interval '1 minute')", [third.pid, third.txid, '15555550103']);
+    await assert.rejects(agent.query("UPDATE app.training_rules SET deactivation_reason = 'rewritten' WHERE id = $1", [rule.rows[0].id]), { code: '23514' });
+    await agent.query('ROLLBACK');
+    await agent.query('BEGIN');
+    const fourth = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, NULL, clock_timestamp() + interval '1 minute')", [fourth.pid, fourth.txid, '15555550103']);
+    await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('synthetic', 'CLIENT')"), { code: '23505' });
+    await agent.query('ROLLBACK');
+
     admin = new Client({ ...connection, database: 'postgres', user: 'studio_admin', password: passwords.admin });
     await admin.connect();
     await admin.query('CREATE DATABASE isolated_probe');
@@ -133,6 +232,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       { query: 'CREATE TABLE app.tool_forbidden (id int)' },
       { query: 'CREATE TEMP TABLE tool_forbidden (id int)' },
       { query: 'SELECT * FROM public._prisma_migrations' },
+      { query: "INSERT INTO app.clients (first_name, last_name, created_by_phone) VALUES ('Synthetic', 'Plugin', 'forged')" },
     ];
     const toolOutput = execFileSync('docker', [
       'run', '--rm', '-i', '--init', '--network', `${project}_default`,
@@ -147,7 +247,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     assert.equal(toolResults[1].status, 'INSERT 0 1');
     assert.equal(toolResults[2].status, 'UPDATE 1');
     assert.equal(toolResults[3].status, 'DELETE 1');
-    assert.deepEqual(toolResults.slice(4).map((result) => result.sqlstate), ['42501', '42501', '42501']);
+    assert.deepEqual(toolResults.slice(4).map((result) => result.sqlstate), ['42501', '42501', '42501', '42501']);
 
     for (const sql of [
       'CREATE TABLE app.forbidden (id int)',
