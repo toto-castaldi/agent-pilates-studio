@@ -171,7 +171,7 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
 - **Epic:** EPIC-003 — Dati e operatività
 - **Type:** Task · **Priority:** P1 · **Status:** Todo · **Version:** Non assegnata
 - **Dependencies:** TEC-005
-- **Description:** Debito tecnico concordato: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La mancata assegnazione a una versione non modifica REQ-NFR-002 né autorizza l'uso continuativo del gateway.
+- **Description:** Debito tecnico concordato: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La mancata assegnazione a una versione non modifica REQ-NFR-002 né autorizza l'uso continuativo del gateway. Per decisione dell'utente del 2026-11-05, l'accettazione privacy della v0.1.0 è rinviata a questo item.
 - **Requirements:** REQ-NFR-002, REQ-NFR-004
 - **Design references:** TECHNICAL-DESIGN §7
 - **Acceptance criteria:**
