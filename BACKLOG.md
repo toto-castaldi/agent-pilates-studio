@@ -99,7 +99,7 @@
 - **Type:** Task · **Priority:** P1 · **Status:** Blocked
 - **Branch:** `task/TEC-005-deploy-continuita-operativa`
 - **Dependencies:** SPIKE-001
-- **Blocked by:** Il proxy HTTPS condiviso registra nel journal il parametro sintetico di verifica webhook in caso di errore 502. Serve una mitigazione concordata e verificata dall'operatore, con accesso amministrativo, prima di attivare il gateway pubblico.
+- **Blocked by:** Il filtro locale del proxy HTTPS è stato installato e verificato con 502 sintetici; i log e lo streaming esterni Cloudflare devono ancora essere verificati dall'operatore prima dell'attivazione del gateway pubblico.
 - **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
 - **Acceptance criteria:**
