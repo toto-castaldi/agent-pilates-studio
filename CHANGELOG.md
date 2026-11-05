@@ -6,6 +6,8 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-05
+
 ### Added
 
 - Baseline documentale del progetto, requisiti e piano iniziale (TEC-001).
@@ -21,7 +23,3 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 - Diagnostica Docker limitata a eventi fissi per Hermes e PostgreSQL, senza output grezzo dei servizi; documentate prova pubblica temporanea e limitazioni privacy del proxy (TEC-005).
 - Versionamento selettivo della configurazione e del template Pi, con esclusione dei dati locali e delle estensioni non approvate (TEC-007).
-
-### Fixed
-
-### Removed

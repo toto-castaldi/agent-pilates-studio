@@ -1,6 +1,6 @@
 # Technical design — agent-pilates-studio
 
-**Target version:** v0.1.0
+**Target version:** v0.2.0
 
 Questo documento registra le scelte iniziali e le decisioni aperte. Il comportamento richiesto è in `docs/REQUIREMENTS.md`; le sezioni non ancora definite non implicano che le integrazioni siano state verificate.
 
