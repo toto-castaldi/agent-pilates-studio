@@ -229,6 +229,20 @@
   - L'agente chiede conferma solo in caso di ambiguità, ad esempio orario o giorno mancanti, e altrimenti registra senza conferma.
   - Test su PostgreSQL reale verificano il percorso di scrittura e che l'autore non possa essere indicato dal modello; gli scenari di questi casi sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato.
 
+#### US-003 — Consultare la pianificazione settimanale
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** US-002
+- **Requirements:** REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4
+- **Description:** Come titolare o collaboratore, voglio chiedere all'agente via WhatsApp chi si allena e quando, così da conoscere la pianificazione delle lezioni.
+- **Acceptance criteria:**
+  - "Venerdì mattina mi dici nelle lezioni chi si allena?" restituisce i clienti delle regole attive del venerdì nella fascia mattina, raggruppati per orario.
+  - L'agente risponde anche a domande per giorno, per orario specifico, per cliente ("quando si allena Cristina?") e al riepilogo della settimana; l'assenza di risultati è indicata esplicitamente.
+  - Le risposte usano i dati strutturati e ignorano le regole disattivate; su richiesta indicano autore e data di inserimento di una regola.
+  - Gli scenari sono aggiunti al catalogo di TEC-012 con regole sintetiche, comprese regole disattivate e fasce al confine, ed eseguiti con il modello reale, con esito registrato.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -245,6 +259,7 @@ v0.2.0:
 3. TEC-011.
 4. TEC-012.
 5. US-002.
+6. US-003.
 
 ## Items confluiti
 
