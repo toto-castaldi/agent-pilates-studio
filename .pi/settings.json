@@ -10,10 +10,14 @@
     "./.pi/skills",
     "!~/.agents/skills/**"
   ],
-  "extensions": [
-    "~/Documents/agent/common/extensions",
-    "~/.pi/agent/npm/node_modules/pi-question-tool/extensions/index.ts",
-    "~/.pi/agent/npm/node_modules/pi-web-search/src/index.ts",
-    "~/.pi/agent/npm/node_modules/pi-web-fetch/index.ts"
-  ]
+  "lastChangelogVersion": "1.5.0",
+  "theme": "light/dark",
+  "defaultProvider": "openai",
+  "modelThinkingLevels": {
+    "anthropic/claude-opus-4-8": "high",
+    "openrouter/z-ai/glm-5.3": "high",
+    "openrouter/moonshotai/kimi-k3.1-pro": "high"
+  },
+  "defaultModel": "gpt-6.1-terra",
+  "defaultThinkingLevel": "high"
 }
