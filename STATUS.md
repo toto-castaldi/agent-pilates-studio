@@ -8,24 +8,24 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Operatività in corso; verifica dei log prima dell'attivazione | 5/6 items done (83%) |
+| v0.1.0 | Open | In attesa della verifica privacy del proxy prima dell'attivazione | 5/6 items done (83%) |
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 0 |
-| In Progress | 1 |
-| Blocked | 0 |
+| In Progress | 0 |
+| Blocked | 1 |
 | Done | 5 |
 
 ## In progress
 
-| Item | Epic | Title | Branch |
-| ---- | ---- | ----- | ------ |
-| TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | `task/TEC-005-deploy-continuita-operativa` |
+None.
 
 ## Blocked
 
-None.
+| Item | Epic | Title | Branch | Reason |
+| ---- | ---- | ----- | ------ | ------ |
+| TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | `task/TEC-005-deploy-continuita-operativa` | Verifica con l'operatore dei log Cloudflare e dei formati locali del proxy prima delle prove di produzione. |
 
 ## Recently completed
 
@@ -48,4 +48,4 @@ None.
 ## Notes
 
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.
-- Il filtro locale del proxy è attivo; i log applicativi limitati a eventi fissi e il ripristino di stato Hermes sintetico sono stati verificati in prove isolate, anche su `jarvis`. Un aggiornamento tra versioni specifiche di PostgreSQL e Hermes è stato provato in locale. Restano da verificare i log esterni e la produzione. Lo streaming remoto del tunnel condiviso è vietato operativamente; i segreti restano esterni e ignorati da Git.
+- Il filtro locale del proxy è attivo; i log applicativi limitati a eventi fissi e il ripristino di stato Hermes sintetico sono stati verificati in prove isolate, anche su `jarvis`. Un aggiornamento tra versioni specifiche di PostgreSQL e Hermes è stato provato in isolamento, anche su `jarvis`. Restano da verificare i log esterni e la produzione. Lo streaming remoto del tunnel condiviso è vietato operativamente; i segreti restano esterni e ignorati da Git.

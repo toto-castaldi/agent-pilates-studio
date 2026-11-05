@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-05
 
-**Stato:** attività ripresa; non costituisce una procedura di produzione completa. L'attivazione del gateway resta sospesa fino alle verifiche dei log.
+**Stato:** attività bloccata in attesa delle verifiche dei log con l'operatore; non costituisce una procedura di produzione completa. L'attivazione del gateway resta sospesa.
 
 ## Installazione parziale
 
@@ -18,7 +18,7 @@ In locale, `npm run test:hermes` ha invece ripristinato lo stato SQLite creato d
 
 La configurazione in sviluppo offre inoltre log Docker con soli eventi fissi, tramite entrypoint che sopprimono l'output grezzo dei processi. Il test isolato locale esercita messaggi, numeri e segreti sintetici, un errore SQL con valore sintetico, casi di preflight e rotazione configurata; controlla che i log Docker dei container reali contengano solo gli eventi previsti e che lo storage dei log Hermes non contenga i dati sintetici campionati.
 
-In locale `npm run test:upgrade` ha inoltre aggiornato due immagini reali: PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7. Con rete Docker interna e dati sintetici, il test verifica lo stato PostgreSQL e la sessione Hermes prima e dopo l'aggiornamento, una nuova richiesta webhook, l'applicazione delle migrazioni e il rifiuto del DDL al ruolo agente. La prova copre solo questo percorso specifico, non aggiornamenti maggiori o arbitrari, e non sostituisce un aggiornamento in produzione.
+In locale `npm run test:upgrade` ha inoltre aggiornato due immagini reali: PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7. Con servizi in rete Docker interna e dati sintetici, il test verifica lo stato PostgreSQL e la sessione Hermes prima e dopo l'aggiornamento, una nuova richiesta webhook, l'applicazione delle migrazioni e il rifiuto del DDL al ruolo agente. Lo stesso test del commit `5be272e` è passato su `jarvis` mediante un runner Node temporaneo, senza installare Node sull'host o montare segreti reali. Il runner ha usato il socket Docker dell'host; i servizi di prova erano in rete interna e tutte le risorse e i file temporanei sono stati rimossi. Il primo tentativo si è fermato in fase di build perché il runner non disponeva del plugin Buildx; non aveva creato servizi. La prova copre solo questo percorso specifico, non aggiornamenti maggiori o arbitrari, e non sostituisce un aggiornamento in produzione.
 
 Una successiva prova su `jarvis`, con il codice del commit `36f1d0a`, ha avviato temporaneamente PostgreSQL e Hermes reali in una rete Docker interna e separata, usando esclusivamente credenziali e messaggi sintetici. Sono stati verificati handshake e firme webhook, preflight, presenza del messaggio autorizzato e assenza di quello non autorizzato nello stato Hermes, log Docker costituiti dai soli eventi fissi e assenza dei dati sintetici campionati nei file di log Hermes. Un dato SQL è sopravvissuto al riavvio e alla ricreazione di PostgreSQL con la **stessa immagine**. Gli script hanno ripristinato in un secondo progetto il database e lo stato SQLite effettivamente creato da Hermes: sono stati confrontati checksum, UID, GID e permessi dei file SQLite, verificati `PRAGMA integrity_check`, lettura del dato SQL e rifiuto del DDL al ruolo agente. Il gateway ripristinato non è stato avviato. Tutte le risorse di prova sono state rimosse; il database operativo è rimasto sano e il tunnel attivo.
 

@@ -114,7 +114,7 @@
 #### TEC-005 — Deploy e continuità operativa
 
 - **Epic:** EPIC-003 — Dati e operatività
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Blocked
 - **Branch:** `task/TEC-005-deploy-continuita-operativa`
 - **Dependencies:** SPIKE-001
 - **Description:** Proseguire il lavoro operativo senza attivare il gateway pubblico finché non siano verificati gli altri log esterni e i formati locali. Lo streaming remoto dei log del tunnel è vietato da REQ-NFR-004.
@@ -126,6 +126,7 @@
   - Backup e ripristino vengono eseguiti e verificati con dati di prova; prerequisiti e passaggi sono documentati senza segreti.
   - Sono documentati e verificati stato e disponibilità dei servizi e consultazione dei log nel rispetto di REQ-NFR-002.
   - La procedura operativa documenta il divieto di avviare lo streaming remoto dei log del tunnel condiviso, dal dashboard o da CLI, e chiarisce che è una regola operativa, non un blocco tecnico (REQ-NFR-004).
+- **Blocked by:** Prima dell'attivazione e delle prove di produzione occorre verificare con l'operatore i log Cloudflare e gli ulteriori formati locali non coperti dal filtro del proxy. La configurazione e la conservazione effettive dei log esterni non sono ancora dimostrate; il solo test del filtro locale non basta.
 
 ## Dependencies and suggested order
 

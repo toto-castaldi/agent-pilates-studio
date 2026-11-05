@@ -77,6 +77,19 @@ Il comando deve fallire se `state.db` manca o non è integro. Verificare anche i
 
 Prima di aggiornare: fermare gli scrittori, eseguire il backup e provarne il ripristino; registrare commit e immagini precedenti. Preparare una directory separata dal commit nuovo e riutilizzare intenzionalmente progetto, volumi e segreti esterni. Rieseguire bootstrap e migrazioni con credenziali dedicate, quindi avviare Hermes solo dopo i controlli. Verificare dati, stato e disponibilità dopo riavvio e aggiornamento. Un cambio di versione **major** PostgreSQL richiede una procedura di migrazione dati dedicata: non avviare una nuova major sul vecchio volume. Il rollback di uno schema migrato non equivale a cambiare immagine; usare un ripristino verificato in un progetto nuovo.
 
-`npm run test:upgrade` esercita in rete isolata, con dati sintetici, il percorso PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7. Questo non garantisce la compatibilità di altre versioni e non sostituisce la prova dell'aggiornamento in produzione.
+Dopo il backup e la verifica del ripristino, nella directory del nuovo snapshot e con `PROJECT`, `SECRETS_DIR` e `POSTGRES_PORT` esportati intenzionalmente con gli stessi valori dell'installazione, controllare prima il progetto indicato da `docker compose -p "$PROJECT" ps` e la configurazione non segreta. Poi, se la versione è compatibile e Hermes e gli altri scrittori restano fermi:
+
+```bash
+docker compose -p "$PROJECT" config --quiet
+docker compose -p "$PROJECT" build hermes
+docker compose -p "$PROJECT" up -d --wait postgres
+docker compose -p "$PROJECT" run --rm -T --interactive=false db-bootstrap
+bash scripts/migrate-docker.sh
+docker compose -p "$PROJECT" ps
+```
+
+L'avvio o la ricreazione di PostgreSQL può interrompere connessioni esistenti. Se uno dei passaggi fallisce, fermarsi e valutare il ripristino verificato, senza riavviare Hermes. Solo dopo i controlli di sicurezza e l'autorizzazione all'attivazione, l'operatore può avviare il gateway con `docker compose -p "$PROJECT" up -d --no-build --wait hermes` e verificarne disponibilità e dati.
+
+`npm run test:upgrade` esercita con servizi in rete isolata e dati sintetici il percorso PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7. Questo non garantisce la compatibilità di altre versioni e non sostituisce la prova dell'aggiornamento in produzione.
 
 `docker compose -p "$PROJECT" ps` e gli healthcheck permettono di verificare stato e disponibilità senza stampare il corpo di `/health`, che contiene un identificativo sensibile. `docker compose -p "$PROJECT" logs --tail=20 hermes postgres` consulta il log Docker `local`, limitato dagli entrypoint agli eventi fissi `hermes_launch`, `hermes_preflight_failed` e `postgres_launch`, con rotazione di tre file da 1 MB. I processi reali non ereditano il descrittore di log: il loro output è soppresso. L'evento di avvio non dimostra lo stato sano e i dettagli degli errori non sono disponibili; usare anche `ps` e gli healthcheck. I test sintetici non provano l'assenza di ogni possibile fuga. La configurazione non è ancora stata verificata in produzione; non aggirare le protezioni né attivare streaming remoto dei log del tunnel.
