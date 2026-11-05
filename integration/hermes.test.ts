@@ -174,6 +174,20 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await assert.rejects(access(backupDirectory));
     await migrator.query("INSERT INTO app.stack_probe VALUES (77, 'backup-synthetic')");
     compose('stop', 'hermes');
+
+    // Rehearse persistence across a restart and a same-image container replacement.
+    await migrator.end();
+    migrator = undefined;
+    const sourceImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', databaseId], { encoding: 'utf8' }).trim();
+    compose('restart', 'postgres');
+    compose('up', '-d', '--wait', 'postgres');
+    compose('up', '-d', '--force-recreate', '--wait', 'postgres');
+    const newDatabaseId = compose('ps', '-q', 'postgres').trim();
+    assert.notEqual(newDatabaseId, databaseId);
+    assert.equal(execFileSync('docker', ['inspect', '--format', '{{.Image}}', newDatabaseId], { encoding: 'utf8' }).trim(), sourceImage);
+    migrator = new Client({ host: address(newDatabaseId), port: 5432, database: 'studio', user: 'studio_migrator', password: databasePassword });
+    await migrator.connect();
+    assert.equal((await migrator.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
     backup();
     expectFailure(backup, /backup directory must be new/);
     expectFailure(() => restore(project, backupDirectory), /Target project has containers/);
