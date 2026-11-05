@@ -8,6 +8,8 @@
 
 Sul server Linux predisposto è stato inizializzato un nuovo PostgreSQL con ruoli e segreti di database separati e applicata la migrazione iniziale tramite `scripts/migrate-docker.sh`, senza installare Node.js sull'host. Il database è sano ed è pubblicato solo su loopback. Le credenziali esterne autorizzate dall'operatore sono state copiate in una directory privata; il gateway Hermes di produzione non è stato avviato. Lo snapshot applicato corrisponde al commit `9ed2de3`.
 
+È stata inoltre preparata, in una directory separata `releases/`, una copia del commit `4729a8f` e costruita l'immagine Hermes relativa. La verifica di sintassi Compose ha usato un percorso segreti segnaposto; non sono stati avviati o riavviati servizi e questa release non è ancora applicata al progetto operativo.
+
 ## Prova isolata di backup e ripristino
 
 Due progetti Compose temporanei con nomi e volumi distinti hanno usato credenziali sintetiche. Nel primo sono stati applicati bootstrap e migrazione e inserito un dato sintetico in PostgreSQL; un volume separato conteneva un database SQLite sintetico, non creato da Hermes. Un dump PostgreSQL in formato custom e un archivio del volume sono stati ripristinati nel secondo progetto, con ruoli inizializzati prima del ripristino. Sono stati verificati il dato SQL ripristinato, il dato SQLite e `PRAGMA integrity_check`. I progetti, i volumi di prova e i file temporanei sono stati rimossi.
