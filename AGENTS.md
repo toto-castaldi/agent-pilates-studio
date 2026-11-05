@@ -7,8 +7,8 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 ## 1. Project
 
 - **Name:** `agent-pilates-studio`
-- **Summary:** piattaforma per installare, aggiornare e provare Hermes con database relazionale, OpenRouter e WhatsApp Business.
-- **Current version:** v0.1.0 — vedere `STATUS.md`.
+- **Summary:** assistente WhatsApp dello studio Pilates per titolare e collaboratori, basato su Hermes con database relazionale, OpenRouter e WhatsApp Business; installazione, aggiornamento e prova riproducibili.
+- **Current version:** v0.2.0 — vedere `STATUS.md`.
 - **Requirements:** `docs/REQUIREMENTS.md` · **Design:** `docs/TECHNICAL-DESIGN.md`
 
 ## 2. Language
@@ -20,9 +20,9 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
-- Nessuna funzionalità o tabella di dominio dello studio nella v0.1.0 senza nuovi requisiti.
+- Funzionalità e tabelle di dominio solo per i requisiti STUDIO della v0.2.0 (regole di allenamento e clienti); eccezioni, capienza, istruttori e anagrafica degli utilizzatori sono fuori scope.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico o monitoraggio avanzato nella v0.1.0.
+- Niente deploy automatico, monitoraggio avanzato o messa in esercizio continuativa nella v0.2.0.
 
 ## 4. Stack and architecture
 
@@ -37,6 +37,9 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 - L'agente può eseguire DML ma non DDL sugli schemi; usare credenziali distinte per le migrazioni, non disponibili all'agente. È accettata l'eccezione PostgreSQL che permette al ruolo di cambiare la propria password. Verificare i privilegi su PostgreSQL reale.
 - Solo i numeri autorizzati in configurazione possono interagire; i webhook non autenticati devono essere rifiutati.
 - I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
+- Le regole di allenamento non si cancellano né si riscrivono: si disattivano con data, autore e motivo; il divieto di cancellazione è imposto dal database.
+- L'autore di inserimenti e disattivazioni è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
+- Test, CI ed esempi usano solo nomi e numeri sintetici.
 
 ## 6. Quality gate
 

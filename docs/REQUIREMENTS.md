@@ -10,10 +10,13 @@ Questo documento definisce il comportamento richiesto; le scelte tecniche sono i
 
 Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in produzione di un ambiente agentico Hermes, con database relazionale, modello tramite OpenRouter e comunicazione WhatsApp Business. Il successo della v0.1.0 è dimostrato dagli scenari di accettazione della release.
 
+Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
+
 ## 2. Actors
 
 - **Operatore:** ruolo generico che configura, installa, aggiorna e gestisce l'ambiente; l'identità concreta è da definire.
-- **Interlocutore autorizzato:** ruolo generico associato a un numero configurato, che comunica con l'agente tramite WhatsApp; l'identità concreta è da definire.
+- **Interlocutore autorizzato (utilizzatore):** il titolare dello studio o un suo collaboratore, associato a un numero configurato, che comunica con l'agente tramite WhatsApp. Nella v0.2.0 chiunque possa conversare con l'agente è un utilizzatore e tutti hanno gli stessi permessi; non esiste un'anagrafica degli utilizzatori. I clienti dello studio non usano l'agente.
+- **Cliente:** persona che si allena nello studio; non interagisce con l'agente.
 - **Agente:** Hermes, che elabora le richieste tramite il modello e accede ai dati con i privilegi assegnati.
 
 ## 3. Glossary
@@ -23,10 +26,33 @@ Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in prod
 - **DDL:** operazioni di definizione o modifica degli oggetti dello schema, inclusi creazione, alterazione ed eliminazione.
 - **Migrazione:** modifica versionata e riproducibile dello schema, eseguita con credenziali diverse da quelle dell'agente.
 - **Numero autorizzato:** numero presente nella configurazione di accesso a WhatsApp.
+- **Lezione:** lezione di Pilates di un'ora, individuale o di gruppo, tenuta in qualsiasi giorno della settimana.
+- **Regola di allenamento:** abitudine settimanale ricorrente di uno o più clienti, ad esempio "Antonio Rossi si allena tutti i venerdì alle 9", espressa in un testo in linguaggio naturale pulito e comprensibile, con i giorni, gli orari e i clienti derivati dal testo.
+- **Regola attiva:** regola non disattivata; solo le regole attive determinano la pianificazione.
+- **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel contesto dell'agente.
 
 ## 4. Scope
 
-### In scope for v0.1.0
+### In scope for v0.2.0
+
+- Registrazione conversazionale delle regole di allenamento, con anagrafica minima dei clienti, autore e data di inserimento.
+- Consultazione della pianificazione settimanale per giorno, fascia oraria, orario e cliente.
+- Aggiornamento delle regole tramite disattivazione, senza cancellazione, con storico consultabile.
+- Contesto dell'agente versionato e verifiche del comportamento conversazionale.
+- Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
+
+### Out of scope for v0.2.0
+
+Non introdurre queste capacità senza concordare e registrare un cambio di scope:
+
+- Eccezioni puntuali (assenze, recuperi, chiusure), capienza delle lezioni, istruttori, sale e attrezzature.
+- Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
+- Dati dei clienti oltre a nome, cognome e regole di allenamento.
+- Messa in esercizio continuativa del gateway pubblico.
+- Creazione del server, installazione dei suoi prerequisiti Docker/Compose, gestione di DNS o certificati HTTPS.
+- Deploy automatico e piattaforme di monitoraggio avanzato.
+
+### In scope for v0.1.0 (closed)
 
 - Ambiente locale Hermes e PostgreSQL con accesso a OpenRouter e al database.
 - Migrazioni versionate e permessi distinti per agente e gestione dello schema.
@@ -34,9 +60,7 @@ Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in prod
 - Installazione e aggiornamento intenzionale in produzione, persistenza, backup e ripristino, osservabilità essenziale.
 - Verifiche automatiche con GitHub Actions.
 
-### Out of scope for v0.1.0
-
-Non introdurre queste capacità senza concordare e registrare un cambio di scope:
+### Out of scope for v0.1.0 (closed)
 
 - Funzionalità specifiche dello studio Pilates e tabelle di dominio non richieste.
 - Creazione del server, installazione dei suoi prerequisiti Docker/Compose, gestione di DNS o certificati HTTPS.
@@ -50,12 +74,13 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 | AGENT | Ambiente agente e modello |
 | WA | Comunicazione WhatsApp Business |
 | OPS | Operatività e continuità |
+| STUDIO | Pianificazione delle lezioni dello studio |
 
 ### Database e migrazioni
 
 #### REQ-DB-001 — Migrazioni versionate
 
-L'operatore deve poter inizializzare e aggiornare lo schema tramite migrazioni versionate; non sono richieste tabelle di dominio iniziali.
+L'operatore deve poter inizializzare e aggiornare lo schema tramite migrazioni versionate. Le tabelle di dominio sono introdotte solo per i requisiti STUDIO.
 
 #### REQ-DB-002 — Privilegi dell'agente
 
@@ -101,6 +126,28 @@ I dati del database devono persistere tra riavvii e aggiornamenti; l'operatore d
 
 L'operatore deve poter verificare stato e disponibilità dei servizi e consultare i log nel rispetto di REQ-NFR-002.
 
+### Pianificazione delle lezioni
+
+#### REQ-STUDIO-001 — Registrazione delle regole di allenamento
+
+Un utilizzatore deve poter descrivere conversando via WhatsApp l'abitudine settimanale di uno o più clienti; l'agente la registra come regola in una tabella dedicata. La regola contiene un testo in linguaggio naturale pulito e comprensibile, la data di inserimento, l'autore (REQ-STUDIO-003) e i dati strutturati derivati automaticamente dal modello: giorni della settimana, orari e clienti coinvolti. L'agente decide come strutturare la richiesta in una o più regole; una regola può riguardare più giorni e orari e più clienti che si allenano insieme. L'agente chiede conferma solo in caso di ambiguità; altrimenti registra e riepiloga quanto salvato.
+
+#### REQ-STUDIO-002 — Anagrafica dei clienti
+
+I clienti sono identificati da nome e cognome, univoci nello studio, senza ulteriori dati. L'agente crea un cliente quando una regola ne cita uno non ancora registrato, chiedendo il cognome se manca. Se l'utilizzatore indica solo il nome e esiste un solo cliente con quel nome, l'agente lo usa; se ne esistono più di uno chiede il cognome.
+
+#### REQ-STUDIO-003 — Autore delle modifiche
+
+L'autore di ogni inserimento e disattivazione è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
+
+#### REQ-STUDIO-004 — Consultazione della pianificazione
+
+Un utilizzatore deve poter chiedere conversando chi si allena in un giorno, una fascia oraria o un orario (ad esempio "venerdì mattina mi dici nelle lezioni chi si allena?"), quando si allena un cliente e il riepilogo della settimana. Le risposte si basano sulle sole regole attive e sui dati strutturati, raggruppate per giorno e orario; l'assenza di risultati è indicata esplicitamente. Le fasce orarie hanno limiti fissi definiti nel contesto dell'agente. Su richiesta l'agente indica autore e data di inserimento o disattivazione di una regola.
+
+#### REQ-STUDIO-005 — Aggiornamento e storico delle regole
+
+Le regole non vengono mai cancellate né riscritte. Quando, da una richiesta esplicita (ad esempio "Cristina ha smesso") o implicita (ad esempio una nuova abitudine che sostituisce la precedente), l'agente valuta che una regola non sia più valida, la disattiva autonomamente registrando data, autore (REQ-STUDIO-003) e motivo, e lo comunica all'utilizzatore. Un cambiamento si esprime disattivando la regola precedente e registrandone una nuova. Lo storico delle regole, incluse quelle disattivate, resta consultabile. Il divieto di cancellazione è imposto anche dal database per la tabella delle regole.
+
 ## 6. Non-functional requirements
 
 #### REQ-NFR-001 — Quality gate riproducibile
@@ -121,7 +168,27 @@ GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su
 
 Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né tramite `cloudflared tail` o strumenti equivalenti. Il divieto è una regola operativa, non un blocco tecnico; non sostituisce i requisiti di protezione degli altri log e dei dati previsti da REQ-NFR-002.
 
-## 7. Release acceptance — v0.1.0
+#### REQ-NFR-005 — Dati personali dello studio nella v0.2.0
+
+I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento e agli autori delle modifiche (numero WhatsApp e nome del profilo). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
+
+**Decisione dell'utente (2026-11-05):** per la v0.2.0 l'uso di nomi e cognomi reali nelle prove è accettato rinviando l'audit privacy a TEC-008. La decisione non dichiara la conformità a REQ-NFR-002, non autorizza l'uso continuativo del gateway, che è fuori scope per la v0.2.0, e non modifica REQ-NFR-004.
+
+#### REQ-NFR-006 — Verifica del comportamento conversazionale
+
+Il comportamento dell'agente nei casi d'uso STUDIO deve essere verificato con scenari conversazionali documentati con dati sintetici, che indicano richiesta, risposta attesa e stato atteso del database, e con un harness automatico eseguibile su richiesta con il modello reale tramite OpenRouter. L'harness non fa parte della CI né del quality gate e richiede credenziali esterne; vincoli e privilegi del database restano verificati da test automatici su PostgreSQL reale.
+
+## 7. Release acceptance — v0.2.0
+
+- Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
+- Un utilizzatore chiede chi si allena in un giorno, una fascia o un orario e quando si allena un cliente, e riceve risposte coerenti con le regole attive.
+- Un utilizzatore comunica cambiamenti espliciti o impliciti; l'agente disattiva le regole superate con motivo, data e autore, lo comunica e mantiene lo storico; il database rifiuta la cancellazione delle regole.
+- Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
+- I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
+
+Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
+
+### Previous version — v0.1.0
 
 - Da un ambiente pulito l'operatore avvia localmente Hermes e PostgreSQL, applica le migrazioni e verifica il quality gate.
 - Su PostgreSQL reale l'agente può eseguire DML e non DDL; le credenziali di migrazione non sono disponibili all'agente.

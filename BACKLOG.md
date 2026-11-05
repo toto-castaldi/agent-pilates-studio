@@ -151,6 +151,25 @@
 
 **Goal:** Il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
+### EPIC-004 — Pianificazione delle lezioni
+
+**Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
+
+#### SPIKE-002 — Identità del mittente e contesto dell'agente
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** Spike · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-STUDIO-003, REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §3, §5, §6, §7, §10
+- **Description:** Stabilire come l'autore delle modifiche venga ricavato dal mittente WhatsApp senza che il modello possa dichiararlo o alterarlo, e come fornire all'agente un contesto versionato.
+- **Acceptance criteria:**
+  - Un rapporto in `docs/spikes/` documenta, per Hermes 0.22.7 e il gateway WhatsApp Cloud nativo, se e come il numero del mittente e il nome del profilo WhatsApp siano disponibili ai tool del plugin, e se derivino dal messaggio autenticato.
+  - Il rapporto propone un meccanismo con cui l'autore registrato nel database è ricavato dal sistema e non è falsificabile dal modello, neppure con SQL costruito ad arte nella singola istruzione (ad esempio tramite impostazioni di sessione, trigger o parametri iniettati dal plugin); confronta le alternative con rischi e costi, incluse eventuali modifiche al gateway.
+  - Il rapporto indica come fornire all'agente un contesto versionato nel repository (`SOUL.md` o equivalente) con ruolo, schema, fasce orarie, data corrente e fuso orario Europe/Rome, che persista tra riavvii e aggiornamenti, e come interagisce con la memoria e le sessioni SQLite di Hermes.
+  - Una prova locale con webhook e dati sintetici dimostra la propagazione dell'identità fino al plugin e verifica che numeri, nomi e messaggi non compaiano nei log (REQ-NFR-002).
+  - Il rapporto contiene raccomandazioni per TEC-010, TEC-011 e US-002 e non include segreti né dati reali; il codice esplorativo non viene integrato.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -159,6 +178,10 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 2. TEC-002.
 3. SPIKE-001, che include ricerca e stack locale completo.
 4. TEC-005, TEC-006, TEC-007 (quest'ultimo senza dipendenze) e TEC-009.
+
+v0.2.0:
+
+1. SPIKE-002.
 
 ## Items confluiti
 
