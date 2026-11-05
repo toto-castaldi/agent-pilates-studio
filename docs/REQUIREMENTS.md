@@ -69,7 +69,7 @@ L'operatore deve poter avviare localmente Hermes e il database con Docker Compos
 
 #### REQ-AGENT-002 — Modello e dati
 
-Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database con i privilegi dell'agente definiti in REQ-DB-002. L'identificativo iniziale del modello proposto è `gpt-6.1-terra`, soggetto a verifica.
+Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database con i privilegi dell'agente definiti in REQ-DB-002. L'identificativo iniziale proposto è `gpt-6.1-terra`; SPIKE-001 ha verificato nella prova documentata l'ID OpenRouter completo `openai/gpt-6.1-terra`. Il modello resta configurabile.
 
 ### Comunicazione WhatsApp Business
 

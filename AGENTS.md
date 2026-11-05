@@ -28,8 +28,8 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 
 - TypeScript, Node.js LTS e npm per il codice del progetto; Hermes mantiene i propri prerequisiti.
 - PostgreSQL e migrazioni Prisma; Docker Compose in locale e su server Linux predisposto.
-- OpenRouter, API WhatsApp Business e GitHub Actions; compatibilità Hermes da verificare con SPIKE-001.
-- Framework di test e versioni precise da definire con TEC-002 e dagli item pertinenti.
+- OpenRouter, API WhatsApp Business e GitHub Actions; le integrazioni Hermes sono state verificate nei limiti documentati da SPIKE-001.
+- Framework di test e versioni di riferimento: `docs/TECHNICAL-DESIGN.md` §§1, 8–9.
 - Confini dei componenti e decisioni aperte: `docs/TECHNICAL-DESIGN.md` §§1–3, 10.
 
 ## 5. Domain rules
@@ -68,3 +68,4 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
 - Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare l'elenco dei numeri consentiti.
+- Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). La prova pubblica temporanea non autorizza l'uso continuativo; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
