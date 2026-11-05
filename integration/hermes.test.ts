@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, appendFile, chmod, cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
 
-test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { timeout: 240_000 }, async () => {
+test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { timeout: 360_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-stack-test-'));
   const project = `pilates-stack-${randomBytes(8).toString('hex')}`;
+  const recoveryProject = `pilates-recovery-${randomBytes(8).toString('hex')}`;
+  const corruptProject = `pilates-corrupt-${randomBytes(8).toString('hex')}`;
   const databasePassword = randomBytes(32).toString('hex');
   const secrets: Record<string, string> = {
     'db-admin': randomBytes(32).toString('hex'),
@@ -39,7 +41,16 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       stdio: 'pipe',
       timeout: 150_000,
     });
+  const recoveryCompose = (...args: string[]) =>
+    execFileSync('docker', ['compose', '-p', recoveryProject, '-f', 'compose.yaml', ...args], {
+      env,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 150_000,
+    });
   let migrator: Client | undefined;
+  let restored: Client | undefined;
+  let restoredAgent: Client | undefined;
   let imageBuilt = false;
   try {
     await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
@@ -146,10 +157,100 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.equal(privacy.logs_clean, true);
     assert.equal(privacy.unauthorized_absent, true);
     assert.equal(privacy.authorized_present, true);
+
+    const backupDirectory = join(directory, 'backup');
+    const backup = () => execFileSync('bash', ['scripts/backup.sh', project, backupDirectory], {
+      env, encoding: 'utf8', stdio: 'pipe', timeout: 150_000,
+    });
+    const restore = (target: string, archive: string) => execFileSync('bash', ['scripts/restore.sh', target, archive], {
+      env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000,
+    });
+    const expectFailure = (operation: () => unknown, message: RegExp) => assert.throws(operation, (error: unknown) => {
+      assert.match(String((error as { stderr?: string }).stderr), message);
+      return true;
+    });
+    // Refuse to snapshot a live gateway or overwrite existing resources.
+    expectFailure(backup, /Stop Hermes before taking a backup/);
+    await assert.rejects(access(backupDirectory));
+    await migrator.query("INSERT INTO app.stack_probe VALUES (77, 'backup-synthetic')");
+    compose('stop', 'hermes');
+    backup();
+    expectFailure(backup, /backup directory must be new/);
+    expectFailure(() => restore(project, backupDirectory), /Target project has containers/);
+
+    const damaged = join(directory, 'damaged');
+    await cp(backupDirectory, damaged, { recursive: true });
+    await appendFile(join(damaged, 'postgres.dump'), 'corruption');
+    expectFailure(() => restore(corruptProject, damaged), /Backup checksum verification failed/);
+    const damagedVolume = join(directory, 'damaged-volume');
+    await cp(backupDirectory, damagedVolume, { recursive: true });
+    await appendFile(join(damagedVolume, 'hermes.tar'), 'corruption');
+    expectFailure(() => restore(corruptProject, damagedVolume), /Backup checksum verification failed/);
+    await chmod(join(directory, 'db-migrator'), 0o644);
+    try {
+      expectFailure(() => restore(corruptProject, backupDirectory), /database secret has insecure permissions/);
+    } finally {
+      await chmod(join(directory, 'db-migrator'), 0o600);
+    }
+    for (const resource of [['ps', '-aq'], ['volume', 'ls', '-q'], ['network', 'ls', '-q']]) {
+      assert.equal(execFileSync('docker', [...resource, '--filter', `label=com.docker.compose.project=${corruptProject}`], { encoding: 'utf8' }).trim(), '');
+    }
+
+    restore(recoveryProject, backupDirectory);
+    const restoredPort = Number(recoveryCompose('port', 'postgres', '5432').trim().split(':').at(-1));
+    assert.ok(Number.isInteger(restoredPort) && restoredPort > 0);
+    restored = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_migrator', password: databasePassword });
+    await restored.connect();
+    assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
+    await restoredAgent.connect();
+    assert.equal((await restoredAgent.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    await assert.rejects(restoredAgent.query('CREATE TABLE app.restore_forbidden (id int)'), (error: unknown) => {
+      assert.equal((error as { code?: string }).code, '42501');
+      return true;
+    });
+    expectFailure(() => restore(recoveryProject, backupDirectory), /Target project has containers/);
+    assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    assert.equal(recoveryCompose('ps', '-q', '--status', 'running', 'hermes').trim(), '');
+
+    // Compare the real Hermes SQLite files, ownership and integrity after restoring.
+    const checkState = (volume: string) => {
+      const pythonCheck = [
+        'import hashlib, json, os, pathlib, shutil, sqlite3',
+        "root = pathlib.Path('/data')",
+        "files = sorted(root.glob('state.db*'))",
+        "state = {p.name: {'hash': hashlib.sha256(p.read_bytes()).hexdigest(), 'uid': p.stat().st_uid, 'gid': p.stat().st_gid, 'mode': p.stat().st_mode & 0o777} for p in files if p.is_file()}",
+        "assert 'state.db' in state",
+        "copy = pathlib.Path('/tmp/state-copy'); copy.mkdir()",
+        '[shutil.copyfile(p, copy / p.name) for p in files if p.is_file()]',
+        "db = sqlite3.connect(str(copy / 'state.db'))",
+        "assert db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'",
+        'db.close()',
+        'print(json.dumps(state, sort_keys=True))',
+      ].join('\n');
+      return JSON.parse(execFileSync('docker', [
+        'run', '--rm', '--network', 'none', '--read-only', '--tmpfs', '/tmp:mode=1777',
+        '--mount', `type=volume,src=${volume},dst=/data,readonly`,
+        '--entrypoint', '/opt/hermes/.venv/bin/python',
+        'nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c',
+        '-c', pythonCheck,
+      ], { encoding: 'utf8', stdio: 'pipe', timeout: 90_000 }));
+    };
+    assert.deepEqual(checkState(`${project}_hermes_data`), checkState(`${recoveryProject}_hermes_data`));
   } finally {
+    await restoredAgent?.end();
+    await restored?.end();
     await migrator?.end();
     try {
-      compose('down', '--volumes', '--remove-orphans');
+      try {
+        recoveryCompose('down', '--volumes', '--remove-orphans');
+      } finally {
+        try {
+          execFileSync('docker', ['compose', '-p', corruptProject, '-f', 'compose.yaml', 'down', '--volumes', '--remove-orphans'], { env, stdio: 'pipe', timeout: 150_000 });
+        } finally {
+          compose('down', '--volumes', '--remove-orphans');
+        }
+      }
     } finally {
       if (imageBuilt) spawnSync('docker', ['image', 'rm', `${project}-hermes`], { stdio: 'ignore' });
       await rm(directory, { recursive: true, force: true });

@@ -109,4 +109,4 @@ Se il servizio non diventa sano o non risponde, verificare con `docker compose p
 - Un endpoint HTTPS pubblico già disponibile per i webhook Meta.
 - App Meta WhatsApp Business configurata e credenziali per i servizi esterni; non inserire credenziali nel repository.
 
-Le procedure di installazione in produzione, aggiornamento, backup e ripristino saranno documentate e verificate separatamente.
+Una [procedura operativa in sviluppo](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. Le prove di produzione e la diagnostica sicura restano da completare; non attivare il gateway pubblico prima delle verifiche sui log.
