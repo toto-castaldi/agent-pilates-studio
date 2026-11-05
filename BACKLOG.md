@@ -170,6 +170,21 @@
   - Una prova locale con webhook e dati sintetici dimostra la propagazione dell'identità fino al plugin e verifica che numeri, nomi e messaggi non compaiano nei log (REQ-NFR-002).
   - Il rapporto contiene raccomandazioni per TEC-010, TEC-011 e US-002 e non include segreti né dati reali; il codice esplorativo non viene integrato.
 
+#### TEC-010 — Schema della pianificazione settimanale
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** SPIKE-002
+- **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §4, §5, §8, §10
+- **Description:** Introdurre con migrazioni Prisma le tabelle di dominio per clienti e regole di allenamento, con privilegi dell'agente che impediscono cancellazione e riscrittura delle regole e un autore non falsificabile secondo il meccanismo raccomandato da SPIKE-002.
+- **Acceptance criteria:**
+  - Una migrazione versionata crea nello schema `app` i clienti (nome, cognome, univoci senza distinzione tra maiuscole e minuscole, data e autore di creazione), le regole (testo pulito, data di inserimento, autore, data, autore e motivo di disattivazione), gli slot settimanali della regola (giorno ISO 1–7 e ora di inizio) e il legame N:N tra regole e clienti; vincoli e controlli impediscono giorni non validi e stati di disattivazione incoerenti.
+  - L'autore è composto dal numero WhatsApp del mittente e dal nome del profilo, facoltativo, ed è impostato dal sistema secondo SPIKE-002; un valore fornito dal modello non viene accettato.
+  - Il ruolo dell'agente può leggere e inserire clienti, regole, slot e legami; sulla tabella delle regole non ha `DELETE` e può aggiornare solo i campi di disattivazione, una sola volta; sulle altre tabelle mantiene il DML previsto da REQ-DB-002 e il DDL resta rifiutato.
+  - Test su PostgreSQL reale verificano migrazione da uno stato pulito e dallo schema della v0.1.0, vincoli, unicità dei clienti, rifiuto di `DELETE` e di riscrittura delle regole, autore non falsificabile e rifiuto del DDL, con soli dati sintetici.
+  - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -182,6 +197,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 v0.2.0:
 
 1. SPIKE-002.
+2. TEC-010.
 
 ## Items confluiti
 
