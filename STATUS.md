@@ -8,24 +8,24 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Stack e CI definiti; operatività bloccata dalla privacy del proxy | 5/6 items done (83%) |
+| v0.1.0 | Open | Operatività in corso; verifica dei log prima dell'attivazione | 5/6 items done (83%) |
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 0 |
-| In Progress | 0 |
-| Blocked | 1 |
+| In Progress | 1 |
+| Blocked | 0 |
 | Done | 5 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | `task/TEC-005-deploy-continuita-operativa` |
 
 ## Blocked
 
-| Item | Epic | Reason | Branch |
-| ---- | ---- | ------ | ------ |
-| TEC-005 | EPIC-003 — Dati e operatività | Il filtro locale è verificato con 502 sintetici; restano da verificare altri log esterni e formati locali prima di attivare il gateway. | `task/TEC-005-deploy-continuita-operativa` |
+None.
 
 ## Recently completed
 

@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-05
 
-**Stato:** attività bloccata; non costituisce una procedura di produzione completa.
+**Stato:** attività ripresa; non costituisce una procedura di produzione completa. L'attivazione del gateway resta sospesa fino alle verifiche dei log.
 
 ## Installazione parziale
 

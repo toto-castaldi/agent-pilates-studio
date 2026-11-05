@@ -114,10 +114,10 @@
 #### TEC-005 — Deploy e continuità operativa
 
 - **Epic:** EPIC-003 — Dati e operatività
-- **Type:** Task · **Priority:** P1 · **Status:** Blocked
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
 - **Branch:** `task/TEC-005-deploy-continuita-operativa`
 - **Dependencies:** SPIKE-001
-- **Blocked by:** Il filtro locale del proxy HTTPS è stato installato e verificato con 502 sintetici; restano da verificare gli altri log esterni e i formati locali prima dell'attivazione del gateway pubblico. Lo streaming remoto dei log del tunnel è vietato da REQ-NFR-004.
+- **Description:** Proseguire il lavoro operativo senza attivare il gateway pubblico finché non siano verificati gli altri log esterni e i formati locali. Lo streaming remoto dei log del tunnel è vietato da REQ-NFR-004.
 - **Requirements:** REQ-OPS-001, REQ-OPS-002, REQ-OPS-003, REQ-NFR-002, REQ-NFR-004
 - **Design references:** TECHNICAL-DESIGN §1, §2, §5, §7, §8, §9
 - **Acceptance criteria:**
