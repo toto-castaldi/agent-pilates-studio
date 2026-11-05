@@ -1,16 +1,19 @@
 {
+  "packages": [
+    "git:github.com/toto-castaldi/agent-harness-stuff",
+    "npm:@tychenjiajun/pi-voice",
+    "npm:pi-question-tool",
+    "npm:pi-web-search",
+    "npm:pi-web-fetch"
+  ],
+  "skills": [
+    "./.pi/skills",
+    "!~/.agents/skills/**"
+  ],
   "extensions": [
     "~/Documents/agent/common/extensions",
     "~/.pi/agent/npm/node_modules/pi-question-tool/extensions/index.ts",
     "~/.pi/agent/npm/node_modules/pi-web-search/src/index.ts",
     "~/.pi/agent/npm/node_modules/pi-web-fetch/index.ts"
-  ],
-  "packages": [
-    "npm:@tychenjiajun/pi-voice"
-  ],
-  "skills": [
-    "~/Documents/agent/common/skills",
-    "./.pi/skills",
-    "!/home/toto/.agents/skills/**"
   ]
 }
