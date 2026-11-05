@@ -111,4 +111,4 @@ Se il servizio non diventa sano o non risponde, verificare con `docker compose p
 - Un endpoint HTTPS pubblico già disponibile per i webhook Meta.
 - App Meta WhatsApp Business configurata e credenziali per i servizi esterni; non inserire credenziali nel repository.
 
-Una [procedura operativa in sviluppo](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. Le prove di produzione restano da completare; è autorizzata solo una prova pubblica temporanea e controllata con il rischio residuo dei log documentato.
+La [procedura operativa](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. La sola prova pubblica temporanea autorizzata è conclusa; l'audit completo dei log del proxy resta nel debito TEC-008 e l'uso continuativo non è autorizzato.

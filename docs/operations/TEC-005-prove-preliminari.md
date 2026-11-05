@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-05
 
-**Stato:** attività ripresa; l'operatore ha autorizzato una prova pubblica temporanea e controllata, accettando il rischio residuo dei log descritto in REQ-NFR-002. Non costituisce una procedura di produzione completa né un'autorizzazione all'uso continuativo.
+**Stato:** prove operative completate nei limiti indicati; l'operatore ha autorizzato una sola prova pubblica temporanea e controllata, accettando il rischio residuo dei log descritto in REQ-NFR-002. La prova è conclusa e non autorizza l'uso continuativo; l'audit completo del proxy è separato in TEC-008.
 
 ## Installazione parziale
 
@@ -28,11 +28,11 @@ Nel primo tentativo, Docker su `jarvis` non ha pubblicato la porta PostgreSQL de
 
 Le prove isolate non dimostrano l'assenza di ogni possibile fuga, non coprono i log esterni e non sostituiscono un aggiornamento o un ripristino dei dati di produzione.
 
-## Blocco privacy del proxy
+## Rischio privacy del proxy e mitigazioni
 
 Con il gateway spento, una richiesta pubblica con parametro di verifica **sintetico** ha ricevuto 502; il parametro sintetico è stato rilevato nel journal del servizio cloudflared. La ricerca del token reale attuale nel solo journal locale dal 2026-11-03 non ha dato riscontro; non è una verifica dei log esterni o di altre copie. L'accesso alla configurazione del proxy condiviso richiede l'operatore. Prima dell'attivazione occorre concordare una mitigazione che non registri segreti, verificarla nei casi di successo ed errore e valutare l'impatto sugli altri servizi e sui log esterni.
 
-### Mitigazione mirata da verificare
+### Mitigazione mirata e limiti delle verifiche
 
 Su richiesta dell'operatore è stata adottata una mitigazione circoscritta, senza abbassare il livello di log degli altri servizi: `LogFilterPatterns` di systemd scarta dal journal le righe di cloudflared che contengono l'hostname del webhook. Il server usa systemd 259; `systemd-analyze verify` ha accettato la sintassi e un confronto ERE su righe sintetiche ha distinto l'hostname interessato da un altro. L'operatore ha provato il filtro su un'unità systemd temporanea e lo ha installato su cloudflared. Dopo il riavvio, due richieste sintetiche con hostname in minuscolo e maiuscolo hanno ricevuto 502 e i loro valori non sono stati rilevati nel journal; un evento sintetico precedente al filtro è presente come controllo di leggibilità. Un sito pubblico preesistente ha risposto HTTP 200.
 
@@ -62,10 +62,10 @@ Un backup del PostgreSQL operativo e dell'intero volume Hermes contenente la ses
 
 Dopo la verifica del ripristino è stato riavviato il solo container PostgreSQL operativo, senza ricrearlo: è tornato sano e i metadati controllati sono rimasti invariati. Una volta verificata la copia indipendente, è stata applicata intenzionalmente la configurazione del commit `995dd78` al solo PostgreSQL: il container è stato ricreato usando **lo stesso volume e la stessa immagine 17.10**, è tornato sano, la migrazione è stata rieseguita e i metadati PostgreSQL e i file di stato Hermes sono rimasti invariati. Il log Docker PostgreSQL conteneva solo l'evento fisso previsto. La credenziale reale del ruolo agente è stata verificata senza stamparla: connessione riuscita e DDL rifiutato con `42501`. Un primo tentativo di verifica in un container con tutte le capability rimosse è fallito; il controllo è riuscito aggiungendo la sola capability necessaria alla lettura del file montato. Hermes è rimasto spento. Non è stato eseguito un aggiornamento del database operativo tra versioni PostgreSQL diverse; il percorso 17.9→17.10 è stato verificato separatamente in isolamento.
 
+Dopo la riconfigurazione è stato ricreato brevemente Hermes sul volume operativo, pubblicandolo **solo su una porta loopback diversa da quella del proxy**, senza riattivare il webhook pubblico. L'healthcheck è riuscito e due richieste locali sintetiche non autorizzate sono state rifiutate. Il log Docker conteneva solo l'evento fisso previsto. Hermes è stato fermato subito dopo e il timer di arresto precauzionale disattivato; PostgreSQL è rimasto sano e il tunnel attivo. Un controllo privato, senza stampare messaggi, ha verificato integrità SQLite e persistenza dei messaggi utente e assistente rispetto a prima del riavvio. Non è stata effettuata una seconda prova WhatsApp pubblica.
+
 ## Debito tecnico individuato: verifica completa dei log del proxy
 
 Le prove coprono alcuni successi ed errori sintetici e l'operatore esclude esportazioni Cloudflare; non dimostrano quali dati Cloudflare conservi internamente né coprono ogni formato di errore locale. Resta possibile che il verify token o altri dati sensibili compaiano in log non osservati. Il debito consiste nel verificare conservazione, campi e retention Cloudflare applicabili all'account, censire ulteriori destinazioni e formati locali e, se necessario, adottare e provare una mitigazione che non esponga token, numeri o messaggi, mantenendo il divieto di streaming remoto. Eventuali token esposti dovranno essere ruotati in modo coordinato con Meta.
 
-L'operatore ha chiesto di trovare una soluzione o rinviare questo approfondimento come debito e ha autorizzato una prova pubblica temporanea e controllata, accettando il rischio residuo. La prova non è una dimostrazione di conformità completa a REQ-NFR-002 né un'autorizzazione all'uso continuativo. Questa registrazione nella documentazione del branch non è ancora un item nel backlog: `docs/PROCESS.md` §6.1 richiede di aggiungerlo su `main` dopo accordo, senza cambiare branch o integrare automaticamente il lavoro in corso.
-
-Restano da completare e verificare le procedure di deploy e aggiornamento, il ripristino utilizzabile dall'operatore e le prove di produzione previste dai criteri di TEC-005.
+L'operatore ha chiesto di rinviare questo approfondimento come debito e ha autorizzato una sola prova pubblica temporanea e controllata, accettando il rischio residuo. La prova non dimostra la conformità completa a REQ-NFR-002 né autorizza l'uso continuativo. Il debito è registrato su `main` come TEC-008 nel backlog non assegnato; l'accettazione privacy della release resta da verificare.
