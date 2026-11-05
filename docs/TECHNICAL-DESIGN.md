@@ -79,6 +79,6 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 ## 10. Open decisions
 
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
-- Propagazione affidabile dell'identità del mittente WhatsApp (numero e nome del profilo) dal gateway Hermes al plugin SQL, in modo che l'autore registrato non sia falsificabile dal modello; caricamento del contesto versionato dell'agente (`SOUL.md` o equivalente) con data e fuso orario Europe/Rome — SPIKE-002.
+- Propagazione affidabile dell'identità del mittente WhatsApp (numero e nome del profilo) dal gateway Hermes al plugin SQL, in modo che l'autore registrato non sia falsificabile dal modello; caricamento in Hermes del file `SOUL.md` versionato nel progetto, con data e fuso orario Europe/Rome — SPIKE-002.
 - Modello dati della pianificazione (clienti, regole, slot e legami), privilegi per tabella e colonna che impediscono cancellazione e riscrittura delle regole, e applicazione dell'autore ricavato dal sistema — TEC-010.
-- Struttura, caricamento e aggiornamento del contesto versionato dell'agente dello studio, comprese le fasce orarie — TEC-011.
+- Struttura, caricamento e aggiornamento del file `SOUL.md` dell'agente dello studio, fonte unica delle regole di comportamento come le fasce orarie — TEC-011.

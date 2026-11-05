@@ -40,6 +40,7 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 - Le regole di allenamento non si cancellano né si riscrivono: si disattivano con data, autore e motivo; il divieto di cancellazione è imposto dal database.
 - L'autore di inserimenti e disattivazioni è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
 - Test, CI ed esempi usano solo nomi e numeri sintetici.
+- Le regole di comportamento dell'agente, come i limiti delle fasce orarie, stanno nel file `SOUL.md` versionato nel progetto e usato da Hermes, senza duplicarle nel codice.
 
 ## 6. Quality gate
 

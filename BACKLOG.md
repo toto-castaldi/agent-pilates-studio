@@ -166,7 +166,7 @@
 - **Acceptance criteria:**
   - Un rapporto in `docs/spikes/` documenta, per Hermes 0.22.7 e il gateway WhatsApp Cloud nativo, se e come il numero del mittente e il nome del profilo WhatsApp siano disponibili ai tool del plugin, e se derivino dal messaggio autenticato.
   - Il rapporto propone un meccanismo con cui l'autore registrato nel database è ricavato dal sistema e non è falsificabile dal modello, neppure con SQL costruito ad arte nella singola istruzione (ad esempio tramite impostazioni di sessione, trigger o parametri iniettati dal plugin); confronta le alternative con rischi e costi, incluse eventuali modifiche al gateway.
-  - Il rapporto indica come fornire all'agente un contesto versionato nel repository (`SOUL.md` o equivalente) con ruolo, schema, fasce orarie, data corrente e fuso orario Europe/Rome, che persista tra riavvii e aggiornamenti, e come interagisce con la memoria e le sessioni SQLite di Hermes.
+  - Il rapporto indica come Hermes carichi il file `SOUL.md` versionato nel progetto (posizione in `HERMES_HOME`, copia nell'immagine o montaggio in sola lettura, controlli anti-injection), come fornire data corrente e fuso orario Europe/Rome, come le modifiche raggiungano le sessioni già aperte e come il file interagisca con la memoria e le sessioni SQLite di Hermes; il file deve persistere tra riavvii e aggiornamenti.
   - Una prova locale con webhook e dati sintetici dimostra la propagazione dell'identità fino al plugin e verifica che numeri, nomi e messaggi non compaiano nei log (REQ-NFR-002).
   - Il rapporto contiene raccomandazioni per TEC-010, TEC-011 e US-002 e non include segreti né dati reali; il codice esplorativo non viene integrato.
 
@@ -192,13 +192,13 @@
 - **Dependencies:** SPIKE-002, TEC-010
 - **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-004, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9, §10
-- **Description:** Fornire all'agente, tramite `SOUL.md` o il meccanismo raccomandato da SPIKE-002, un contesto versionato che lo renda l'assistente dello studio Pilates.
+- **Description:** Fornire all'agente un file `SOUL.md` versionato nel progetto (ad esempio `hermes/SOUL.md`) e usato da Hermes, che lo renda l'assistente dello studio Pilates. Le regole di comportamento, come i limiti delle fasce orarie, stanno in questo file.
 - **Acceptance criteria:**
-  - Il contesto è versionato nel repository, senza segreti né dati reali, ed è caricato da Hermes in locale e in produzione; persiste tra riavvii e aggiornamenti e le sue modifiche si applicano con il normale aggiornamento.
-  - Il contesto definisce il ruolo di assistente per titolare e collaboratori, la lingua italiana, risposte brevi adatte a WhatsApp, la data corrente con fuso orario Europe/Rome e le fasce orarie fisse: mattina dalle 06:00 alle 12:59, pomeriggio dalle 13:00 alle 17:59, sera dalle 18:00 in poi, salvo diversa decisione registrata.
-  - Il contesto descrive lo schema di TEC-010 e le politiche: testo delle regole pulito e comprensibile, derivazione dei dati strutturati, scomposizione decisa dall'agente, riconoscimento dei clienti per nome con richiesta del cognome se ambiguo o mancante, conferma solo in caso di ambiguità, disattivazione autonoma comunicata con motivo, nessuna cancellazione o riscrittura, risposte basate sulle sole regole attive.
+  - Il file `SOUL.md` è versionato nel repository, senza segreti né dati reali, ed è quello caricato da Hermes in locale e in produzione, senza copie modificate a mano; persiste tra riavvii e aggiornamenti, le sue modifiche si applicano con il normale aggiornamento e la documentazione indica quando raggiungono le sessioni già aperte.
+  - `SOUL.md` definisce il ruolo di assistente per titolare e collaboratori, la lingua italiana, risposte brevi adatte a WhatsApp, la data corrente con fuso orario Europe/Rome e le fasce orarie fisse: mattina dalle 06:00 alle 12:59, pomeriggio dalle 13:00 alle 17:59, sera dalle 18:00 in poi, salvo diversa decisione registrata.
+  - `SOUL.md` descrive lo schema di TEC-010 e le politiche: testo delle regole pulito e comprensibile, derivazione dei dati strutturati, scomposizione decisa dall'agente, riconoscimento dei clienti per nome con richiesta del cognome se ambiguo o mancante, conferma solo in caso di ambiguità, disattivazione autonoma comunicata con motivo, nessuna cancellazione o riscrittura, risposte basate sulle sole regole attive.
   - I toolset non necessari restano disabilitati e l'agente non riporta numeri di telefono nelle risposte se non richiesto.
-  - Un test automatico verifica che il contesto sia incluso nell'immagine o nel volume Hermes previsto, che citi tabelle e colonne esistenti nella migrazione e che non contenga segreti; README e design descrivono come modificarlo.
+  - Le regole di comportamento, inclusi i limiti delle fasce, non sono duplicate nel codice o nella configurazione. Un test automatico verifica che `SOUL.md` sia incluso nell'immagine o nel volume Hermes previsto, che citi tabelle e colonne esistenti nella migrazione e che non contenga segreti; README e design descrivono come modificarlo.
 
 #### TEC-012 — Scenari conversazionali e harness
 
