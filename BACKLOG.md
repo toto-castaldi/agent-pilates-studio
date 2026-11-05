@@ -131,7 +131,8 @@
 #### TEC-009 — Avvio locale con un comando
 
 - **Epic:** EPIC-003 — Dati e operatività
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-009-avvio-locale-con-un-comando`
 - **Dependencies:** SPIKE-001
 - **Requirements:** REQ-AGENT-001, REQ-AGENT-003, REQ-DB-001, REQ-DB-002, REQ-WA-002, REQ-NFR-002, REQ-NFR-004
 - **Design references:** TECHNICAL-DESIGN §3, §5, §7, §9, §10
