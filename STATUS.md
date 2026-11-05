@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Item completati; accettazione privacy della release da verificare | 6/6 items done (100%) |
+| v0.1.0 | Open | Avvio locale semplificato da realizzare; accettazione privacy da verificare | 6/7 items done (86%) |
 
 I conteggi riguardano la v0.1.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 0 |
+| Todo | 1 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 6 |
@@ -42,6 +42,7 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
+| TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.

@@ -78,4 +78,5 @@ L'ambiente locale usa Docker Compose; la produzione presume un server Linux con 
 
 ## 10. Open decisions
 
+- Modalità di avvio con un solo comando e trattamento sicuro delle credenziali locali compilate in `.env` — TEC-009. La procedura attuale usa file di segreti separati e il README non prevede credenziali in `.env`; il nuovo percorso va progettato e documentato senza esporre all'agente le credenziali amministrative o di migrazione, né indebolire le protezioni esistenti. Fino all'implementazione resta valida la procedura attuale.
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
