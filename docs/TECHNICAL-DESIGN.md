@@ -11,8 +11,8 @@ Questo documento registra le scelte iniziali e le decisioni aperte. Il comportam
 | Runtime locale e produzione | Docker Compose; server Linux già predisposto in produzione | Avvio e gestione coerenti nei due ambienti. |
 | Codice del progetto | TypeScript 5.9.3, Node.js LTS 24.14.0 e npm 11.9.0 | Stack e versioni di riferimento dello scaffold definiti da TEC-002; dipendenze fissate nel lockfile. Hermes mantiene i propri prerequisiti. |
 | Dati | PostgreSQL e migrazioni Prisma | Database relazionale e schema gestito tramite codice e migrazioni versionate. |
-| Agente e modello | Hermes con OpenRouter; modello configurabile | Separare l'ambiente agentico dal provider; il modello proposto `gpt-6.1-terra` e la compatibilità richiedono verifica. |
-| Canale | API WhatsApp Business tramite app Meta esistente | Usare la configurazione Meta già disponibile; modalità di collegamento da verificare. |
+| Agente e modello | Hermes con OpenRouter; modello configurabile | Separare l'ambiente agentico dal provider; SPIKE-001 ha verificato `openai/gpt-6.1-terra` e la risposta tramite Hermes nella prova documentata. |
+| Canale | API WhatsApp Business tramite app Meta esistente | Usare la configurazione Meta già disponibile; SPIKE-001 ha verificato il collegamento tramite il gateway nativo di Hermes nella prova documentata. |
 | Rilascio | Versioni fissate, aggiornamento avviato esplicitamente | Riproducibilità e controllo operativo, senza deploy automatico. |
 | CI | GitHub Actions | Verificare il quality gate senza eseguire automaticamente il deploy. |
 
