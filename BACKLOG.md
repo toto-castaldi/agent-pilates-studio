@@ -67,7 +67,8 @@
 #### TEC-007 — Allowlist Git per la configurazione Pi
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-007-allowlist-git-configurazione-pi`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002
 - **Design references:** PROCESS §3, §6; AGENTS §9

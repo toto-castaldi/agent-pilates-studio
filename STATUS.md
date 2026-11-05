@@ -12,14 +12,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 2 |
-| In Progress | 0 |
+| Todo | 1 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 4 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-007 | EPIC-001 — Fondamenta del progetto | Allowlist Git per la configurazione Pi | `task/TEC-007-allowlist-git-configurazione-pi` |
 
 ## Blocked
 
@@ -39,7 +41,6 @@ None.
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | P1 |
-| TEC-007 | EPIC-001 — Fondamenta del progetto | Allowlist Git per la configurazione Pi | P1 |
 
 ## Closed versions
 
