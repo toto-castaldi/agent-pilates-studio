@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Quality gate Pi da allineare; schema della pianificazione avviato su branch | 2/9 items done (22%) |
+| v0.2.0 | Open | Allineamento quality gate Pi in corso; schema della pianificazione avviato su branch | 2/9 items done (22%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 7 |
-| In Progress | 0 |
+| Todo | 6 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 2 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-014 | EPIC-001 — Fondamenta del progetto | Allineamento delle verifiche alla configurazione Pi | `task/TEC-014-allineamento-verifiche-configurazione-pi` |
 
 ## Blocked
 
@@ -45,7 +47,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-014 | EPIC-001 — Fondamenta del progetto | Allineamento delle verifiche alla configurazione Pi | P0 |
 | TEC-010 | EPIC-004 — Pianificazione delle lezioni | Schema della pianificazione settimanale | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 

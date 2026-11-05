@@ -173,7 +173,8 @@
 #### TEC-014 — Allineamento delle verifiche alla configurazione Pi
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-014-allineamento-verifiche-configurazione-pi`
 - **Dependencies:** TEC-013
 - **Requirements:** REQ-NFR-001, REQ-NFR-002, REQ-NFR-003, REQ-NFR-007
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9
