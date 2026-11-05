@@ -38,3 +38,5 @@ jobs:
         run: npm run test:db
       - name: Test gateway Hermes
         run: npm run test:hermes
+      - name: Test aggiornamento isolato tra versioni
+        run: npm run test:upgrade

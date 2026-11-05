@@ -13,6 +13,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 - Stack locale Compose con PostgreSQL, migrazioni Prisma, Hermes e gateway WhatsApp Cloud nativo; tool SQL diretto e verifiche locali e reali delle integrazioni e dei privilegi (SPIKE-001).
 - Migrazioni containerizzate su host Linux Docker senza Node.js installato (TEC-005).
 - Backup quiescente e ripristino isolato di PostgreSQL e del volume Hermes, con procedura operativa preliminare (TEC-005).
+- Test isolato di aggiornamento tra versioni di PostgreSQL e Hermes con persistenza dei dati sintetici (TEC-005).
 - Workflow GitHub Actions per il quality gate e i test di integrazione PostgreSQL e Hermes, senza deploy automatico (TEC-006).
 
 ### Changed
