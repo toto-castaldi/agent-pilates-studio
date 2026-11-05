@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.1.0 | Open | Attività assegnate completate; accettazione privacy rinviata a TEC-008 per decisione dell'utente | 7/7 items done (100%) |
+| v0.2.0 | Open | Versione aperta; item da pianificare | 0/0 items done (0%) |
 
-I conteggi riguardano la v0.1.0; il debito TEC-008 non è assegnato a una versione.
+I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 0 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 7 |
+| Done | 0 |
 
 ## In progress
 
@@ -49,7 +49,9 @@ TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
 ## Closed versions
 
-None.
+| Version | Closed | Tag |
+| ------- | ------ | --- |
+| v0.1.0 | 2026-11-05 | `v0.1.0` |
 
 ## Notes
 
