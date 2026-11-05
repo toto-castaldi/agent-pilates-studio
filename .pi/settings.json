@@ -12,5 +12,15 @@
     "~/Documents/agent/common/skills",
     "./.pi/skills",
     "!/home/toto/.agents/skills/**"
-  ]
+  ],
+  "lastChangelogVersion": "1.5.0",
+  "theme": "light/dark",
+  "defaultProvider": "openai",
+  "modelThinkingLevels": {
+    "anthropic/claude-opus-4-8": "high",
+    "openrouter/z-ai/glm-5.3": "high",
+    "openrouter/moonshotai/kimi-k3.1-pro": "high"
+  },
+  "defaultModel": "gpt-6.1-terra",
+  "defaultThinkingLevel": "high"
 }
