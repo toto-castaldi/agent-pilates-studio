@@ -200,6 +200,20 @@
   - I toolset non necessari restano disabilitati e l'agente non riporta numeri di telefono nelle risposte se non richiesto.
   - Un test automatico verifica che il contesto sia incluso nell'immagine o nel volume Hermes previsto, che citi tabelle e colonne esistenti nella migrazione e che non contenga segreti; README e design descrivono come modificarlo.
 
+#### TEC-012 — Scenari conversazionali e harness
+
+- **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-011
+- **Requirements:** REQ-NFR-006, REQ-NFR-002, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §7, §8, §9
+- **Description:** Predisporre il catalogo degli scenari conversazionali e un harness eseguibile su richiesta con il modello reale; ogni User Story della v0.2.0 vi aggiunge i propri scenari.
+- **Acceptance criteria:**
+  - Un catalogo versionato descrive gli scenari con nomi e numeri sintetici: stato iniziale del database, messaggi dell'utilizzatore, contenuto atteso della risposta e stato atteso del database; include almeno uno scenario di base di registrazione e consultazione.
+  - Un comando npm dedicato esegue gli scenari su uno stack isolato con dati sintetici e modello reale via OpenRouter, facendo passare l'identità del mittente per lo stesso percorso della produzione (webhook sintetico firmato e sostituto locale delle API Meta, o il meccanismo raccomandato da SPIKE-002); verifica lo stato del database in modo deterministico e riporta l'esito per scenario.
+  - L'harness è escluso da `npm test` e dalla CI, richiede credenziali OpenRouter esterne e si arresta con un messaggio chiaro se mancano; non scrive segreti nei log e rimuove le risorse isolate al termine.
+  - README e documentazione descrivono prerequisiti, costi indicativi, esecuzione, interpretazione degli esiti e registrazione dei risultati delle prove reali.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -214,6 +228,7 @@ v0.2.0:
 1. SPIKE-002.
 2. TEC-010.
 3. TEC-011.
+4. TEC-012.
 
 ## Items confluiti
 
