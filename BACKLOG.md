@@ -67,7 +67,7 @@
 #### TEC-007 — Allowlist Git per la configurazione Pi
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Done
 - **Branch:** `task/TEC-007-allowlist-git-configurazione-pi`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002
@@ -78,6 +78,7 @@
   - Il template `/avvio` e la configurazione condivisa sono versionati dopo verifica; non contengono segreti o credenziali. Eventuali riferimenti personali nella configurazione sono segnalati prima della condivisione.
   - Le skill esistenti in `.agents/skills/` rimangono versionate senza duplicazioni. Sessioni, autenticazione, log, cache e dipendenze installate di Pi restano esclusi da Git.
   - Le regole di inclusione ed esclusione sono verificate con `git check-ignore` o test equivalenti e l'uso della configurazione condivisa è documentato senza segreti.
+- **Outcome:** Allowlist per configurazione Pi e template `/avvio`, con esclusione dei dati locali e delle estensioni non approvate; regole verificate con test Git e quality gate. I riferimenti personali esterni rimangono documentati come limite di portabilità. Completato il 2026-11-05.
 
 ### EPIC-002 — Agente e integrazioni
 

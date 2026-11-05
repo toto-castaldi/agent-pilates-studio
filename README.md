@@ -28,6 +28,12 @@ Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e av
 
 Le prove end-to-end con servizi e credenziali reali si eseguono separatamente come descritto in [Hermes e WhatsApp Cloud](#hermes-e-whatsapp-cloud); non fanno parte della CI.
 
+## Configurazione Pi
+
+Il repository condivide `.pi/settings.json`, il template `.pi/prompts/avvio.md` e le skill in `.agents/skills/`. Dopo aver verificato le risorse e accordato fiducia al progetto in Pi, usare `/avvio` per ottenere un riepilogo e le prossime attività; in una sessione già aperta, usare prima `/reload`.
+
+La configurazione condivisa contiene preferenze e percorsi dell'ambiente originale: alcune estensioni e skill esterne potrebbero non essere disponibili su altre macchine. Non garantisce quindi, da sola, l'installazione o il funzionamento di tali risorse. Pi può aggiornare le proprie impostazioni: controllare il diff prima di condividere modifiche. Non inserire credenziali in `.pi/settings.json`; autenticazione, sessioni, log, cache e dipendenze installate rimangono locali e ignorati da Git. Eventuali estensioni locali vanno revisionate e ammesse singolarmente.
+
 ## Database locale
 
 Servono Docker e Docker Compose funzionanti. Dalla directory del progetto, dopo `npm ci`:
