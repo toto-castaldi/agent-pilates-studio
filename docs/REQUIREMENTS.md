@@ -42,6 +42,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Template Pi condiviso per lavorare autonomamente su un'attività già avviata (REQ-NFR-010).
 - Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
+- Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.2.0
@@ -51,6 +52,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Eccezioni puntuali (assenze, recuperi, chiusure), capienza delle lezioni, istruttori, sale e attrezzature.
 - Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
 - Dati dei clienti oltre a nome, cognome e regole di allenamento.
+- Job cron e messaggi pianificati dell'agente (previsti in un item non assegnato, TEC-019).
 - Messa in esercizio continuativa del gateway pubblico.
 - Creazione del server, installazione dei suoi prerequisiti Docker/Compose, gestione di DNS o certificati HTTPS.
 - Deploy automatico e piattaforme di monitoraggio avanzato.
@@ -114,6 +116,10 @@ Un interlocutore autorizzato deve poter inviare un messaggio tramite WhatsApp Bu
 #### REQ-WA-002 — Accesso e webhook
 
 Solo i numeri presenti nella configurazione di autorizzazione possono interagire con l'agente. Le richieste del webhook devono essere autenticate e quelle non valide rifiutate.
+
+#### REQ-WA-003 — Canale home configurato e nessun avviso di sistema
+
+Gli utilizzatori ricevono via WhatsApp solo le risposte dell'agente e, quando previsti, i messaggi inviati sul canale home. Avvisi e suggerimenti interni di Hermes non pertinenti allo studio, come la richiesta di impostare un canale home con `/sethome`, non devono essere inviati. Il canale home, destinazione dei risultati dei job cron e dei messaggi da altre piattaforme, è un numero dell'elenco autorizzato fissato dall'operatore nella configurazione esterna; gli utilizzatori non possono impostarlo o cambiarlo tramite la conversazione. Un valore mancante o non autorizzato è segnalato all'avvio senza esporre il numero.
 
 ### Operatività
 

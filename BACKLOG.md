@@ -154,6 +154,8 @@
 
 **Scope change (2026-11-06):** su accordo dell'utente, TEC-017 è aggiunto alla v0.2.0 per il template Pi `/work-alone`.
 
+**Scope change (2026-11-06):** su accordo dell'utente, BUG-001 è aggiunto alla v0.2.0 per configurare il canale home e non inviare agli utilizzatori l'avviso di Hermes.
+
 **Scope change (2026-11-06):** su accordo dell'utente, TEC-018 è aggiunto alla v0.2.0 per segnalare l'attesa dell'utente nei tool Pi di domanda.
 
 ### EPIC-001 — Fondamenta del progetto
@@ -254,6 +256,26 @@
   - Test ripetibili verificano che entrambi i tool richiedano lo stato `blocked`, tipo `question`, e che lo stato precedente sia ripristinato alla risposta e all'annullamento. Una prova con Pi 1.5.0, documentata con i suoi limiti, verifica il caricamento dei tool senza duplicati e, se possibile, la sequenza OSC 7501 `blocked` emessa durante l'attesa. Le prove con processi, Git o Pi restano separate dal gate rapido in memoria.
   - README e documentazione pertinente descrivono la provenienza dei tool, il riferimento fissato, il relativo aggiornamento e la visualizzazione dell'attesa nei terminali compatibili. Test e documentazione non leggono né modificano impostazioni personali e non espongono segreti.
 - **Outcome:** Fork MIT nel pacchetto condiviso al commit `44f36742d47a4e83504abb9bdc0427be5f09ed82`, pubblicato su branch dedicato; configurazione fissata senza tool duplicati e documentazione aggiornata. Superati gate rapido, `test:local`, `test:pi` e `test:pi-package`: confronti con l'originale, ripristino simulato e prova Pi 1.5.0 OSC con risposta e annullamento. La prova reale ripristina `idle` da comandi sintetici, non verifica un turno del modello né ogni terminale. Completato il 2026-11-06.
+
+### EPIC-002 — Agente e integrazioni
+
+#### BUG-001 — Avviso del canale home inviato agli utilizzatori
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Type:** Bug · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-WA-001, REQ-WA-002, REQ-WA-003, REQ-NFR-002, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9
+- **Found in:** v0.2.0 (sviluppo, dopo TEC-012)
+- **Steps to reproduce:** con lo stack avviato e un numero autorizzato, inviare via WhatsApp un messaggio qualsiasi (ad esempio «ciao») senza canale home impostato.
+- **Expected:** l'utilizzatore riceve solo la risposta dell'agente; il canale home è già definito dalla configurazione.
+- **Actual:** Hermes invia anche «📬 No home channel is set for Whatsapp_Cloud… Type /sethome to make this chat your home channel», invitando a un comando con cui qualunque utilizzatore potrebbe dirottare i messaggi del canale home. L'harness di TEC-012 filtra l'avviso, mascherando il difetto.
+- **Acceptance criteria:**
+  - L'operatore imposta il canale home WhatsApp nella configurazione esterna (`.env`) con un numero dell'elenco autorizzato; `.env.example` contiene solo un valore sintetico e README spiega l'impostazione. La soluzione usa il meccanismo supportato da Hermes 0.22.7 (variabile o `home_channel` di configurazione); eventuali adattamenti a punti interni sono documentati e richiedono nuova verifica agli aggiornamenti.
+  - L'avvio locale fallisce con un messaggio fisso, senza riportare il numero, se il canale home manca o non è nell'elenco autorizzato.
+  - Con il canale configurato nessun utilizzatore riceve l'avviso né suggerimenti di `/sethome`, alla prima conversazione e dopo riavvio o ricreazione del gateway; `/sethome` inviato da un utilizzatore non modifica il canale home configurato. I job cron restano disabilitati fino a TEC-019.
+  - Un test di regressione con gateway reale, webhook firmato e dati sintetici verifica che i messaggi inviati al sostituto Meta non contengano l'avviso e che `/sethome` non cambi il canale; il filtro dell'avviso nell'harness di TEC-012 è rimosso, così gli scenari falliscono se riappare.
+  - Log e output rispettano REQ-NFR-002; `docs/TECHNICAL-DESIGN.md` descrive la scelta.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
@@ -381,13 +403,13 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 e TEC-018 non hanno dipendenze e sono indipendenti dagli item della pianificazione.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 e TEC-018 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.
 3. TEC-015, poi TEC-011.
 4. TEC-012.
-5. US-002.
+5. BUG-001, poi US-002.
 6. US-003 e US-004, entrambi dopo US-002.
 
 ## Items confluiti
@@ -415,3 +437,12 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
   - Prove ripetibili con soli indicatori sintetici coprono i formati locali individuati e i principali esiti del proxy; non viene avviato lo streaming remoto dei log del tunnel condiviso, come previsto da REQ-NFR-004.
   - Eventuali esposizioni individuate sono rimosse o mitigate con misure documentate e verifiche di regressione, senza compromettere gli altri servizi del tunnel condiviso; le modifiche infrastrutturali richiedono le autorizzazioni pertinenti.
   - Sono documentati l'esito rispetto a REQ-NFR-002, i limiti residui e le eventuali decisioni ancora necessarie per l'accettazione della release, senza dichiarare conformità non dimostrata.
+
+#### TEC-019 — Job cron e messaggi pianificati dell'agente
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Type:** Task · **Priority:** P2 · **Status:** Todo · **Version:** Non assegnata
+- **Dependencies:** BUG-001
+- **Description:** Abilitare in modo controllato i job cron di Hermes per future funzioni pianificate (ad esempio un riepilogo settimanale), consegnati sul canale home configurato. Prima della pianificazione servono i requisiti dei casi d'uso, la decisione su chi può creare o modificare i job e su come i turni pianificati, privi di un messaggio WhatsApp autenticato, accedono al database senza indebolire REQ-STUDIO-003 e REQ-DB-002.
+- **Requirements:** REQ-WA-003, REQ-STUDIO-003, REQ-NFR-002 (da integrare con i requisiti dei casi d'uso)
+- **Design references:** TECHNICAL-DESIGN §3, §5, §10

@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Harness conversazionale e stato di attesa Pi completati; User Story da avviare | 10/13 items done (77%) |
+| v0.2.0 | Open | Harness conversazionale completato; da correggere BUG-001 prima delle User Story | 10/14 items done (71%) |
 
-I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
+I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 10 |
@@ -46,6 +46,7 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
+| BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | P0 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
@@ -59,6 +60,7 @@ TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
 ## Notes
 
+- Decisione dell'utente (2026-11-06): BUG-001 è aggiunto allo scope della v0.2.0: canale home fissato in configurazione, cron rinviati a TEC-019 non assegnato.
 - Decisione dell'utente (2026-11-06): TEC-018 è aggiunto allo scope della v0.2.0 per lo stato `blocked` dei tool Pi di domanda.
 - Decisione dell'utente (2026-11-06): TEC-017 è aggiunto allo scope della v0.2.0 per il template Pi `/work-alone`.
 - Le modifiche al gate sono state riportate separatamente nel template `agile-project-template` con commit locale `b4bc15f`, non pubblicato; altri allineamenti restano esclusi.
