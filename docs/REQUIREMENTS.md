@@ -187,6 +187,10 @@ La documentazione e i test dello sviluppo devono descrivere e verificare la conf
 
 I gate di chiusura dello sviluppo (completamento di un item, merge e push su `main`) devono eseguire soltanto test di unità in memoria, veloci e privi di processi, file system, git, rete o Docker, oltre a lint, controllo dei tipi e build. I test di integrazione ed end-to-end restano disponibili come comandi separati: si eseguono durante il lavoro sull'item quando servono come prova dei criteri di accettazione o delle verifiche richieste da `AGENTS.md`, nella chiusura di una versione e nella CI GitHub, che continua a eseguire tutte le suite (REQ-NFR-003). La regola è documentata, senza controlli automatici dedicati.
 
+#### REQ-NFR-009 — Template Pi condiviso per lo stato del progetto
+
+Il repository deve includere il template Pi `/start`, utilizzabile per ottenere un riepilogo dello stato del progetto e delle prossime attività a partire dai documenti canonici. Il template deve richiedere un controllo del branch e del working tree in sola lettura e non deve avviare modifiche, test, commit, merge o push senza una successiva richiesta esplicita. Il suo contenuto deve essere privo di segreti e dati personali; gli altri dati locali Pi restano esclusi da Git secondo REQ-NFR-002 e REQ-NFR-007. Questo requisito non ripristina il template `/avvio` rimosso.
+
 ## 7. Release acceptance — v0.2.0
 
 - Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.

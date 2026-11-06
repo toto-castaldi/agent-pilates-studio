@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Schema della pianificazione e gate rapidi completati; contesto dell'agente da avviare | 5/10 items done (50%) |
+| v0.2.0 | Open | Schema della pianificazione e gate rapidi completati; contesto dell'agente da avviare | 5/11 items done (45%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
+| Todo | 6 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 5 |
@@ -48,6 +48,7 @@ None.
 | ---- | ---- | ----- | -------- |
 | TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
+| TEC-016 | EPIC-001 — Fondamenta del progetto | Versionamento del template Pi per lo stato del progetto | P2 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 

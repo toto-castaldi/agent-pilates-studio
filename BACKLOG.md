@@ -203,6 +203,20 @@
   - Passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, e tutte le suite separate interessate dalle modifiche, inclusa `npm run test:local`.
 - **Outcome:** Gate rapido, unità in memoria e prove locali separate; CI e documentazione aggiornate. Superati `npm ci`, lint, typecheck, unità, build, `test:local`, `test:pi` e tutte le suite Docker (`test:db`, `test:hermes`, `test:author`, `test:upgrade`, `test:start`); workflow GitHub verificato come contratto ma non eseguito da remoto. Gate riportato separatamente nel template con commit locale `b4bc15f`, senza altri allineamenti né push. Completato il 2026-11-06.
 
+#### TEC-016 — Versionamento del template Pi per lo stato del progetto
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** TEC-007, TEC-014
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-009
+- **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
+- **Description:** Rendere condivisibile il template Pi locale `/start`, attualmente ignorato da Git, senza ripristinare il template `/avvio` rimosso né includere dati locali privati.
+- **Acceptance criteria:**
+  - `.pi/prompts/start.md`, previa revisione del contenuto, è versionato senza segreti o dati personali; il comando `/start` richiede un riepilogo dello stato e delle prossime attività basato sui documenti canonici e un controllo Git in sola lettura, senza avviare lavoro, test, commit, merge o push senza una successiva richiesta esplicita.
+  - `.gitignore` consente il versionamento selettivo di `.pi/prompts/start.md` senza includere indiscriminatamente altri prompt, estensioni, sessioni, autenticazione, log, credenziali o dati locali. Il template `/avvio` non viene ripristinato.
+  - Verifiche ripetibili con dati sintetici controllano le regole di inclusione ed esclusione usando Git reale e la presenza del template in un checkout pulito; i test pertinenti sono aggiornati e non leggono o modificano impostazioni personali. Il gate rapido resta limitato ai test in memoria; le prove con Git sono nella suite separata.
+  - Il README descrive l'uso di `/start`, la fiducia nel progetto e il caricamento o ricaricamento della risorsa in Pi, senza esporre dati personali; l'eventuale prova con Pi reale e i suoi limiti sono documentati.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -325,7 +339,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione.
 
 1. SPIKE-002.
 2. TEC-010.
