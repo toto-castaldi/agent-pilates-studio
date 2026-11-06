@@ -14,6 +14,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 - Template Pi `/start` condiviso per riepilogare lo stato e le prossime attività senza avviare lavoro (TEC-016).
 - Schema della pianificazione e broker isolato per attribuire inserimenti e disattivazioni ai mittenti WhatsApp autenticati, con prove di concorrenza e replay (TEC-010).
 
+### Fixed
+
+- Canale home WhatsApp fissato dall'operatore, senza avviso o possibilità di modifica tramite `/sethome`; cron disabilitati (BUG-001).
+
 ### Changed
 
 - I tool Pi di domanda segnalano l'attesa dell'utente nei terminali compatibili, tramite il pacchetto condiviso fissato (TEC-018).

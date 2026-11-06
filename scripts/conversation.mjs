@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
-import { isHarnessNotice, responseMatches, stateMatches } from '../dist/src/conversation.js';
+import { hasHomeChannelNotice, responseMatches, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -58,6 +58,7 @@ for (const scenario of catalog.scenarios) {
     'whatsapp-app-secret': randomBytes(32).toString('hex'),
     'whatsapp-verify-token': randomBytes(32).toString('hex'),
     'whatsapp-allowed-users': scenario.sender,
+    'whatsapp-home-channel': scenario.sender,
     'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'override.yaml');
@@ -153,16 +154,24 @@ for (const scenario of catalog.scenarios) {
       let incoming;
       for (let i = 0; i < 180 && !interrupted; i++) {
         const entries = await (await fetch(observations, { signal: AbortSignal.timeout(15_000) })).json();
+        if (entries.some((item) => hasHomeChannelNotice(item.text))) throw new Error('home channel notice');
         if (entries.length > count) {
           const newEntries = entries.slice(count);
           count = entries.length;
           if (newEntries.some((item) => item.to !== scenario.sender)) throw new Error('unexpected recipient');
-          incoming = newEntries.filter((item) => item.text.trim() && !isHarnessNotice(item.text));
+          incoming = newEntries.filter((item) => item.text.trim());
           if (incoming.length) break;
         }
         await delay(1000);
       }
       if (!incoming?.length || incoming.some((item) => item.to !== scenario.sender)) throw new Error('response timeout');
+      await delay(2000);
+      const allEntries = await (await fetch(observations, { signal: AbortSignal.timeout(15_000) })).json();
+      if (allEntries.some((item) => hasHomeChannelNotice(item.text))) throw new Error('home channel notice');
+      const laterEntries = allEntries.slice(count);
+      if (laterEntries.some((item) => item.to !== scenario.sender)) throw new Error('unexpected recipient');
+      incoming.push(...laterEntries.filter((item) => item.text.trim()));
+      count = allEntries.length;
       stage = `turno ${index + 1}: contenuto risposta`;
       const text = incoming.map((item) => item.text).join(' ');
       if (!responseMatches(text, turn.response)) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, isHarnessNotice, responseMatches, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, hasHomeChannelNotice, responseMatches, stateMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -11,9 +11,11 @@ const actual: ActualState = {
   rules: [{ text: 'Antonio Rossi venerdì alle 9', clients: ['Antonio Rossi'], slots: [{ weekday: 5, time: '09:00' }], authorPhone: '15555550102', authorName: 'Sintetico', active: true }],
 };
 
-test('only the known home-channel notice is excluded from replies', () => {
-  assert.equal(isHarnessNotice('📬 No home channel is set for Whatsapp. Synthetic notice.'), true);
-  assert.equal(isHarnessNotice('Nessuna lezione trovata.'), false);
+test('home-channel notices are detected rather than excluded from replies', () => {
+  assert.equal(hasHomeChannelNotice('📬 No home channel is set for Whatsapp. Synthetic notice.'), true);
+  assert.equal(hasHomeChannelNotice('Digita /sethome'), true);
+  assert.equal(hasHomeChannelNotice('Nessun canale principale impostato'), true);
+  assert.equal(hasHomeChannelNotice('Nessuna lezione trovata.'), false);
 });
 
 test('conversation response checks name and time without requiring exact wording', () => {

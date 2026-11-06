@@ -29,6 +29,17 @@ async def request(client, method, url, *args, **kwargs):
 httpx.AsyncClient.request = request
 import pilates_trusted
 pilates_trusted.install()
+# Test-only invariant: inspect the live gateway config during the command.
+from gateway.config import Platform
+from gateway.slash_commands import GatewaySlashCommandsMixin
+original_set_home = GatewaySlashCommandsMixin._handle_set_home_command
+async def checked_set_home(self, event):
+    expected = os.environ["WHATSAPP_CLOUD_HOME_CHANNEL"]
+    assert self.config.get_home_channel(Platform.WHATSAPP_CLOUD).chat_id == expected
+    result = await original_set_home(self, event)
+    assert self.config.get_home_channel(Platform.WHATSAPP_CLOUD).chat_id == expected
+    return result
+GatewaySlashCommandsMixin._handle_set_home_command = checked_set_home
 from hermes_cli.main import main
 sys.exit(main())
 ' "$@"

@@ -96,6 +96,7 @@ services:
       - whatsapp_app_secret
       - whatsapp_verify_token
       - whatsapp_allowed_users
+      - whatsapp_home_channel
       - whatsapp_phone_number_id
     ports:
       - "127.0.0.1:${WHATSAPP_WEBHOOK_PORT:-18090}:8090"
@@ -140,6 +141,8 @@ secrets:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-verify-token
   whatsapp_allowed_users:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-allowed-users
+  whatsapp_home_channel:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-home-channel
   whatsapp_phone_number_id:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-phone-number-id
 

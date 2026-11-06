@@ -25,6 +25,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
     'whatsapp-allowed-users': '15555550102',
+    'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'compose.override.yaml');
@@ -82,7 +83,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       const output = error as { stdout?: string; stderr?: string };
       const combined = `${output.stdout ?? ''}${output.stderr ?? ''}`;
       assert.match(combined, /hermes_preflight_failed/);
-      assert.doesNotMatch(combined, /synthetic-app-secret|synthetic-access-token|synthetic-invalid-allowlist/);
+      assert.doesNotMatch(combined, /synthetic-app-secret|synthetic-access-token|synthetic-invalid-allowlist|1555555010[23]/);
       return true;
     });
     try {
@@ -96,6 +97,15 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     } finally {
       await chmod(allowlistFile, 0o600);
       await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
+    }
+    const homeFile = join(directory, 'whatsapp-home-channel');
+    try {
+      await writeFile(homeFile, '');
+      assertSafePreflight();
+      await writeFile(homeFile, '15555550103');
+      assertSafePreflight();
+    } finally {
+      await writeFile(homeFile, secrets['whatsapp-home-channel']);
     }
     compose('up', '-d', '--wait', '--wait-timeout', '120', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();

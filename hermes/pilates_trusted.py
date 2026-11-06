@@ -46,6 +46,30 @@ def install():
     from gateway.session_api_turn import api_execution
     import agent.tool_executor as executor
     import agent.turn_request_assembly as assembly
+    import cron.scheduler_provider as scheduler_provider
+    import gateway.run as gateway_run
+    from gateway.slash_commands import GatewaySlashCommandsMixin
+
+    # Until scheduled delivery has its own authorization design, never start a
+    # scheduler or dispatch missed jobs, even if a persistent store contains jobs.
+    class DisabledScheduler(scheduler_provider.CronScheduler):
+        name = 'disabled'
+
+        def start(self, stop_event, **kwargs):
+            stop_event.wait()
+
+        def fire_due(self, job_id, **kwargs):
+            return False
+
+    scheduler_provider.resolve_cron_scheduler = lambda: DisabledScheduler()
+    scheduler_provider.scheduler_for_profile_mode = lambda provider, **kwargs: DisabledScheduler()
+    gateway_run._housekeeping_misfire_catch_up = lambda *args, **kwargs: None
+
+    # The configured home is operator-owned, never writable through WhatsApp.
+    async def reject_set_home(self, event):
+        return 'Il canale principale è gestito dall’operatore.'
+
+    GatewaySlashCommandsMixin._handle_set_home_command = reject_set_home
 
     # The cached session prompt can span midnight. Add the clock to the wire
     # copy for every model request, never to SQLite or the conversation history.

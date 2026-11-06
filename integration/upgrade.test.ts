@@ -26,6 +26,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
     'whatsapp-allowed-users': '15555550102',
+    'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
   };
   const oldOverride = join(directory, 'old.yaml');

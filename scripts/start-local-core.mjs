@@ -28,6 +28,7 @@ export async function startLocal({ lstat, mkdir, readFile, writeFile, randomByte
       WHATSAPP_APP_SECRET: 'whatsapp-app-secret',
       WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
       WHATSAPP_ALLOWED_USERS: 'whatsapp-allowed-users',
+      WHATSAPP_HOME_CHANNEL: 'whatsapp-home-channel',
       WHATSAPP_PHONE_NUMBER_ID: 'whatsapp-phone-number-id',
     };
     for (const key of Object.keys(required)) {
@@ -42,6 +43,9 @@ export async function startLocal({ lstat, mkdir, readFile, writeFile, randomByte
     }
     if (!/^\d+(,\d+)*$/.test(config.WHATSAPP_ALLOWED_USERS) || !/^\d+$/.test(config.WHATSAPP_PHONE_NUMBER_ID)) {
       throw new SafeError('Allowlist o Phone Number ID non validi.');
+    }
+    if (!/^\d+$/.test(config.WHATSAPP_HOME_CHANNEL) || !config.WHATSAPP_ALLOWED_USERS.split(',').includes(config.WHATSAPP_HOME_CHANNEL)) {
+      throw new SafeError('Canale home WhatsApp mancante o non autorizzato.');
     }
     const port = (name, fallback) => {
       const value = config[name] || fallback;

@@ -22,6 +22,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
     'whatsapp-allowed-users': '15555550102,15555550103',
+    'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'override.yaml');

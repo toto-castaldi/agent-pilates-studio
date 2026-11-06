@@ -35,8 +35,8 @@ export interface ActualState {
 
 const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('it-IT');
 
-export function isHarnessNotice(text: string): boolean {
-  return text.startsWith('📬 No home channel is set for ');
+export function hasHomeChannelNotice(text: string): boolean {
+  return /no home channel is set|nessun canale principale impostato|\/sethome/i.test(text);
 }
 
 export function responseMatches(text: string, expected: { contains: string[]; time: string }): boolean {
