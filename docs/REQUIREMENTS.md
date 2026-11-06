@@ -40,6 +40,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Aggiornamento delle regole tramite disattivazione, senza cancellazione, con storico consultabile.
 - Contesto dell'agente versionato e verifiche del comportamento conversazionale.
 - Template Pi condiviso per lavorare autonomamente su un'attività già avviata (REQ-NFR-010).
+- Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
@@ -197,6 +198,10 @@ Il repository deve includere il template Pi `/start`, utilizzabile per ottenere 
 Il repository deve includere il template Pi `/work-alone`, che istruisce l'assistente a implementare autonomamente l'attività già avviata e a fermarsi solo quando ha bisogno dell'intervento dell'utente. L'attività è identificata dal branch e dai documenti canonici; se non è identificabile univocamente o non è avviata, l'assistente chiede chiarimenti anziché sceglierne o avviarne un'altra.
 
 Il template richiede di seguire il processo, i criteri di accettazione, le verifiche e la Definition of Done del progetto, chiedendo intervento per blocchi, decisioni necessarie o autorizzazioni richieste. La sua invocazione non autorizza merge o push: restano soggetti a richiesta esplicita. Il template è un'istruzione al modello, non una garanzia tecnica; deve essere privo di segreti e dati personali, nel rispetto di REQ-NFR-002 e REQ-NFR-007.
+
+#### REQ-NFR-011 — Stato di attesa dei tool Pi di domanda
+
+Quando l'assistente Pi del progetto pone domande all'utente con i tool `question` o `questionnaire` e attende la risposta, deve segnalarlo al terminale come attesa dell'utente (`blocked`, tipo `question`, del Program Status Protocol OSC 7501 supportato da Pi), non come lavoro in corso. Alla risposta o all'annullamento lo stato torna a quello dell'esecuzione in corso. I tool mantengono nomi, parametri e comportamento attuali; sono forniti dal pacchetto Pi condiviso `agent-harness-stuff`, referenziato con un riferimento fissato, nel rispetto della licenza del codice d'origine. Il pacchetto e la configurazione restano privi di segreti e dati personali (REQ-NFR-002, REQ-NFR-007).
 
 ## 7. Release acceptance — v0.2.0
 

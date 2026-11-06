@@ -154,6 +154,8 @@
 
 **Scope change (2026-11-06):** su accordo dell'utente, TEC-017 è aggiunto alla v0.2.0 per il template Pi `/work-alone`.
 
+**Scope change (2026-11-06):** su accordo dell'utente, TEC-018 è aggiunto alla v0.2.0 per segnalare l'attesa dell'utente nei tool Pi di domanda.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -236,6 +238,20 @@
   - `.gitignore` consente selettivamente il nuovo template, mantenendo le esclusioni degli altri dati locali Pi. Verifiche ripetibili con dati sintetici controllano contenuto, regole Git e presenza in un checkout pulito; una prova Pi offline verifica il caricamento del comando senza invocare un modello. Le prove con Git e Pi restano separate dal gate rapido in memoria.
   - README e documentazione pertinente descrivono uso e ricaricamento del comando, fiducia nel progetto e limiti: il template è un'istruzione, non un controllo tecnico che garantisca il comportamento del modello. Test e documentazione non leggono né modificano impostazioni personali o espongono segreti.
 - **Outcome:** Template `/work-alone` e allowlist selettiva, con istruzioni di autonomia, richiesta di chiarimenti e divieto di merge o push non autorizzati; documentazione e test aggiornati. Verificati gate rapido, Git reale e clone pulito, caricamento Pi 1.5.0 offline con e senza fiducia. La prova non invoca un modello né verifica l'osservanza delle istruzioni o il ricaricamento interattivo. Completato il 2026-11-06.
+
+#### TEC-018 — Stato di attesa nei tool Pi di domanda
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-011
+- **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
+- **Description:** I tool `question` e `questionnaire` del pacchetto esterno `npm:pi-question-tool@0.1.1` aprono la propria interfaccia con `ctx.ui.custom()` senza l'opzione `blocked`. Pi 1.5.0 continua quindi a segnalare `working` tramite OSC 7501 mentre attende la risposta, e i terminali come Herdr mostrano l'agente al lavoro anziché in attesa. Si sostituisce il pacchetto con un fork adattato, con licenza MIT e attribuzione, nel pacchetto condiviso `git:github.com/toto-castaldi/agent-harness-stuff`.
+- **Acceptance criteria:**
+  - Il pacchetto `agent-harness-stuff` fornisce i tool `question` e `questionnaire` con nomi, parametri, risultati e comportamento dell'interfaccia di `pi-question-tool@0.1.1`. Mentre attendono la risposta, l'interfaccia è aperta con `blocked: { kind: "question", message }`, dove il messaggio è la domanda o un titolo sintetico senza dati sensibili. Licenza e attribuzione del codice d'origine sono conservate.
+  - `.pi/settings.json` rimuove `npm:pi-question-tool`, evitando tool duplicati, e referenzia `agent-harness-stuff` con un tag o commit fissato che contiene la modifica. Commit, tag e push sul repository `agent-harness-stuff` avvengono solo previa autorizzazione esplicita dell'utente.
+  - Test ripetibili verificano che entrambi i tool richiedano lo stato `blocked`, tipo `question`, e che lo stato precedente sia ripristinato alla risposta e all'annullamento. Una prova con Pi 1.5.0, documentata con i suoi limiti, verifica il caricamento dei tool senza duplicati e, se possibile, la sequenza OSC 7501 `blocked` emessa durante l'attesa. Le prove con processi, Git o Pi restano separate dal gate rapido in memoria.
+  - README e documentazione pertinente descrivono la provenienza dei tool, il riferimento fissato, il relativo aggiornamento e la visualizzazione dell'attesa nei terminali compatibili. Test e documentazione non leggono né modificano impostazioni personali e non espongono segreti.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
@@ -361,7 +377,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 non ha dipendenze ed è indipendente dagli item della pianificazione.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 e TEC-018 non hanno dipendenze e sono indipendenti dagli item della pianificazione.
 
 1. SPIKE-002.
 2. TEC-010.
