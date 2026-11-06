@@ -313,7 +313,8 @@
 #### TEC-012 — Scenari conversazionali e harness
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** Done
+- **Branch:** `task/TEC-012-scenari-conversazionali-harness`
 - **Dependencies:** TEC-011
 - **Requirements:** REQ-NFR-006, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §7, §8, §9
@@ -323,6 +324,7 @@
   - Un comando npm dedicato esegue gli scenari su uno stack isolato con dati sintetici e modello reale via OpenRouter, facendo passare l'identità del mittente per lo stesso percorso della produzione (webhook sintetico firmato e sostituto locale delle API Meta, o il meccanismo raccomandato da SPIKE-002); verifica lo stato del database in modo deterministico e riporta l'esito per scenario.
   - L'harness è escluso da `npm test` e dalla CI, richiede credenziali OpenRouter esterne e si arresta con un messaggio chiaro se mancano; non scrive segreti nei log e rimuove le risorse isolate al termine.
   - README e documentazione descrivono prerequisiti, costi indicativi, esecuzione, interpretazione degli esiti e registrazione dei risultati delle prove reali.
+- **Outcome:** Catalogo sintetico e harness isolato con gateway e broker reali, sostituto Meta e modello OpenRouter; verificati due turni e stato PostgreSQL, casi negativi, pulizia e gate rapido. I limiti del confronto, le prove e l'incidente relativo al file temporaneo della prima versione sono documentati in `docs/operations/TEC-012-prove.md`; nessuna nuova prova Meta o accettazione privacy. Completato il 2026-11-06.
 
 #### US-002 — Registrare una regola di allenamento
 

@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Catalogo e harness isolato per scenari conversazionali con modello OpenRouter reale (TEC-012).
 - Contesto versionato dello studio per Hermes, con refresh delle sessioni e data corrente Europe/Rome (TEC-011).
 - Template Pi `/work-alone` condiviso per completare autonomamente un'attività già avviata (TEC-017).
 - Template Pi `/start` condiviso per riepilogare lo stato e le prossime attività senza avviare lavoro (TEC-016).

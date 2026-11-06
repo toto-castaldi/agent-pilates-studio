@@ -24,6 +24,22 @@ Il gate rapido comprende lint, controllo dei tipi, test unitari e build; `npm ci
 
 Le prove con effetti reali sono separate: `npm run test:local` verifica Git, file, processi e contratto CI; `npm run test:pi` richiede Pi 1.5.0; `npm run test:pi-package` richiede inoltre Git, Python 3 e rete per il pacchetto Pi pubblico e le sue dipendenze di test; `npm run test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start` richiedono Docker Compose. Eseguirle durante il lavoro quando servono per dimostrare i criteri; alla chiusura della versione eseguire tutte le suite di integrazione. Le prove end-to-end reali richiedono anche servizi e credenziali esterni.
 
+## Scenari conversazionali con OpenRouter
+
+`scenarios/basic.json` descrive lo stato iniziale, i messaggi sintetici, i contenuti attesi e lo stato del database dopo ogni turno. Per eseguirlo servono Node.js/npm, Docker Compose su Linux con accesso dell'host alle reti bridge Docker, rete Internet e una chiave OpenRouter valida nell'ambiente privato `OPENROUTER_API_KEY`. Non servono credenziali Meta. Dopo `npm ci`, impostare la chiave tramite un gestore di segreti o un input privato, senza inserirla nella cronologia della shell, poi eseguire:
+
+```bash
+npm run test:conversation
+```
+
+Il modello predefinito è `openai/gpt-6.1-terra`; l'identificativo opzionale `CONVERSATION_MODEL` ne sceglie un altro su OpenRouter. Il comando usa un progetto Compose casuale con database e volume Hermes nuovi, webhook sintetici firmati e un sostituto locale dell'API Meta in uscita; il modello è reale. Disabilita i messaggi di avanzamento e ignora l'avviso iniziale del canale home, non le risposte dell'agente. Un relay sul socket Unix privato dello scenario inoltra le richieste a OpenRouter: la chiave reale resta nell'ambiente e nella memoria del processo host, non viene copiata nei file o nei container; i file temporanei contengono solo credenziali sintetiche. La rete del progetto non è una sandbox generale. Non usa il database, il gateway o i segreti operativi. Nessun messaggio, numero o segreto è stampato intenzionalmente.
+
+Il comando riporta `OK` o `ERRORE` per scenario ed esce con codice non zero per risultati inattesi, errori o pulizia incompleta. Verifica deterministicamente clienti, autore, regole attive, legami e slot e controlla parole e orario della risposta, non il suo significato completo: servono anche valutazione degli esiti e scenari aggiuntivi. Ogni scenario usa uno stack nuovo; la versione corrente accetta solo stato iniziale vuoto e regole con un cliente e uno slot. Le User Story possono estendere catalogo e verifiche per stati e casi più ricchi. Lo strumento è escluso da CI e `npm test`.
+
+Le chiamate OpenRouter sono a pagamento e possono richiedere più richieste per turno. Al 2026-11-06 il catalogo OpenRouter indicava per il modello predefinito circa **1 USD/milione di token in ingresso e 5 USD/milione in uscita**: ad esempio 10.000 token in ingresso e 2.000 in uscita costerebbero circa 0,02 USD. Sono valori indicativi, non un preventivo; verificare prezzi e limiti correnti prima della prova. Registrare data, modello, commit, esito e limiti senza trascrivere messaggi, numeri o segreti; vedere `docs/operations/TEC-012-prove.md`.
+
+Il comando tenta di rimuovere container, reti, volumi, immagine temporanea e segreti anche in caso di errore o interruzione gestita. Un arresto forzato, un guasto Docker o del sistema possono impedirlo: verificare e rimuovere solo le risorse del progetto casuale `pilates-conv-*` e le directory temporanee `pilates-conversation-*`, senza toccare gli stack operativi. Non avviare streaming remoto dei log del tunnel; questa prova non usa il proxy pubblico né dimostra l'accettazione privacy o il funzionamento di Meta reale.
+
 ## Integrazione continua
 
 Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa Node.js da `.nvmrc`, installa le dipendenze ed esegue il gate rapido, `test:local`, `test:pi` e `test:pi-package` con Pi 1.5.0 e le suite Docker `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. `test:local` controlla trigger, comandi e configurazione effettiva del workflow.
@@ -135,7 +151,7 @@ docker compose ps
 
 All'avvio il gateway richiede il refresh dei prompt delle sessioni: le sessioni già aperte ricostruiscono il prompt **al turno successivo**, conservando la cronologia; un turno già in corso non cambia. Se il refresh fallisce, il gateway non parte. Per una modifica in loco già visibile nel mount, senza ricreare il container, un operatore può richiedere esplicitamente il refresh con `docker compose exec --user 10000 hermes /opt/hermes/libexec/hermes-upstream sessions refresh-prompts`; non usare questa scorciatoia al posto di un aggiornamento versionato. La cronologia SQLite e i vecchi prompt possono contenere dati sensibili e restano nel volume e nei backup. Memoria e profilo integrati e provider di memoria esterni sono disabilitati; lo scanner anti-injection di Hermes non è una barriera di sicurezza.
 
-L'ora corrente Europe/Rome viene aggiunta come metadato effimero a ogni richiesta del gateway al modello, anche nelle sessioni riprese; serve un orologio host sincronizzato. Il comportamento conversazionale resta da verificare con il modello reale negli scenari di TEC-012 e nelle relative User Story. `npm run test:author` verifica in isolamento caricamento, refresh, riavvio, data e confini dell'ora legale con gateway e modello sintetico.
+L'ora corrente Europe/Rome viene aggiunta come metadato effimero a ogni richiesta del gateway al modello, anche nelle sessioni riprese; serve un orologio host sincronizzato. Il comportamento conversazionale si verifica con il modello reale tramite gli scenari descritti sopra; la prova di base non sostituisce quelli delle singole User Story. `npm run test:author` verifica in isolamento caricamento, refresh, riavvio, data e confini dell'ora legale con gateway e modello sintetico.
 
 ### Configurazione del gateway
 

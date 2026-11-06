@@ -17,6 +17,7 @@
     "test:db": "npm run build --silent && node --test dist/integration/postgres.test.js",
     "test:hermes": "npm run build --silent && node --test dist/integration/hermes.test.js",
     "test:author": "npm run build --silent && node --test dist/integration/author.test.js",
+    "test:conversation": "npm run build --silent && node scripts/conversation.mjs",
     "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
     "test:pi": "npm run build --silent && node --test dist/integration/pi-settings.test.js",
     "test:pi-package": "npm run build --silent && node --test dist/integration/pi-package.test.js",
