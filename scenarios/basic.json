@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "registrazione-consultazione",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Antonio Rossi si allena tutti i venerdì alle 9.",
+          "response": { "contains": ["Antonio", "Rossi"], "time": "09:00" },
+          "expected": {
+            "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Antonio", "Rossi"], "client": "Antonio Rossi", "weekday": 5, "time": "09:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Chi si allena il venerdì mattina?",
+          "response": { "contains": ["Antonio", "Rossi"], "time": "09:00" },
+          "expected": {
+            "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Antonio", "Rossi"], "client": "Antonio Rossi", "weekday": 5, "time": "09:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    }
+  ]
+}
