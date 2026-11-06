@@ -189,7 +189,8 @@
 #### TEC-015 — Gate di chiusura con soli test di unità in memoria
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-015-gate-chiusura-test-unita-memoria`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-001, REQ-NFR-003, REQ-NFR-008
 - **Design references:** PROCESS §8, §9; AGENTS §6, §7; TECHNICAL-DESIGN §8
