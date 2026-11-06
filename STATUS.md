@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Contesto dello studio completato; stato di attesa Pi in corso | 8/13 items done (62%) |
+| v0.2.0 | Open | Contesto dello studio e stato di attesa Pi completati; scenari conversazionali da avviare | 9/13 items done (69%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 4 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 8 |
+| Done | 9 |
 
 ## In progress
 
-| Item | Epic | Title | Branch |
-| ---- | ---- | ----- | ------ |
-| TEC-018 | EPIC-001 — Fondamenta del progetto | Stato di attesa nei tool Pi di domanda | `task/TEC-018-stato-attesa-tool-pi-domanda` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-018 | EPIC-001 — Fondamenta del progetto | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
 | TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | 2026-11-06 |
 | TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | 2026-11-06 |
 | TEC-016 | EPIC-001 — Fondamenta del progetto | Versionamento del template Pi per lo stato del progetto | 2026-11-06 |
@@ -42,7 +41,6 @@ None.
 | SPIKE-002 | EPIC-004 — Pianificazione delle lezioni | Identità del mittente e contesto dell'agente | 2026-11-05 |
 | TEC-013 | EPIC-001 — Fondamenta del progetto | Separazione della configurazione Pi condivisa e personale | 2026-11-05 |
 | TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | 2026-11-05 |
-| TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | 2026-11-05 |
 
 ## Next ready items
 

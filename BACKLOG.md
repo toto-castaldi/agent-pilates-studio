@@ -242,7 +242,7 @@
 #### TEC-018 — Stato di attesa nei tool Pi di domanda
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-018-stato-attesa-tool-pi-domanda`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-011
@@ -253,6 +253,7 @@
   - `.pi/settings.json` rimuove `npm:pi-question-tool`, evitando tool duplicati, e referenzia `agent-harness-stuff` con un tag o commit fissato che contiene la modifica. Commit, tag e push sul repository `agent-harness-stuff` avvengono solo previa autorizzazione esplicita dell'utente.
   - Test ripetibili verificano che entrambi i tool richiedano lo stato `blocked`, tipo `question`, e che lo stato precedente sia ripristinato alla risposta e all'annullamento. Una prova con Pi 1.5.0, documentata con i suoi limiti, verifica il caricamento dei tool senza duplicati e, se possibile, la sequenza OSC 7501 `blocked` emessa durante l'attesa. Le prove con processi, Git o Pi restano separate dal gate rapido in memoria.
   - README e documentazione pertinente descrivono la provenienza dei tool, il riferimento fissato, il relativo aggiornamento e la visualizzazione dell'attesa nei terminali compatibili. Test e documentazione non leggono né modificano impostazioni personali e non espongono segreti.
+- **Outcome:** Fork MIT nel pacchetto condiviso al commit `44f36742d47a4e83504abb9bdc0427be5f09ed82`, pubblicato su branch dedicato; configurazione fissata senza tool duplicati e documentazione aggiornata. Superati gate rapido, `test:local`, `test:pi` e `test:pi-package`: confronti con l'originale, ripristino simulato e prova Pi 1.5.0 OSC con risposta e annullamento. La prova reale ripristina `idle` da comandi sintetici, non verifica un turno del modello né ogni terminale. Completato il 2026-11-06.
 
 ### EPIC-004 — Pianificazione delle lezioni
 

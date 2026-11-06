@@ -4,13 +4,17 @@ import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { checkPiPaths, checkPiReadme, checkStartPrompt, checkWorkAlonePrompt } from '../../test/pi-contract.js';
+import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkStartPrompt, checkWorkAlonePrompt } from '../../test/pi-contract.js';
 
 test('project Pi settings and skills are tracked without tracking private Pi state', () => {
   // Inspect paths only, never the operator's settings or their contents.
   const tracked = execFileSync('git', ['ls-files', '-z', '--', '.pi'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   const secrets = execFileSync('git', ['ls-files', '-z', '--', '.env', '.env.*', '.local'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   checkPiPaths(tracked, secrets, lstatSync('.pi/settings.json').isFile(), ['add-item', 'start-task', 'finish-task'].map((skill) => existsSync(`.agents/skills/${skill}/SKILL.md`)));
+});
+
+test('project Pi settings pin the shared question tools without the original package', () => {
+  checkQuestionPackage(JSON.parse(readFileSync('.pi/settings.json', 'utf8')) as unknown);
 });
 
 test('Pi documentation describes direct startup without the retired launcher or template', () => {
