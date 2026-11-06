@@ -3,7 +3,7 @@
 !.pi/settings.json
 !.pi/prompts/
 .pi/prompts/*
-!.pi/prompts/avvio.md
+!.pi/prompts/start.md
 .claude/settings.local.json
 
 # Local configuration and secrets
