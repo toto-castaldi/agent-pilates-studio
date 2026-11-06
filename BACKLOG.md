@@ -242,10 +242,9 @@
 #### TEC-018 — Stato di attesa nei tool Pi di domanda
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Blocked
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
 - **Branch:** `task/TEC-018-stato-attesa-tool-pi-domanda`
 - **Dependencies:** none
-- **Blocked by:** push del commit `44f3674` sul branch del repository `agent-harness-stuff` rifiutato: la chiave SSH disponibile non ha permessi di scrittura; serve accesso autorizzato o pubblicazione da parte dell'utente.
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-011
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
 - **Description:** I tool `question` e `questionnaire` del pacchetto esterno `npm:pi-question-tool@0.1.1` aprono la propria interfaccia con `ctx.ui.custom()` senza l'opzione `blocked`. Pi 1.5.0 continua quindi a segnalare `working` tramite OSC 7501 mentre attende la risposta, e i terminali come Herdr mostrano l'agente al lavoro anziché in attesa. Si sostituisce il pacchetto con un fork adattato, con licenza MIT e attribuzione, nel pacchetto condiviso `git:github.com/toto-castaldi/agent-harness-stuff`.
