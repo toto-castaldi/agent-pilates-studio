@@ -382,7 +382,7 @@
 #### US-002 — Registrare una regola di allenamento
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
 - **Branch:** `us/US-002-registrare-regola-allenamento`
 - **Dependencies:** TEC-010, TEC-011, TEC-012
 - **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -394,6 +394,7 @@
   - Un cliente nuovo viene creato con nome e cognome, chiedendo il cognome se manca; con il solo nome l'agente usa l'unico cliente corrispondente oppure chiede il cognome se ce ne sono più di uno.
   - L'agente chiede conferma solo in caso di ambiguità, ad esempio orario o giorno mancanti, e altrimenti registra senza conferma.
   - Test su PostgreSQL reale verificano il percorso di scrittura e che l'autore non possa essere indicato dal modello; gli scenari di questi casi sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato.
+- **Outcome:** Estesi catalogo e harness a registrazioni semplici, più orari e gruppi, chiarimenti e autore non dichiarabile, con verifica delle associazioni indipendente dalla scomposizione. Superati gate rapido, `test:local`, `test:db`, `test:author` e otto scenari OpenRouter con webhook sintetico e sostituto Meta; esiti preliminari e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`. BUG-001 resta filtrato dall'harness; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-06.
 
 #### US-003 — Consultare la pianificazione settimanale
 

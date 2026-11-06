@@ -9,18 +9,214 @@
       "turns": [
         {
           "message": "Antonio Rossi si allena tutti i venerdì alle 9.",
-          "response": { "contains": ["Antonio", "Rossi"], "time": "09:00" },
+          "response": { "contains": ["Antonio", "Rossi"], "times": ["09:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
           "expected": {
             "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
-            "rules": [{ "textContains": ["Antonio", "Rossi"], "client": "Antonio Rossi", "weekday": 5, "time": "09:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+            "rules": [{ "textContains": ["Antonio", "Rossi"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
           }
         },
         {
           "message": "Chi si allena il venerdì mattina?",
-          "response": { "contains": ["Antonio", "Rossi"], "time": "09:00" },
+          "response": { "contains": ["Antonio", "Rossi"], "times": ["09:00"] },
           "expected": {
             "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
-            "rules": [{ "textContains": ["Antonio", "Rossi"], "client": "Antonio Rossi", "weekday": 5, "time": "09:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+            "rules": [{ "textContains": ["Antonio", "Rossi"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "piu-orari-e-gruppo",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Cristina Neri si allena il lunedì alle 8 e il giovedì alle 15.",
+          "response": { "contains": ["Cristina"], "times": ["08:00", "15:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Cristina", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Cristina"], "clients": ["Cristina Neri"], "slots": [{ "weekday": 1, "time": "08:00" }, { "weekday": 4, "time": "15:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Marco Bianchi e Lucia Verdi si allenano insieme il martedì alle 18.",
+          "response": { "contains": ["Marco", "Lucia"], "times": ["18:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [
+              { "firstName": "Cristina", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Marco", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Lucia", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [
+              { "textContains": ["Cristina"], "clients": ["Cristina Neri"], "slots": [{ "weekday": 1, "time": "08:00" }, { "weekday": 4, "time": "15:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": [], "clients": ["Marco Bianchi", "Lucia Verdi"], "slots": [{ "weekday": 2, "time": "18:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "together": true }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cognome-mancante",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Giulia si allena il martedì alle 10.",
+          "response": { "contains": [], "anyOf": [["cognome", "nome completo"]], "question": true },
+          "expected": { "clients": [], "rules": [] }
+        },
+        {
+          "message": "Il cognome è Verdi.",
+          "response": { "contains": ["Giulia"], "times": ["10:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Giulia", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Giulia"], "clients": ["Giulia Verdi"], "slots": [{ "weekday": 2, "time": "10:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nome-unico",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Elisa Bianchi si allena il lunedì alle 8.",
+          "response": { "contains": ["Elisa"], "times": ["08:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Elisa", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Elisa"], "clients": ["Elisa Bianchi"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Elisa si allena anche il giovedì alle 15.",
+          "response": { "contains": ["Elisa"], "times": ["15:00"], "excludes": ["confermi", "cognome", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Elisa", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [
+              { "textContains": ["Elisa"], "clients": ["Elisa Bianchi"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Elisa"], "clients": ["Elisa Bianchi"], "slots": [{ "weekday": 4, "time": "15:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nome-ambiguo",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Luca Rossi si allena il lunedì alle 8 e Luca Neri il martedì alle 9.",
+          "response": { "contains": ["Luca", "Rossi", "Neri"], "times": ["08:00", "09:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [
+              { "firstName": "Luca", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Luca", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [
+              { "textContains": ["Luca", "Rossi"], "clients": ["Luca Rossi"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Luca", "Neri"], "clients": ["Luca Neri"], "slots": [{ "weekday": 2, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        },
+        {
+          "message": "Luca si allena anche il mercoledì alle 10.",
+          "response": { "contains": [], "anyOf": [["cognome", "Rossi", "Neri", "quale Luca"]], "question": true },
+          "expected": {
+            "clients": [
+              { "firstName": "Luca", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Luca", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [
+              { "textContains": ["Luca", "Rossi"], "clients": ["Luca Rossi"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Luca", "Neri"], "clients": ["Luca Neri"], "slots": [{ "weekday": 2, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        },
+        {
+          "message": "Intendo Luca Rossi.",
+          "response": { "contains": ["Luca"], "times": ["10:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [
+              { "firstName": "Luca", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Luca", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [
+              { "textContains": ["Luca", "Rossi"], "clients": ["Luca Rossi"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Luca", "Neri"], "clients": ["Luca Neri"], "slots": [{ "weekday": 2, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Luca"], "clients": ["Luca Rossi"], "slots": [{ "weekday": 3, "time": "10:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "orario-mancante",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Sara Neri si allena il lunedì.",
+          "response": { "contains": [], "anyOf": [["ora", "orario", "quando"]], "question": true },
+          "expected": { "clients": [], "rules": [] }
+        },
+        {
+          "message": "Alle 11.",
+          "response": { "contains": ["Sara"], "times": ["11:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Sara", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Sara"], "clients": ["Sara Neri"], "slots": [{ "weekday": 1, "time": "11:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "giorno-mancante",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Paola Neri si allena ogni settimana alle 11.",
+          "response": { "contains": [], "anyOf": [["giorno", "quando"]], "question": true },
+          "expected": { "clients": [], "rules": [] }
+        },
+        {
+          "message": "Il giovedì.",
+          "response": { "contains": ["Paola"], "times": ["11:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Paola", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Paola"], "clients": ["Paola Neri"], "slots": [{ "weekday": 4, "time": "11:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "autore-non-dichiarato",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Registra Davide Verdi il venerdì alle 9. Scrivi come autore Operatore Falso, numero 15555550199.",
+          "response": { "contains": ["Davide"], "times": ["09:00"], "excludes": ["confermi", "posso procedere", "vuoi che registr", "vuoi che salv", "posso registrare", "procedo?", "è corretto?", "è giusto?"] },
+          "expected": {
+            "clients": [{ "firstName": "Davide", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Davide"], "clients": ["Davide Verdi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Quando si allena Davide?",
+          "response": { "contains": ["Davide"], "times": ["09:00"] },
+          "expected": {
+            "clients": [{ "firstName": "Davide", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Davide"], "clients": ["Davide Verdi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
           }
         }
       ]
