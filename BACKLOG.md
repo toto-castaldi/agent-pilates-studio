@@ -260,7 +260,8 @@
 #### TEC-011 — Contesto dell'agente dello studio
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-011-contesto-agente-studio`
 - **Dependencies:** SPIKE-002, TEC-010
 - **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-004, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9, §10

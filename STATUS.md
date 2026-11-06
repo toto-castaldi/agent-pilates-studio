@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template Pi dello stato completato; contesto dell'agente da avviare | 6/11 items done (55%) |
+| v0.2.0 | Open | Contesto dell'agente dello studio in corso | 6/11 items done (55%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
-| In Progress | 0 |
+| Todo | 4 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 6 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | `task/TEC-011-contesto-agente-studio` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
