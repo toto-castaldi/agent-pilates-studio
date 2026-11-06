@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template Pi dello stato completato; contesto dell'agente da avviare | 6/11 items done (55%) |
+| v0.2.0 | Open | Contesto dell'agente da avviare; template Pi autonomo pianificato | 6/12 items done (50%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
+| Todo | 6 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 6 |
@@ -48,6 +48,7 @@ None.
 | ---- | ---- | ----- | -------- |
 | TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
+| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | P2 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
@@ -59,6 +60,7 @@ TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
 ## Notes
 
+- Decisione dell'utente (2026-11-06): TEC-017 è aggiunto allo scope della v0.2.0 per il template Pi `/work-alone`.
 - Le modifiche al gate sono state riportate separatamente nel template `agile-project-template` con commit locale `b4bc15f`, non pubblicato; altri allineamenti restano esclusi.
 - Le prove di identità di TEC-010 usano modello e webhook sintetici, non servizi Meta/OpenRouter reali.
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.

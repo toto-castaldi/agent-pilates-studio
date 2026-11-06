@@ -152,6 +152,8 @@
 
 **Goal:** Il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
+**Scope change (2026-11-06):** su accordo dell'utente, TEC-017 è aggiunto alla v0.2.0 per il template Pi `/work-alone`.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -218,6 +220,20 @@
   - Verifiche ripetibili con dati sintetici controllano le regole di inclusione ed esclusione usando Git reale e la presenza del template in un checkout pulito; i test pertinenti sono aggiornati e non leggono o modificano impostazioni personali. Il gate rapido resta limitato ai test in memoria; le prove con Git sono nella suite separata.
   - Il README descrive l'uso di `/start`, la fiducia nel progetto e il caricamento o ricaricamento della risorsa in Pi, senza esporre dati personali; l'eventuale prova con Pi reale e i suoi limiti sono documentati.
 - **Outcome:** Template `/start` revisionato e versionato con allowlist selettiva, senza ripristinare `/avvio`; documentazione e test aggiornati. Verificati Git reale e clone pulito, caricamento con Pi 1.5.0 offline con e senza fiducia, `npm ci` e gate rapido. La prova Pi non invoca un modello e non verifica l'osservanza delle istruzioni o il ricaricamento interattivo. Completato il 2026-11-06.
+
+#### TEC-017 — Template Pi per lavorare in autonomia
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-010
+- **Design references:** PROCESS §3, §6, §8; AGENTS §6, §9; TECHNICAL-DESIGN §8
+- **Description:** Aggiungere il template Pi condiviso `/work-alone` per l'attività già avviata: «Implementa l'attività in autonomia. Fermati solo se hai bisogno».
+- **Acceptance criteria:**
+  - `.pi/prompts/work-alone.md` è versionato e disponibile come `/work-alone`, senza segreti o dati personali; il testo richiede di implementare autonomamente l'attività già avviata e di fermarsi solo quando serve l'intervento dell'utente.
+  - Il template richiede di identificare l'item dal branch e dai documenti canonici, rispettandone criteri, processo, verifiche e Definition of Done fino alla chiusura. In assenza di un'attività avviata identificabile univocamente, chiede chiarimenti senza sceglierne o avviarne un'altra; chiede intervento per blocchi, decisioni necessarie e autorizzazioni richieste. Non autorizza merge o push senza richiesta esplicita.
+  - `.gitignore` consente selettivamente il nuovo template, mantenendo le esclusioni degli altri dati locali Pi. Verifiche ripetibili con dati sintetici controllano contenuto, regole Git e presenza in un checkout pulito; una prova Pi offline verifica il caricamento del comando senza invocare un modello. Le prove con Git e Pi restano separate dal gate rapido in memoria.
+  - README e documentazione pertinente descrivono uso e ricaricamento del comando, fiducia nel progetto e limiti: il template è un'istruzione, non un controllo tecnico che garantisca il comportamento del modello. Test e documentazione non leggono né modificano impostazioni personali o espongono segreti.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
@@ -341,7 +357,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 non ha dipendenze ed è indipendente dagli item della pianificazione.
 
 1. SPIKE-002.
 2. TEC-010.

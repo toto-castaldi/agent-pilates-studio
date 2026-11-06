@@ -39,6 +39,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Consultazione della pianificazione settimanale per giorno, fascia oraria, orario e cliente.
 - Aggiornamento delle regole tramite disattivazione, senza cancellazione, con storico consultabile.
 - Contesto dell'agente versionato e verifiche del comportamento conversazionale.
+- Template Pi condiviso per lavorare autonomamente su un'attività già avviata (REQ-NFR-010).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
@@ -190,6 +191,12 @@ I gate di chiusura dello sviluppo (completamento di un item, merge e push su `ma
 #### REQ-NFR-009 — Template Pi condiviso per lo stato del progetto
 
 Il repository deve includere il template Pi `/start`, utilizzabile per ottenere un riepilogo dello stato del progetto e delle prossime attività a partire dai documenti canonici. Il template deve richiedere un controllo del branch e del working tree in sola lettura e non deve avviare modifiche, test, commit, merge o push senza una successiva richiesta esplicita. Il suo contenuto deve essere privo di segreti e dati personali; gli altri dati locali Pi restano esclusi da Git secondo REQ-NFR-002 e REQ-NFR-007. Questo requisito non ripristina il template `/avvio` rimosso.
+
+#### REQ-NFR-010 — Template Pi per lavorare in autonomia
+
+Il repository deve includere il template Pi `/work-alone`, che istruisce l'assistente a implementare autonomamente l'attività già avviata e a fermarsi solo quando ha bisogno dell'intervento dell'utente. L'attività è identificata dal branch e dai documenti canonici; se non è identificabile univocamente o non è avviata, l'assistente chiede chiarimenti anziché sceglierne o avviarne un'altra.
+
+Il template richiede di seguire il processo, i criteri di accettazione, le verifiche e la Definition of Done del progetto, chiedendo intervento per blocchi, decisioni necessarie o autorizzazioni richieste. La sua invocazione non autorizza merge o push: restano soggetti a richiesta esplicita. Il template è un'istruzione al modello, non una garanzia tecnica; deve essere privo di segreti e dati personali, nel rispetto di REQ-NFR-002 e REQ-NFR-007.
 
 ## 7. Release acceptance — v0.2.0
 
