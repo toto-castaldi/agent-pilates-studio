@@ -9,12 +9,13 @@ test('Pi allowlist and private paths can be evaluated entirely in memory', () =>
 !.pi/prompts/
 .pi/prompts/*
 !.pi/prompts/start.md
+!.pi/prompts/work-alone.md
 .local/
 .env
 .env.*
 !.env.example
 `);
-  for (const path of ['.pi/settings.json', '.pi/prompts/start.md', '.agents/skills/start-task/SKILL.md']) {
+  for (const path of ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.agents/skills/start-task/SKILL.md']) {
     assert.equal(policy.ignores(path), false, path);
   }
   for (const path of ['.pi/auth.json', '.pi/credentials.json', '.pi/models.json', '.pi/mcp.json', '.pi/logs/private.log', '.pi/local/settings.json', '.pi/local/auth.json', '.pi/local/sessions/example.jsonl', '.pi/trust.json', '.pi/sessions/example.jsonl', '.pi/pi-voice.log', '.pi/npm/node_modules/example/index.js', '.pi/prompts/private.md', '.pi/prompts/avvio.md', '.pi/prompts/nested/start.md', '.pi/extensions/unreviewed.ts', '.pi/skills/private/SKILL.md', '.env', '.local/secrets/db-admin']) {

@@ -4,6 +4,7 @@
 !.pi/prompts/
 .pi/prompts/*
 !.pi/prompts/start.md
+!.pi/prompts/work-alone.md
 .claude/settings.local.json
 
 # Local configuration and secrets
