@@ -262,7 +262,8 @@
 #### BUG-001 — Avviso del canale home inviato agli utilizzatori
 
 - **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** Bug · **Priority:** P0 · **Status:** Todo
+- **Type:** Bug · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `fix/BUG-001-avviso-canale-home`
 - **Dependencies:** none
 - **Requirements:** REQ-WA-001, REQ-WA-002, REQ-WA-003, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9

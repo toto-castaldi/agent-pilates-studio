@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Harness conversazionale completato; da correggere BUG-001 prima delle User Story | 10/14 items done (71%) |
+| v0.2.0 | Open | Correzione BUG-001 in corso prima delle User Story | 10/14 items done (71%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
-| In Progress | 0 |
+| Todo | 3 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 10 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | `fix/BUG-001-avviso-canale-home` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | P0 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
