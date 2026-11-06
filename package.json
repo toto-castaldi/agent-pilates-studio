@@ -19,6 +19,7 @@
     "test:author": "npm run build --silent && node --test dist/integration/author.test.js",
     "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
     "test:pi": "npm run build --silent && node --test dist/integration/pi-settings.test.js",
+    "test:pi-package": "npm run build --silent && node --test dist/integration/pi-package.test.js",
     "start:local": "node scripts/start-local.mjs",
     "test:start": "npm run build --silent && node --test dist/integration/start-local.test.js",
     "db:init-secrets": "node scripts/init-secrets.mjs",

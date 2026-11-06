@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkPiPaths, checkPiReadme, checkStartPrompt, checkWorkAlonePrompt } from './pi-contract.js';
+import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkStartPrompt, checkWorkAlonePrompt } from './pi-contract.js';
 
 test('Pi path policy rejects private files and missing resources in memory', () => {
   const tracked = ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md'];
@@ -11,6 +11,16 @@ test('Pi path policy rejects private files and missing resources in memory', () 
   assert.throws(() => checkPiPaths(tracked, ['.env'], true, [true, true, true]));
   assert.throws(() => checkPiPaths(tracked, [], false, [true, true, true]));
   assert.throws(() => checkPiPaths(tracked, [], true, [true, false, true]));
+});
+
+test('question package contract rejects floating refs and duplicate providers in memory', () => {
+  const source = `git:github.com/toto-castaldi/agent-harness-stuff@${'a'.repeat(40)}`;
+  assert.equal(checkQuestionPackage({ packages: [source, 'npm:other'] }), source);
+  assert.equal(checkQuestionPackage({ packages: [{ source }] }), source);
+  for (const packages of [
+    [], ['git:github.com/toto-castaldi/agent-harness-stuff'],
+    [source, source], [source, 'npm:pi-question-tool@0.1.1'], [source, { source: 'npm:pi-question-tool' }],
+  ]) assert.throws(() => checkQuestionPackage({ packages }));
 });
 
 test('Pi documentation contract checks synthetic text in memory', () => {

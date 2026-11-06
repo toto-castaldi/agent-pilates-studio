@@ -7,6 +7,22 @@ export function checkPiPaths(tracked: string[], secrets: string[], settingsIsFil
   assert.ok(skills.length === 3 && skills.every(Boolean), 'Missing project skill.');
 }
 
+export function checkQuestionPackage(settings: unknown): string {
+  assert.ok(settings && typeof settings === 'object' && 'packages' in settings);
+  const packages = settings.packages;
+  assert.ok(Array.isArray(packages));
+  const sources = packages.map((entry: unknown) => {
+    if (typeof entry === 'string') return entry;
+    if (entry && typeof entry === 'object' && 'source' in entry && typeof entry.source === 'string') return entry.source;
+    throw new Error('Invalid Pi package declaration');
+  });
+  assert.ok(!sources.some((source) => /^npm:pi-question-tool(?:@|$)/.test(source)), 'Original question package must not also load.');
+  const shared = sources.filter((source) => /^git:github\.com\/toto-castaldi\/agent-harness-stuff(?:@|$)/.test(source));
+  assert.equal(shared.length, 1, 'Exactly one shared package must be configured.');
+  assert.match(shared[0], /^git:github\.com\/toto-castaldi\/agent-harness-stuff@[0-9a-f]{40}$/);
+  return shared[0];
+}
+
 export function checkPiReadme(readme: string) {
   const match = readme.match(/## Configurazione Pi\n([\s\S]*?)(?=\n## |$)/);
   assert.ok(match, 'Pi configuration section is missing.');
