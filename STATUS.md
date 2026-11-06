@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Contesto dello studio completato; scenari conversazionali da avviare | 8/12 items done (67%) |
+| v0.2.0 | Open | Contesto dello studio completato; scenari conversazionali in corso | 8/12 items done (67%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
-| In Progress | 0 |
+| Todo | 3 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 8 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-012 | EPIC-004 — Pianificazione delle lezioni | Scenari conversazionali e harness | `task/TEC-012-scenari-conversazionali-harness` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-012 | EPIC-004 — Pianificazione delle lezioni | Scenari conversazionali e harness | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.

@@ -295,7 +295,8 @@
 #### TEC-012 — Scenari conversazionali e harness
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-012-scenari-conversazionali-harness`
 - **Dependencies:** TEC-011
 - **Requirements:** REQ-NFR-006, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §7, §8, §9
