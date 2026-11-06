@@ -206,7 +206,8 @@
 #### TEC-016 — Versionamento del template Pi per lo stato del progetto
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-016-versionamento-template-pi-stato-progetto`
 - **Dependencies:** TEC-007, TEC-014
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-009
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
