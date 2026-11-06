@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -11,13 +11,13 @@ interface Response {
   data?: { commands?: { name: string }[] };
 }
 
-function runPi(project: string, home: string, agentDirectory: string): Response[] {
+function runPi(project: string, home: string, agentDirectory: string, approved = true): Response[] {
   const input = [
     { id: 'commands', type: 'get_commands' },
     { id: 'change', type: 'set_steering_mode', mode: 'all' },
   ].map((record) => JSON.stringify(record)).join('\n');
   // No inherited credentials or Pi state: all files and configuration are synthetic.
-  const result = spawnSync('pi', ['--mode', 'rpc', '--no-session', '--approve', '--offline', '--no-mcp', '--no-context-files'], {
+  const result = spawnSync('pi', ['--mode', 'rpc', '--no-session', approved ? '--approve' : '--no-approve', '--offline', '--no-mcp', '--no-context-files'], {
     cwd: project,
     input: `${input}\n`,
     encoding: 'utf8',
@@ -63,6 +63,24 @@ test('direct Pi startup loads project and personal resources without changing pr
     assert.equal(readFileSync(settingsPath, 'utf8'), settings);
     const personal = JSON.parse(readFileSync(join(agent, 'settings.json'), 'utf8')) as { steeringMode?: string };
     assert.equal(personal.steeringMode, 'all');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Pi discovers the project start template only with project trust', { timeout: 90_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-start-integration-'));
+  const project = join(root, 'project');
+  const agent = join(root, 'agent');
+  try {
+    mkdirSync(join(project, '.pi', 'prompts'), { recursive: true });
+    mkdirSync(agent);
+    copyFileSync('.pi/prompts/start.md', join(project, '.pi', 'prompts', 'start.md'));
+    for (const approved of [true, false]) {
+      const response = runPi(project, root, agent, approved).find((entry) => entry.id === 'commands');
+      assert.equal(response?.success, true);
+      assert.equal(response?.data?.commands?.some((command) => command.name === 'start'), approved);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

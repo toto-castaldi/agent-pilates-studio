@@ -206,7 +206,8 @@
 #### TEC-016 — Versionamento del template Pi per lo stato del progetto
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-016-versionamento-template-pi-stato-progetto`
 - **Dependencies:** TEC-007, TEC-014
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-009
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
@@ -216,6 +217,7 @@
   - `.gitignore` consente il versionamento selettivo di `.pi/prompts/start.md` senza includere indiscriminatamente altri prompt, estensioni, sessioni, autenticazione, log, credenziali o dati locali. Il template `/avvio` non viene ripristinato.
   - Verifiche ripetibili con dati sintetici controllano le regole di inclusione ed esclusione usando Git reale e la presenza del template in un checkout pulito; i test pertinenti sono aggiornati e non leggono o modificano impostazioni personali. Il gate rapido resta limitato ai test in memoria; le prove con Git sono nella suite separata.
   - Il README descrive l'uso di `/start`, la fiducia nel progetto e il caricamento o ricaricamento della risorsa in Pi, senza esporre dati personali; l'eventuale prova con Pi reale e i suoi limiti sono documentati.
+- **Outcome:** Template `/start` revisionato e versionato con allowlist selettiva, senza ripristinare `/avvio`; documentazione e test aggiornati. Verificati Git reale e clone pulito, caricamento con Pi 1.5.0 offline con e senza fiducia, `npm ci` e gate rapido. La prova Pi non invoca un modello e non verifica l'osservanza delle istruzioni o il ricaricamento interattivo. Completato il 2026-11-06.
 
 ### EPIC-004 — Pianificazione delle lezioni
 

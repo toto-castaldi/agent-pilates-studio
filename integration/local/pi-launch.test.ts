@@ -1,7 +1,10 @@
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { checkPiPaths, checkPiReadme } from '../../test/pi-contract.js';
+import { checkPiPaths, checkPiReadme, checkStartPrompt } from '../../test/pi-contract.js';
 
 test('project Pi settings and skills are tracked without tracking private Pi state', () => {
   // Inspect paths only, never the operator's settings or their contents.
@@ -12,4 +15,22 @@ test('project Pi settings and skills are tracked without tracking private Pi sta
 
 test('Pi documentation describes direct startup without the retired launcher or template', () => {
   checkPiReadme(readFileSync('README.md', 'utf8'));
+});
+
+test('start prompt is present in a clean clone of the current commit', () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-start-checkout-'));
+  const checkout = join(root, 'checkout');
+  try {
+    execFileSync('git', ['clone', '--quiet', '--no-local', '--', process.cwd(), checkout]);
+    const status = execFileSync('git', ['-C', checkout, 'status', '--porcelain'], { encoding: 'utf8' });
+    assert.equal(status, '');
+    const promptPath = join(checkout, '.pi', 'prompts', 'start.md');
+    assert.ok(lstatSync(promptPath).isFile());
+    const prompt = readFileSync(promptPath, 'utf8');
+    assert.equal(prompt, readFileSync('.pi/prompts/start.md', 'utf8'));
+    checkStartPrompt(prompt);
+    assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'avvio.md')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
