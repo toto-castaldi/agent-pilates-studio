@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template Pi autonomo in corso; contesto dell'agente da avviare | 6/12 items done (50%) |
+| v0.2.0 | Open | Contesto dell'agente da avviare | 7/12 items done (58%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 5 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 6 |
+| Done | 7 |
 
 ## In progress
 
-| Item | Epic | Title | Branch |
-| ---- | ---- | ----- | ------ |
-| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | `task/TEC-017-template-pi-lavorare-in-autonomia` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | 2026-11-06 |
 | TEC-016 | EPIC-001 — Fondamenta del progetto | Versionamento del template Pi per lo stato del progetto | 2026-11-06 |
 | TEC-015 | EPIC-001 — Fondamenta del progetto | Gate di chiusura con soli test di unità in memoria | 2026-11-06 |
 | TEC-010 | EPIC-004 — Pianificazione delle lezioni | Schema della pianificazione settimanale | 2026-11-05 |
@@ -42,7 +41,6 @@ None.
 | TEC-009 | EPIC-003 — Dati e operatività | Avvio locale con un comando | 2026-11-05 |
 | TEC-005 | EPIC-003 — Dati e operatività | Deploy e continuità operativa | 2026-11-05 |
 | TEC-007 | EPIC-001 — Fondamenta del progetto | Allowlist Git per la configurazione Pi | 2026-11-05 |
-| TEC-006 | EPIC-001 — Fondamenta del progetto | Integrazione continua | 2026-11-05 |
 
 ## Next ready items
 

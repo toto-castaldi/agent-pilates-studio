@@ -224,7 +224,7 @@
 #### TEC-017 — Template Pi per lavorare in autonomia
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-017-template-pi-lavorare-in-autonomia`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-010
@@ -235,6 +235,7 @@
   - Il template richiede di identificare l'item dal branch e dai documenti canonici, rispettandone criteri, processo, verifiche e Definition of Done fino alla chiusura. In assenza di un'attività avviata identificabile univocamente, chiede chiarimenti senza sceglierne o avviarne un'altra; chiede intervento per blocchi, decisioni necessarie e autorizzazioni richieste. Non autorizza merge o push senza richiesta esplicita.
   - `.gitignore` consente selettivamente il nuovo template, mantenendo le esclusioni degli altri dati locali Pi. Verifiche ripetibili con dati sintetici controllano contenuto, regole Git e presenza in un checkout pulito; una prova Pi offline verifica il caricamento del comando senza invocare un modello. Le prove con Git e Pi restano separate dal gate rapido in memoria.
   - README e documentazione pertinente descrivono uso e ricaricamento del comando, fiducia nel progetto e limiti: il template è un'istruzione, non un controllo tecnico che garantisca il comportamento del modello. Test e documentazione non leggono né modificano impostazioni personali o espongono segreti.
+- **Outcome:** Template `/work-alone` e allowlist selettiva, con istruzioni di autonomia, richiesta di chiarimenti e divieto di merge o push non autorizzati; documentazione e test aggiornati. Verificati gate rapido, Git reale e clone pulito, caricamento Pi 1.5.0 offline con e senza fiducia. La prova non invoca un modello né verifica l'osservanza delle istruzioni o il ricaricamento interattivo. Completato il 2026-11-06.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
