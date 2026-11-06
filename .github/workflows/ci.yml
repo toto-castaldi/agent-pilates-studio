@@ -30,6 +30,12 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Test locali
+        run: npm run test:local
+      - name: Installa Pi per la prova offline
+        run: npm install --global @earendil-works/pi-coding-agent@1.5.0
+      - name: Test Pi offline
+        run: npm run test:pi
       - name: Prepara immagini di integrazione
         run: |
           docker compose pull postgres

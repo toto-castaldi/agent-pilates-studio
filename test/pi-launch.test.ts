@@ -1,26 +1,19 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { checkPiPaths, checkPiReadme } from './pi-contract.js';
 
-test('project Pi settings and skills are tracked without tracking private Pi state', () => {
-  // Inspect paths only, never the operator's settings or their contents.
-  const tracked = execFileSync('git', ['ls-files', '-z', '--', '.pi'], { encoding: 'utf8' }).split('\0').filter(Boolean);
-  assert.ok(tracked.length === 1 && tracked[0] === '.pi/settings.json', 'Unexpected tracked Pi resource: review the allowlist before sharing it.');
-  const trackedSecrets = execFileSync('git', ['ls-files', '-z', '--', '.env', '.env.*', '.local'], { encoding: 'utf8' }).split('\0').filter(Boolean);
-  assert.ok(trackedSecrets.every((path) => path === '.env.example'), 'Unexpected tracked local configuration or secrets.');
-  assert.ok(lstatSync('.pi/settings.json').isFile(), 'Project Pi settings must be a regular file.');
-  for (const skill of ['add-item', 'start-task', 'finish-task']) {
-    assert.ok(existsSync(`.agents/skills/${skill}/SKILL.md`), `Missing project skill ${skill}.`);
-  }
+test('Pi path policy rejects private files and missing resources in memory', () => {
+  const tracked = ['.pi/settings.json'];
+  checkPiPaths(tracked, ['.env.example'], true, [true, true, true]);
+  assert.throws(() => checkPiPaths([...tracked, '.pi/auth.json'], [], true, [true, true, true]));
+  assert.throws(() => checkPiPaths(tracked, ['.env'], true, [true, true, true]));
+  assert.throws(() => checkPiPaths(tracked, [], false, [true, true, true]));
+  assert.throws(() => checkPiPaths(tracked, [], true, [true, false, true]));
 });
 
-test('Pi documentation describes direct startup without the retired launcher or template', () => {
-  const readme = readFileSync('README.md', 'utf8');
-  const match = readme.match(/## Configurazione Pi\n([\s\S]*?)(?=\n## |$)/);
-  assert.ok(match, 'Pi configuration section is missing.');
-  assert.match(match[1], /```bash\npi\n/);
-  assert.match(match[1], /PI_CODING_AGENT_DIR/);
-  assert.match(match[1], /npm run test:pi/);
-  assert.doesNotMatch(match[1], /scripts\/pi\.sh|\/avvio/);
+test('Pi documentation contract checks synthetic text in memory', () => {
+  const text = '## Configurazione Pi\n```bash\npi\n```\nPI_CODING_AGENT_DIR\nnpm run test:pi\n';
+  checkPiReadme(text);
+  assert.throws(() => checkPiReadme(`${text}scripts/pi.sh`));
+  assert.throws(() => checkPiReadme(text.replace('npm run test:pi', '')));
 });

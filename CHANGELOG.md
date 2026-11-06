@@ -12,6 +12,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Gate di chiusura rapido con test in memoria e suite locali e di integrazione separate, mantenute nella CI (TEC-015).
 - Allineati documentazione e test all'avvio diretto Pi, preservando le impostazioni personali e verificando il quality gate (TEC-014).
 - Documentate le opzioni per identità del mittente, contesto dello studio e sessioni Hermes; ripristinate le risorse Pi condivise (SPIKE-002).
 - Separazione della configurazione Pi condivisa dalle preferenze e sessioni personali, con avvio isolato e procedura di migrazione (TEC-013).

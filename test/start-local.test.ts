@@ -1,11 +1,9 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 import { test } from 'node:test';
+import { memorySystem } from './memory-system.js';
 
-const script = resolve('scripts/start-local.mjs');
+const { startLocal } = createRequire(import.meta.url)('../../scripts/start-local-core.mjs');
 const configuration = `POSTGRES_PORT=55432
 WHATSAPP_WEBHOOK_PORT=18090
 DB_ADMIN_PASSWORD=synthetic-admin-password
@@ -19,46 +17,34 @@ WHATSAPP_ALLOWED_USERS=15555550102
 WHATSAPP_PHONE_NUMBER_ID=123456789
 `;
 
-test('local start validates private configuration, preserves secrets and suppresses child output', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'pilates-start-unit-'));
-  const bin = join(dir, 'bin');
-  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, COMPOSE_PROJECT_NAME: 'synthetic-unit' };
-  const start = (extra = {}) => spawnSync(process.execPath, [script], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8' });
-  try {
-    await mkdir(bin);
-    await mkdir(join(dir, 'node_modules/prisma/build'), { recursive: true });
-    await writeFile(join(dir, 'node_modules/prisma/build/index.js'), "console.log('synthetic-sensitive-migration-output');\n");
-    await writeFile(join(bin, 'docker'), '#!/bin/sh\necho synthetic-sensitive-docker-output\ncase "$*" in *hermes*) [ "$FAKE_FAIL" != yes ] || exit 1 ;; esac\n', { mode: 0o755 });
-    await writeFile(join(bin, 'npm'), '#!/bin/sh\necho synthetic-sensitive-npm-output\n[ "$FAKE_NPM_FAIL" != yes ]\n', { mode: 0o755 });
-    await writeFile(join(dir, '.env'), configuration, { mode: 0o600 });
-    let result = start();
-    assert.equal(result.status, 0);
-    assert.match(result.stdout, /sono sani/);
-    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-sensitive|15555550102/);
-    const password = await readFile(join(dir, '.local/secrets/db-admin'), 'utf8');
-    result = start();
-    assert.equal(result.status, 0);
-    assert.equal(await readFile(join(dir, '.local/secrets/db-admin'), 'utf8'), password);
-    result = start({ FAKE_FAIL: 'yes' });
-    assert.notEqual(result.status, 0);
-    assert.doesNotMatch(result.stdout + result.stderr, /sono sani|synthetic-sensitive|15555550102/);
-    result = start({ FAKE_NPM_FAIL: 'yes' });
-    assert.notEqual(result.status, 0);
-    assert.doesNotMatch(result.stdout + result.stderr, /sono sani|synthetic-sensitive/);
-    await writeFile(join(dir, '.env'), configuration.replace('POSTGRES_PORT=55432', 'POSTGRES_PORT=70000'));
-    assert.notEqual(start().status, 0);
-    await writeFile(join(dir, '.env'), configuration.replace('synthetic-admin-password', 'different-admin-password'));
-    result = start();
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /non corrisponde/);
-    assert.equal(await readFile(join(dir, '.local/secrets/db-admin'), 'utf8'), password);
-    await writeFile(join(dir, '.env'), configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS='));
-    result = start();
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /WHATSAPP_ALLOWED_USERS/);
-    await chmod(join(dir, '.env'), 0o644);
-    assert.notEqual(start().status, 0);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
+test('local start validates configuration, preserves secrets and suppresses child output in memory', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const password = system.content('.local/secrets/db-admin');
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/db-admin'), password);
+  assert.ok(system.calls.every((call) => call.stdio === 'ignore'));
+  assert.ok(system.calls.every((call) => call.env.DB_ADMIN_PASSWORD === undefined));
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);
+  system.failCommand('hermes');
+  let logCount = system.logs.length;
+  assert.equal(await startLocal(system), 1);
+  assert.doesNotMatch(system.logs.slice(logCount).join(' '), /sono sani|synthetic-sensitive|15555550102/);
+  system.failCommand('npm');
+  logCount = system.logs.length;
+  assert.equal(await startLocal(system), 1);
+  assert.doesNotMatch(system.logs.slice(logCount).join(' '), /sono sani|synthetic-sensitive/);
+  system.failCommand('');
+  system.put('.env', configuration.replace('POSTGRES_PORT=55432', 'POSTGRES_PORT=70000'));
+  assert.equal(await startLocal(system), 1);
+  system.put('.env', configuration.replace('synthetic-admin-password', 'different-admin-password'));
+  assert.equal(await startLocal(system), 1);
+  assert.match(system.errors.at(-1) ?? '', /non corrisponde/);
+  assert.equal(system.content('.local/secrets/db-admin'), password);
+  system.put('.env', configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS='));
+  assert.equal(await startLocal(system), 1);
+  assert.match(system.errors.at(-1) ?? '', /WHATSAPP_ALLOWED_USERS/);
+  system.mode('.env', 0o644);
+  assert.equal(await startLocal(system), 1);
 });
