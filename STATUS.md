@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Harness conversazionale completato; BUG-001, User Story e dettato remoto da avviare | 10/15 items done (67%) |
+| v0.2.0 | Open | Registrazione delle regole in corso; BUG-001, altre User Story e dettato remoto da avviare | 10/15 items done (67%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
-| In Progress | 0 |
+| Todo | 4 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 10 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | `us/US-002-registrare-regola-allenamento` |
 
 ## Blocked
 
@@ -47,7 +49,6 @@ None.
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
 | BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | P0 |
-| US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | Dettato vocale Pi su server remoto | P2 |
 

@@ -382,7 +382,8 @@
 #### US-002 — Registrare una regola di allenamento
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `us/US-002-registrare-regola-allenamento`
 - **Dependencies:** TEC-010, TEC-011, TEC-012
 - **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §3, §4, §5
