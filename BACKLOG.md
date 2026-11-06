@@ -224,7 +224,8 @@
 #### TEC-017 — Template Pi per lavorare in autonomia
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-017-template-pi-lavorare-in-autonomia`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-010
 - **Design references:** PROCESS §3, §6, §8; AGENTS §6, §9; TECHNICAL-DESIGN §8

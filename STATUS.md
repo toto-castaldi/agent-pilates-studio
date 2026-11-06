@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Contesto dell'agente da avviare; template Pi autonomo pianificato | 6/12 items done (50%) |
+| v0.2.0 | Open | Template Pi autonomo in corso; contesto dell'agente da avviare | 6/12 items done (50%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 6 |
-| In Progress | 0 |
+| Todo | 5 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 6 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | `task/TEC-017-template-pi-lavorare-in-autonomia` |
 
 ## Blocked
 
@@ -48,7 +50,6 @@ None.
 | ---- | ---- | ----- | -------- |
 | TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
-| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | P2 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
