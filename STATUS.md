@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Contesto dello studio completato; scenari conversazionali da avviare | 8/13 items done (62%) |
+| v0.2.0 | Open | Contesto dello studio completato; stato di attesa Pi in corso | 8/13 items done (62%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
-| In Progress | 0 |
+| Todo | 4 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 8 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-018 | EPIC-001 — Fondamenta del progetto | Stato di attesa nei tool Pi di domanda | `task/TEC-018-stato-attesa-tool-pi-domanda` |
 
 ## Blocked
 
@@ -48,7 +50,6 @@ None.
 | ---- | ---- | ----- | -------- |
 | TEC-012 | EPIC-004 — Pianificazione delle lezioni | Scenari conversazionali e harness | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
-| TEC-018 | EPIC-001 — Fondamenta del progetto | Stato di attesa nei tool Pi di domanda | P2 |
 
 TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 

@@ -242,7 +242,8 @@
 #### TEC-018 — Stato di attesa nei tool Pi di domanda
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-018-stato-attesa-tool-pi-domanda`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-011
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
