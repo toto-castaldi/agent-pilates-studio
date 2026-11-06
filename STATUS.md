@@ -2,19 +2,19 @@
 
 Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipendenze.
 
-**Last update:** 2026-11-05
+**Last update:** 2026-11-06
 
 ## Current version
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Schema della pianificazione completato; contesto dell'agente da avviare | 4/9 items done (44%) |
+| v0.2.0 | Open | Schema della pianificazione completato; gate di chiusura rapidi e contesto dell'agente da avviare | 4/10 items done (40%) |
 
 I conteggi riguardano la v0.2.0; il debito TEC-008 non è assegnato a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
+| Todo | 6 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 4 |
@@ -46,10 +46,11 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
+| TEC-015 | EPIC-001 — Fondamenta del progetto | Gate di chiusura con soli test di unità in memoria | P0 |
 | TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 
-TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
+TEC-015 è suggerito prima di TEC-011. TEC-008 non è assegnato a una versione: serve pianificarlo prima dell'avvio.
 
 ## Closed versions
 

@@ -186,6 +186,21 @@
   - Da ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`; la CI continua a eseguire il quality gate senza deploy automatico.
 - **Outcome:** Test e README allineati all'avvio diretto Pi, senza ripristinare i file rimossi o leggere le impostazioni personali. Verificati regole Git, contratto CI e quality gate da clone pulito; Pi 1.5.0 offline ha superato due prove sintetiche con directory distinte e coincidenti. L'esecuzione remota GitHub e la disponibilità delle risorse personali esterne non sono state verificate. Completato il 2026-11-05.
 
+#### TEC-015 — Gate di chiusura con soli test di unità in memoria
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-001, REQ-NFR-003, REQ-NFR-008
+- **Design references:** PROCESS §8, §9; AGENTS §6, §7; TECHNICAL-DESIGN §8
+- **Description:** Rendere rapidi i gate di chiusura (`finish-task`, `merge-task` e push su `main`) limitandoli a test di unità in memoria, in ottica TDD. I test di integrazione ed end-to-end restano, ma si eseguono solo quando servono, item per item, nella chiusura di una versione e nella CI GitHub. Dopo questo item la stessa modifica va riportata, separatamente e senza altri allineamenti, nel template `agile-project-template`.
+- **Acceptance criteria:**
+  - `docs/PROCESS.md` (Definition of Done e chiusura della versione), `AGENTS.md` §6–§7 e le skill `finish-task`, `merge-task` e `close-version` stabiliscono che i gate di chiusura eseguono solo lint, controllo dei tipi, build e test di unità in memoria; integrazione ed end-to-end si eseguono durante l'item quando servono come prova, mentre `close-version` esegue anche tutte le suite di integrazione.
+  - `npm test` esegue solo test di unità in memoria, senza processi figli, file system, git, rete o Docker; i test attuali `pi-gitignore`, `pi-launch`, `secrets` e `start-local` sono riscritti in memoria senza perdere i comportamenti verificati, separando la logica dagli effetti sul sistema dove serve.
+  - Le verifiche che non si possono riscrivere in memoria senza perdere ciò che provano sono spostate in una suite separata `npm run test:local`, esclusa dai gate di chiusura; la CI GitHub continua a eseguire tutte le suite, inclusa questa, e il test del contratto della CI è aggiornato.
+  - `docs/TECHNICAL-DESIGN.md` §8 e README descrivono i livelli di test, i relativi comandi e quando eseguirli; gli script `npm test` e `build` mantengono il comportamento attuale.
+  - Passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, e tutte le suite separate interessate dalle modifiche, inclusa `npm run test:local`.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -308,11 +323,11 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi.
 
 1. SPIKE-002.
 2. TEC-010.
-3. TEC-011.
+3. TEC-015, poi TEC-011.
 4. TEC-012.
 5. US-002.
 6. US-003 e US-004, entrambi dopo US-002.

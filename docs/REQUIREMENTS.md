@@ -39,6 +39,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Consultazione della pianificazione settimanale per giorno, fascia oraria, orario e cliente.
 - Aggiornamento delle regole tramite disattivazione, senza cancellazione, con storico consultabile.
 - Contesto dell'agente versionato e verifiche del comportamento conversazionale.
+- Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.2.0
@@ -181,6 +182,10 @@ Il comportamento dell'agente nei casi d'uso STUDIO deve essere verificato con sc
 #### REQ-NFR-007 — Configurazione Pi e verifiche coerenti
 
 La documentazione e i test dello sviluppo devono descrivere e verificare la configurazione Pi effettivamente voluta dall'operatore, senza ripristinare il launcher `scripts/pi.sh` o il template `/avvio` che l'operatore ha intenzionalmente rimosso. Le impostazioni esistenti e i dati personali non vengono modificati senza accordo; sessioni, autenticazione, log e segreti restano esclusi da Git. Le prove automatiche usano dati sintetici e il quality gate resta obbligatorio (REQ-NFR-001 e REQ-NFR-002).
+
+#### REQ-NFR-008 — Gate di chiusura con soli test di unità in memoria
+
+I gate di chiusura dello sviluppo (completamento di un item, merge e push su `main`) devono eseguire soltanto test di unità in memoria, veloci e privi di processi, file system, git, rete o Docker, oltre a lint, controllo dei tipi e build. I test di integrazione ed end-to-end restano disponibili come comandi separati: si eseguono durante il lavoro sull'item quando servono come prova dei criteri di accettazione o delle verifiche richieste da `AGENTS.md`, nella chiusura di una versione e nella CI GitHub, che continua a eseguire tutte le suite (REQ-NFR-003). La regola è documentata, senza controlli automatici dedicati.
 
 ## 7. Release acceptance — v0.2.0
 
