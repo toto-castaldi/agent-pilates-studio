@@ -3,6 +3,13 @@
 import json
 from aiohttp import web
 
+# Kept only in this isolated synthetic server; never used in the real stack.
+observations = []
+
+
+async def observe(request):
+    return web.json_response(observations)
+
 
 async def models(request):
     return web.json_response({'object': 'list', 'data': [{'id': 'synthetic/test-model', 'object': 'model', 'context_length': 65536}]})
@@ -11,7 +18,10 @@ async def models(request):
 async def chat(request):
     body = await request.json()
     messages = body.get('messages', [])
-    if not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
+    last_user = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
+    system = next((str(item.get('content', '')) for item in messages if item.get('role') == 'system'), '')
+    observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None})
+    if 'context-probe' in last_user or not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
@@ -50,5 +60,6 @@ async def chat(request):
 
 app = web.Application()
 app.router.add_get('/v1/models', models)
+app.router.add_get('/v1/observations', observe)
 app.router.add_post('/v1/chat/completions', chat)
 web.run_app(app, host='0.0.0.0', port=8088, print=None, access_log=None)

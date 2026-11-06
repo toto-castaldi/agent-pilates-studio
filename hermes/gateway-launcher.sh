@@ -7,6 +7,9 @@ case " $* " in
   unset PYTHONPATH PYTHONHOME
   export HERMES_SITE=/opt/hermes/.venv/lib/python3.14/site-packages
   export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${XDG_CACHE_HOME:-$HOME/.cache}/hermes-pycache}"
+  # Request a refresh before accepting turns, including sessions persisted by
+  # an earlier release. Failure must stop startup rather than reuse stale rules.
+  /opt/hermes/libexec/hermes-upstream sessions refresh-prompts >/dev/null 2>&1
   exec /opt/hermes/.venv/bin/python -P -c '
 import logging, os, site, sys
 logging.disable(1000)

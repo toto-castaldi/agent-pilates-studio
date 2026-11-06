@@ -38,7 +38,7 @@
    ```
 
    `scripts/migrate-docker.sh` non legge `.env`: le variabili `SECRETS_DIR` e `POSTGRES_PORT` vanno esportate esplicitamente. Il bootstrap e la migrazione usano credenziali separate, mai montate nel container dell'agente.
-3. Solo dopo i controlli e con autorizzazione esplicita, avviare il gateway intenzionalmente con `docker compose -p "$PROJECT" up -d --build --wait hermes`. Per la prova temporanea autorizzata applicare i limiti di REQ-NFR-002, verificare percorso HTTPS e segreti, e fermare il gateway alla conclusione. Verificare stato e salute con `docker compose -p "$PROJECT" ps`. Una prova reale Meta/OpenRouter richiede i servizi esterni e l'interlocutore autorizzato; non riportare messaggi, numeri o token nei risultati.
+3. Solo dopo i controlli e con autorizzazione esplicita, avviare il broker con `docker compose -p "$PROJECT" up -d --build --wait author-broker` e ricreare il gateway intenzionalmente con `docker compose -p "$PROJECT" up -d --build --no-deps --force-recreate --wait hermes`. Per la prova temporanea autorizzata applicare i limiti di REQ-NFR-002, verificare percorso HTTPS e segreti, e fermare il gateway alla conclusione. Verificare stato e salute con `docker compose -p "$PROJECT" ps`. Una prova reale Meta/OpenRouter richiede i servizi esterni e l'interlocutore autorizzato; non riportare messaggi, numeri o token nei risultati.
 
 ## Backup quiescente
 
@@ -98,7 +98,7 @@ bash scripts/migrate-docker.sh
 docker compose -p "$PROJECT" ps
 ```
 
-L'avvio o la ricreazione di PostgreSQL può interrompere connessioni esistenti. Se uno dei passaggi fallisce, fermarsi e valutare il ripristino verificato, senza riavviare Hermes. Solo dopo i controlli di sicurezza e l'autorizzazione all'attivazione, l'operatore può avviare il gateway con `docker compose -p "$PROJECT" up -d --no-build --wait hermes` e verificarne disponibilità e dati.
+L'avvio o la ricreazione di PostgreSQL può interrompere connessioni esistenti. Se uno dei passaggi fallisce, fermarsi e valutare il ripristino verificato, senza riavviare Hermes. Solo dopo i controlli di sicurezza e l'autorizzazione all'attivazione, l'operatore può ricreare il gateway dal nuovo snapshot con `docker compose -p "$PROJECT" up -d --no-build --force-recreate --wait hermes` e verificarne disponibilità e dati. Il mount in sola lettura punta al `hermes/SOUL.md` del nuovo snapshot; il launcher richiede il refresh dei prompt all'avvio e le sessioni esistenti adottano il nuovo contesto al turno successivo. Il refresh conserva cronologia e vecchi prompt nel volume e fallisce l'avvio se non riesce; non modifica un turno già in corso. Non modificare copie nel volume.
 
 `npm run test:upgrade` esercita con servizi in rete isolata e dati sintetici il percorso PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7. Questo non garantisce la compatibilità di altre versioni e non sostituisce la prova dell'aggiornamento in produzione.
 

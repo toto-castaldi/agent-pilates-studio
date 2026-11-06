@@ -31,7 +31,10 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
   try {
     await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
     await writeFile(join(directory, 'config.yaml'), await readFile('hermes/config.yaml'));
-    await writeFile(override, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n    volumes:\n      - ${JSON.stringify(`${join(directory, 'config.yaml')}:/opt/data/config.yaml:ro`)}\nnetworks:\n  default:\n    internal: true\n`);
+    const soulPath = join(directory, 'SOUL.md');
+    const soul = await readFile('hermes/SOUL.md', 'utf8');
+    await writeFile(soulPath, `${soul}\nCONTEXT_VERSION_A\n`);
+    await writeFile(override, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n    volumes:\n      - ${JSON.stringify(`${join(directory, 'config.yaml')}:/opt/data/config.yaml:ro`)}\n      - ${JSON.stringify(`${soulPath}:/opt/data/SOUL.md:ro`)}\nnetworks:\n  default:\n    internal: true\n`);
     compose('build', 'hermes');
     compose('up', '-d', '--wait', 'postgres');
     compose('run', '--rm', 'db-bootstrap');
@@ -54,7 +57,18 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     };
     const migrator = await connect('studio_migrator', secrets['db-migrator']);
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'hermes');
-    const gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
+    let gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
+    const observationsUrl = `http://${address('model-stub')}:8088/v1/observations`;
+    type Observation = { user: string; system: string; last_role: string };
+    const waitObservation = async (predicate: (entry: Observation) => boolean) => {
+      for (let i = 0; i < 90; i++) {
+        const entries = await (await fetch(observationsUrl)).json() as Observation[];
+        const match = entries.find(predicate);
+        if (match) return match;
+        await delay(1000);
+      }
+      assert.fail('Timed out waiting for synthetic model request');
+    };
     let broker = `http://${address('author-broker')}:8091`;
     const body = (sender: string, name: string, id: string, text: string, timestamp = Math.floor(Date.now() / 1000), phoneId = secrets['whatsapp-phone-number-id']) => JSON.stringify({
       object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
@@ -63,7 +77,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
       } }] }],
     });
     const signed = (payload: string) => `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(payload).digest('hex')}`;
-    const gatewayPost = (payload: string, signature = signed(payload)) => fetch(gateway, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': signature } });
+    const gatewayPost = (payload: string, signature = signed(payload)) => fetch(gateway, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': signature, Connection: 'close' } });
     const evidence = (payload: string, signature = signed(payload), token = secrets['bridge-token']) => fetch(`${broker}/v1/evidence`, { method: 'POST', body: payload, headers: { 'X-Pilates-Bridge': token, 'X-Hub-Signature-256': signature } });
     const claim = (data: object, token = secrets['bridge-token']) => fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': token }, body: JSON.stringify(data) });
     const alpha = body('15555550102', 'Synthetic Alpha', 'synthetic-wamid-alpha', 'alpha');
@@ -92,12 +106,17 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
       { rule_text: 'alpha rule', created_by_phone: '15555550102', created_by_name: 'Synthetic Alpha' },
       { rule_text: 'beta rule', created_by_phone: '15555550103', created_by_name: 'Synthetic Beta' },
     ]);
+    // Wait for the previous turns to finish model processing before sending another
+    // message to the same WhatsApp session.
+    await waitObservation((entry) => entry.user.includes('alpha') && entry.last_role === 'tool');
+    await waitObservation((entry) => entry.user.includes('beta') && entry.last_role === 'tool');
+    await delay(2000);
     const deactivate = body('15555550103', 'Synthetic Beta', 'synthetic-wamid-deactivate', 'deactivate-alpha');
     assert.equal((await gatewayPost(deactivate)).status, 200);
     await waitFor('SELECT count(*) FROM app.training_rules WHERE deactivated_at IS NOT NULL', 1);
     const deactivated = (await migrator.query("SELECT deactivated_by_phone, deactivated_by_name, deactivation_reason FROM app.training_rules WHERE rule_text = 'alpha rule'")).rows[0];
     assert.deepEqual(deactivated, { deactivated_by_phone: '15555550103', deactivated_by_name: 'Synthetic Beta', deactivation_reason: 'synthetic reason' });
-    const gatewayId = compose('ps', '-q', 'hermes').trim();
+    let gatewayId = compose('ps', '-q', 'hermes').trim();
     execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /tmp/pilates-injection-marker'], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
     const logCheck = [
@@ -107,6 +126,70 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     ].join('\n');
     execFileSync('docker', ['exec', gatewayId, '/opt/hermes/.venv/bin/python', '-c', logCheck], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{.HostConfig.LogConfig.Type}}', compose('ps', '-q', 'author-broker').trim()], { encoding: 'utf8' }).trim(), 'none');
+
+    // Exercise the real session cache, prompt refresh and wire-only clock with
+    // signed synthetic WhatsApp turns and the isolated model stub.
+    const probe = async (number: number) => {
+      const text = `context-probe-${number}`;
+      const payload = body('15555550102', 'Synthetic Alpha', `synthetic-wamid-${text}`, text);
+      assert.equal((await gatewayPost(payload)).status, 200);
+      const result = await waitObservation((entry) => entry.user.includes(text));
+      await delay(2000);
+      return result.system;
+    };
+    const firstPrompt = await probe(1);
+    assert.ok(firstPrompt.includes('CONTEXT_VERSION_A'));
+    assert.ok(firstPrompt.includes('Assistente dello studio Pilates'));
+    const clock = firstPrompt.match(/Data e ora correnti \(Europe\/Rome\): (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:\d\d)/)?.[1];
+    assert.ok(clock && Math.abs(Date.now() - Date.parse(clock)) < 120_000);
+    assert.equal(execFileSync('docker', ['inspect', '--format', '{{range .Mounts}}{{if eq .Destination "/opt/data/SOUL.md"}}{{.RW}}{{end}}{{end}}', gatewayId], { encoding: 'utf8' }).trim(), 'false');
+    const memoryCheck = [
+      'import json',
+      'from hermes_cli.config import load_config',
+      "memory = load_config().get('memory', {})",
+      "assert memory.get('memory_enabled') is False and memory.get('user_profile_enabled') is False and not memory.get('provider')",
+    ].join('\n');
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', memoryCheck], { stdio: 'pipe' });
+    const clockCheck = [
+      'from datetime import datetime, timezone',
+      'import agent.turn_request_assembly as assembly',
+      'import pilates_trusted',
+      "assembly.build_api_messages = lambda agent, messages, **kwargs: ([{'role': 'system', 'content': 'base'}], 'base')",
+      'pilates_trusted.install()',
+      'class Clock:',
+      '    instant = None',
+      '    @classmethod',
+      '    def now(cls, zone): return cls.instant.astimezone(zone)',
+      'pilates_trusted.datetime = Clock',
+      "for instant, expected in [('2026-03-28T22:59:59+00:00', '2026-03-28T23:59:59+01:00'), ('2026-03-28T23:00:00+00:00', '2026-03-29T00:00:00+01:00'), ('2026-03-29T00:59:59+00:00', '2026-03-29T01:59:59+01:00'), ('2026-03-29T01:00:00+00:00', '2026-03-29T03:00:00+02:00'), ('2026-10-25T01:00:00+00:00', '2026-10-25T02:00:00+01:00')]:",
+      '    Clock.instant = datetime.fromisoformat(instant)',
+      "    history = [{'role': 'user', 'content': 'synthetic'}]",
+      '    wire, system = assembly.build_api_messages(None, history)',
+      "    assert expected in system and wire[0]['content'] == system",
+      "    assert history == [{'role': 'user', 'content': 'synthetic'}]",
+    ].join('\n');
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', clockCheck], { stdio: 'pipe', timeout: 60_000 });
+    // An unusable session store must prevent this separate launcher from starting.
+    assert.throws(() => execFileSync('docker', ['exec', '--user', '10000', '-e', 'HERMES_HOME=/dev/null', gatewayId, '/opt/hermes/libexec/hermes', 'gateway', 'run'], { stdio: 'pipe', timeout: 60_000 }));
+    await writeFile(soulPath, `${soul}\nCONTEXT_VERSION_B\n`);
+    assert.ok((await probe(2)).includes('CONTEXT_VERSION_A'));
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/libexec/hermes-upstream', 'sessions', 'refresh-prompts'], { stdio: 'pipe', timeout: 60_000 });
+    const refreshed = await probe(3);
+    assert.ok(refreshed.includes('CONTEXT_VERSION_B'));
+    assert.ok(!refreshed.includes('CONTEXT_VERSION_A'));
+    await writeFile(soulPath, `${soul}\nCONTEXT_VERSION_C\n`);
+    compose('up', '-d', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '150', 'hermes');
+    gatewayId = compose('ps', '-q', 'hermes').trim();
+    gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
+    const afterRestart = await probe(4);
+    assert.ok(afterRestart.includes('CONTEXT_VERSION_C'));
+    assert.ok(!afterRestart.includes('CONTEXT_VERSION_B'));
+    const noClockInState = [
+      'from pathlib import Path',
+      "state = b''.join(p.read_bytes() for p in Path('/opt/data').glob('state.db*') if p.is_file())",
+      "assert b'Data e ora correnti (Europe/Rome):' not in state",
+    ].join('\n');
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', noClockInState], { stdio: 'pipe' });
 
     // A signed receipt can be claimed by one turn only, even across restart.
     compose('restart', 'author-broker');

@@ -1,6 +1,10 @@
 model:
   default: "${PILATES_MODEL}"
   provider: openrouter
+memory:
+  memory_enabled: false
+  user_profile_enabled: false
+  provider: ""
 plugins:
   enabled:
     - pilates-postgres

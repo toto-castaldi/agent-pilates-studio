@@ -7,7 +7,9 @@ values as tool arguments. The broker independently verifies the raw Meta signatu
 import contextvars
 import os
 import secrets
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.web_app import Application
@@ -43,6 +45,23 @@ def install():
     from gateway.run_turn_runner import TurnRunner
     from gateway.session_api_turn import api_execution
     import agent.tool_executor as executor
+    import agent.turn_request_assembly as assembly
+
+    # The cached session prompt can span midnight. Add the clock to the wire
+    # copy for every model request, never to SQLite or the conversation history.
+    original_build_messages = assembly.build_api_messages
+
+    def build_messages(agent, messages, **kwargs):
+        api_messages, system = original_build_messages(agent, messages, **kwargs)
+        now = datetime.now(ZoneInfo('Europe/Rome')).isoformat(timespec='seconds')
+        system = (system + '\n\nData e ora correnti (Europe/Rome): ' + now).strip()
+        if api_messages and api_messages[0].get('role') == 'system':
+            api_messages[0] = {**api_messages[0], 'content': system}
+        else:
+            api_messages.insert(0, {'role': 'system', 'content': system})
+        return api_messages, system
+
+    assembly.build_api_messages = build_messages
 
     # Enforce the allowlist at both execution paths, including model-emitted
     # tool names that were not advertised in the tool schema.
