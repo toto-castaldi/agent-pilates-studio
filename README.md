@@ -20,11 +20,13 @@ npm test
 npm run build
 ```
 
-Il lint con Biome controlla codice, test e script; il test smoke usa il test runner integrato di Node.js. `npm test` ricompila prima di eseguire i test e `npm run build` rigenera `dist/`, includendo il codice compilato e i test. Le dipendenze sono fissate nel lockfile.
+Il gate rapido comprende lint, controllo dei tipi, test unitari e build; `npm ci` prepara le dipendenze da lockfile. `npm test` ricompila e usa il runner Node.js senza isolamento a processi: i test lavorano solo in memoria, senza filesystem, processi figli, Git, rete o Docker. `npm run build` rigenera `dist/`, includendo codice e test; la compilazione stessa usa filesystem e processi.
+
+Le prove con effetti reali sono separate: `npm run test:local` verifica Git, file, processi e contratto CI; `npm run test:pi` richiede Pi 1.5.0; `npm run test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start` richiedono Docker Compose. Eseguirle durante il lavoro quando servono per dimostrare i criteri; alla chiusura della versione eseguire tutte le suite di integrazione. Le prove end-to-end reali richiedono anche servizi e credenziali esterni.
 
 ## Integrazione continua
 
-Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa la versione di Node.js indicata in `.nvmrc`, esegue i cinque comandi del quality gate e poi i test `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start` con Docker Compose. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. Un test automatico controlla trigger, comandi e configurazione essenziale del workflow.
+Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa Node.js da `.nvmrc`, installa le dipendenze ed esegue il gate rapido, `test:local`, `test:pi` con Pi 1.5.0 e le suite Docker `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. `test:local` controlla trigger, comandi e configurazione effettiva del workflow.
 
 Le prove end-to-end con servizi e credenziali reali si eseguono separatamente come descritto in [Hermes e WhatsApp Cloud](#hermes-e-whatsapp-cloud); non fanno parte della CI.
 

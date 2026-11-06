@@ -46,22 +46,23 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 
 Per il solo kickoff documentale TEC-001, prima che lo scaffold esista: verificare la coerenza dei documenti e delle coperture del backlog ed eseguire `git diff --check` e `git diff --cached --check`.
 
-Da TEC-002 in poi, lo scaffold deve fornire e far passare:
+Il gate di chiusura di item, merge e push su `main` comprende solo:
 
 ```bash
-npm ci
 npm run lint
 npm run typecheck
 npm test
 npm run build
 ```
 
-Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi; le prove end-to-end reali Meta/OpenRouter richiedono servizi e credenziali esterni e sono documentate separatamente. Non usare un database simulato come prova dei privilegi. TEC-002 precede gli altri item, così il gate è disponibile.
+`npm test` ricompila ed esegue solo test di unità in memoria: i test non avviano processi e non usano filesystem, git, rete o Docker. La compilazione e l'eventuale `npm ci` da lockfile sono preparazione, non comportamento dei test. Le suite separate si eseguono durante l'item quando servono a provarne i criteri o la DoD; alla chiusura di versione e in CI si eseguono tutte le suite di integrazione, inclusi `npm run test:local`, `test:pi`, `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Le prove end-to-end reali Meta/OpenRouter richiedono servizi e credenziali esterni e sono documentate e verificate separatamente secondo i criteri di release.
+
+Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi; non usare un database simulato come prova dei privilegi.
 
 ## 7. Definition of Done additions
 
 - Quando una modifica introduce configurazione, aggiornare gli esempi senza segreti e le istruzioni necessarie.
-- Quando cambia una migrazione o un privilegio, verificarlo su PostgreSQL reale; non affidarsi solo a test simulati.
+- Quando cambia una migrazione o un privilegio, verificarlo durante l'item su PostgreSQL reale; non affidarsi solo a test simulati. Le verifiche separate necessarie ai criteri dell'item sono obbligatorie anche se non fanno parte del gate rapido.
 
 ## 8. Process overrides
 
