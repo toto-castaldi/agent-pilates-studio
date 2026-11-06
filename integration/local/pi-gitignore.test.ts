@@ -20,7 +20,7 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       return result.status === 0;
     }
 
-    for (const path of ['.pi/settings.json', '.pi/prompts/start.md', '.agents/skills/start-task/SKILL.md']) {
+    for (const path of ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.agents/skills/start-task/SKILL.md']) {
       assert.equal(isIgnored(path), false, `${path} must be eligible for versioning`);
     }
     for (const path of [

@@ -68,18 +68,22 @@ test('direct Pi startup loads project and personal resources without changing pr
   }
 });
 
-test('Pi discovers the project start template only with project trust', { timeout: 90_000 }, () => {
+test('Pi discovers approved project templates only with project trust', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-start-integration-'));
   const project = join(root, 'project');
   const agent = join(root, 'agent');
   try {
     mkdirSync(join(project, '.pi', 'prompts'), { recursive: true });
     mkdirSync(agent);
-    copyFileSync('.pi/prompts/start.md', join(project, '.pi', 'prompts', 'start.md'));
+    for (const name of ['start', 'work-alone']) {
+      copyFileSync(`.pi/prompts/${name}.md`, join(project, '.pi', 'prompts', `${name}.md`));
+    }
     for (const approved of [true, false]) {
       const response = runPi(project, root, agent, approved).find((entry) => entry.id === 'commands');
       assert.equal(response?.success, true);
-      assert.equal(response?.data?.commands?.some((command) => command.name === 'start'), approved);
+      for (const name of ['start', 'work-alone']) {
+        assert.equal(response?.data?.commands?.some((command) => command.name === name), approved, name);
+      }
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
