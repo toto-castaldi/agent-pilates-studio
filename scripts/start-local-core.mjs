@@ -102,7 +102,10 @@ export async function startLocal({ lstat, mkdir, readFile, writeFile, randomByte
     url.username = 'studio_migrator';
     url.password = config.DB_MIGRATOR_PASSWORD;
     run(execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], { ...env, DATABASE_URL: url.toString() }, 'Migrazioni');
-    run('docker', compose('up', '-d', '--build', '--wait', '--wait-timeout', '180', 'hermes'), env, 'Avvio Hermes');
+    run('docker', compose('up', '-d', '--build', '--wait', '--wait-timeout', '180', 'author-broker'), env, 'Avvio broker');
+    // Recreate only the gateway: atomic checkout may replace the bind-mounted
+    // SOUL inode, and persisted sessions must adopt the new prompt on startup.
+    run('docker', compose('up', '-d', '--build', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '180', 'hermes'), env, 'Avvio Hermes');
     log('PostgreSQL e Hermes sono sani. La raggiungibilità pubblica non è verificata.');
     return 0;
   } catch (error) {

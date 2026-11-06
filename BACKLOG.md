@@ -260,7 +260,7 @@
 #### TEC-011 — Contesto dell'agente dello studio
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
-- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Type:** Task · **Priority:** P0 · **Status:** Done
 - **Branch:** `task/TEC-011-contesto-agente-studio`
 - **Dependencies:** SPIKE-002, TEC-010
 - **Requirements:** REQ-STUDIO-001, REQ-STUDIO-002, REQ-STUDIO-004, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005
@@ -272,6 +272,7 @@
   - `SOUL.md` descrive lo schema di TEC-010 e le politiche: testo delle regole pulito e comprensibile, derivazione dei dati strutturati, scomposizione decisa dall'agente, riconoscimento dei clienti per nome con richiesta del cognome se ambiguo o mancante, conferma solo in caso di ambiguità, disattivazione autonoma comunicata con motivo, nessuna cancellazione o riscrittura, risposte basate sulle sole regole attive.
   - I toolset non necessari restano disabilitati e l'agente non riporta numeri di telefono nelle risposte se non richiesto.
   - Le regole di comportamento, inclusi i limiti delle fasce, non sono duplicate nel codice o nella configurazione. Un test automatico verifica che `SOUL.md` sia incluso nell'immagine o nel volume Hermes previsto, che citi tabelle e colonne esistenti nella migrazione e che non contenga segreti; README e design descrivono come modificarlo.
+- **Outcome:** `SOUL.md` versionato e montato in sola lettura, refresh delle sessioni all'avvio, orologio Europe/Rome effimero per richiesta e memoria disabilitata; avvio locale ricrea il solo gateway. Verificati schema e mount, refresh e ricreazione con gateway Hermes e modello sintetico, transizioni di mezzanotte e ora legale, persistenza e quality gate. Nessuna nuova prova con Meta/OpenRouter reali; comportamento conversazionale demandato a TEC-012 e alle User Story. Completato il 2026-11-06.
 
 #### TEC-012 — Scenari conversazionali e harness
 

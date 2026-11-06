@@ -8,7 +8,7 @@ trap 'printf "%s\n" hermes_preflight_failed >&3' EXIT
 
 # Hermes loads its persistent .env with override enabled; refuse settings that
 # could silently bypass the secret files or the sender allowlist.
-if [ -f /opt/data/.env ] && grep -Eqi '^[[:space:]]*(export[[:space:]]+)?(WHATSAPP_CLOUD_|GATEWAY_ALLOW_ALL_USERS|OPENROUTER_API_KEY|PILATES_)' /opt/data/.env; then
+if [ -f /opt/data/.env ] && grep -Eqi '^[[:space:]]*(export[[:space:]]+)?(WHATSAPP_CLOUD_|GATEWAY_ALLOW_ALL_USERS|OPENROUTER_API_KEY|PILATES_|HERMES_HOME|HERMES_TIMEZONE|HERMES_EPHEMERAL_SYSTEM_PROMPT)' /opt/data/.env; then
   exit 1
 fi
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -62,6 +62,15 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     assert.doesNotMatch(mounts, /db-admin|db-migrator|\.env/);
     execFileSync('docker', ['exec', '--user', 'root', hermes, 'sh', '-c', 'printf synthetic-volume-marker > /opt/data/start-probe']);
     const adminFile = await readFile(join(dir, '.local/secrets/db-admin'), 'utf8');
+    const postgresId = compose('ps', '-q', 'postgres').trim();
+    const soulPath = join(dir, 'hermes/SOUL.md');
+    await writeFile(`${soulPath}.new`, `${await readFile(soulPath, 'utf8')}\nSYNTHETIC_UPDATED_SOUL\n`);
+    await rename(`${soulPath}.new`, soulPath); // Simulates a checkout replacing the bind-mounted inode.
+    start();
+    const updatedHermes = compose('ps', '-q', 'hermes').trim();
+    assert.notEqual(updatedHermes, hermes);
+    assert.equal(compose('ps', '-q', 'postgres').trim(), postgresId);
+    execFileSync('docker', ['exec', updatedHermes, 'grep', '-q', 'SYNTHETIC_UPDATED_SOUL', '/opt/data/SOUL.md'], { stdio: 'pipe' });
     compose('stop');
     start();
     const after = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_agent', password: agentPassword });

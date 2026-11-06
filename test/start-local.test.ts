@@ -24,6 +24,7 @@ test('local start validates configuration, preserves secrets and suppresses chil
   const password = system.content('.local/secrets/db-admin');
   assert.equal(await startLocal(system), 0);
   assert.equal(system.content('.local/secrets/db-admin'), password);
+  assert.ok(system.calls.some((call) => call.args.includes('--force-recreate') && call.args.includes('--no-deps') && call.args.includes('hermes')));
   assert.ok(system.calls.every((call) => call.stdio === 'ignore'));
   assert.ok(system.calls.every((call) => call.env.DB_ADMIN_PASSWORD === undefined));
   assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);

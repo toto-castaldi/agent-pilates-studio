@@ -85,6 +85,7 @@ services:
         condition: service_healthy
     environment:
       PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
+      HERMES_TIMEZONE: Europe/Rome
       WHATSAPP_CLOUD_WEBHOOK_HOST: 0.0.0.0
       WHATSAPP_CLOUD_WEBHOOK_PATH: ${WHATSAPP_WEBHOOK_PATH:-/whatsapp/webhook}
     secrets:
@@ -100,6 +101,7 @@ services:
       - "127.0.0.1:${WHATSAPP_WEBHOOK_PORT:-18090}:8090"
     volumes:
       - hermes_data:/opt/data
+      - ./hermes/SOUL.md:/opt/data/SOUL.md:ro
       - ./hermes/config.yaml:/opt/data/config.yaml:ro
       - ./hermes/plugins/pilates-postgres:/opt/data/plugins/pilates-postgres:ro
     tmpfs:

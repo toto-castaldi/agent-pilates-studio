@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Contesto versionato dello studio per Hermes, con refresh delle sessioni e data corrente Europe/Rome (TEC-011).
 - Template Pi `/start` condiviso per riepilogare lo stato e le prossime attività senza avviare lavoro (TEC-016).
 - Schema della pianificazione e broker isolato per attribuire inserimenti e disattivazioni ai mittenti WhatsApp autenticati, con prove di concorrenza e replay (TEC-010).
 

@@ -60,7 +60,7 @@ npm run start:local
 
 Impostare tre password database casuali e distinte di almeno 16 caratteri, i valori Meta/OpenRouter, il verify token configurato anche su Meta e l'allowlist di numeri internazionali in sole cifre, separati da virgole. `WHATSAPP_PHONE_NUMBER_ID` è l'identificativo Meta, non un numero telefonico. L'esempio non contiene valori reali. `.env` e la directory `.local/secrets/` contengono credenziali: mantenerli privati, fuori da Git e conservarne copie cifrate. Se si usa `SECRETS_DIR`, la directory deve essere privata (`0700`) e i suoi file privati (`0600`).
 
-Il comando reinstalla le dipendenze dal lockfile a ogni avvio, crea i file segreti senza sovrascriverli, avvia PostgreSQL, configura i ruoli, applica le migrazioni e avvia il broker e Hermes; aspetta gli healthcheck. Genera e conserva anche i file privati `db-broker` e `bridge-token`, indipendenti dalle tre password in `.env`. Non elimina volumi. Se i file di segreto esistono già, i rispettivi valori in `.env` devono coincidere: in particolare, per uno stack esistente l'operatore deve riportare privatamente in `.env` le credenziali già conservate, senza rigenerarle. Una differenza arresta il comando prima del bootstrap; la rotazione è un'operazione distinta e intenzionale. Usare un solo operatore alla volta.
+Il comando reinstalla le dipendenze dal lockfile a ogni avvio, crea i file segreti senza sovrascriverli, avvia PostgreSQL, configura i ruoli, applica le migrazioni e avvia il broker e Hermes; aspetta gli healthcheck. A ogni esecuzione ricrea il gateway, interrompendo eventuali turni in corso, per applicare il contesto versionato aggiornato. Genera e conserva anche i file privati `db-broker` e `bridge-token`, indipendenti dalle tre password in `.env`. Non elimina volumi. Se i file di segreto esistono già, i rispettivi valori in `.env` devono coincidere: in particolare, per uno stack esistente l'operatore deve riportare privatamente in `.env` le credenziali già conservate, senza rigenerarle. Una differenza arresta il comando prima del bootstrap; la rotazione è un'operazione distinta e intenzionale. Usare un solo operatore alla volta.
 
 In caso di configurazione non valida o errore il comando termina con esito negativo, senza stampare output grezzo o dati sensibili; verificare in privato configurazione, permessi, disponibilità Docker e porte. I servizi già avviati possono restare attivi dopo un errore. Verificare e arrestare senza eliminare i dati:
 
@@ -118,9 +118,20 @@ Se si usa `SECRETS_DIR`, creare i file in quella directory. `db-broker` e `bridg
 Dopo aver inizializzato il database e creato i file, avviare Hermes:
 
 ```bash
-docker compose up -d --build --wait hermes
+docker compose up -d --build --wait author-broker
+docker compose up -d --build --no-deps --force-recreate --wait hermes
 docker compose ps
 ```
+
+### Contesto dello studio
+
+`hermes/SOUL.md` è la fonte versionata delle istruzioni e delle fasce orarie dell'assistente. Rivedere ogni modifica senza aggiungere dati reali o segreti; il file è montato in sola lettura su `/opt/data/SOUL.md` sia in locale sia nell'installazione descritta dalla procedura operativa. Dopo un aggiornamento usare il normale avvio con ricreazione del container, affinché il mount punti al file del nuovo commit. Non modificare una copia nel volume Hermes.
+
+All'avvio il gateway richiede il refresh dei prompt delle sessioni: le sessioni già aperte ricostruiscono il prompt **al turno successivo**, conservando la cronologia; un turno già in corso non cambia. Se il refresh fallisce, il gateway non parte. Per una modifica in loco già visibile nel mount, senza ricreare il container, un operatore può richiedere esplicitamente il refresh con `docker compose exec --user 10000 hermes /opt/hermes/libexec/hermes-upstream sessions refresh-prompts`; non usare questa scorciatoia al posto di un aggiornamento versionato. La cronologia SQLite e i vecchi prompt possono contenere dati sensibili e restano nel volume e nei backup. Memoria e profilo integrati e provider di memoria esterni sono disabilitati; lo scanner anti-injection di Hermes non è una barriera di sicurezza.
+
+L'ora corrente Europe/Rome viene aggiunta come metadato effimero a ogni richiesta del gateway al modello, anche nelle sessioni riprese; serve un orologio host sincronizzato. Il comportamento conversazionale resta da verificare con il modello reale negli scenari di TEC-012 e nelle relative User Story. `npm run test:author` verifica in isolamento caricamento, refresh, riavvio, data e confini dell'ora legale con gateway e modello sintetico.
+
+### Configurazione del gateway
 
 Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni e le credenziali del comando unico sono descritte in `.env.example`; la procedura manuale continua a usare i file di segreto separati. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** il percorso del webhook a quella porta senza alterare il corpo della richiesta. Il percorso predefinito è `/whatsapp/webhook`; impostare `WHATSAPP_WEBHOOK_PATH` per usare un percorso già configurato. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi.
 
