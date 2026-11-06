@@ -158,6 +158,8 @@
 
 **Scope change (2026-11-06):** su accordo dell'utente, TEC-018 è aggiunto alla v0.2.0 per segnalare l'attesa dell'utente nei tool Pi di domanda.
 
+**Scope change (2026-11-06):** su accordo dell'utente, TEC-020 è aggiunto alla v0.2.0 per il dettato vocale Pi su server remoto.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -256,6 +258,35 @@
   - Test ripetibili verificano che entrambi i tool richiedano lo stato `blocked`, tipo `question`, e che lo stato precedente sia ripristinato alla risposta e all'annullamento. Una prova con Pi 1.5.0, documentata con i suoi limiti, verifica il caricamento dei tool senza duplicati e, se possibile, la sequenza OSC 7501 `blocked` emessa durante l'attesa. Le prove con processi, Git o Pi restano separate dal gate rapido in memoria.
   - README e documentazione pertinente descrivono la provenienza dei tool, il riferimento fissato, il relativo aggiornamento e la visualizzazione dell'attesa nei terminali compatibili. Test e documentazione non leggono né modificano impostazioni personali e non espongono segreti.
 - **Outcome:** Fork MIT nel pacchetto condiviso al commit `44f36742d47a4e83504abb9bdc0427be5f09ed82`, pubblicato su branch dedicato; configurazione fissata senza tool duplicati e documentazione aggiornata. Superati gate rapido, `test:local`, `test:pi` e `test:pi-package`: confronti con l'originale, ripristino simulato e prova Pi 1.5.0 OSC con risposta e annullamento. La prova reale ripristina `idle` da comandi sintetici, non verifica un turno del modello né ogni terminale. Completato il 2026-11-06.
+
+#### TEC-020 — Dettato vocale Pi su server remoto
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-012
+- **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
+- **Description:** Pi Voice registra l'audio sul server dove gira Pi. Su un server remoto senza schede audio, come quello usato via SSH e Herdr, il dettato fallisce con `DeviceUnavailable: no input device is available`. Si inoltra il socket Pulse del client Ubuntu (PipeWire con `pipewire-pulse`) come socket Unix tramite `RemoteForward`. Sul server ALSA è instradato verso Pulse (`libasound2-plugins`, `~/.asoundrc`) e `PULSE_SERVER` punta al socket inoltrato. Si aggiungono procedura documentata e script di diagnosi.
+- **Acceptance criteria:**
+  - La documentazione descrive, per server e client Ubuntu:
+    - pacchetti di sistema (`libasound2-plugins`, `pulseaudio-utils`);
+    - `StreamLocalBindUnlink yes` in `sshd` per i socket rimasti da connessioni interrotte;
+    - `~/.asoundrc` con dispositivo predefinito Pulse e `PULSE_SERVER` sul socket inoltrato in un percorso stabile;
+    - `RemoteForward` in `~/.ssh/config` del client;
+    - verifica con `pactl info` e una breve registrazione.
+
+    Sono documentati anche i limiti: tunnel legato alla connessione SSH, riavvio dei processi Pi già aperti in Herdr, nessuna porta TCP e accesso al socket limitato all'utente. I comandi amministrativi sono indicati come tali e li esegue l'operatore.
+  - Uno script versionato, in sola lettura, controlla sul server:
+    - presenza del plugin ALSA Pulse e di `pactl`;
+    - configurazione ALSA predefinita;
+    - `PULSE_SERVER` impostato;
+    - esistenza e raggiungibilità del socket;
+    - presenza di una sorgente audio.
+
+    Per ogni passo mancante indica il rimedio, senza installare pacchetti, modificare file o registrare audio. L'output non riporta segreti, dati personali o nomi di dispositivi oltre al necessario.
+  - La logica di valutazione dello script è separata dagli effetti sul sistema e coperta da test di unità in memoria con esiti sintetici, inclusi i casi di successo e di ciascun passo mancante. Eventuali prove con processi o file system restano fuori dal gate rapido.
+  - Prova reale sull'ambiente dell'operatore, documentata senza dati personali: con il tunnel attivo, lo script segnala tutti i passi soddisfatti e il dettato Pi Voice (`Ctrl+Space`) trascrive in una sessione Pi dentro Herdr. Dopo una riconnessione SSH il dettato funziona di nuovo senza interventi manuali sul socket.
+  - I file personali di Pi Voice (`.pi/pi-voice.json`, log) restano esclusi da Git e non vengono modificati per la soluzione. Passano `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -403,7 +434,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017 e TEC-018 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018 e TEC-020 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.

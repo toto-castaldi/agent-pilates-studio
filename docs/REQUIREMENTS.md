@@ -41,6 +41,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Contesto dell'agente versionato e verifiche del comportamento conversazionale.
 - Template Pi condiviso per lavorare autonomamente su un'attività già avviata (REQ-NFR-010).
 - Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
+- Dettato vocale Pi su server remoto tramite il microfono del client inoltrato via SSH (REQ-NFR-012).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
@@ -208,6 +209,10 @@ Il template richiede di seguire il processo, i criteri di accettazione, le verif
 #### REQ-NFR-011 — Stato di attesa dei tool Pi di domanda
 
 Quando l'assistente Pi del progetto pone domande all'utente con i tool `question` o `questionnaire` e attende la risposta, deve segnalarlo al terminale come attesa dell'utente (`blocked`, tipo `question`, del Program Status Protocol OSC 7501 supportato da Pi), non come lavoro in corso. Alla risposta o all'annullamento lo stato torna a quello dell'esecuzione in corso. I tool mantengono nomi, parametri e comportamento attuali; sono forniti dal pacchetto Pi condiviso `agent-harness-stuff`, referenziato con un riferimento fissato, nel rispetto della licenza del codice d'origine. Il pacchetto e la configurazione restano privi di segreti e dati personali (REQ-NFR-002, REQ-NFR-007).
+
+#### REQ-NFR-012 — Dettato vocale Pi su server remoto
+
+Quando l'operatore usa Pi su un server remoto senza dispositivi audio, collegato via SSH da un client Linux con PipeWire o PulseAudio, il dettato del pacchetto Pi Voice deve poter acquisire il microfono del client. L'audio passa dal socket Pulse del client inoltrato via SSH come socket Unix, senza aprire porte TCP e senza modificare la configurazione di Pi Voice. Il repository documenta la procedura per server e client, con verifica e limiti, e fornisce uno script di diagnosi in sola lettura che indica i passi mancanti. Documentazione, script e output non contengono segreti, dati personali o audio, e i dati personali di Pi restano esclusi da Git (REQ-NFR-002, REQ-NFR-007). L'installazione dei pacchetti di sistema e la configurazione di `sshd` richiedono privilegi amministrativi e restano a cura dell'operatore.
 
 ## 7. Release acceptance — v0.2.0
 
