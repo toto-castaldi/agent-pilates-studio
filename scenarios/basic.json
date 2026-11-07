@@ -2,6 +2,88 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "assenze-esplicite-chiarimento",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }, { "firstName": "Carla", "lastName": "Rossi" }], "rules": [] },
+      "turns": [
+        {
+          "message": "Il 6 gennaio 2025 alle 19 Anna Verdi era assente, aveva avvisato.",
+          "response": { "contains": ["Anna"], "anyOf": [["giustificat", "avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Alla stessa lezione Bruno Neri non è venuto e non ha avvisato.",
+          "response": { "contains": ["Bruno"], "anyOf": [["non giustificat", "ingiustificat", "non ha avvis", "senza avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Carla Rossi era assente alla stessa lezione.",
+          "response": { "contains": [], "anyOf": [["giustificat", "avvis"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Carla aveva avvisato.",
+          "response": { "contains": ["Carla"], "anyOf": [["giustificat", "avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Alla lezione del 6 gennaio 2025 alle 19 c'era Anna Verdi.",
+          "response": { "contains": ["Anna"], "anyOf": [["già", "gia", "esiste", "registrat"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Il 6 gennaio 2099 alle 19 Anna Verdi era assente e aveva avvisato.",
+          "response": { "contains": [], "anyOf": [["futur", "non è ancora", "non ancora", "non iniziat", "deve ancora"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        }
+      ]
+    },
+    {
+      "id": "assenze-attesi-presenze",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }],
+        "rules": [{ "text": "Ada Verdi e Bruno Neri lunedì alle 19:00", "clients": ["Ada Verdi", "Bruno Neri"], "slots": [{ "weekday": 1, "time": "19:00" }] }]
+      },
+      "turns": [
+        {
+          "message": "Lunedì 6 gennaio 2025 alle 19 c'era Ada Verdi.",
+          "response": { "contains": ["Ada", "Bruno"], "anyOf": [["assent", "venut", "presente"], ["giustificat", "avvis"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Bruno era assente e aveva avvisato.",
+          "response": { "contains": ["Bruno"], "anyOf": [["giustificat", "avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Lunedì 13 gennaio 2025 alle 19 c'era Ada Verdi.",
+          "response": { "contains": ["Ada", "Bruno"], "anyOf": [["assent", "venut", "presente"], ["giustificat", "avvis"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Non so se Bruno fosse assente, lasciamo così.",
+          "response": { "contains": [], "anyOf": [["bruno", "capito", "ok", "d'accordo", "va bene", "registr"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Lunedì 20 gennaio 2025 alle 19 c'erano tutti tranne Bruno Neri.",
+          "response": { "contains": ["Ada", "Bruno"], "anyOf": [["assent", "venut", "presente"], ["giustificat", "avvis"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-20", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Bruno era assente e non aveva avvisato.",
+          "response": { "contains": ["Bruno"], "anyOf": [["non giustificat", "ingiustificat", "non ha avvis", "non aveva avvis", "senza avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Ada Verdi", "lessonDate": "2025-01-20", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-20", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        }
+      ]
+    },
+    {
       "id": "presenze-data-odierna",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",
@@ -90,7 +172,7 @@
         },
         {
           "message": "Lunedì 13 gennaio 2025 alle 19 c'erano tutti tranne Bruno Neri.",
-          "response": { "contains": ["Carla"], "excludes": ["Ada", "confermi", "posso procedere", "vuoi che registr"] },
+          "response": { "contains": ["Carla", "Bruno"], "anyOf": [["assent", "venut", "presente"], ["giustificat", "avvis"]], "question": true, "excludes": ["Ada", "confermi", "posso procedere", "vuoi che registr"] },
           "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
         },
         {

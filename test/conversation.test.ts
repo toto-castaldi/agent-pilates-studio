@@ -23,6 +23,13 @@ test('attendance snapshots check exact rows, authenticated authors and unchanged
   for (const change of [{ lessonDate: '2025-01-07' }, { time: '19:01' }, { outcome: 'excused_absence' }, { authorPhone: '999' }, { authorName: 'Falso' }, { createdAt: '' }, { cancelledAt: '2026-01-01' }]) {
     assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [{ ...row, ...change }] }, expectation), false);
   }
+  for (const outcome of ['excused_absence', 'unexcused_absence']) {
+    const absence = { ...row, outcome };
+    assert.ok(attendanceScenarioMatches(before, { ...after, attendance: [absence] }, { ...expectation, attendance: [absence] }));
+    const otherOutcome = outcome === 'excused_absence' ? 'unexcused_absence' : 'excused_absence';
+    assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [{ ...absence, outcome: otherOutcome }] }, { ...expectation, attendance: [absence] }), false);
+    assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [] }, { ...expectation, attendance: [absence] }), false);
+  }
   assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [row, row] }, expectation), false);
   assert.equal(attendanceScenarioMatches(before, { ...after, rules: [] }, expectation), false);
   assert.equal(attendanceScenarioMatches(before, { ...after, clients: [{ ...client, createdAt: '2025-01-01' }] }, expectation), false);

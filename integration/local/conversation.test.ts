@@ -28,7 +28,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         for (const row of turn.attendanceExpected.attendance) {
           assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY)$/.test(row.lessonDate));
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
-          assert.equal(row.outcome, 'present');
+          assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);
           assert.equal(row.authorName, scenario.profile);
         }
@@ -56,9 +56,18 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       }
     }
   }
-  for (const id of ['presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
+  for (const id of ['assenze-esplicite-chiarimento', 'assenze-attesi-presenze', 'presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  const explicitAbsences = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenze-esplicite-chiarimento');
+  assert.deepEqual(explicitAbsences.turns.map((turn: { attendanceExpected: { attendance: unknown[] } }) => turn.attendanceExpected.attendance.length), [1, 2, 2, 3, 3, 3]);
+  assert.equal(explicitAbsences.turns[2].response.question, true);
+  assert.deepEqual(explicitAbsences.turns[3].attendanceExpected.attendance.map((row: { outcome: string }) => row.outcome), ['excused_absence', 'unexcused_absence', 'excused_absence']);
+  const missingAttendees = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenze-attesi-presenze');
+  assert.deepEqual(missingAttendees.turns.map((turn: { attendanceExpected: { attendance: unknown[] } }) => turn.attendanceExpected.attendance.length), [1, 2, 3, 3, 4, 5]);
+  assert.ok([0, 2, 4].every((index) => missingAttendees.turns[index].response.question));
+  assert.deepEqual(missingAttendees.turns[3].attendanceExpected, missingAttendees.turns[2].attendanceExpected);
+  assert.equal(missingAttendees.turns[5].attendanceExpected.attendance[4].outcome, 'unexcused_absence');
   const historical = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'presenze-attesi-storici');
   assert.ok(historical.setup.rules.some((rule: { active?: boolean; deactivatedAt?: string }) => rule.active === false && rule.deactivatedAt === '2025-01-07T09:00:00Z'));
   assert.ok(historical.setup.rules.some((rule: { createdAt?: string }) => rule.createdAt === '2025-01-08T09:00:00Z'));
