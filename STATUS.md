@@ -49,8 +49,9 @@ None.
 | US-007 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le assenze a una lezione | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
+| US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
 
-TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
+TEC-008, TEC-019 e US-011 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni, US-011 richiede requisiti e un cambio di scope concordato.
 
 ## Closed versions
 
