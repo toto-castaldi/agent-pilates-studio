@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronti: Registrare le assenze a una lezione; Allineamento al template v1.7.0 | 3/7 items done (43%) |
+| v0.3.0 | Open | Pronto: Registrare le assenze a una lezione | 4/7 items done (57%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
+| Todo | 3 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 3 |
+| Done | 4 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-029 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.0 | 2026-11-07 |
 | US-006 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le presenze a una lezione | 2026-11-07 |
 | TEC-028 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.6.1 | 2026-11-07 |
 | TEC-027 | EPIC-005 — Presenze alle lezioni | MOD-001 | Schema delle presenze | 2026-11-07 |
@@ -40,7 +41,6 @@ None.
 | TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
-| US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
 
 ## Next ready items
 
@@ -50,7 +50,6 @@ None.
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 | US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
-| TEC-029 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.0 | P2 |
 
 TEC-008, TEC-019 e US-011 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni, US-011 richiede requisiti e un cambio di scope concordato.
 

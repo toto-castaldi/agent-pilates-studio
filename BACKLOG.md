@@ -614,7 +614,8 @@
 #### TEC-029 — Allineamento al template v1.7.0
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-029-allineamento-template-v1-7-0`
 - **Dependencies:** TEC-028
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016, REQ-NFR-017
 - **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
@@ -626,6 +627,7 @@
   - Restano attivi shared claims, richiesta esplicita per avviare l'orchestrazione, via ai worker e merge, protezioni dei clone di `AGENTS.md` §10, gate rapido e suite separate. La sola adozione non avvia worker né modifica stack operativo, segreti o configurazioni personali.
   - Prove ripetibili isolate con repository, remoti e worker sintetici verificano controllo di `main` allineato e avanti, errore di fetch, assenza di push automatico, gestione non bloccante dei rapporti e degli stati, e conservazione dei controlli preesistenti; processi, Git e filesystem restano fuori dal gate in memoria. Le eventuali prove Pi o Herdr e i loro limiti sono documentati, senza presentare le istruzioni al modello come garanzie tecniche.
   - README e documentazione pertinente descrivono coordinamento non bloccante, attività di backlog consentite, controllo dei commit non pubblicati e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio restano disponibili.
+- **Outcome:** Adottati senza divergenze `docs/PROCESS.md` e `orchestrate` v1.7.0 (tag e commit verificati; altre skill e visualizzatore già allineati) e aggiunto in `AGENTS.md` §10 il fermo su errori di fetch o del controllo di `main`. Superati gate rapido, `test:local` con simulazione sintetica di `main` allineato e avanti, fetch fallito, assenza di push automatico, rapporti e stati dei worker e attività di backlog su `main`, e `test:pi`; Herdr e l'osservanza delle istruzioni da parte dei modelli non sono provati. Completato il 2026-11-07.
 
 ### EPIC-005 — Presenze alle lezioni
 
