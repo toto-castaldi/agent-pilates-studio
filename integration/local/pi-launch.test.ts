@@ -21,7 +21,7 @@ test('Pi documentation describes direct startup without the retired launcher or 
   checkPiReadme(readFileSync('README.md', 'utf8'));
 });
 
-test('approved prompts are present in a clean clone of the current commit', () => {
+test('approved prompts and backlog extension are present in a clean clone of the current commit', () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-start-checkout-'));
   const checkout = join(root, 'checkout');
   try {
@@ -35,6 +35,9 @@ test('approved prompts are present in a clean clone of the current commit', () =
       assert.equal(prompt, readFileSync(`.pi/prompts/${name}.md`, 'utf8'));
       check(prompt);
     }
+    const extension = '.pi/extensions/backlog/index.ts';
+    assert.ok(lstatSync(join(checkout, extension)).isFile());
+    assert.equal(readFileSync(join(checkout, extension), 'utf8'), readFileSync(extension, 'utf8'));
     assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'avvio.md')), false);
   } finally {
     rmSync(root, { recursive: true, force: true });

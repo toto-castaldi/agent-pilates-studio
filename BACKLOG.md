@@ -330,7 +330,8 @@
 #### TEC-023 — Adozione del template v1.4.0
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-023-adozione-template-v1-4-0`
 - **Dependencies:** TEC-022
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-014
 - **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
@@ -342,6 +343,8 @@
   - `.gitignore` consente selettivamente il versionamento dell'estensione revisionata, senza includere indiscriminatamente altre estensioni, impostazioni personali, sessioni, autenticazione, log o segreti. Le personalizzazioni e le risorse Pi esistenti non sono sostituite o modificate senza accordo.
   - Test ripetibili con dati e configurazioni sintetici verificano struttura e navigazione del backlog, aggiornamento alla riapertura, errori, scorciatoia e sola lettura; una prova Pi 1.5.0 isolata verifica caricamento e uso dell'estensione in TUI, documentandone i limiti. Le prove con file, processi o Pi restano separate dal gate in memoria e non leggono né modificano impostazioni personali; sono aggiornati i controlli Git e CI pertinenti.
   - README e documentazione pertinente descrivono uso, fiducia nel progetto, ricaricamento, configurazione della scorciatoia e limiti. `docs/TEMPLATE-ORIGIN.md` registra per risorsa il riferimento effettivamente adottato e le eventuali divergenze o basi ignote, distinguendolo dai confronti; non si modificano né pubblicano il repository del template o dati personali.
+- **Decision:** Su accordo dell'utente (2026-11-07), «unassigned» nella regola del modulo di PROCESS v1.4.0 significa privo di modulo, non privo di versione: TEC-019 può avere `MOD-001` senza essere assegnato a una versione. L'interpretazione è coerente con la skill `add-item` del template.
+- **Outcome:** Adottati processo e skill v1.4.0 senza divergenze, modulo Agente e visualizzatore Pi revisionato con adattamenti documentati. Superati confronto dei file, `test:local`, `test:pi` con TUI Pi 1.5.0 isolata e gate rapido; la prova TUI non copre ogni terminale o dimensione né un turno reale del modello. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -456,6 +459,7 @@
 #### US-003 — Consultare la pianificazione settimanale
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Module:** MOD-001 — Agente
 - **Type:** User Story · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -470,6 +474,7 @@
 #### US-004 — Aggiornare e disattivare le regole
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Module:** MOD-001 — Agente
 - **Type:** User Story · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -531,6 +536,7 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
 #### TEC-019 — Job cron e messaggi pianificati dell'agente
 
 - **Epic:** EPIC-002 — Agente e integrazioni
+- **Module:** MOD-001 — Agente
 - **Type:** Task · **Priority:** P2 · **Status:** Todo · **Version:** Non assegnata
 - **Dependencies:** BUG-001
 - **Description:** Abilitare in modo controllato i job cron di Hermes per future funzioni pianificate (ad esempio un riepilogo settimanale), consegnati sul canale home configurato. Prima della pianificazione servono i requisiti dei casi d'uso, la decisione su chi può creare o modificare i job e su come i turni pianificati, privi di un messaggio WhatsApp autenticato, accedono al database senza indebolire REQ-STUDIO-003 e REQ-DB-002.
