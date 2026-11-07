@@ -79,5 +79,14 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 ## 10. Parallel work
 
 - **Shared claims:** `on`
+- **Parallel work:** `on`
+- **Workspace root:** `../agent-pilates-studio-work`
+- **Worker agent command:** `pi`
 
 I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS.md` §6.4. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
+
+Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS.md` §6.5: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. L'adozione della modalità non avvia worker.
+
+- I clone dei worker contengono solo file versionati: non copiare `.env`, `.local/`, segreti o stato Pi personale senza una richiesta esplicita dell'utente. Il worker prepara il clone con `npm ci` (§6) e non avvia né modifica lo stack operativo dello studio.
+- Le suite separate restano quelle del §6 e usano solo dati sintetici; le prove che richiedono credenziali esterne si eseguono solo con configurazione fornita dall'utente.
+- Le istruzioni della skill e dei worker non sono garanzie tecniche: l'utente può dare istruzioni più restrittive, che prevalgono.

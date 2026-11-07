@@ -587,6 +587,28 @@
 
 **Goal:** Il titolare e i collaboratori registrano via WhatsApp presenze e assenze dei clienti alle singole lezioni, con correzioni tracciate, storico e consultazione.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-028 è aggiunto alla v0.3.0 per allineare il progetto al template v1.6.1 e attivare l'orchestrazione del lavoro parallelo.
+
+### EPIC-001 — Fondamenta del progetto
+
+#### TEC-028 — Allineamento al template v1.6.1
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-028-allineamento-template-v1-6-1`
+- **Dependencies:** TEC-024
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016
+- **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Allineare processo e skill condivise al tag `v1.6.1` del template, commit `6bea086a1ef9f1cd4b7ab79e86a504ddceb81788`, rispetto alla base adottata con TEC-024. Attivare la modalità parallela con shared claims, radice dei workspace predefinita del template e comando worker `pi`, senza avviare worker per la sola adozione.
+- **Acceptance criteria:**
+  - Il riferimento del template è verificato e confrontato con le basi adottate per le risorse pertinenti. `docs/PROCESS.md` e le skill condivise, inclusa la nuova `orchestrate`, sono allineati al riferimento fissato; eventuali conflitti o deroghe sono concordati e registrati, senza sovrascrivere le personalizzazioni e le protezioni dello studio. `docs/TEMPLATE-ORIGIN.md` distingue confronto, risorse effettivamente adottate, divergenze e basi ignote.
+  - `AGENTS.md` mantiene `Shared claims` attivi e configura `Parallel work` attivo, la radice predefinita relativa al clone principale e il comando `pi`. La skill si invoca solo su richiesta esplicita; l'adozione non avvia worker, non pubblica `main` e non modifica le configurazioni personali.
+  - Il flusso adottato prevede un clone per item, claim condiviso, selezione degli item pronti e segnalazione delle sovrapposizioni; i worker riferiscono il piano e attendono il via esplicito prima di implementare, salvo richiesta dell'utente di partire subito. L'orchestratore non implementa, esegue merge solo su richiesta esplicita e non elimina lavoro non salvato; rilascio di claim e pulizia seguono i controlli del processo.
+  - Le regole v1.6.1 su date dall'orologio di sistema, conteggio meccanico degli stati dopo ogni aggiornamento di `STATUS.md`, controlli dei record prima del merge, commit di merge limitato ai conflitti e rigenerazione di `STATUS.md` in caso di conflitto sono adottate e verificabili. Il gate rapido e le suite separate dello studio restano invariati.
+  - Prove ripetibili isolate con repository, remoti e worker sintetici verificano selezione, claim, attesa del via, segnalazione dei conflitti, merge e pulizia sicura, inclusi errori e rifiuto di eliminare lavoro non salvato; verificano anche conteggi, date e conflitti di stato. Le prove non pubblicano branch reali né avviano agenti sui dati dell'operatore; processi, Git e filesystem restano fuori dai test in memoria del gate rapido. Un'eventuale prova Pi o Herdr isolata e i suoi limiti sono documentati; le istruzioni ai modelli non sono presentate come garanzie tecniche del loro comportamento.
+  - README e documentazione pertinente descrivono attivazione, invocazione, workspace, modalità Herdr e manuale, autorizzazioni, effetti Git e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio rimangono disponibili.
+- **Outcome:** Adottati senza divergenze processo e skill v1.6.1, inclusa `orchestrate`, e attivato il lavoro parallelo con radice `../agent-pilates-studio-work` e worker `pi`, con protezioni dei clone in `AGENTS.md`; nessun worker avviato. Superati gate rapido, `test:local` con repository, remoti e worker sintetici e `test:pi` sull'invocazione solo esplicita; Herdr e l'osservanza delle istruzioni da parte dei modelli non sono provati. Completato il 2026-11-07.
+
 ### EPIC-005 — Presenze alle lezioni
 
 **Scope:** presenze e assenze dei clienti alle lezioni puntuali, correzioni e storico, consultazioni e statistiche, e le evoluzioni collegate (richiesta automatica dopo la lezione, insegnante della lezione, pacchetti di lezioni).
@@ -681,6 +703,8 @@
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
 
 v0.3.0:
+
+TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle presenze.
 
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.

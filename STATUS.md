@@ -8,7 +8,7 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Schema delle presenze completato; registrazione conversazionale pronta | 1/5 items done (20%) |
+| v0.3.0 | Open | Schema delle presenze e template v1.6.1 completati; registrazione conversazionale pronta | 2/6 items done (33%) |
 
 I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono assegnati a una versione.
 
@@ -17,7 +17,7 @@ I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono ass
 | Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 1 |
+| Done | 2 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-028 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.6.1 | 2026-11-07 |
 | TEC-027 | EPIC-005 — Presenze alle lezioni | MOD-001 | Schema delle presenze | 2026-11-07 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | 2026-11-07 |
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | 2026-11-07 |
@@ -40,7 +41,6 @@ None.
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
 | TEC-023 | EPIC-001 — Fondamenta del progetto | — | Adozione del template v1.4.0 | 2026-11-07 |
-| TEC-022 | EPIC-001 — Fondamenta del progetto | — | Tracciabilità e aggiornamento dal template | 2026-11-07 |
 
 ## Next ready items
 
@@ -61,6 +61,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-028 è aggiunto alla v0.3.0 per allineare il template alla v1.6.1 e attivare l'orchestrazione parallela, senza avviare worker per la sola adozione.
 - Decisione dell'utente (2026-11-07): la v0.2.0 è chiusa con gate, tutte le suite di integrazione e CI superati; oltre agli scenari con OpenRouter reale e sostituto Meta, l'utente dichiara di aver eseguito prove reali via WhatsApp. L'accettazione privacy resta rinviata a TEC-008.
 - Decisione dell'utente (2026-11-07): TEC-026 è aggiunto alla v0.2.0 per applicare configurazione e credenziali esterne da `.env`; le password PostgreSQL non vengono ruotate automaticamente.
 - Decisione dell'utente (2026-11-07): il nome dell'agente è Ambrogio, definito in `SOUL.md`; il nome del profilo WhatsApp su Meta è fuori scope.

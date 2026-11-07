@@ -108,6 +108,40 @@ test('Pi discovers the backlog extension only with project trust', { timeout: 90
   }
 });
 
+test('Pi exposes orchestrate and merge-task only as explicit commands with project trust', { timeout: 90_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-orchestrate-skill-'));
+  const project = join(root, 'project');
+  const agent = join(root, 'agent');
+  try {
+    mkdirSync(join(project, '.pi', 'extensions'), { recursive: true });
+    mkdirSync(agent);
+    const skills = ['orchestrate', 'start-task', 'finish-task', 'merge-task'];
+    for (const name of skills) {
+      mkdirSync(join(project, '.agents', 'skills', name), { recursive: true });
+      copyFileSync(`.agents/skills/${name}/SKILL.md`, join(project, '.agents', 'skills', name, 'SKILL.md'));
+    }
+    // Synthetic probe: records only which skill names appear in the model-visible system prompt.
+    writeFileSync(
+      join(project, '.pi', 'extensions', 'probe.js'),
+      `import { writeFileSync } from "node:fs"; export default function(pi) { pi.on("session_start", async (_event, ctx) => { const prompt = ctx.getSystemPrompt(); writeFileSync("skills-in-prompt.json", JSON.stringify(${JSON.stringify(skills)}.filter((name) => prompt.includes("<name>" + name + "</name>")))); }); }\n`,
+    );
+    for (const approved of [true, false]) {
+      rmSync(join(project, 'skills-in-prompt.json'), { force: true });
+      const response = runPi(project, root, agent, approved).find((entry) => entry.id === 'commands');
+      assert.equal(response?.success, true);
+      for (const name of skills) {
+        assert.equal(response?.data?.commands?.some((command) => command.name === `skill:${name}`), approved, name);
+      }
+      if (approved) {
+        const visible = JSON.parse(readFileSync(join(project, 'skills-in-prompt.json'), 'utf8')) as string[];
+        assert.deepEqual(visible, ['start-task', 'finish-task']);
+      }
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('direct Pi startup can update project settings if its agent directory is the project .pi directory', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-same-settings-integration-'));
   const project = join(root, 'project');
