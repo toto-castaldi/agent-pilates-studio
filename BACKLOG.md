@@ -397,7 +397,7 @@
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Done
 - **Branch:** `task/TEC-025-contesto-interlocutore-compattazione`
 - **Dependencies:** TEC-011, BUG-001
 - **Requirements:** REQ-AGENT-004, REQ-WA-003, REQ-STUDIO-003, REQ-OPS-002, REQ-NFR-002, REQ-NFR-005
@@ -411,6 +411,8 @@
   - Gli utilizzatori non ricevono avvisi di avvio, completamento o errore della compattazione. Una prova di regressione con gateway reale, webhook firmato, sostituto Meta e dati sintetici lo verifica anche forzando un errore; il comportamento del turno in caso di errore è documentato.
   - Riassunti e cronologia restano nel volume SQLite di Hermes, persistono a riavvio e ricreazione, sono inclusi nel backup e non compaiono nei log (REQ-NFR-002).
   - Test in memoria coprono il calcolo della soglia e la validazione della configurazione. Una prova di integrazione con gateway reale, modello sintetico con finestra ridotta e inattività simulata verifica entrambe le attivazioni. Gli eventuali adattamenti a punti interni di Hermes sono documentati in `docs/TECHNICAL-DESIGN.md` e richiedono nuove verifiche agli aggiornamenti.
+- **Decision:** Su accordo dell'utente (2026-11-07): l'avvio fallisce se la finestra del modello non è determinabile; i riassunti usano lo stesso modello; i turni protetti seguono i valori predefiniti di Hermes; se il riassunto fallisce il turno prosegue senza avvisi; alla ripresa non si compatta se non c'è nulla da riassumere; l'intervallo è `PILATES_IDLE_COMPACT_SECONDS` in secondi.
+- **Outcome:** Soglia del 40% ricavata all'avvio dal catalogo del modello configurato, con blocco se non determinabile, e compattazione alla ripresa misurata dalla trascrizione persistita; riassunti con lo stesso modello e senza avvisi agli utilizzatori. Superati gate rapido, `test:compaction` (soglia, ripresa dopo riavvio e ricreazione, errore forzato, isolamento, autore, persistenza, backup, log) e le suite `test:local`, `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Sullo stack reale la soglia ricavata coincide con il 40% della finestra del modello configurato; non è stata provocata una compattazione con il modello reale. Completato il 2026-11-07.
 
 #### US-005 — Nome dell'agente
 

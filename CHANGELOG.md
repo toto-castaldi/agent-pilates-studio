@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Contesto separato per ogni interlocutore, con compattazione silenziosa al 40% della finestra del modello configurato e alla ripresa dopo un'inattività configurabile (predefinita 4 ore) (TEC-025).
 - Visualizzatore Pi `/backlog` in sola lettura con navigazione, scorrimento e scorciatoia configurabile (TEC-023).
 - Tracciabilità del template di origine e procedura manuale per confrontare aggiornamenti senza adottarli automaticamente (TEC-022).
 - Catalogo e harness isolato per scenari conversazionali con modello OpenRouter reale (TEC-012).

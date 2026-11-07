@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template adottato; consultazione e aggiornamento verificati; compattazione del contesto in corso | 18/21 items done (86%) |
+| v0.2.0 | Open | Template adottato; consultazione, aggiornamento e compattazione del contesto verificati; dettato remoto e nome dell'agente da avviare | 19/21 items done (90%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 2 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 18 |
+| Done | 19 |
 
 ## In progress
 
-| Item | Epic | Module | Title | Branch |
-| ---- | ---- | ------ | ----- | ------ |
-| TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | `task/TEC-025-contesto-interlocutore-compattazione` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
@@ -42,7 +41,6 @@ None.
 | BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
 | TEC-012 | EPIC-004 — Pianificazione delle lezioni | — | Scenari conversazionali e harness | 2026-11-06 |
-| TEC-018 | EPIC-001 — Fondamenta del progetto | — | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
 
 ## Next ready items
 

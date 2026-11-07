@@ -27,8 +27,12 @@ Nella suite di compattazione, con finestra sintetica di 200K token (soglia 80K) 
 - il database non cambia durante le compattazioni; una registrazione successiva riceve l'autore ricavato dal mittente autenticato;
 - i riassunti sono nel volume SQLite e nel backup prodotto da `scripts/backup.sh`, non nei log Docker né nei file di log di Hermes.
 
+## Prova sullo stack reale
+
+Su autorizzazione dell'operatore, `npm run start:local` con la configurazione privata reale ha avviato PostgreSQL, broker e Hermes, tutti sani, con il solo evento `hermes_launch` nei log del gateway. Il gateway ha ricavato dal catalogo OpenRouter reale, per il modello configurato `z-ai/glm-5.2`, la soglia di 419.430 token: corrisponde al 40%, arrotondato per difetto, della finestra di 1.048.576 token pubblicata nel catalogo e consultata separatamente dall'host. L'intervallo è quello predefinito di 14.400 secondi. Sono state lette solo queste variabili; non sono stati inviati messaggi né chiamato il modello. Lo stack, fermo prima della prova, è stato nuovamente arrestato senza toccare i volumi.
+
 ## Limiti
 
 - Le prove usano un modello sintetico e la stima approssimata dei token di Hermes; non verificano la qualità dei riassunti di un modello reale.
-- Il catalogo reale di OpenRouter è stato consultato dall'host durante l'analisi; la lettura dal container verso OpenRouter reale e lo scenario conversazionale `npm run test:conversation` non sono stati eseguiti in questa sessione.
+- Sullo stack reale non è stata provocata una compattazione, perché servirebbero centinaia di migliaia di token o ore di inattività con conversazioni reali. Lo scenario conversazionale `npm run test:conversation` non è stato eseguito.
 - Gli adattamenti usano punti interni dell'immagine fissata: ogni aggiornamento di Hermes richiede di ripetere `test:compaction`.
