@@ -437,7 +437,8 @@
 
 - **Epic:** EPIC-003 — Dati e operatività
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-026-applicare-configurazione-locale`
 - **Dependencies:** TEC-009, TEC-021, TEC-010, BUG-001
 - **Requirements:** REQ-AGENT-003, REQ-AGENT-006, REQ-DB-002, REQ-WA-002, REQ-WA-003, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §3, §5, §7, §9, §10
