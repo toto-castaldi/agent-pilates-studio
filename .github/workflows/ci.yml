@@ -12,7 +12,7 @@ jobs:
   quality:
     name: Quality gate e integrazione
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -48,6 +48,8 @@ jobs:
         run: npm run test:hermes
       - name: Test identità autenticata e broker
         run: npm run test:author
+      - name: Test contesto e compattazione
+        run: npm run test:compaction
       - name: Test aggiornamento isolato tra versioni
         run: npm run test:upgrade
       - name: Test avvio locale con un comando

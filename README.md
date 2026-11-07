@@ -22,7 +22,7 @@ npm run build
 
 Il gate rapido comprende lint, controllo dei tipi, test unitari e build; `npm ci` prepara le dipendenze da lockfile. `npm test` ricompila e usa il runner Node.js senza isolamento a processi: i test lavorano solo in memoria, senza filesystem, processi figli, Git, rete o Docker. `npm run build` rigenera `dist/`, includendo codice e test; la compilazione stessa usa filesystem e processi.
 
-Le prove con effetti reali sono separate: `npm run test:local` verifica Git, file, processi e contratto CI; `npm run test:pi` richiede Pi 1.5.0; `npm run test:pi-package` richiede inoltre Git, Python 3 e rete per il pacchetto Pi pubblico e le sue dipendenze di test; `npm run test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start` richiedono Docker Compose. Eseguirle durante il lavoro quando servono per dimostrare i criteri; alla chiusura della versione eseguire tutte le suite di integrazione. Le prove end-to-end reali richiedono anche servizi e credenziali esterni.
+Le prove con effetti reali sono separate: `npm run test:local` verifica Git, file, processi e contratto CI; `npm run test:pi` richiede Pi 1.5.0; `npm run test:pi-package` richiede inoltre Git, Python 3 e rete per il pacchetto Pi pubblico e le sue dipendenze di test; `npm run test:db`, `test:hermes`, `test:author`, `test:compaction`, `test:upgrade` e `test:start` richiedono Docker Compose. Eseguirle durante il lavoro quando servono per dimostrare i criteri; alla chiusura della versione eseguire tutte le suite di integrazione. Le prove end-to-end reali richiedono anche servizi e credenziali esterni.
 
 ## Scenari conversazionali con OpenRouter
 
@@ -46,7 +46,7 @@ Il comando tenta di rimuovere container, reti, volumi, immagine temporanea e seg
 
 ## Integrazione continua
 
-Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa Node.js da `.nvmrc`, installa le dipendenze ed esegue il gate rapido, `test:local`, `test:pi` e `test:pi-package` con Pi 1.5.0 e le suite Docker `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. `test:local` controlla trigger, comandi e configurazione effettiva del workflow.
+Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa Node.js da `.nvmrc`, installa le dipendenze ed esegue il gate rapido, `test:local`, `test:pi` e `test:pi-package` con Pi 1.5.0 e le suite Docker `test:db`, `test:hermes`, `test:author`, `test:compaction`, `test:upgrade` e `test:start`. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. `test:local` controlla trigger, comandi e configurazione effettiva del workflow.
 
 Le prove end-to-end con servizi e credenziali reali si eseguono separatamente come descritto in [Hermes e WhatsApp Cloud](#hermes-e-whatsapp-cloud); non fanno parte della CI.
 
@@ -173,6 +173,17 @@ docker compose ps
 All'avvio il gateway richiede il refresh dei prompt delle sessioni: le sessioni già aperte ricostruiscono il prompt **al turno successivo**, conservando la cronologia; un turno già in corso non cambia. Se il refresh fallisce, il gateway non parte. Per una modifica in loco già visibile nel mount, senza ricreare il container, un operatore può richiedere esplicitamente il refresh con `docker compose exec --user 10000 hermes /opt/hermes/libexec/hermes-upstream sessions refresh-prompts`; non usare questa scorciatoia al posto di un aggiornamento versionato. La cronologia SQLite e i vecchi prompt possono contenere dati sensibili e restano nel volume e nei backup. Memoria e profilo integrati e provider di memoria esterni sono disabilitati; lo scanner anti-injection di Hermes non è una barriera di sicurezza.
 
 L'ora corrente Europe/Rome viene aggiunta come metadato effimero a ogni richiesta del gateway al modello, anche nelle sessioni riprese; serve un orologio host sincronizzato. Il comportamento conversazionale si verifica con il modello reale tramite gli scenari descritti sopra; la prova di base non sostituisce quelli delle singole User Story. `npm run test:author` verifica in isolamento caricamento, refresh, riavvio, data e confini dell'ora legale con gateway e modello sintetico.
+
+### Contesto per interlocutore e compattazione
+
+Ogni numero autorizzato ha una propria sessione Hermes, separata da quella degli altri. Il contesto inviato al modello viene compattato automaticamente, senza alcun avviso agli utilizzatori:
+
+- **a soglia**, quando la richiesta stimata raggiunge il 40% della finestra del modello configurato. All'avvio del container il gateway legge la finestra di `PILATES_MODEL` dal catalogo modelli di OpenRouter (lo stesso endpoint usato per il modello) e ne calcola il 40%. Cambiando modello, la soglia si aggiorna al successivo avvio o ricreazione del gateway. Se il catalogo non è raggiungibile o non contiene esattamente il modello configurato con una finestra valida, il gateway **non parte** (`hermes_preflight_failed`): non viene usata una soglia predefinita più alta;
+- **alla ripresa**, quando un interlocutore scrive dopo un'inattività di almeno `PILATES_IDLE_COMPACT_SECONDS` secondi (predefinito 14400, cioè 4 ore) dall'ultimo messaggio salvato della sua conversazione. La compattazione avviene prima di elaborare il nuovo messaggio, anche dopo riavvio o ricreazione del gateway. Un valore non intero positivo è rifiutato da `start:local` con un messaggio fisso e dal gateway con `hermes_preflight_failed`.
+
+I riassunti sono generati dallo stesso modello configurato. Hermes conserva il contesto dello studio (`SOUL.md`), l'ora corrente aggiunta a ogni richiesta, i primi messaggi e i turni più recenti; se non c'è altro da riassumere, la ripresa non compatta nulla. Se la generazione del riassunto fallisce, il turno prosegue con il contesto completo e l'utilizzatore riceve solo la risposta; Hermes attende alcuni minuti prima di ritentare la compattazione. La compattazione non modifica il database né l'attribuzione dell'autore. Riassunti e cronologia restano nel volume SQLite di Hermes, persistono tra riavvii e aggiornamenti e sono inclusi nel backup del volume; possono transitare verso OpenRouter come le conversazioni e non compaiono nei log.
+
+Nella procedura manuale l'eventuale `PILATES_IDLE_COMPACT_SECONDS` va esportato nell'ambiente di `docker compose`, come `PILATES_MODEL`. `npm run test:compaction` verifica in isolamento, con gateway reale, webhook firmati e sostituti sintetici di Meta e del modello, la soglia, la ripresa anche dopo riavvio e ricreazione, l'errore silenzioso, l'isolamento tra due mittenti, l'autore, la persistenza, il backup e i log.
 
 ### Configurazione del gateway
 

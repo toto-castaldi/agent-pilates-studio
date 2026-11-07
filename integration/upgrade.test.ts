@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
@@ -39,7 +39,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     POSTGRES_PORT: '0',
     WHATSAPP_WEBHOOK_PORT: '0',
     WHATSAPP_WEBHOOK_PATH: '/webhooks/whatsapp',
-    PILATES_MODEL: 'openai/gpt-6.1-terra',
+    PILATES_MODEL: 'synthetic/test-model',
   };
   const compose = (override: string, ...args: string[]) => execFileSync('docker', [
     'compose', '-p', project, '-f', 'compose.yaml', '-f', override, ...args,
@@ -56,8 +56,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     const old = 'nousresearch/hermes-agent:v0.22.6@sha256:d27689bc6e8581ec884a7227c9101fdaebf6c853cff8859020dac14f21452b4d';
     assert.equal(dockerfile.split(current).length, 2);
     await writeFile(oldDockerfile, dockerfile.replace(current, old));
-    await writeFile(oldOverride, `services:\n  postgres:\n    image: postgres:17.9@sha256:2a0d0fe14825b0939f78a8cad5cd4e6aa68bf94d0e5dd96e24b6d23af4315545\n  hermes:\n    image: ${legacyImage}\nnetworks:\n  default:\n    internal: true\n`);
-    await writeFile(newOverride, 'networks:\n  default:\n    internal: true\n');
+    await writeFile(oldOverride, `services:\n  postgres:\n    image: postgres:17.9@sha256:2a0d0fe14825b0939f78a8cad5cd4e6aa68bf94d0e5dd96e24b6d23af4315545\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    image: ${legacyImage}\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
+    await writeFile(newOverride, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
     execFileSync('docker', ['build', '-f', oldDockerfile, '-t', legacyImage, '.'], { env, stdio: 'pipe', timeout: 600_000 });
     compose(newOverride, 'build', 'hermes');
     compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'postgres');
@@ -80,6 +80,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.match((await migrator.query<{ server_version: string }>('SHOW server_version')).rows[0].server_version, /^17\.9/);
     await migrator.query('CREATE TABLE app.upgrade_probe (id int PRIMARY KEY, value text NOT NULL)');
     await migrator.query("INSERT INTO app.upgrade_probe VALUES (1, 'synthetic-before-upgrade')");
+    compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
     compose(oldOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const oldGateway = compose(oldOverride, 'ps', '-q', 'hermes').trim();
     const oldGatewayImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', oldGateway], { encoding: 'utf8' }).trim();

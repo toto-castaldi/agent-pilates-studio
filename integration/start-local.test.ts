@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { cp, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
 
@@ -26,7 +26,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_MODEL=synthetic/test-model\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   const start = () => {
@@ -41,7 +41,10 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
-    await writeFile(join(dir, 'compose.override.yaml'), 'services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  hermes:\n    networks: [private]\nnetworks:\n  private:\n    internal: true\n');
+    // Hermes derives its compaction threshold from a model catalog at start; a
+    // synthetic catalog on the internal network replaces OpenRouter here.
+    await cp(resolve('integration/model_stub.py'), join(dir, 'model_stub.py'));
+    await writeFile(join(dir, 'compose.override.yaml'), `services:\n  postgres:\n    networks: [default, private]\n  model-stub:\n    image: ${project}-hermes\n    build:\n      context: .\n      dockerfile: hermes/Dockerfile\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ./model_stub.py:/model_stub.py:ro\n    networks: [private]\n    logging:\n      driver: none\n  author-broker:\n    networks: [private]\n    depends_on:\n      model-stub:\n        condition: service_started\n  hermes:\n    networks: [private]\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  private:\n    internal: true\n`);
     await writeFile(join(dir, 'private.env'), config, { mode: 0o600 });
     await symlink('private.env', join(dir, '.env'));
     start(); // No node_modules or volumes: also exercises dependency preparation.

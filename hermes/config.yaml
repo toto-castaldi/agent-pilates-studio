@@ -25,3 +25,20 @@ agent:
     - cronjob
     - computer_use
     - connections
+compression:
+  enabled: true
+  # Computed at container start from the configured model (40% of its window).
+  # Hermes uses the lower of this cap and its own ratio trigger.
+  threshold_tokens: "${PILATES_COMPACTION_THRESHOLD_TOKENS}"
+  # Inactivity is enforced by pilates_trusted.py from the persisted transcript.
+  idle_compact_after_seconds: 0
+  # On a failed summary keep the full context instead of dropping turns.
+  abort_on_summary_failure: true
+  progress_notices: false
+auxiliary:
+  # Summaries use the configured model ("auto"). Hermes' OpenRouter fallback lane
+  # would otherwise retry with a different model; pin it to the same one.
+  openrouter_model: "${PILATES_MODEL}"
+display:
+  # Users receive only replies, never engine warnings such as compaction errors.
+  suppress_warning_notifications: true

@@ -52,8 +52,24 @@ test('local start validates configuration, preserves secrets and suppresses chil
     assert.equal(await startLocal(system), 1);
     assert.doesNotMatch(system.errors.at(-1) ?? '', /1555555010[23]/);
   }
+  for (const value of ['', '0', '-5', '1.5', 'quattro']) {
+    system.put('.env', `${configuration}PILATES_IDLE_COMPACT_SECONDS=${value}\n`);
+    assert.equal(await startLocal(system), 1);
+    assert.equal(system.errors.at(-1), 'Avvio non riuscito: PILATES_IDLE_COMPACT_SECONDS non valido: indicare secondi interi positivi.');
+  }
   system.mode('.env', 0o644);
   assert.equal(await startLocal(system), 1);
+});
+
+test('local start passes the default or configured inactivity interval to Compose', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  assert.ok(system.calls.filter((call) => call.command === 'docker').every((call) => call.env.PILATES_IDLE_COMPACT_SECONDS === '14400'));
+  system.put('.env', `${configuration}PILATES_IDLE_COMPACT_SECONDS=1800\n`);
+  const before = system.calls.length;
+  assert.equal(await startLocal(system), 0);
+  assert.ok(system.calls.slice(before).filter((call) => call.command === 'docker').every((call) => call.env.PILATES_IDLE_COMPACT_SECONDS === '1800'));
 });
 
 test('local start follows only the configuration link and validates the opened file', async () => {

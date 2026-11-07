@@ -85,6 +85,8 @@ services:
         condition: service_healthy
     environment:
       PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
+      # Empty means the documented default; the start command rejects an explicit empty value.
+      PILATES_IDLE_COMPACT_SECONDS: ${PILATES_IDLE_COMPACT_SECONDS:-}
       HERMES_TIMEZONE: Europe/Rome
       WHATSAPP_CLOUD_WEBHOOK_HOST: 0.0.0.0
       WHATSAPP_CLOUD_WEBHOOK_PATH: ${WHATSAPP_WEBHOOK_PATH:-/whatsapp/webhook}
