@@ -6,6 +6,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+### Added
+
+- Schema versionato per presenze e assenze con autore autenticato, annullamento tracciato e storico protetto (TEC-027).
+
 ## [0.2.0] - 2026-11-07
 
 ### Added

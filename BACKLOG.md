@@ -595,7 +595,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** Done
+- **Branch:** `task/TEC-027-schema-delle-presenze`
 - **Dependencies:** TEC-010
 - **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-STUDIO-008, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §4, §5, §6, §8, §10
@@ -608,6 +609,7 @@
   - Test su PostgreSQL reale verificano la migrazione da uno stato pulito e dallo schema della v0.2.0 con dati preesistenti, vincoli, unicità, rifiuto delle lezioni future e dei confini di oggi (inizio appena passato e appena futuro), autore non falsificabile, annullamento unico, rifiuto di cancellazione, riscrittura e DDL, con soli dati sintetici; le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.
   - `SOUL.md` descrive le nuove tabelle e colonne e la definizione di cliente atteso tramite le regole valide per la lezione, senza duplicare nel codice le regole di comportamento; il controllo automatico di coerenza tra `SOUL.md` e migrazioni copre le nuove colonne.
   - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte; backup e ripristino includono le nuove tabelle.
+- **Outcome:** Migrazione e contesto dello studio per presenze e assenze, con unicità, controllo temporale, attribuzione protetta e annullamento senza riscrittura o cancellazione. Verificati PostgreSQL reale, turni autenticati sintetici, upgrade dalla v0.2.0 con dati, backup/ripristino e quality gate; nessuna prova conversazionale con modello reale. Completato il 2026-11-07.
 
 #### US-006 — Registrare le presenze a una lezione
 

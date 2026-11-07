@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { checkAttendance } from './attendance-checks.js';
 
 test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-db-test-'));
@@ -78,6 +79,21 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       await legacy.query('CREATE TABLE app.legacy_probe (value text NOT NULL)');
       await legacy.query("INSERT INTO app.legacy_probe VALUES ('synthetic-preserved')");
     } finally { await legacy.end(); }
+    // Upgrade to the exact v0.2.0 schema first and seed real domain data.
+    await cp('prisma/migrations/20261105000000_studio_planning', join(legacyMigrations, '20261105000000_studio_planning'), { recursive: true });
+    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--config', legacyConfig], {
+      env: { ...env, DATABASE_URL: legacyUrl.toString() }, stdio: 'pipe', timeout: 90_000,
+    });
+    const oldSchema = new Client({ host: '127.0.0.1', port, database: 'studio', user: 'studio_migrator', password: passwords.migrator });
+    await oldSchema.connect();
+    try {
+      await oldSchema.query('BEGIN');
+      const binding = (await oldSchema.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+      await oldSchema.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [binding.pid, binding.txid]);
+      await oldSchema.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Legacy', 'Synthetic')");
+      await oldSchema.query("INSERT INTO app.training_rules (rule_text) VALUES ('Legacy synthetic rule')");
+      await oldSchema.query('COMMIT');
+    } finally { await oldSchema.end(); }
     // The Linux server migration path has no host Node.js installation.
     execFileSync('sh', ['scripts/migrate-docker.sh'], {
       env: migrationEnv,
@@ -102,6 +118,8 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     }
     await assert.rejects(agent.query('SELECT * FROM studio_private.consumed_messages'), { code: '42501' });
     assert.equal((await agent.query('SELECT value FROM app.legacy_probe')).rows[0].value, 'synthetic-preserved');
+    assert.equal((await agent.query("SELECT count(*)::int AS n FROM app.clients WHERE first_name = 'Legacy'")).rows[0].n, 1);
+    assert.equal((await agent.query("SELECT count(*)::int AS n FROM app.training_rules WHERE rule_text = 'Legacy synthetic rule'")).rows[0].n, 1);
 
     // The protected context is installed here by the migration owner only as a
     // test fixture. The production broker and gateway propagation are not
@@ -138,6 +156,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       await assert.rejects(otherAgent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'OtherConnection')"), { code: '42501' });
     } finally { await otherAgent.end(); }
     await agent.query('COMMIT');
+    await checkAttendance(agent, migrator, client.rows[0].id as string);
     await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'Stale')"), { code: '42501' });
     await assert.rejects(agent.query('DELETE FROM app.training_rules WHERE id = $1', [rule.rows[0].id]), { code: '42501' });
     await assert.rejects(agent.query("UPDATE app.clients SET created_by_phone = 'forged' WHERE id = $1", [client.rows[0].id]), { code: '42501' });
@@ -248,6 +267,8 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       { query: 'CREATE TEMP TABLE tool_forbidden (id int)' },
       { query: 'SELECT * FROM public._prisma_migrations' },
       { query: "INSERT INTO app.clients (first_name, last_name, created_by_phone) VALUES ('Synthetic', 'Plugin', 'forged')" },
+      { query: "INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1" },
+      { query: "UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged'" },
     ];
     const toolOutput = execFileSync('docker', [
       'run', '--rm', '-i', '--init', '--network', `${project}_default`,

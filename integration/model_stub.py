@@ -28,7 +28,11 @@ async def chat(request):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
-        if 'deactivate-alpha' in last:
+        if 'attendance-insert' in last:
+            queries = ["INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_phone, created_by_name) SELECT id, '2020-01-01', '09:00', 'present', '999', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
+        elif 'attendance-cancel' in last:
+            queries = ["UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic reason' WHERE outcome = 'present' RETURNING id"]
+        elif 'deactivate-alpha' in last:
             queries = ["UPDATE app.training_rules SET deactivated_at = clock_timestamp(), deactivated_by_phone = '999', deactivated_by_name = 'forged', deactivation_reason = 'synthetic reason' WHERE rule_text = 'alpha rule' RETURNING id"]
         else:
             marker = 'alpha' if 'alpha' in last else 'beta'

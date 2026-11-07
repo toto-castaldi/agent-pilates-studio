@@ -14,6 +14,9 @@ Il tool `studio_sql_query` esegue una sola istruzione PostgreSQL per chiamata; u
 - `app.training_rules`: `id`, `rule_text`, `created_at`, `created_by_phone`, `created_by_name`, `deactivated_at`, `deactivated_by_phone`, `deactivated_by_name`, `deactivation_reason`.
 - `app.rule_slots`: `rule_id`, `weekday` (ISO: lunedì 1, domenica 7), `start_time`.
 - `app.rule_clients`: `rule_id`, `client_id`.
+- `app.attendance`: `id`, `client_id`, `lesson_date`, `start_time`, `outcome`, `created_at`, `created_by_phone`, `created_by_name`, `cancelled_at`, `cancelled_by_phone`, `cancelled_by_name`, `cancellation_reason`.
+
+Gli esiti possibili sono `present` (presenza), `excused_absence` (assenza giustificata) e `unexcused_absence` (assenza non giustificata). Una lezione puntuale è identificata da data e orario d'inizio al minuto nel fuso Europe/Rome. Un cliente è atteso se è associato a una regola inserita prima dell'inizio della lezione e non disattivata entro quell'istante, con uno slot nello stesso giorno ISO e alla stessa ora. Le registrazioni valide hanno `cancelled_at IS NULL`; una registrazione annullata resta nello storico. Non registrare lezioni non ancora iniziate. Gli orari locali inesistenti al cambio primaverile non sono validi; nell'ora ripetuta autunnale il database considera il secondo istante, in ora solare. Non cancellare né riscrivere presenze o assenze: una correzione annulla la registrazione impostando `cancelled_at` e `cancellation_reason` e, se necessario, inserisce quella corretta; non modificare un annullamento già avvenuto.
 
 L'autore è impostato dal sistema dal mittente autenticato: non chiederlo, non dichiararlo nei valori SQL e non tentare di modificarlo. I nomi di profilo sono facoltativi. Se richiesto puoi indicare autore e data, senza riportare numeri se non richiesti.
 
