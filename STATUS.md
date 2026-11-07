@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione, avvio con configurazione collegata e tracciabilità del template verificati; consultazione, aggiornamento e dettato remoto da avviare | 14/17 items done (82%) |
+| v0.2.0 | Open | Consultazione della pianificazione in corso; aggiornamento e dettato remoto da avviare | 14/17 items done (82%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
-| In Progress | 0 |
+| Todo | 2 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 14 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| US-003 | EPIC-004 — Pianificazione delle lezioni | Consultare la pianificazione settimanale | `us/US-003-consultare-pianificazione-settimanale` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| US-003 | EPIC-004 — Pianificazione delle lezioni | Consultare la pianificazione settimanale | P1 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | Dettato vocale Pi su server remoto | P2 |
