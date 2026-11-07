@@ -417,7 +417,8 @@
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `us/US-005-nome-agente`
 - **Dependencies:** TEC-011, TEC-012
 - **Requirements:** REQ-AGENT-005, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §6, §8

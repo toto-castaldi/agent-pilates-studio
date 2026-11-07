@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione, aggiornamento e configurazione locale verificati | 19/22 items done (86%) |
+| v0.2.0 | Open | Consultazione, aggiornamento e configurazione locale verificati; nome dell'agente in corso | 19/22 items done (86%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
-| In Progress | 0 |
+| Todo | 2 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 19 |
 
 ## In progress
 
-None.
+| Item | Epic | Module | Title | Branch |
+| ---- | ---- | ------ | ----- | ------ |
+| US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | `us/US-005-nome-agente` |
 
 ## Blocked
 
@@ -47,7 +49,6 @@ None.
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | P1 |
-| US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
