@@ -214,6 +214,7 @@
   - `docs/TECHNICAL-DESIGN.md` §8 e README descrivono i livelli di test, i relativi comandi e quando eseguirli; gli script `npm test` e `build` mantengono il comportamento attuale.
   - Passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, e tutte le suite separate interessate dalle modifiche, inclusa `npm run test:local`.
 - **Outcome:** Gate rapido, unità in memoria e prove locali separate; CI e documentazione aggiornate. Superati `npm ci`, lint, typecheck, unità, build, `test:local`, `test:pi` e tutte le suite Docker (`test:db`, `test:hermes`, `test:author`, `test:upgrade`, `test:start`); workflow GitHub verificato come contratto ma non eseguito da remoto. Gate riportato separatamente nel template con commit locale `b4bc15f`, senza altri allineamenti né push. Completato il 2026-11-06.
+- **Nota successiva:** TEC-022 ha verificato che `b4bc15f3a5944330826d9379fef6d60987ec1798` è pubblicato ed è antenato del tag `v1.4.0` del template; gli altri aggiornamenti non sono adottati.
 
 #### TEC-016 — Versionamento del template Pi per lo stato del progetto
 
