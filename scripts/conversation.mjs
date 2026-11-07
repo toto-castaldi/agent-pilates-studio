@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
-import { hasHomeChannelNotice, responseMatches, stateMatches } from '../dist/src/conversation.js';
+import { hasHomeChannelNotice, historyPreserved, responseMatches, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -131,13 +131,15 @@ for (const scenario of catalog.scenarios) {
     stage = 'stato iniziale';
     const snapshot = async () => {
       const clients = (await client.query('SELECT first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName" FROM app.clients ORDER BY id')).rows;
-      const rules = (await client.query(`SELECT r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
+      const rules = (await client.query(`SELECT r.id::text AS id, r.created_at::text AS "createdAt", r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
+        r.deactivated_at::text AS "deactivatedAt", r.deactivated_by_phone AS "deactivatedByPhone", r.deactivated_by_name AS "deactivatedByName", r.deactivation_reason AS "deactivationReason",
         COALESCE((SELECT json_agg(c.first_name || ' ' || c.last_name ORDER BY c.id) FROM app.rule_clients rc JOIN app.clients c ON c.id = rc.client_id WHERE rc.rule_id = r.id), '[]'::json) AS clients,
         COALESCE((SELECT json_agg(json_build_object('weekday', s.weekday, 'time', to_char(s.start_time, 'HH24:MI')) ORDER BY s.weekday, s.start_time) FROM app.rule_slots s WHERE s.rule_id = r.id), '[]'::json) AS slots
         FROM app.training_rules r ORDER BY r.id`)).rows;
       return { clients, rules };
     };
-    if (!stateMatches(await snapshot(), scenario.initial)) throw new Error('initial state');
+    let previous = await snapshot();
+    if (!stateMatches(previous, scenario.initial)) throw new Error('initial state');
     for (const [index, turn] of scenario.turns.entries()) {
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
@@ -198,7 +200,9 @@ for (const scenario of catalog.scenarios) {
         throw new Error('response mismatch');
       }
       stage = `turno ${index + 1}: stato database`;
-      if (!stateMatches(await snapshot(), turn.expected)) throw new Error('database mismatch');
+      const current = await snapshot();
+      if (!historyPreserved(previous, current) || !stateMatches(current, turn.expected)) throw new Error('database mismatch');
+      previous = current;
     }
     console.log(`${scenario.id}: OK`);
   } catch {

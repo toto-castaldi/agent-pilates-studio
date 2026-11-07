@@ -23,6 +23,11 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         assert.ok(rule.clients.length && rule.slots.length);
         assert.equal(rule.authorPhone, scenario.sender);
         assert.equal(rule.authorName, scenario.profile);
+        if (rule.deactivation) {
+          assert.equal(rule.deactivation.authorPhone, scenario.sender);
+          assert.equal(rule.deactivation.authorName, scenario.profile);
+          assert.ok(rule.deactivation.reasonAnyOf?.length);
+        }
       }
       for (const client of turn.expected.clients) {
         assert.equal(client.authorPhone, scenario.sender);
@@ -30,7 +35,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       }
     }
   }
-  for (const id of ['registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato']) {
+  for (const id of ['registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');

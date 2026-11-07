@@ -21,6 +21,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Scenari e verifiche conversazionali estesi a disattivazioni, cambiamenti di gruppo e storico delle regole (US-004).
 - L'avvio locale accetta `.env` come link simbolico a un file regolare privato (TEC-021).
 - Estesi gli scenari di registrazione e le verifiche dell'harness a gruppi, più orari, chiarimenti e attribuzione dell'autore (US-002).
 - I tool Pi di domanda segnalano l'attesa dell'utente nei terminali compatibili, tramite il pacchetto condiviso fissato (TEC-018).

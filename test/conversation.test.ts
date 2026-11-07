@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, hasHomeChannelNotice, responseMatches, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, hasHomeChannelNotice, historyPreserved, responseMatches, stateMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -33,6 +33,9 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Qual è il cognome?', { contains: [], anyOf: [['cognome']], question: true }));
   assert.equal(responseMatches('Il cognome è Rossi.', { contains: [], anyOf: [['cognome']], question: true }), false);
   assert.equal(responseMatches('Confermi Antonio?', { contains: ['Antonio'], excludes: ['confermi'] }), false);
+  assert.ok(responseMatches('Inserita il 07/11/2026', { contains: [], date: true }));
+  assert.ok(responseMatches('Disattivata il 7 novembre 2026', { contains: [], date: true }));
+  assert.equal(responseMatches('Inserita il 07/11', { contains: [], date: true }), false);
 });
 
 test('state rejects missing or extra records and wrong attribution, slot, date or activity', () => {
@@ -44,6 +47,32 @@ test('state rejects missing or extra records and wrong attribution, slot, date o
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], hasCreatedAt: false }] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], slots: [{ weekday: 4, time: '09:00' }] }] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], clients: ['Altro Cliente'] }] }, expected), false);
+});
+
+test('deactivated rules require date, authenticated author and nonempty reason', () => {
+  const deactivation = { authorPhone: '15555550102', authorName: 'Sintetico' };
+  const expectedHistory = { ...expected, rules: [{ ...expected.rules[0], deactivation }] };
+  const row = { ...actual.rules[0], active: false, deactivatedAt: '2026-11-07', deactivatedByPhone: deactivation.authorPhone, deactivatedByName: deactivation.authorName, deactivationReason: 'Ha smesso' };
+  const state = { ...actual, rules: [row] };
+  assert.ok(stateMatches(state, expectedHistory));
+  assert.equal(stateMatches(state, expected), false);
+  assert.equal(stateMatches(state, { ...expected, rules: [{ ...expected.rules[0], deactivation: { ...deactivation, reasonAnyOf: ['spostat'] } }] }), false);
+  for (const change of [{ deactivatedAt: null }, { deactivatedByPhone: '999' }, { deactivatedByName: 'Falso' }, { deactivationReason: '  ' }, { active: true }]) {
+    assert.equal(stateMatches({ ...state, rules: [{ ...row, ...change }] }, expectedHistory), false);
+  }
+});
+
+test('history retains original rows and associations and never changes a prior deactivation', () => {
+  const row = { ...actual.rules[0], id: '1', createdAt: '2026-11-01' };
+  const before = { ...actual, rules: [row] };
+  const stopped = { ...row, active: false, deactivatedAt: '2026-11-07', deactivatedByPhone: '15555550102', deactivatedByName: 'Sintetico', deactivationReason: 'Ha smesso' };
+  const after = { ...actual, rules: [stopped] };
+  assert.ok(historyPreserved(before, after));
+  assert.ok(historyPreserved(after, after));
+  assert.equal(historyPreserved(after, { ...after, rules: [] }), false);
+  for (const change of [{ text: 'Riscritta' }, { id: '2' }, { createdAt: 'altro' }, { clients: ['Altro Cliente'] }, { slots: [] }, { deactivationReason: 'Altro' }, { deactivatedAt: 'altro' }, { deactivatedByPhone: '999' }, { active: true }]) {
+    assert.equal(historyPreserved(after, { ...after, rules: [{ ...stopped, ...change }] }), false);
+  }
 });
 
 test('multi-client and multi-slot groups allow different decompositions but no missing or duplicate associations', () => {
