@@ -1,6 +1,6 @@
 # Development Process
 
-**Process version:** 1.5.0
+**Process version:** 1.6.1
 
 This document defines the simplified Scrum process shared by every project created from `agile-project-template`. It is project-agnostic and must stay identical across projects, so that improvements made in the template can be copied over unchanged. Project-specific rules (stack, domain, quality gate commands, language) live in `AGENTS.md`.
 
@@ -113,6 +113,7 @@ Field rules:
 - `Module` is optional for every item type. When present, it identifies one module from `docs/TECHNICAL-DESIGN.md` §3 by ID and name. Omit it for unassigned or cross-cutting work; do not invent a module. The epic and module are independent classifications.
 - Every User Story and Bug references at least one requirement. Purely technical items reference the design sections they produce or change, or the process sections (`PROCESS §N`) they touch.
 - Acceptance criteria are concrete and verifiable. Avoid vague wording such as "works well".
+- Dates (`Outcome`, version states, and dates in `STATUS.md` and `CHANGELOG.md`) use `YYYY-MM-DD` and are the current date read from the system clock (`date +%F`) when the record is written. Never estimate or infer a date.
 
 ### 4.5 States
 
@@ -198,7 +199,9 @@ Commits must not contain secrets, credentials or local agent state.
 - Merging into `main` is **never automatic**. When an item is complete, the agent leaves the work committed in the item branch and waits for an explicit user request before merging or pushing to `main`. Adding an item directly on `main` (§6.1) needs no merge and is not pushed automatically.
 - The merge and push closing gate runs only lint, typecheck, build and in-memory unit tests as specified in `AGENTS.md`; integration and end-to-end evidence is gathered separately when needed.
 - Merges use `git merge --no-ff` with message `merge(<ID>): <item title>`.
-- After a successful merge and push, delete the local and remote item branch, after verifying the branch is actually merged. Never delete unmerged branches.
+- The merge commit contains only the merge and the resolution of its conflicts. If the branch has an error (a wrong date, an inconsistent record, a failing check), do not fix it in the merge: report it and fix it first with a commit on the item branch (with parallel work, by its worker, §6.5), then merge.
+- A merge conflict in `STATUS.md` is never resolved by hand or by picking a side: regenerate `STATUS.md` from the merged `BACKLOG.md` (§7). In `BACKLOG.md` keep both sides' changes, each item with its own most recent state.
+- After a successful merge and push, delete the local and remote item branch, after verifying the branch is actually merged. Never delete unmerged branches, except when releasing an item that was claimed but never started (§6.5).
 
 ### 6.4 Shared claims
 
@@ -210,6 +213,30 @@ Optional rule for agents working in parallel in separate clones or directories. 
 - If a push fails, keep the local commit, report that the claim is not shared, and do not start or continue the implementation until the user decides.
 - The claim ends when the merged branch is deleted from the remote (§6.3).
 - `STATUS.md` on `main` still reflects only merged state; the cross-clone view comes from the item branches themselves.
+
+### 6.5 Parallel work
+
+Optional mode in which one agent, the orchestrator, runs several items at the same time through worker agents in separate clones. It is on only when `AGENTS.md` §10 sets `Parallel work` to `on`; when the setting is absent or has any other value, it is off and this subsection does not apply. It requires shared claims (§6.4): the pushed item branches are how the orchestrator sees progress. If `Shared claims` is not `on` or there is no `origin` remote, report it and do not start workers.
+
+- **Roles:**
+  - the **orchestrator** works in the main clone, always on a clean `main`. It selects, launches and follows workers, relays the user's go, merges and cleans up. It never implements items;
+  - each **worker** handles exactly one item, in its own clone.
+- **Workspaces:**
+  - one `git clone` from `origin` per item, in `<Workspace root>/<ID>/`. `Workspace root` comes from `AGENTS.md` §10; default `../<repo-name>-work`, relative to the main clone;
+  - a fresh clone must be workable as it is. There is no setup hook: the worker prepares whatever the project documents (for example the install command in `AGENTS.md` §6).
+- **Selection:** the orchestrator proposes ready items (`Todo`, all dependencies `Done`) that have no local or remote branch yet. Ready items never depend on each other; the orchestrator also points out items likely to touch the same files or module. The user chooses which items to launch and how many. There is no fixed limit.
+- **Workers:**
+  - a launched worker runs the start of the `start-task` procedure in its clone: it claims the item (branch created and pushed, `In Progress`, §6.4), reads the referenced requirements and design, and reports `ready` to the orchestrator with a short plan (approach, files it will touch, open questions). Then it stops;
+  - it implements the item only after an explicit **go** from the user, given directly in the worker or relayed by the orchestrator. Only when the user asks for it at launch may the orchestrator give the go together with the launch;
+  - after the go it implements the item and completes it with the `finish-task` procedure, pushing the item branch on every state change (§6.4);
+  - workers never merge, never push `main`, never remove clones and never start other agents;
+  - they report `ready`, `done` or `blocked`, with a short detail, to the orchestrator.
+- **Release:** a claimed item that never received the go can be released on explicit user request, as an exception to §6.3: only if its branch contains nothing but the start commit, the orchestrator ends the worker, deletes the item branch locally and on `origin`, and removes the clone (same checks as the cleanup). On `main` the item is still `Todo`.
+- **Merge:**
+  - only the orchestrator merges, in the main clone, one item at a time and only on explicit user request (§6.3 unchanged);
+  - a conflict in `STATUS.md` is resolved by regenerating it from the merged `BACKLOG.md` (§6.3). Any other conflict that is not trivially resolvable is reported to the user.
+- **Cleanup:** after a verified merge and the deletion of the item branch, the orchestrator ends the worker's agent and removes its clone. It never removes a clone that has uncommitted changes or commits not contained in a remote branch; it reports such a clone to the user instead.
+- The worker agent command comes from `AGENTS.md` §10 (`Worker agent command`, default `pi`). How agents are started and followed is tooling (the `orchestrate` skill) and does not change these rules.
 
 ## 7. STATUS.md
 
@@ -231,8 +258,14 @@ When a displayed item has a `Module`, include its module ID in that entry; use `
 
 The agent updates `STATUS.md` together with `BACKLOG.md`, without waiting for a request, whenever an item starts, gets blocked, resumes, is completed or reopened, when the scope of a version changes and when a version is closed.
 
-- The update happens in the same branch and in the same commit as the event that causes it. If an item's module assignment changes, update any displayed entry in `STATUS.md` in the same commit.
-- Before completing an item, verify that counts and states in `STATUS.md` match `BACKLOG.md`. If they don't, report the inconsistency and align both files.
+- The update happens in the same branch and in the same commit as the event that causes it. Its date comes from the system clock (§4.4). If an item's module assignment changes, update any displayed entry in `STATUS.md` in the same commit.
+- After every update of `STATUS.md`, count the item states mechanically in `BACKLOG.md`, in the section of the version shown as current in `STATUS.md` only, replacing `vX.Y.Z`:
+
+  ```bash
+  awk '/^## Version vX.Y.Z/{f=1;next} /^## /{f=0} f' BACKLOG.md | grep -o 'Status:\*\* [A-Za-z ]*' | sort | uniq -c
+  ```
+
+  Every number must match the item-state table of `STATUS.md` (a state with no items counts 0), and the `Done` number and the total must match the progress (`done/total` and percentage). Updating the progress line alone is not enough: the state table must change too. Also check that `In progress`, `Blocked` and `Next ready items` list exactly the items in those states. If anything differs, report the inconsistency and align both files.
 
 ## 8. Definition of Done
 
@@ -287,6 +320,7 @@ The repository provides skills in `.agents/skills/` (exposed to Claude Code thro
 | `finish-task` | Verify the Definition of Done and complete an item in its branch |
 | `merge-task` | Merge a completed item into `main` (explicit request only) |
 | `close-version` | Close a version (explicit request only) |
+| `orchestrate` | Run items in parallel through worker agents in separate clones (explicit request only, §6.5) |
 
 Skills are shortcuts: the rules are in this document and in `AGENTS.md`, and they apply even when work is requested in natural language.
 

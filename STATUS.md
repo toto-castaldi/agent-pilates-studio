@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Allineamento al template v1.6.1 in corso; presenze alle lezioni pianificate | 0/6 items done (0%) |
+| v0.3.0 | Open | Template v1.6.1 adottato; presenze alle lezioni pianificate | 1/6 items done (17%) |
 
 I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 5 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 0 |
+| Done | 1 |
 
 ## In progress
 
-| Item | Epic | Module | Title | Branch |
-| ---- | ---- | ------ | ----- | ------ |
-| TEC-028 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.6.1 | `task/TEC-028-allineamento-template-v1-6-1` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-028 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.6.1 | 2026-11-07 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | 2026-11-07 |
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | 2026-11-07 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | 2026-11-07 |
@@ -42,7 +41,6 @@ None.
 | US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
 | TEC-023 | EPIC-001 — Fondamenta del progetto | — | Adozione del template v1.4.0 | 2026-11-07 |
 | TEC-022 | EPIC-001 — Fondamenta del progetto | — | Tracciabilità e aggiornamento dal template | 2026-11-07 |
-| TEC-021 | EPIC-001 — Fondamenta del progetto | — | Avvio locale con configurazione collegata | 2026-11-07 |
 
 ## Next ready items
 

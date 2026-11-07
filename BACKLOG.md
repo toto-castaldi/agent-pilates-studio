@@ -594,7 +594,7 @@
 #### TEC-028 — Allineamento al template v1.6.1
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-028-allineamento-template-v1-6-1`
 - **Dependencies:** TEC-024
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016
@@ -607,6 +607,7 @@
   - Le regole v1.6.1 su date dall'orologio di sistema, conteggio meccanico degli stati dopo ogni aggiornamento di `STATUS.md`, controlli dei record prima del merge, commit di merge limitato ai conflitti e rigenerazione di `STATUS.md` in caso di conflitto sono adottate e verificabili. Il gate rapido e le suite separate dello studio restano invariati.
   - Prove ripetibili isolate con repository, remoti e worker sintetici verificano selezione, claim, attesa del via, segnalazione dei conflitti, merge e pulizia sicura, inclusi errori e rifiuto di eliminare lavoro non salvato; verificano anche conteggi, date e conflitti di stato. Le prove non pubblicano branch reali né avviano agenti sui dati dell'operatore; processi, Git e filesystem restano fuori dai test in memoria del gate rapido. Un'eventuale prova Pi o Herdr isolata e i suoi limiti sono documentati; le istruzioni ai modelli non sono presentate come garanzie tecniche del loro comportamento.
   - README e documentazione pertinente descrivono attivazione, invocazione, workspace, modalità Herdr e manuale, autorizzazioni, effetti Git e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio rimangono disponibili.
+- **Outcome:** Adottati senza divergenze processo e skill v1.6.1, inclusa `orchestrate`, e attivato il lavoro parallelo con radice `../agent-pilates-studio-work` e worker `pi`, con protezioni dei clone in `AGENTS.md`; nessun worker avviato. Superati gate rapido, `test:local` con repository, remoti e worker sintetici e `test:pi` sull'invocazione solo esplicita; Herdr e l'osservanza delle istruzioni da parte dei modelli non sono provati. Completato il 2026-11-07.
 
 ### EPIC-005 — Presenze alle lezioni
 

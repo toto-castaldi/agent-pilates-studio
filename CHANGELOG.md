@@ -6,6 +6,14 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+### Added
+
+- Lavoro parallelo opzionale con la skill `orchestrate`: un worker Pi per item in un clone separato, claim condiviso, attesa del via dell'utente e merge solo su richiesta (TEC-028).
+
+### Changed
+
+- Processo e skill allineati al template v1.6.1: date dall'orologio di sistema, conteggio meccanico degli stati, controlli dei record prima del merge e rigenerazione di `STATUS.md` nei conflitti (TEC-028).
+
 ## [0.2.0] - 2026-11-07
 
 ### Added
