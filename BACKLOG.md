@@ -614,7 +614,8 @@
 #### TEC-029 — Allineamento al template v1.7.0
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-029-allineamento-template-v1-7-0`
 - **Dependencies:** TEC-028
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016, REQ-NFR-017
 - **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
