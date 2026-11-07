@@ -609,6 +609,22 @@
   - `SOUL.md` descrive le nuove tabelle e colonne e la definizione di cliente atteso tramite le regole valide per la lezione, senza duplicare nel codice le regole di comportamento; il controllo automatico di coerenza tra `SOUL.md` e migrazioni copre le nuove colonne.
   - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte; backup e ripristino includono le nuove tabelle.
 
+#### US-006 — Registrare le presenze a una lezione
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-027
+- **Requirements:** REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §5, §6
+- **Description:** Come insegnante, voglio comunicare all'agente chi ha partecipato a una lezione, così che le presenze siano registrate senza passaggi aggiuntivi.
+- **Acceptance criteria:**
+  - Un messaggio con i nomi dei presenti e un riferimento a data e orario ("oggi alle 19 c'erano Mario Rossi e Lucia Bianchi", "sabato 7 novembre alle 18:30 c'era Anna Verdi") registra una presenza per ciascun cliente con data e orario corretti nel fuso Europe/Rome e autore ricavato dal sistema; l'agente riepiloga quanto salvato.
+  - Con "c'erano tutti" o "tutti tranne <nome>" l'agente registra le presenze dei clienti attesi in base alle regole valide per la lezione, anche per una data passata in cui le regole erano diverse da quelle attuali, senza chiedere conferma; se nessun cliente era atteso o la lezione non è identificabile, chiede chiarimenti e non registra.
+  - Un cliente presente ma non atteso è registrato e segnalato nel riepilogo; un cliente nuovo è creato secondo REQ-STUDIO-002, chiedendo il cognome se manca; nessuna regola di allenamento viene creata o modificata.
+  - Una lezione non ancora iniziata è rifiutata con un messaggio chiaro; una seconda comunicazione per un cliente già registrato alla stessa lezione non crea un duplicato e l'agente lo segnala.
+  - Gli scenari, compresi nomi espliciti, "c'erano tutti", "tutti tranne", data passata con regole cambiate, cliente non atteso, cliente nuovo e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -616,6 +632,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 v0.3.0:
 
 1. TEC-027, che dipende da TEC-010 già completato.
+2. US-006.
 
 1. TEC-001.
 2. TEC-002.

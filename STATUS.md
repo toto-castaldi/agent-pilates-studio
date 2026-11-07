@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pianificazione delle presenze alle lezioni: schema registrato, storie in definizione | 0/1 items done (0%) |
+| v0.3.0 | Open | Pianificazione delle presenze alle lezioni: schema registrato, storie in definizione | 0/2 items done (0%) |
 
 I conteggi riguardano la v0.3.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 1 |
+| Todo | 2 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 0 |
