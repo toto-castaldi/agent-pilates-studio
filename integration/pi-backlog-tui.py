@@ -246,6 +246,7 @@ def exercise_branches(root):
     git('switch', '-q', 'main')
     # Remove the other local branch so that the competing branch is remote-tracking.
     git('branch', '-D', 'task/TEC-001-first')
+    git('branch', 'task/TEC-001-merged', 'main')
     assert not git('branch', '-r', '--list', 'origin/task/TEC-001-first')
     git('--git-dir', str(remote), 'update-ref', 'refs/heads/task/TEC-001-first', first_commit, cwd=root)
     before = backlog.read_bytes(), git('status', '--porcelain')
@@ -256,11 +257,25 @@ def exercise_branches(root):
         out = pi.wait_for(b'also in: origin/task/TEC-001-first', 20)
         assert b'from task/TEC-001-second' in out
         assert b'In Progress' in out
+        assert b'TEC-001-merged' not in out
         assert git('branch', '-r', '--list', 'origin/task/TEC-001-first')
         close_view(pi)
         assert before == (backlog.read_bytes(), git('status', '--porcelain'))
     finally:
         pi.close()
+
+    # On the item branch, its uncommitted working-tree copy wins over every ref.
+    git('switch', '-q', 'task/TEC-001-second')
+    backlog.write_text(content('Todo').replace('Synthetic branch item', 'Synthetic working copy'))
+    pi = Pi(project, root, agent)
+    try:
+        out = open_command(pi, b'Synthetic working copy') + pi.drain(3)
+        assert b'from task/TEC-001-second' not in out and b'also in:' not in out
+        assert backlog.read_text().startswith('## Version') and 'Synthetic working copy' in backlog.read_text()
+    finally:
+        pi.close()
+    git('restore', 'BACKLOG.md')
+    git('switch', '-q', 'main')
 
     # Unreachable synthetic remote: failure is shown and existing refs remain useful.
     git('remote', 'set-url', 'origin', str(root / 'missing.git'))

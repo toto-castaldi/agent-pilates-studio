@@ -49,10 +49,13 @@ test('shared claim commands on isolated synthetic repositories', () => {
     assert.match(match(), /task\/TEC-001-local/);
     ok(second, 'remote', 'set-url', 'origin', join(root, 'missing.git'));
     assert.notEqual(git(second, 'fetch', '--prune', 'origin').status, 0);
+    writeFileSync(join(first, 'BACKLOG.md'), 'Synthetic: Blocked again\n');
+    ok(first, 'commit', '-qam', 'blocked again');
     const before = ok(first, 'rev-parse', 'HEAD');
     ok(first, 'remote', 'set-url', 'origin', join(root, 'missing.git'));
     assert.notEqual(git(first, 'push', '-u', 'origin', branch).status, 0);
     assert.equal(ok(first, 'rev-parse', 'HEAD'), before);
+    assert.equal(ok(root, '--git-dir', remote, 'show', `refs/heads/${branch}:BACKLOG.md`), 'Synthetic: Done');
     ok(second, 'remote', 'remove', 'origin');
     assert.equal(ok(second, 'remote'), '');
     const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
