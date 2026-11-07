@@ -657,6 +657,23 @@
   - Nessuna registrazione viene cancellata o riscritta e un annullamento non viene modificato; su richiesta l'agente mostra lo storico di una lezione o di un cliente, comprese le registrazioni annullate, con date, autori e motivi.
   - Gli scenari, compresi presenza trasformata in assenza, cambio del tipo di assenza, annullamento semplice, richiesta ambigua e consultazione dello storico, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-027 coprono il rifiuto di cancellazione e riscrittura.
 
+#### US-009 — Consultare presenze, assenze e statistiche
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** US-008
+- **Requirements:** REQ-STUDIO-008, REQ-STUDIO-009, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §6
+- **Description:** Come titolare o collaboratore, voglio chiedere all'agente chi è venuto, chi mancava, quali registrazioni mancano e come vanno le presenze, così da seguire l'andamento dei clienti.
+- **Acceptance criteria:**
+  - Alla domanda "chi c'era sabato alle 19?" o "chi è venuto ieri?" l'agente risponde con presenti e assenti per lezione, indicando il tipo di assenza, in base alle sole registrazioni valide.
+  - Alla domanda "come è andato Mario Rossi a ottobre?" l'agente elenca presenze e assenze del periodo con i conteggi di presenze, assenze giustificate e non giustificate.
+  - Alla domanda "di quali lezioni di ieri mancano le presenze?" l'agente elenca, per lezione già iniziata, i clienti attesi in base alle regole valide per la lezione senza una registrazione valida; le registrazioni annullate non contano.
+  - Domande statistiche per periodo, come i clienti con più assenze nel mese, le presenze per cliente o per lezione e il confronto tra lezioni attese e presenze effettive, ricevono valori calcolati da interrogazioni al database; i periodi relativi si interpretano nel fuso Europe/Rome e l'assenza di risultati è indicata esplicitamente.
+  - Su richiesta l'agente indica autore e data di registrazione o di annullamento e mostra le registrazioni annullate.
+  - Gli scenari, compresi lezione, data, cliente in un periodo, registrazioni mancanti, statistica con valori attesi, periodo senza risultati e registrazioni annullate escluse, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e stato del database invariato.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -667,6 +684,7 @@ v0.3.0:
 2. US-006.
 3. US-007.
 4. US-008.
+5. US-009.
 
 1. TEC-001.
 2. TEC-002.

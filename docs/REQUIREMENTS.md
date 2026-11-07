@@ -46,6 +46,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Registrazione conversazionale delle presenze dei clienti alle lezioni puntuali, su iniziativa dell'utilizzatore, anche tramite i clienti attesi (REQ-STUDIO-006).
 - Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
+- Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -228,6 +229,17 @@ Quando l'utilizzatore comunica le presenze di una lezione e alcuni clienti attes
 
 Presenze e assenze non vengono mai cancellate né riscritte. Per correggere un errore l'agente annulla la registrazione errata indicando data, autore (REQ-STUDIO-003) e motivo e, se serve, registra quella corretta, ad esempio un'assenza al posto di una presenza o un tipo di assenza diverso; comunica poi cosa ha annullato e registrato. L'agente procede autonomamente quando la comunicazione dell'utilizzatore indica chiaramente la correzione e chiede conferma solo in caso di ambiguità. Un annullamento non può essere modificato. Le registrazioni annullate restano consultabili come storico e sono escluse da conteggi e consultazioni ordinarie. Il divieto di cancellazione e di riscrittura è imposto anche dal database.
 
+#### REQ-STUDIO-009 — Consultazione di presenze e assenze
+
+Un utilizzatore deve poter chiedere conversando:
+
+- chi era presente e chi assente, con il tipo di assenza, a una lezione puntuale o in una data;
+- presenze e assenze di un cliente in un periodo, con i conteggi delle presenze e delle assenze giustificate e non giustificate;
+- le registrazioni mancanti di un giorno o di un periodo passato, cioè i clienti attesi a lezioni già iniziate senza una registrazione valida, raggruppati per lezione;
+- statistiche per periodo, ad esempio i clienti con più assenze, il numero di presenze per cliente o per lezione, e il confronto tra lezioni attese e presenze effettive.
+
+Le risposte si basano sulle sole registrazioni valide e sui dati strutturati; conteggi e statistiche sono calcolati con interrogazioni al database e non stimati dal modello. I periodi relativi ("questa settimana", "ottobre") si interpretano nel fuso Europe/Rome. L'assenza di risultati è indicata esplicitamente. Su richiesta l'agente indica autore e data di registrazione o di annullamento e mostra anche le registrazioni annullate.
+
 ## 6. Non-functional requirements
 
 #### REQ-NFR-001 — Quality gate riproducibile
@@ -308,6 +320,7 @@ Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra c
 - Un utilizzatore comunica via WhatsApp le presenze di una lezione, anche con "c'erano tutti" o "tutti tranne", e l'agente le registra in base ai clienti attesi, segnalando i clienti non attesi e creando quelli nuovi.
 - Un utilizzatore comunica assenze giustificate e non giustificate; l'agente chiede il tipo quando manca e chiede degli attesi non citati, senza registrare assenze non confermate.
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
+- Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
