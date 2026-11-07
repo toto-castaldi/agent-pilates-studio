@@ -8,7 +8,7 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 - **Name:** `agent-pilates-studio`
 - **Summary:** assistente WhatsApp dello studio Pilates per titolare e collaboratori, basato su Hermes con database relazionale, OpenRouter e WhatsApp Business; installazione, aggiornamento e prova riproducibili.
-- **Current version:** v0.2.0 — vedere `STATUS.md`.
+- **Current version:** v0.3.0 — vedere `STATUS.md`.
 - **Requirements:** `docs/REQUIREMENTS.md` · **Design:** `docs/TECHNICAL-DESIGN.md`
 
 ## 2. Language
@@ -20,9 +20,9 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
-- Funzionalità e tabelle di dominio solo per i requisiti STUDIO della v0.2.0 (regole di allenamento e clienti); eccezioni, capienza, istruttori e anagrafica degli utilizzatori sono fuori scope.
+- Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali); eccezioni della pianificazione, capienza, istruttori, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori sono fuori scope.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico, monitoraggio avanzato o messa in esercizio continuativa nella v0.2.0.
+- Niente deploy automatico, monitoraggio avanzato o messa in esercizio continuativa nella v0.3.0.
 
 ## 4. Stack and architecture
 
@@ -38,7 +38,8 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 - Solo i numeri autorizzati in configurazione possono interagire; i webhook non autenticati devono essere rifiutati.
 - I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
 - Le regole di allenamento non si cancellano né si riscrivono: si disattivano con data, autore e motivo; il divieto di cancellazione è imposto dal database.
-- L'autore di inserimenti e disattivazioni è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
+- Presenze e assenze non si cancellano né si riscrivono: si annullano una sola volta con data, autore e motivo; il divieto è imposto dal database.
+- L'autore di inserimenti, disattivazioni e annullamenti è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
 - Test, CI ed esempi usano solo nomi e numeri sintetici.
 - Le regole di comportamento dell'agente, come i limiti delle fasce orarie, stanno nel file `SOUL.md` versionato nel progetto e usato da Hermes, senza duplicarle nel codice.
 

@@ -587,9 +587,35 @@
 
 **Goal:** Il titolare e i collaboratori registrano via WhatsApp presenze e assenze dei clienti alle singole lezioni, con correzioni tracciate, storico e consultazione.
 
+### EPIC-005 — Presenze alle lezioni
+
+**Scope:** presenze e assenze dei clienti alle lezioni puntuali, correzioni e storico, consultazioni e statistiche, e le evoluzioni collegate (richiesta automatica dopo la lezione, insegnante della lezione, pacchetti di lezioni).
+
+#### TEC-027 — Schema delle presenze
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Dependencies:** TEC-010
+- **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-STUDIO-008, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §4, §5, §6, §8, §10
+- **Description:** Introdurre con una migrazione Prisma le registrazioni di presenza e assenza per lezione puntuale, con autore non falsificabile secondo il meccanismo di TEC-010, divieto di cancellazione e riscrittura e annullamento tracciato, e descriverle in `SOUL.md`.
+- **Acceptance criteria:**
+  - Una migrazione versionata crea nello schema `app` le registrazioni con cliente, data e orario d'inizio della lezione (ore e minuti), esito (presenza, assenza giustificata, assenza non giustificata), data e autore di registrazione, data, autore e motivo di annullamento; vincoli e controlli impediscono esiti non validi e stati di annullamento incoerenti.
+  - Il database consente al più una registrazione valida per cliente e lezione puntuale e rifiuta le registrazioni di lezioni il cui inizio, nel fuso Europe/Rome, è successivo all'istante corrente del database.
+  - L'autore di registrazione e annullamento è impostato dal sistema dal mittente autenticato, come per le regole; un valore fornito dal modello non viene accettato e un turno privo di prova attendibile è rifiutato.
+  - Il ruolo dell'agente può leggere e inserire registrazioni e aggiornare solo i campi di annullamento, una sola volta; `DELETE` e `TRUNCATE` sono rifiutati anche al ruolo di migrazione, come per le regole; il DDL resta rifiutato.
+  - Test su PostgreSQL reale verificano la migrazione da uno stato pulito e dallo schema della v0.2.0 con dati preesistenti, vincoli, unicità, rifiuto delle lezioni future e dei confini di oggi (inizio appena passato e appena futuro), autore non falsificabile, annullamento unico, rifiuto di cancellazione, riscrittura e DDL, con soli dati sintetici; le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.
+  - `SOUL.md` descrive le nuove tabelle e colonne e la definizione di cliente atteso tramite le regole valide per la lezione, senza duplicare nel codice le regole di comportamento; il controllo automatico di coerenza tra `SOUL.md` e migrazioni copre le nuove colonne.
+  - `docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte; backup e ripristino includono le nuove tabelle.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
+
+v0.3.0:
+
+1. TEC-027, che dipende da TEC-010 già completato.
 
 1. TEC-001.
 2. TEC-002.

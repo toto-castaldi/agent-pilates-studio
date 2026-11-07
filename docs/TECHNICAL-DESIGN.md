@@ -114,6 +114,7 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 
 ## 10. Open decisions
 
+- Schema delle presenze — TEC-027: struttura delle registrazioni di presenza e assenza per lezione puntuale, unicità della registrazione valida, rifiuto delle lezioni non ancora iniziate nel fuso Europe/Rome con l'orologio del database, annullamento unico e riuso del meccanismo dell'autore di TEC-010; calcolo dei clienti attesi dalle regole valide per la lezione.
 - Configurazione locale da `.env` — TEC-026: sostituzione dei file esterni solo dopo l'arresto dei consumatori, ricreazione coordinata e ripristino tramite un nuovo avvio (§7, §9). Credenziali database e interne non sono ruotate; la verifica delle password precede il bootstrap. Un fallimento Docker può richiedere l'arresto manuale.
 - Contesto per interlocutore e compattazione — TEC-025, deciso con l'utente il 2026-11-07 e descritto in §6: finestra dal catalogo all'avvio con blocco se non determinabile, riassunti con lo stesso modello, turni protetti secondo i valori predefiniti di Hermes, turno che prosegue senza avvisi se il riassunto fallisce, nessuna compattazione alla ripresa se non c'è nulla da riassumere, intervallo `PILATES_IDLE_COMPACT_SECONDS` in secondi.
 - TEC-024 adotta il template v1.5.0 con shared claims attivi e allinea `/work-alone` all'eccezione concordata per i push dei branch item. I claim non sono lock atomici; istruzioni più restrittive dell'utente prevalgono sui push automatici dell'item. `docs/TEMPLATE-ORIGIN.md` registra riferimenti e adattamenti.

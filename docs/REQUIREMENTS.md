@@ -12,10 +12,12 @@ Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in prod
 
 Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
+Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche.
+
 ## 2. Actors
 
 - **Operatore:** ruolo generico che configura, installa, aggiorna e gestisce l'ambiente; l'identità concreta è da definire.
-- **Interlocutore autorizzato (utilizzatore):** il titolare dello studio o un suo collaboratore, associato a un numero configurato, che comunica con l'agente tramite WhatsApp. Nella v0.2.0 chiunque possa conversare con l'agente è un utilizzatore e tutti hanno gli stessi permessi; non esiste un'anagrafica degli utilizzatori. I clienti dello studio non usano l'agente.
+- **Interlocutore autorizzato (utilizzatore):** il titolare dello studio o un suo collaboratore, associato a un numero configurato, che comunica con l'agente tramite WhatsApp. Chiunque possa conversare con l'agente è un utilizzatore e tutti hanno gli stessi permessi; non esiste un'anagrafica degli utilizzatori. Gli insegnanti che comunicano presenze e assenze sono utilizzatori. I clienti dello studio non usano l'agente.
 - **Cliente:** persona che si allena nello studio; non interagisce con l'agente.
 - **Agente:** Hermes, che elabora le richieste tramite il modello e accede ai dati con i privilegi assegnati.
 
@@ -30,10 +32,35 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - **Regola di allenamento:** abitudine settimanale ricorrente di uno o più clienti, ad esempio "Antonio Rossi si allena tutti i venerdì alle 9", espressa in un testo in linguaggio naturale pulito e comprensibile, con i giorni, gli orari e i clienti derivati dal testo.
 - **Regola attiva:** regola non disattivata; solo le regole attive determinano la pianificazione.
 - **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel file `SOUL.md` dell'agente.
+- **Lezione puntuale:** lezione in una data e con un orario d'inizio precisi nel fuso Europe/Rome, ad esempio sabato 7 novembre 2026 alle 19:00; l'orario d'inizio comprende ore e minuti e la lezione dura un'ora.
+- **Regola valida per una lezione:** regola inserita prima dell'inizio della lezione puntuale e non disattivata entro quell'istante.
+- **Cliente atteso:** cliente associato a una regola valida per la lezione con uno slot nello stesso giorno della settimana e allo stesso orario d'inizio.
+- **Presenza:** registrazione che un cliente ha partecipato a una lezione puntuale.
+- **Assenza:** registrazione che un cliente non ha partecipato a una lezione puntuale, di tipo giustificata o non giustificata.
+- **Registrazione valida:** presenza o assenza non annullata; solo le registrazioni valide contano nelle consultazioni.
 
 ## 4. Scope
 
-### In scope for v0.2.0
+### In scope for v0.3.0
+
+- Registrazione conversazionale delle presenze dei clienti alle lezioni puntuali, su iniziativa dell'utilizzatore, anche tramite i clienti attesi (REQ-STUDIO-006).
+- Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
+- Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
+- Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
+
+### Out of scope for v0.3.0
+
+Non introdurre queste capacità senza concordare e registrare un cambio di scope:
+
+- Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati (TEC-019 e item non assegnati).
+- Insegnante che ha tenuto la lezione, anagrafica degli istruttori, sale, attrezzature e capienza.
+- Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
+- Assenze annunciate in anticipo, presenze future, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
+- Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
+- Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
+- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, messa in esercizio continuativa del gateway pubblico, creazione del server, DNS, certificati, deploy automatico e monitoraggio avanzato.
+
+### In scope for v0.2.0 (closed)
 
 - Registrazione conversazionale delle regole di allenamento, con anagrafica minima dei clienti, autore e data di inserimento.
 - Consultazione della pianificazione settimanale per giorno, fascia oraria, orario e cliente.
@@ -50,7 +77,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Nome dell'agente definito in `SOUL.md`, usato quando si presenta e quando gli viene chiesto (REQ-AGENT-005).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
-### Out of scope for v0.2.0
+### Out of scope for v0.2.0 (closed)
 
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
@@ -85,7 +112,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 | AGENT | Ambiente agente e modello |
 | WA | Comunicazione WhatsApp Business |
 | OPS | Operatività e continuità |
-| STUDIO | Pianificazione delle lezioni dello studio |
+| STUDIO | Pianificazione delle lezioni e presenze dello studio |
 
 ### Database e migrazioni
 
@@ -173,7 +200,7 @@ I clienti sono identificati da nome e cognome, univoci nello studio, senza ulter
 
 #### REQ-STUDIO-003 — Autore delle modifiche
 
-L'autore di ogni inserimento e disattivazione è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
+L'autore di ogni inserimento e disattivazione di clienti e regole, e di ogni registrazione e annullamento di presenze e assenze, è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
 
 #### REQ-STUDIO-004 — Consultazione della pianificazione
 
@@ -182,6 +209,24 @@ Un utilizzatore deve poter chiedere conversando chi si allena in un giorno, una 
 #### REQ-STUDIO-005 — Aggiornamento e storico delle regole
 
 Le regole non vengono mai cancellate né riscritte. Quando, da una richiesta esplicita (ad esempio "Cristina ha smesso") o implicita (ad esempio una nuova abitudine che sostituisce la precedente), l'agente valuta che una regola non sia più valida, la disattiva autonomamente registrando data, autore (REQ-STUDIO-003) e motivo, e lo comunica all'utilizzatore. Un cambiamento si esprime disattivando la regola precedente e registrandone una nuova. Lo storico delle regole, incluse quelle disattivate, resta consultabile. Il divieto di cancellazione è imposto anche dal database per la tabella delle regole.
+
+### Presenze alle lezioni
+
+#### REQ-STUDIO-006 — Registrazione delle presenze
+
+Un utilizzatore deve poter comunicare conversando via WhatsApp, di propria iniziativa, quali clienti hanno partecipato a una lezione puntuale (ad esempio "oggi alle 19 c'erano Mario Rossi e Lucia Bianchi"). L'agente registra una presenza per ciascun cliente con data e orario d'inizio della lezione, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Date e orari si interpretano nel fuso Europe/Rome rispetto alla data corrente fornita dal sistema. Si possono registrare lezioni passate senza limiti e lezioni di oggi già iniziate; le lezioni non ancora iniziate sono rifiutate anche dal database. Per ogni cliente e lezione puntuale può esistere al più una registrazione valida, presenza o assenza.
+
+Con espressioni come "c'erano tutti" o "tutti tranne Lucia", l'agente ricava i clienti attesi dalle regole valide per la lezione e registra le presenze senza chiedere conferma; chiede chiarimenti solo in caso di ambiguità, ad esempio se la lezione non è identificabile o se nessun cliente era atteso. Un cliente presente ma non atteso, ad esempio per un recupero o una lezione extra, viene registrato e segnalato nel riepilogo; un cliente non ancora in anagrafica è creato secondo REQ-STUDIO-002. La registrazione di presenze e assenze non crea, modifica né disattiva regole di allenamento.
+
+#### REQ-STUDIO-007 — Registrazione delle assenze
+
+Un utilizzatore deve poter comunicare che un cliente era assente a una lezione puntuale. L'assenza è registrata con il tipo, giustificata o non giustificata, data e orario d'inizio della lezione, data di registrazione e autore, alle stesse condizioni di data e unicità di REQ-STUDIO-006. Se il tipo non è indicato, l'agente lo chiede prima di registrare l'assenza.
+
+Quando l'utilizzatore comunica le presenze di una lezione e alcuni clienti attesi non sono citati, né come presenti né come assenti, l'agente registra le presenze comunicate e chiede per i clienti attesi rimanenti se erano assenti e con quale tipo. L'agente non registra assenze senza l'indicazione dell'utilizzatore: in assenza di risposta, quei clienti restano privi di registrazione. Un recupero non è collegato all'assenza che compensa.
+
+#### REQ-STUDIO-008 — Correzione e storico di presenze e assenze
+
+Presenze e assenze non vengono mai cancellate né riscritte. Per correggere un errore l'agente annulla la registrazione errata indicando data, autore (REQ-STUDIO-003) e motivo e, se serve, registra quella corretta, ad esempio un'assenza al posto di una presenza o un tipo di assenza diverso; comunica poi cosa ha annullato e registrato. L'agente procede autonomamente quando la comunicazione dell'utilizzatore indica chiaramente la correzione e chiede conferma solo in caso di ambiguità. Un annullamento non può essere modificato. Le registrazioni annullate restano consultabili come storico e sono escluse da conteggi e consultazioni ordinarie. Il divieto di cancellazione e di riscrittura è imposto anche dal database.
 
 ## 6. Non-functional requirements
 
@@ -203,9 +248,9 @@ GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su
 
 Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né tramite `cloudflared tail` o strumenti equivalenti. Il divieto è una regola operativa, non un blocco tecnico; non sostituisce i requisiti di protezione degli altri log e dei dati previsti da REQ-NFR-002.
 
-#### REQ-NFR-005 — Dati personali dello studio nella v0.2.0
+#### REQ-NFR-005 — Dati personali dello studio
 
-I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento e agli autori delle modifiche (numero WhatsApp e nome del profilo). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
+I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento, alle loro presenze e assenze con il tipo di assenza e il motivo di eventuali annullamenti, e agli autori delle modifiche (numero WhatsApp e nome del profilo). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
 
 **Decisione dell'utente (2026-11-05):** per la v0.2.0 l'uso di nomi e cognomi reali nelle prove è accettato rinviando l'audit privacy a TEC-008. La decisione non dichiara la conformità a REQ-NFR-002, non autorizza l'uso continuativo del gateway, che è fuori scope per la v0.2.0, e non modifica REQ-NFR-004.
 
@@ -257,7 +302,18 @@ Il progetto deve aggiornare processo, skill e visualizzatore Pi del backlog al t
 
 Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra copie del progetto: prima di avviare un item si controllano i branch esistenti e, ai cambi di stato, si pubblica il branch dell'item secondo il processo adottato. Un errore di fetch o push e l'assenza di `origin` sono gestiti e segnalati secondo tale processo. Non è autorizzato il push automatico di `main`, né il merge automatico. La compatibilità con `/work-alone` segue REQ-NFR-010; gli altri vincoli di sicurezza e del gate rimangono invariati (REQ-NFR-002, REQ-NFR-007, REQ-NFR-008).
 
-## 7. Release acceptance — v0.2.0
+## 7. Release acceptance — v0.3.0
+
+- Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database rifiuta lezioni non ancora iniziate, registrazioni valide duplicate, cancellazioni e riscritture, e consente un solo annullamento con data, autore e motivo.
+- Un utilizzatore comunica via WhatsApp le presenze di una lezione, anche con "c'erano tutti" o "tutti tranne", e l'agente le registra in base ai clienti attesi, segnalando i clienti non attesi e creando quelli nuovi.
+- Un utilizzatore comunica assenze giustificate e non giustificate; l'agente chiede il tipo quando manca e chiede degli attesi non citati, senza registrare assenze non confermate.
+- Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
+- Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
+- I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
+
+Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
+
+### Previous version — v0.2.0
 
 - Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
 - Un utilizzatore chiede chi si allena in un giorno, una fascia o un orario e quando si allena un cliente, e riceve risposte coerenti con le regole attive.

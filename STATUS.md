@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Versione aperta per le presenze alle lezioni; requisiti e item da registrare | 0/0 items done (0%) |
+| v0.3.0 | Open | Pianificazione delle presenze alle lezioni: schema registrato, storie in definizione | 0/1 items done (0%) |
 
 I conteggi riguardano la v0.3.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 0 |
+| Todo | 1 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 0 |
@@ -46,6 +46,7 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
+| TEC-027 | EPIC-005 — Presenze alle lezioni | MOD-001 | Schema delle presenze | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 
