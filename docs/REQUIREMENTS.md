@@ -43,6 +43,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
 - Dettato vocale Pi su server remoto tramite il microfono del client inoltrato via SSH (REQ-NFR-012).
 - Tracciabilità del template di origine e procedura per valutarne futuri aggiornamenti (REQ-NFR-013).
+- Adozione del processo e degli strumenti condivisi del template v1.4.0, con modulo architetturale e consultazione Pi del backlog (REQ-NFR-014).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
@@ -219,12 +220,21 @@ Quando l'operatore usa Pi su un server remoto senza dispositivi audio, collegato
 
 Il repository deve rendere riconoscibile il template da cui è nato e conservare riferimenti verificabili alle versioni o ai commit pertinenti, distinguendo ciò che è stato adottato da ciò che è stato solo confrontato e dichiarando eventuali basi storiche sconosciute. L'operatore deve poter valutare futuri aggiornamenti tramite una procedura riproducibile che distingua le risorse condivise dalle personalizzazioni del progetto, senza sovrascritture o merge automatici. L'effettiva adozione degli aggiornamenti richiede una decisione separata e il rispetto del processo e dei vincoli di sicurezza del progetto (REQ-NFR-002).
 
+#### REQ-NFR-014 — Aggiornamento dal template e consultazione del backlog
+
+Il progetto deve adottare il processo, le skill e il visualizzatore Pi del backlog del template `agile-project-template` v1.4.0, preservando le personalizzazioni, i requisiti e le protezioni propri dello studio. Eventuali conflitti o deroghe devono essere concordati e documentati, non risolti con sovrascritture indiscriminate. La provenienza e le risorse effettivamente adottate devono essere registrate secondo REQ-NFR-013.
+
+Il progetto deve definire un solo modulo architetturale, `MOD-001 — Agente`, per la soluzione dell'assistente dello studio nel repository corrente. Gli item aperti pertinenti possono riferirsi al modulo; il lavoro trasversale e lo storico completato non richiedono una classificazione retroattiva.
+
+In Pi l'operatore deve poter consultare gli item di `BACKLOG.md` senza modificarli, navigando tra gli item e scorrendone il contenuto; il visualizzatore si apre con `/backlog` e dispone di una scorciatoia configurabile o disattivabile. Gli strumenti rispettano REQ-NFR-002, REQ-NFR-007 e il gate di REQ-NFR-008; le prove non leggono né modificano impostazioni personali.
+
 ## 7. Release acceptance — v0.2.0
 
 - Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
 - Un utilizzatore chiede chi si allena in un giorno, una fascia o un orario e quando si allena un cliente, e riceve risposte coerenti con le regole attive.
 - Un utilizzatore comunica cambiamenti espliciti o impliciti; l'agente disattiva le regole superate con motivo, data e autore, lo comunica e mantiene lo storico; il database rifiuta la cancellazione delle regole.
 - Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
+- Processo e strumenti del template v1.4.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in sola lettura in Pi e il modulo concordato è documentato.
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

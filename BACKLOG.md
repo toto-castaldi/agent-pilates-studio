@@ -164,6 +164,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli ora.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0, il visualizzatore Pi del backlog e il modulo architetturale Agente.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -325,6 +327,22 @@
   - La documentazione e le evidenze non contengono segreti o dati personali; non vengono adottate novità del template né modificati o pubblicati il repository del template o le configurazioni personali. Il riferimento alla modifica TEC-015 non è presentato come pubblicato senza verifica.
 - **Outcome:** Registrazione delle basi verificabili, inventario delle divergenze e procedura manuale senza adozione automatica; verificati pubblicazione del riporto TEC-015 e riferimento `v1.4.0`, con basi sconosciute esplicite. Superati `test:local` con clone pulito e confronti sintetici, lint, typecheck, unità e build. Nessuna modifica o pubblicazione del template; l'eventuale allineamento del processo richiede decisione separata. Completato il 2026-11-07.
 
+#### TEC-023 — Adozione del template v1.4.0
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** TEC-022
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-014
+- **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Adottare il processo, le skill e il visualizzatore Pi dal template `agile-project-template` tag `v1.4.0`, commit `e16bbec69c067bc9432bc588acd0d232716f3dbf`, con un solo modulo architetturale Agente. TEC-022 ha preparato il confronto ma non ha adottato gli aggiornamenti. Se si intende scegliere un riferimento più recente, concordarlo prima con l'utente.
+- **Acceptance criteria:**
+  - `docs/PROCESS.md` e le skill condivise sono confrontati e allineati al riferimento fissato, incluse le regole sui moduli; i requisiti, le protezioni e il gate rapido dello studio restano validi. Eventuali conflitti o deroghe sono sottoposti all'utente e registrati esplicitamente, senza sovrascrivere le personalizzazioni di progetto o modificarle silenziosamente.
+  - `docs/TECHNICAL-DESIGN.md` §3 documenta il solo `MOD-001 — Agente`: soluzione dell'assistente dello studio, con componenti applicativi, dati e integrazioni nel repository corrente. `US-003`, `US-004` e `TEC-019` riportano tale modulo; `TEC-020`, `TEC-008` e `TEC-023` restano senza modulo in quanto trasversali. Gli item `Done` non sono riclassificati; `STATUS.md` riflette i moduli degli item visualizzati secondo il processo adottato.
+  - L'estensione Pi del template è revisionata e disponibile in un progetto attendibile come `/backlog` e con la scorciatoia predefinita; permette di navigare gli item, anche non assegnati, scorrerne il contenuto e chiudere la vista. La scorciatoia può essere configurata o disattivata; la vista ricarica il backlog all'apertura e non modifica file. Casi di backlog assente o vuoto sono segnalati chiaramente.
+  - `.gitignore` consente selettivamente il versionamento dell'estensione revisionata, senza includere indiscriminatamente altre estensioni, impostazioni personali, sessioni, autenticazione, log o segreti. Le personalizzazioni e le risorse Pi esistenti non sono sostituite o modificate senza accordo.
+  - Test ripetibili con dati e configurazioni sintetici verificano struttura e navigazione del backlog, aggiornamento alla riapertura, errori, scorciatoia e sola lettura; una prova Pi 1.5.0 isolata verifica caricamento e uso dell'estensione in TUI, documentandone i limiti. Le prove con file, processi o Pi restano separate dal gate in memoria e non leggono né modificano impostazioni personali; sono aggiornati i controlli Git e CI pertinenti.
+  - README e documentazione pertinente descrivono uso, fiducia nel progetto, ricaricamento, configurazione della scorciatoia e limiti. `docs/TEMPLATE-ORIGIN.md` registra per risorsa il riferimento effettivamente adottato e le eventuali divergenze o basi ignote, distinguendolo dai confronti; non si modificano né pubblicano il repository del template o dati personali.
+
 ### EPIC-002 — Agente e integrazioni
 
 #### BUG-001 — Avviso del canale home inviato agli utilizzatori
@@ -475,7 +493,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.

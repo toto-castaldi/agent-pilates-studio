@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione, avvio con configurazione collegata e tracciabilità del template verificati; consultazione, aggiornamento e dettato remoto da avviare | 14/17 items done (82%) |
+| v0.2.0 | Open | Registrazione e tracciabilità del template verificati; consultazione, aggiornamento, dettato remoto e adozione del template da avviare | 14/18 items done (78%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 14 |
@@ -50,6 +50,7 @@ None.
 | US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | Dettato vocale Pi su server remoto | P2 |
+| TEC-023 | EPIC-001 — Fondamenta del progetto | Adozione del template v1.4.0 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | Job cron e messaggi pianificati dell'agente | P2 |
 
 TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
@@ -62,6 +63,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0 e definire il solo modulo architetturale Agente.
 - Decisione dell'utente (2026-11-07): TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli ora.
 - Decisione dell'utente (2026-11-07): TEC-021 è aggiunto alla v0.2.0 per consentire `.env` come collegamento simbolico privato.
 - Decisione dell'utente (2026-11-06): BUG-001 è aggiunto allo scope della v0.2.0: canale home fissato in configurazione, cron rinviati a TEC-019 non assegnato.
