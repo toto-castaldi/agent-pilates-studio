@@ -46,6 +46,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Adozione del processo e degli strumenti condivisi del template v1.4.0, con modulo architetturale e consultazione Pi del backlog (REQ-NFR-014), aggiornati alla v1.5.0 con filtri, stati dai branch e shared claims attivi (REQ-NFR-015).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
+- Contesto del modello separato per interlocutore e compattato automaticamente a soglia e dopo inattività (REQ-AGENT-004).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.2.0
@@ -109,6 +110,12 @@ Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database co
 Da un repository appena clonato o con volumi Docker rimossi, l'operatore, dopo aver copiato `.env.example` in `.env` e compilato localmente configurazione e credenziali, deve poter avviare con un solo comando lo stack locale utilizzabile. Il comando deve provvedere alle inizializzazioni necessarie, incluse le migrazioni del database, e indicare l'esito senza esporre dati sensibili. Docker, Compose, runtime e servizi esterni necessari restano prerequisiti; il port forwarding verso `jarvis` per la callback pubblica resta esterno al comando. La raggiungibilità pubblica e la conversazione reale dipendono dalla configurazione esterna e non sono implicite nell'avvio locale.
 
 La configurazione locale contenente credenziali deve restare privata e fuori dal repository; l'esempio non contiene valori reali. `.env` può essere un collegamento simbolico a un file regolare privato: l'avvio deve verificare il file effettivamente letto e rifiutare destinazioni mancanti, non regolari o non private senza esporre i dati. L'avvio deve preservare dati e credenziali esistenti e mantenere le separazioni e le protezioni richieste da REQ-DB-002, REQ-WA-002 e REQ-NFR-002. La sola prova pubblica temporanea precedente non autorizza l'uso continuativo.
+
+#### REQ-AGENT-004 — Contesto per interlocutore e compattazione
+
+Ogni interlocutore autorizzato ha un proprio contesto di conversazione con il modello, separato da quello degli altri. Quando il contesto inviato al modello raggiunge il 40% della finestra di contesto del modello configurato, l'agente lo compatta automaticamente, riassumendo la parte meno recente e conservando il contesto dello studio e i turni recenti necessari a proseguire. Il 40% è la soglia di attivazione, non un tetto rigido: sono ammessi superamenti temporanei fino alla compattazione. La soglia segue il modello configurato e non è fissata per un modello specifico.
+
+Quando una conversazione riprende dopo un periodo di inattività configurabile dall'operatore, con valore predefinito di 4 ore, il contesto viene compattato prima di elaborare il nuovo messaggio. La compattazione è silenziosa: gli utilizzatori non ricevono avvisi di sistema sul suo avvio, sul completamento o sugli errori (REQ-WA-003). La compattazione non modifica i dati del database né l'attribuzione dell'autore (REQ-STUDIO-003). Riassunti e cronologia persistono come le sessioni di Hermes, non compaiono nei log e possono transitare verso OpenRouter come le conversazioni (REQ-NFR-002, REQ-NFR-005, REQ-OPS-002).
 
 ### Comunicazione WhatsApp Business
 
@@ -241,6 +248,7 @@ Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra c
 - Un utilizzatore comunica cambiamenti espliciti o impliciti; l'agente disattiva le regole superate con motivo, data e autore, lo comunica e mantiene lo storico; il database rifiuta la cancellazione delle regole.
 - Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
 - Processo e strumenti del template v1.5.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in Pi con filtri e stati dai branch, gli shared claims sono attivi e il modulo concordato è documentato.
+- Il contesto di ciascun utilizzatore è separato e viene compattato automaticamente al 40% della finestra del modello configurato e alla ripresa dopo l'inattività configurata, senza avvisi agli utilizzatori.
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

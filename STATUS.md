@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template adottato; consultazione e aggiornamento verificati, dettato remoto da avviare | 18/19 items done (95%) |
+| v0.2.0 | Open | Template adottato; consultazione e aggiornamento verificati; dettato remoto e compattazione del contesto da avviare | 18/20 items done (90%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 1 |
+| Todo | 2 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 18 |
@@ -46,6 +46,7 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
+| TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
@@ -60,6 +61,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-025 è aggiunto alla v0.2.0 per un contesto del modello separato per interlocutore, con compattazione silenziosa al 40% della finestra del modello configurato e dopo inattività configurabile, con valore predefinito di 4 ore.
 - Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`.
 - Decisione dell'utente (2026-11-07): TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0 e definire il solo modulo architetturale Agente.
 - Decisione dell'utente (2026-11-07): TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli in TEC-022.

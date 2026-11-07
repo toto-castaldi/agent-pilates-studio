@@ -168,6 +168,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 e attivare gli shared claims, consentendo i relativi push dei branch item anche con `/work-alone`.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-025 è aggiunto alla v0.2.0 per separare il contesto del modello per interlocutore e compattarlo automaticamente al 40% della finestra e dopo inattività.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -389,6 +391,24 @@
   - Log e output rispettano REQ-NFR-002; `docs/TECHNICAL-DESIGN.md` descrive la scelta.
 - **Outcome:** Canale home privato e validato, `/sethome` bloccato, cron del gateway disabilitati e filtro dell'harness rimosso. Verificati gateway reale con webhook firmati, sostituti Meta e modello sintetici, riavvio e ricreazione, cron scaduto, privacy dei log, avvio e upgrade isolati; nessuna nuova prova Meta/OpenRouter reale né accettazione privacy. Completato il 2026-11-06.
 
+#### TEC-025 — Contesto per interlocutore e compattazione automatica
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Module:** MOD-001 — Agente
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-011, BUG-001
+- **Requirements:** REQ-AGENT-004, REQ-WA-003, REQ-STUDIO-003, REQ-OPS-002, REQ-NFR-002, REQ-NFR-005
+- **Design references:** TECHNICAL-DESIGN §6, §7, §10
+- **Description:** Ogni interlocutore deve avere un contesto separato con il modello, compattato automaticamente quando raggiunge il 40% della finestra del modello configurato e quando la conversazione riprende dopo un'inattività configurabile, con valore predefinito di 4 ore. Hermes v0.22.7 offre la compressione del contesto (`compression` in `config.yaml`), ma per le finestre inferiori a 512K token alza la soglia percentuale ad almeno 0.75 e invia sempre agli utilizzatori gli avvisi di errore. Occorre quindi ricavare la soglia dal modello effettivo con un meccanismo supportato, come `threshold_tokens`, e mantenere la compattazione silenziosa.
+- **Acceptance criteria:**
+  - Ogni numero autorizzato ha una sessione distinta: una prova con due mittenti sintetici verifica che i contenuti di uno non entrino nel contesto dell'altro, anche dopo la compattazione.
+  - La compattazione automatica si attiva quando il contesto raggiunge il 40% della finestra del modello configurato, anche per le finestre inferiori a 512K token. La finestra è ricavata per il modello effettivo, senza valori fissati per un modello; cambiando `PILATES_MODEL` la soglia si aggiorna al successivo avvio. Se la finestra non è determinabile, il comportamento è documentato e non adotta silenziosamente una soglia superiore al 40%.
+  - L'intervallo di inattività è configurabile nella configurazione esterna, con valore predefinito di 4 ore; `.env.example` e README lo documentano e l'avvio rifiuta valori non validi con un messaggio fisso. Alla ripresa oltre l'intervallo, il contesto è compattato prima di elaborare il nuovo messaggio.
+  - Dopo la compattazione l'agente conserva `SOUL.md`, data e ora per richiesta e i turni recenti necessari, e prosegue correttamente: la compattazione non modifica il database e le registrazioni successive mantengono l'autore ricavato dal sistema.
+  - Gli utilizzatori non ricevono avvisi di avvio, completamento o errore della compattazione. Una prova di regressione con gateway reale, webhook firmato, sostituto Meta e dati sintetici lo verifica anche forzando un errore; il comportamento del turno in caso di errore è documentato.
+  - Riassunti e cronologia restano nel volume SQLite di Hermes, persistono a riavvio e ricreazione, sono inclusi nel backup e non compaiono nei log (REQ-NFR-002).
+  - Test in memoria coprono il calcolo della soglia e la validazione della configurazione. Una prova di integrazione con gateway reale, modello sintetico con finestra ridotta e inattività simulata verifica entrambe le attivazioni. Gli eventuali adattamenti a punti interni di Hermes sono documentati in `docs/TECHNICAL-DESIGN.md` e richiedono nuove verifiche agli aggiornamenti.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -523,7 +543,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-025 dipende da TEC-011 e BUG-001, già completati, ed è indipendente dagli item della pianificazione. TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.
