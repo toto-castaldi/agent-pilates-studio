@@ -595,7 +595,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P0 · **Status:** Todo
+- **Type:** Task · **Priority:** P0 · **Status:** In Progress
+- **Branch:** `task/TEC-027-schema-delle-presenze`
 - **Dependencies:** TEC-010
 - **Requirements:** REQ-DB-001, REQ-DB-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-STUDIO-008, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §4, §5, §6, §8, §10
