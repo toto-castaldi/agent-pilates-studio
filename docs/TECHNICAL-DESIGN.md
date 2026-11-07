@@ -105,6 +105,7 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 
 ## 10. Open decisions
 
+- TEC-024 deve adottare il template v1.5.0 con shared claims attivi e allineare `/work-alone` all'eccezione concordata per i push dei branch item. L'adozione e l'eventuale risoluzione di altre divergenze restano da verificare durante l'item; il riferimento adottato finora rimane v1.4.0.
 - TEC-023 adotta processo, skill e visualizzatore Pi del template v1.4.0, con il solo modulo concordato `MOD-001 — Agente`. Su accordo dell'utente, «unassigned» nella regola del modulo indica l'assenza di un modulo, non di una versione: TEC-019 può quindi riferirsi a `MOD-001` pur rimanendo senza versione. `docs/TEMPLATE-ORIGIN.md` distingue le risorse adottate dalle basi sconosciute e dai confronti; futuri aggiornamenti richiedono valutazione e decisione separate.
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
 - Abilitazione dei job cron, permessi di creazione e accesso al database dei turni pianificati senza mittente autenticato — TEC-019, non assegnato.
