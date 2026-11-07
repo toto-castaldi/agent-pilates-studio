@@ -310,7 +310,8 @@
 #### TEC-022 — Tracciabilità e aggiornamento dal template
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-022-tracciabilita-aggiornamento-template`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-013
 - **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §10
