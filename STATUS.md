@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione e avvio con configurazione collegata verificati; tracciabilità del template in corso, consultazione, aggiornamento e dettato remoto da avviare | 13/17 items done (76%) |
+| v0.2.0 | Open | Registrazione, avvio con configurazione collegata e tracciabilità del template verificati; consultazione, aggiornamento e dettato remoto da avviare | 14/17 items done (82%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 3 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 13 |
+| Done | 14 |
 
 ## In progress
 
-| Item | Epic | Title | Branch |
-| ---- | ---- | ----- | ------ |
-| TEC-022 | EPIC-001 — Fondamenta del progetto | Tracciabilità e aggiornamento dal template | `task/TEC-022-tracciabilita-aggiornamento-template` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Title | Date |
 | ---- | ---- | ----- | ---- |
+| TEC-022 | EPIC-001 — Fondamenta del progetto | Tracciabilità e aggiornamento dal template | 2026-11-07 |
 | TEC-021 | EPIC-001 — Fondamenta del progetto | Avvio locale con configurazione collegata | 2026-11-07 |
 | BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | 2026-11-06 |
@@ -42,7 +41,6 @@ None.
 | TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | 2026-11-06 |
 | TEC-016 | EPIC-001 — Fondamenta del progetto | Versionamento del template Pi per lo stato del progetto | 2026-11-06 |
 | TEC-015 | EPIC-001 — Fondamenta del progetto | Gate di chiusura con soli test di unità in memoria | 2026-11-06 |
-| TEC-010 | EPIC-004 — Pianificazione delle lezioni | Schema della pianificazione settimanale | 2026-11-05 |
 
 ## Next ready items
 

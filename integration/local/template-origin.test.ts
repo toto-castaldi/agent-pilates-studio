@@ -59,21 +59,29 @@ test('isolated template comparison distinguishes upstream, customization and unk
     assert.equal(git(project, ['status', '--porcelain']), '');
     assert.equal(readFileSync(join(project, record), 'utf8'), readFileSync(record, 'utf8'));
 
-    git(template, ['cat-file', '-e', `${base}^{commit}`]);
-    git(template, ['cat-file', '-e', `${target}^{commit}`]);
-    const upstream = git(template, ['diff', base, target, '--', path]);
-    assert.match(upstream, /-baseline sintetica/);
-    assert.match(upstream, /\+aggiornamento sintetico/);
-    writeFileSync(templateFile, git(template, ['show', `${target}:${path}`]));
-    const comparison = spawnSync('git', ['-C', project, 'diff', '--no-index', '--', templateFile, path], { encoding: 'utf8', env });
-    assert.equal(comparison.status, 1, comparison.stderr);
-    assert.match(comparison.stdout, /-aggiornamento sintetico/);
-    assert.match(comparison.stdout, /\+personalizzazione sintetica/);
+    function compare(adoptedBase: string | null): { upstream: string | null; projectDiff: string } {
+      git(template, ['cat-file', '-e', `${target}^{commit}`]);
+      let upstream: string | null = null;
+      if (adoptedBase !== null) {
+        git(template, ['cat-file', '-e', `${adoptedBase}^{commit}`]);
+        upstream = git(template, ['diff', adoptedBase, target, '--', path]);
+      }
+      writeFileSync(templateFile, git(template, ['show', `${target}:${path}`]));
+      const comparison = spawnSync('git', ['-C', project, 'diff', '--no-index', '--', templateFile, path], { encoding: 'utf8', env });
+      assert.equal(comparison.status, 1, comparison.stderr);
+      return { upstream, projectDiff: comparison.stdout };
+    }
+    const known = compare(base);
+    assert.match(known.upstream ?? '', /-baseline sintetica/);
+    assert.match(known.upstream ?? '', /\+aggiornamento sintetico/);
+    assert.match(known.projectDiff, /-aggiornamento sintetico/);
+    assert.match(known.projectDiff, /\+personalizzazione sintetica/);
 
-    const unknownBase = spawnSync('git', ['-C', template, 'cat-file', '-e', `${'0'.repeat(40)}^{commit}`], { encoding: 'utf8', env });
-    assert.notEqual(unknownBase.status, 0);
-    // With an unknown base the documented procedure omits the upstream diff;
-    // the target-to-project comparison above still exposes the difference.
+    const missing = spawnSync('git', ['-C', template, 'cat-file', '-e', `${'0'.repeat(40)}^{commit}`], { encoding: 'utf8', env });
+    assert.notEqual(missing.status, 0);
+    const unknown = compare(null);
+    assert.equal(unknown.upstream, null);
+    assert.match(unknown.projectDiff, /\+personalizzazione sintetica/);
     assert.equal(git(project, ['status', '--porcelain']), '');
     assert.equal(readFileSync(join(project, path), 'utf8'), 'personalizzazione sintetica\n');
   } finally {

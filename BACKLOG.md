@@ -311,7 +311,7 @@
 #### TEC-022 — Tracciabilità e aggiornamento dal template
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-022-tracciabilita-aggiornamento-template`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-013
@@ -323,6 +323,7 @@
   - Una procedura documentata spiega come reperire un riferimento preciso del template, confrontarlo con le basi note e con il progetto, gestire basi sconosciute e divergenze, valutare gli aggiornamenti e registrare separatamente confronto e adozione. Non prevede sovrascritture o merge automatici; l'eventuale adozione segue il processo del progetto e richiede una decisione separata.
   - Una prova ripetibile in un ambiente isolato, con un clone pulito e riferimenti di prova, verifica la reperibilità delle informazioni versionate e il confronto, anche in presenza di personalizzazioni e di una base sconosciuta; non modifica il working tree o i dati personali dell'operatore. Le prove con Git, filesystem o rete restano separate dai test unitari in memoria del gate rapido.
   - La documentazione e le evidenze non contengono segreti o dati personali; non vengono adottate novità del template né modificati o pubblicati il repository del template o le configurazioni personali. Il riferimento alla modifica TEC-015 non è presentato come pubblicato senza verifica.
+- **Outcome:** Registrazione delle basi verificabili, inventario delle divergenze e procedura manuale senza adozione automatica; verificati pubblicazione del riporto TEC-015 e riferimento `v1.4.0`, con basi sconosciute esplicite. Superati `test:local` con clone pulito e confronti sintetici, lint, typecheck, unità e build. Nessuna modifica o pubblicazione del template; l'eventuale allineamento del processo richiede decisione separata. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
