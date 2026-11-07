@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
-import { cp, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { createHmac, randomBytes } from 'node:crypto';
+import { cp, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 
 async function freePort(): Promise<number> {
@@ -26,22 +27,25 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
+  const startResult = (extra: NodeJS.ProcessEnv = {}) => spawnSync('npm', ['run', 'start:local', '--silent'], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 600_000 });
   const start = () => {
-    const result = spawnSync('npm', ['run', 'start:local', '--silent'], { cwd: dir, env, encoding: 'utf8', timeout: 600_000 });
+    const result = startResult();
     assert.equal(result.status, 0, `start failed: ${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /sono sani/);
-    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-private|15555550102|123456789/);
+    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-private|synthetic-new|1555555010[23]|123456789|987654321/);
     for (const password of [admin, migrator, agentPassword]) assert.equal((result.stdout + result.stderr).includes(password), false);
   };
   try {
-    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes']) {
+    await mkdir(join(dir, 'scenarios'));
+    await mkdir(join(dir, 'integration'));
+    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
-    await writeFile(join(dir, 'compose.override.yaml'), 'services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  hermes:\n    networks: [private]\nnetworks:\n  private:\n    internal: true\n');
+    await writeFile(join(dir, 'compose.override.yaml'), `services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes: ["./integration/model_stub.py:/model_stub.py:ro"]\n    networks: [private]\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes: ["./scenarios/meta_stub.py:/meta_stub.py:ro"]\n    networks: [private]\n  hermes:\n    networks: [private]\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n      NO_PROXY: model-stub,meta-stub,localhost,127.0.0.1\n    volumes: ["./scenarios/gateway-launcher.sh:/opt/hermes/libexec/hermes:ro"]\nnetworks:\n  private:\n    internal: true\n`);
     await writeFile(join(dir, 'private.env'), config, { mode: 0o600 });
     await symlink('private.env', join(dir, '.env'));
     start(); // No node_modules or volumes: also exercises dependency preparation.
@@ -65,6 +69,13 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     assert.doesNotMatch(mounts, /db-admin|db-migrator|\.env/);
     execFileSync('docker', ['exec', '--user', 'root', hermes, 'sh', '-c', 'printf synthetic-volume-marker > /opt/data/start-probe']);
     const adminFile = await readFile(join(dir, '.local/secrets/db-admin'), 'utf8');
+    const agentFile = join(dir, '.local/secrets/db-agent');
+    await rename(agentFile, `${agentFile}.saved`);
+    try {
+      const missing = startResult();
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /Segreto database mancante/);
+    } finally { await rename(`${agentFile}.saved`, agentFile); }
     const postgresId = compose('ps', '-q', 'postgres').trim();
     const soulPath = join(dir, 'hermes/SOUL.md');
     await writeFile(`${soulPath}.new`, `${await readFile(soulPath, 'utf8')}\nSYNTHETIC_UPDATED_SOUL\n`);
@@ -82,9 +93,103 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     assert.equal(await readFile(join(dir, '.local/secrets/db-admin'), 'utf8'), adminFile);
     const restartedHermes = compose('ps', '-q', 'hermes').trim();
     assert.equal(execFileSync('docker', ['exec', restartedHermes, 'cat', '/opt/data/start-probe'], { encoding: 'utf8' }), 'synthetic-volume-marker');
+    // Replace the target inode and change every external secret without changing DB credentials.
+    compose('up', '-d', '--no-deps', 'model-stub', 'meta-stub');
+    const changed = config.replace('synthetic-private-model-token', 'synthetic-new-model-token')
+      .replace('synthetic-private-access-token', 'synthetic-new-access-token')
+      .replace('synthetic-private-app-secret', 'synthetic-new-app-secret')
+      .replace('synthetic-private-verify-token', 'synthetic-new-verify-token')
+      .replaceAll('15555550102', '15555550103')
+      .replace('123456789', '987654321')
+      .replace('synthetic/test-model', 'synthetic/updated-model')
+      .concat('WHATSAPP_WEBHOOK_PATH=/whatsapp/updated\n');
+    await writeFile(join(dir, 'replacement.env'), changed, { mode: 0o600 });
+    await rename(join(dir, 'replacement.env'), join(dir, 'private.env'));
+    start();
+    const address = (service: string) => {
+      const id = compose('ps', '-q', service).trim();
+      return execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', id], { encoding: 'utf8' }).trim();
+    };
+    const gatewayId = compose('ps', '-q', 'hermes').trim();
+    execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_home_channel)" = 15555550103 && test "$PILATES_MODEL" = synthetic/updated-model'], { stdio: 'pipe' });
+    const gateway = `http://${address('hermes')}:8090/whatsapp/updated`;
+    const meta = `http://${address('meta-stub')}:8088/observations`;
+    const broker = `http://${address('author-broker')}:8091`;
+    const bridge = (await readFile(join(dir, '.local/secrets/bridge-token'), 'utf8')).trim();
+    const payload = (sender: string, id: string) => JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
+      metadata: { phone_number_id: '987654321' }, contacts: [{ wa_id: sender, profile: { name: 'Synthetic' } }],
+      messages: [{ from: sender, id, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: 'beta' } }],
+    } }] }] });
+    const headers = (body: string, secret = 'synthetic-new-app-secret') => ({ 'Content-Type': 'application/json', 'X-Hub-Signature-256': `sha256=${createHmac('sha256', secret).update(body).digest('hex')}` });
+    const allowed = payload('15555550103', 'synthetic-allowed');
+    assert.equal((await fetch(gateway, { method: 'POST', body: allowed, headers: headers(allowed, 'synthetic-private-app-secret') })).status, 401);
+    assert.equal((await fetch(gateway, { method: 'POST', body: allowed, headers: headers(allowed) })).status, 200);
+    let replied = false;
+    for (let i = 0; i < 90; i++) {
+      const replies = await (await fetch(meta)).json() as { to: string }[];
+      if (replies.some((entry) => entry.to === '15555550103')) { replied = true; break; }
+      await delay(1000);
+    }
+    assert.equal(replied, true);
+    const verify = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
+    await verify.connect();
+    try {
+      const row = await verify.query("SELECT created_by_phone FROM app.clients WHERE first_name = 'beta'");
+      assert.equal(row.rows[0]?.created_by_phone, '15555550103');
+    } finally { await verify.end(); }
+    const denied = payload('15555550102', 'synthetic-denied');
+    assert.equal((await fetch(gateway, { method: 'POST', body: denied, headers: headers(denied) })).status, 200);
+    assert.equal((await fetch(`${broker}/v1/evidence`, { method: 'POST', body: denied, headers: { ...headers(denied), 'X-Pilates-Bridge': bridge } })).status, 204);
+    assert.equal((await fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': bridge }, body: JSON.stringify({ message_id: 'synthetic-denied', sender: '15555550102', turn: 'a'.repeat(64), pid: 1, txid: '1' }) })).status, 403);
+    await delay(3000);
+    const replies = await (await fetch(meta)).json() as { to: string; text: string }[];
+    assert.equal(replies.some((entry) => entry.to === '15555550102'), false, JSON.stringify(replies));
+    const beforeMismatch = await readFile(join(dir, '.local/secrets/whatsapp-app-secret'), 'utf8');
+    await writeFile(join(dir, 'private.env'), changed.replace(admin, 'synthetic-different-admin-password').replace('synthetic-new-app-secret', 'synthetic-other-app-secret'));
+    const mismatch = startResult();
+    assert.notEqual(mismatch.status, 0);
+    assert.match(mismatch.stderr, /non corrisponde/);
+    assert.equal(await readFile(join(dir, '.local/secrets/whatsapp-app-secret'), 'utf8'), beforeMismatch);
+    assert.equal(compose('ps', '--status', 'running', '-q', 'hermes').trim(), gatewayId);
+    // A role password changed in the database, even with unchanged secret files,
+    // must not be reset by bootstrap or allow external changes to be applied.
+    const administrator = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_admin', password: admin });
+    await administrator.connect();
+    try {
+      await administrator.query("ALTER ROLE studio_agent PASSWORD 'synthetic-different-database-password'");
+      await writeFile(join(dir, 'private.env'), changed.replace('synthetic-new-app-secret', 'synthetic-other-app-secret')
+        .replace(`POSTGRES_PORT=${databasePort}`, `POSTGRES_PORT=${databasePort === 65535 ? 65534 : databasePort + 1}`));
+      const drift = startResult();
+      assert.notEqual(drift.status, 0);
+      assert.match(drift.stderr, /Verifica credenziali PostgreSQL/);
+      assert.equal(await readFile(join(dir, '.local/secrets/whatsapp-app-secret'), 'utf8'), beforeMismatch);
+      assert.equal(compose('ps', '-q', 'postgres').trim(), postgresId);
+      const probe = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_agent', password: 'synthetic-different-database-password' });
+      await probe.connect();
+      await probe.end();
+    } finally {
+      await administrator.query(`ALTER ROLE studio_agent PASSWORD '${agentPassword}'`);
+      await administrator.end();
+    }
+    await writeFile(join(dir, 'private.env'), changed);
+    // Force a real startup failure after the broker has started. Cleanup must
+    // leave neither component running, and a subsequent normal start recovers.
+    const bin = join(dir, 'failure-bin');
+    await mkdir(bin);
+    const docker = execFileSync('which', ['docker'], { encoding: 'utf8' }).trim();
+    await writeFile(join(bin, 'docker'), `#!/bin/sh\ncase "$*" in *" up "*" hermes") exit 1 ;; esac\nexec ${JSON.stringify(docker)} "$@"\n`, { mode: 0o755 });
+    const failed = startResult({ PATH: `${bin}:${process.env.PATH}` });
+    assert.notEqual(failed.status, 0);
+    assert.doesNotMatch(failed.stdout + failed.stderr, /sono sani|synthetic-new|15555550103/);
+    assert.equal(compose('ps', '--status', 'running', '-q', 'hermes', 'author-broker').trim(), '');
+    start();
     const logs = compose('logs', '--no-color', 'postgres', 'hermes');
-    assert.doesNotMatch(logs, /synthetic-private|15555550102|123456789/);
+    assert.doesNotMatch(logs, /synthetic-private|synthetic-new|1555555010[23]|123456789|987654321/);
     for (const password of [admin, migrator, agentPassword]) assert.equal(logs.includes(password), false);
+    // Recreate from an existing volume with no PostgreSQL container: the
+    // credential probe uses a temporary container without publishing ports.
+    compose('down', '--remove-orphans');
+    start();
     // This removes only the randomly named synthetic test project and its volumes.
     compose('down', '--volumes', '--remove-orphans');
     start();

@@ -29,7 +29,7 @@ test('local start validates private configuration, preserves secrets and suppres
     await mkdir(bin);
     await mkdir(join(dir, 'node_modules/prisma/build'), { recursive: true });
     await writeFile(join(dir, 'node_modules/prisma/build/index.js'), "console.log('synthetic-sensitive-migration-output');\n");
-    await writeFile(join(bin, 'docker'), '#!/bin/sh\necho synthetic-sensitive-docker-output\ncase "$*" in *hermes*) [ "$FAKE_FAIL" != yes ] || exit 1 ;; esac\n', { mode: 0o755 });
+    await writeFile(join(bin, 'docker'), '#!/bin/sh\ncase "$*" in *"config --format json"*) echo \'{"volumes":{"postgres_data":{"name":"synthetic_postgres_data"}}}\'; exit 0 ;; *"volume ls"*) exit 0 ;; esac\necho synthetic-sensitive-docker-output\ncase "$*" in *hermes*) [ "$FAKE_FAIL" != yes ] || exit 1 ;; esac\n', { mode: 0o755 });
     await writeFile(join(bin, 'npm'), '#!/bin/sh\necho synthetic-sensitive-npm-output\n[ "$FAKE_NPM_FAIL" != yes ]\n', { mode: 0o755 });
     await writeFile(join(dir, '.env'), configuration, { mode: 0o600 });
     let result = start();
@@ -81,7 +81,7 @@ test('local start accepts a private configuration symlink and rejects unsafe tar
     await mkdir(bin);
     await mkdir(join(dir, 'node_modules/prisma/build'), { recursive: true });
     await writeFile(join(dir, 'node_modules/prisma/build/index.js'), '');
-    await writeFile(join(bin, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    await writeFile(join(bin, 'docker'), '#!/bin/sh\ncase "$*" in *"config --format json"*) echo \'{"volumes":{"postgres_data":{"name":"synthetic_postgres_data"}}}\' ;; esac\nexit 0\n', { mode: 0o755 });
     await writeFile(join(bin, 'npm'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
     await writeFile(target, configuration, { mode: 0o600 });
     await symlink('private.env', link);

@@ -22,6 +22,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- L'avvio locale applica da `.env` la configurazione esterna, riallinea gateway e broker e preserva le credenziali database e interne (TEC-026).
 - Template v1.5.0 adottato con shared claims e vista Pi del backlog con filtri e stati dai branch (TEC-024).
 - Verificata la consultazione settimanale con scenari sintetici, regole disattivate e controlli sulle fasce orarie (US-003).
 - Scenari e verifiche conversazionali estesi a disattivazioni, cambiamenti di gruppo e storico delle regole (US-004).

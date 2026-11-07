@@ -437,7 +437,7 @@
 
 - **Epic:** EPIC-003 — Dati e operatività
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Done
 - **Branch:** `task/TEC-026-applicare-configurazione-locale`
 - **Dependencies:** TEC-009, TEC-021, TEC-010, BUG-001
 - **Requirements:** REQ-AGENT-003, REQ-AGENT-006, REQ-DB-002, REQ-WA-002, REQ-WA-003, REQ-NFR-002
@@ -449,6 +449,7 @@
   - Su errori o aggiornamenti parziali il comando non dichiara riuscita e non lascia gateway e broker attivi con liste di autorizzazione discordanti; l'eventuale indisponibilità e il recupero sono documentati. Gli accessi, l'autenticazione webhook e le protezioni di REQ-NFR-002 rimangono applicati; segreti, messaggi e numeri non compaiono nei log o nell'output.
   - Test unitari in memoria verificano configurazione, applicazione e casi di errore con dati sintetici. Prove separate con Docker e PostgreSQL reale verificano primo avvio, modifiche, riavvio, persistenza, configurazione `.env` anche tramite link privato, password database discordante e fallimenti; con gateway e broker reali, webhook firmati e sostituti sintetici verificano che un mittente aggiunto sia ammesso, uno rimosso sia respinto e i valori applicati siano coerenti in entrambi i servizi. Non servono credenziali o chiamate reali Meta/OpenRouter.
   - README, eventuali esempi e design spiegano la fonte unica, le modifiche applicabili, i limiti della rotazione PostgreSQL, il comportamento in caso di errore e l'eventuale interruzione dei turni; le prove non leggono né modificano configurazioni reali dell'operatore.
+- **Outcome:** Configurazione esterna applicata da `.env`, con arresto e ricreazione coordinati di gateway e broker, senza rotazione delle credenziali database o interne. Verificati unità, `test:local`, `test:start` su PostgreSQL e gateway/broker reali con webhook firmati e sostituti sintetici, `test:author` e gate rapido; le prove coprono aggiornamenti, mittenti aggiunti e rimossi, divergenze database, errore e recupero. Un guasto Docker può richiedere arresto manuale; validità esterna dei token e Meta/OpenRouter reali non sono verificate. Completato il 2026-11-07.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
