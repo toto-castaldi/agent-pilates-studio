@@ -737,3 +737,12 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
 - **Description:** Abilitare in modo controllato i job cron di Hermes per future funzioni pianificate (ad esempio un riepilogo settimanale), consegnati sul canale home configurato. Prima della pianificazione servono i requisiti dei casi d'uso, la decisione su chi può creare o modificare i job e su come i turni pianificati, privi di un messaggio WhatsApp autenticato, accedono al database senza indebolire REQ-STUDIO-003 e REQ-DB-002.
 - **Requirements:** REQ-WA-003, REQ-STUDIO-003, REQ-NFR-002 (da integrare con i requisiti dei casi d'uso)
 - **Design references:** TECHNICAL-DESIGN §3, §5, §10
+
+#### US-010 — Richiesta automatica delle presenze dopo la lezione
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P2 · **Status:** Todo · **Version:** Non assegnata
+- **Dependencies:** TEC-019, US-007
+- **Description:** Seconda fase della registrazione delle presenze, concordata il 2026-11-07: dopo ogni lezione con clienti attesi, l'agente chiede all'utilizzatore chi è venuto (ad esempio "alle 19 erano attesi Mario e Lucia: sono venuti?") e registra la risposta come presenze e assenze. Prima della pianificazione servono i requisiti su destinatari, orari, solleciti e lezioni senza risposta, oltre alle decisioni di TEC-019 sui turni pianificati, sull'autore e sull'accesso al database.
+- **Requirements:** REQ-STUDIO-006, REQ-STUDIO-007, REQ-WA-003, REQ-STUDIO-003 (da integrare con i requisiti del caso d'uso)
