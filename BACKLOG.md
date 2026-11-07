@@ -160,6 +160,8 @@
 
 **Scope change (2026-11-06):** su accordo dell'utente, TEC-020 è aggiunto alla v0.2.0 per il dettato vocale Pi su server remoto.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-021 è aggiunto alla v0.2.0 per l'avvio locale con `.env` come collegamento simbolico privato.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -287,6 +289,19 @@
   - La logica di valutazione dello script è separata dagli effetti sul sistema e coperta da test di unità in memoria con esiti sintetici, inclusi i casi di successo e di ciascun passo mancante. Eventuali prove con processi o file system restano fuori dal gate rapido.
   - Prova reale sull'ambiente dell'operatore, documentata senza dati personali: con il tunnel attivo, lo script segnala tutti i passi soddisfatti e il dettato Pi Voice (`Ctrl+Space`) trascrive in una sessione Pi dentro Herdr. Dopo una riconnessione SSH il dettato funziona di nuovo senza interventi manuali sul socket.
   - I file personali di Pi Voice (`.pi/pi-voice.json`, log) restano esclusi da Git e non vengono modificati per la soluzione. Passano `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
+
+#### TEC-021 — Avvio locale con configurazione collegata
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-009
+- **Requirements:** REQ-AGENT-003, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §7, §9
+- **Description:** Consentire l'avvio locale quando `.env` è un collegamento simbolico a una configurazione privata, senza sostituire il collegamento né indebolire la protezione dei segreti.
+- **Acceptance criteria:**
+  - L'avvio accetta `.env` come file regolare o collegamento simbolico a un file regolare privato, verificando il file effettivamente letto; rifiuta destinazioni mancanti, non regolari o accessibili a gruppo o altri senza esporre dati sensibili.
+  - La protezione degli altri file segreti resta invariata; configurazione, collegamento, dati e credenziali esistenti non vengono modificati o eliminati dall'avvio.
+  - Test in memoria e prove separate con file e collegamenti sintetici verificano successo, destinazioni non valide e permessi; la documentazione descrive il comportamento e i suoi limiti.
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -438,7 +453,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018 e TEC-020 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018 e TEC-020 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.

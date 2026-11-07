@@ -2,19 +2,19 @@
 
 Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipendenze.
 
-**Last update:** 2026-11-06
+**Last update:** 2026-11-07
 
 ## Current version
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione verificata e BUG-001 corretto; consultazione, aggiornamento e dettato remoto da avviare | 12/15 items done (80%) |
+| v0.2.0 | Open | Registrazione verificata; avvio con configurazione collegata, consultazione, aggiornamento e dettato remoto da avviare | 12/16 items done (75%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 12 |
@@ -46,6 +46,7 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
+| TEC-021 | EPIC-001 — Fondamenta del progetto | Avvio locale con configurazione collegata | P1 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | Consultare la pianificazione settimanale | P1 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
@@ -62,6 +63,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-021 è aggiunto alla v0.2.0 per consentire `.env` come collegamento simbolico privato.
 - Decisione dell'utente (2026-11-06): BUG-001 è aggiunto allo scope della v0.2.0: canale home fissato in configurazione, cron rinviati a TEC-019 non assegnato.
 - Decisione dell'utente (2026-11-06): TEC-020 è aggiunto allo scope della v0.2.0 per il dettato vocale Pi su server remoto tramite inoltro audio SSH.
 - Decisione dell'utente (2026-11-06): TEC-018 è aggiunto allo scope della v0.2.0 per lo stato `blocked` dei tool Pi di domanda.

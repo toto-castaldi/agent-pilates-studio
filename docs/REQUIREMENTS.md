@@ -106,7 +106,7 @@ Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database co
 
 Da un repository appena clonato o con volumi Docker rimossi, l'operatore, dopo aver copiato `.env.example` in `.env` e compilato localmente configurazione e credenziali, deve poter avviare con un solo comando lo stack locale utilizzabile. Il comando deve provvedere alle inizializzazioni necessarie, incluse le migrazioni del database, e indicare l'esito senza esporre dati sensibili. Docker, Compose, runtime e servizi esterni necessari restano prerequisiti; il port forwarding verso `jarvis` per la callback pubblica resta esterno al comando. La raggiungibilità pubblica e la conversazione reale dipendono dalla configurazione esterna e non sono implicite nell'avvio locale.
 
-La configurazione locale contenente credenziali deve restare privata e fuori dal repository; l'esempio non contiene valori reali. L'avvio deve preservare dati e credenziali esistenti e mantenere le separazioni e le protezioni richieste da REQ-DB-002, REQ-WA-002 e REQ-NFR-002. La sola prova pubblica temporanea precedente non autorizza l'uso continuativo.
+La configurazione locale contenente credenziali deve restare privata e fuori dal repository; l'esempio non contiene valori reali. `.env` può essere un collegamento simbolico a un file regolare privato: l'avvio deve verificare il file effettivamente letto e rifiutare destinazioni mancanti, non regolari o non private senza esporre i dati. L'avvio deve preservare dati e credenziali esistenti e mantenere le separazioni e le protezioni richieste da REQ-DB-002, REQ-WA-002 e REQ-NFR-002. La sola prova pubblica temporanea precedente non autorizza l'uso continuativo.
 
 ### Comunicazione WhatsApp Business
 
