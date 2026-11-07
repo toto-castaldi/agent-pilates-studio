@@ -30,9 +30,13 @@ class Pi:
             cwd=project, env=env, stdin=slave, stdout=slave, stderr=slave, start_new_session=True,
         )
         os.close(slave)
-        self.wait_for(b'ctrl+c/ctrl+d clear/exit', 30)
-        time.sleep(0.5)
-        self.drain()
+        try:
+            self.wait_for(b'Press ctrl+o to show full startup help', 30)
+            time.sleep(0.5)
+            self.drain()
+        except BaseException:
+            self.close()
+            raise
 
     def drain(self, timeout=0.25):
         chunks = []
