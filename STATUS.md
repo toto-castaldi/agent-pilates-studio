@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pianificazione delle presenze alle lezioni: schema, registrazione, correzione e consultazione pianificati | 0/5 items done (0%) |
+| v0.3.0 | Open | Presenze alle lezioni e allineamento al template v1.6.1 pianificati | 0/6 items done (0%) |
 
 I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 5 |
+| Todo | 6 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 0 |
@@ -48,6 +48,7 @@ None.
 | ---- | ---- | ------ | ----- | -------- |
 | TEC-027 | EPIC-005 — Presenze alle lezioni | MOD-001 | Schema delle presenze | P0 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
+| TEC-028 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.6.1 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 
 TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
@@ -61,6 +62,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-028 è aggiunto alla v0.3.0 per allineare il template alla v1.6.1 e attivare l'orchestrazione parallela, senza avviare worker per la sola adozione.
 - Decisione dell'utente (2026-11-07): la v0.2.0 è chiusa con gate, tutte le suite di integrazione e CI superati; oltre agli scenari con OpenRouter reale e sostituto Meta, l'utente dichiara di aver eseguito prove reali via WhatsApp. L'accettazione privacy resta rinviata a TEC-008.
 - Decisione dell'utente (2026-11-07): TEC-026 è aggiunto alla v0.2.0 per applicare configurazione e credenziali esterne da `.env`; le password PostgreSQL non vengono ruotate automaticamente.
 - Decisione dell'utente (2026-11-07): il nome dell'agente è Ambrogio, definito in `SOUL.md`; il nome del profilo WhatsApp su Meta è fuori scope.

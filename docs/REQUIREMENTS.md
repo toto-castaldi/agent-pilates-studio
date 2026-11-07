@@ -47,6 +47,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
+- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -314,6 +315,16 @@ Il progetto deve aggiornare processo, skill e visualizzatore Pi del backlog al t
 
 Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra copie del progetto: prima di avviare un item si controllano i branch esistenti e, ai cambi di stato, si pubblica il branch dell'item secondo il processo adottato. Un errore di fetch o push e l'assenza di `origin` sono gestiti e segnalati secondo tale processo. Non è autorizzato il push automatico di `main`, né il merge automatico. La compatibilità con `/work-alone` segue REQ-NFR-010; gli altri vincoli di sicurezza e del gate rimangono invariati (REQ-NFR-002, REQ-NFR-007, REQ-NFR-008).
 
+#### REQ-NFR-016 — Template v1.6.1 e orchestrazione parallela
+
+Il progetto deve allineare processo e skill condivise al template `agile-project-template` v1.6.1, preservando personalizzazioni, requisiti e protezioni dello studio. Il riferimento adottato e le eventuali divergenze sono registrati secondo REQ-NFR-013; conflitti o deroghe richiedono accordo esplicito. Restano validi gli shared claims di REQ-NFR-015, il gate rapido e le verifiche separate di REQ-NFR-008.
+
+La modalità di lavoro parallelo del template deve essere attivata con shared claims: su esplicita richiesta l'operatore può usare un orchestratore e un worker per item, ciascuno in un clone separato. L'orchestratore propone item pronti e segnala sovrapposizioni; i worker effettuano il claim e attendono il via esplicito dell'utente prima di implementare, salvo richiesta di avvio immediato al lancio. Durante l'orchestrazione solo l'orchestratore esegue i merge, uno alla volta e su richiesta esplicita; rilascio dei claim e pulizia dei clone rispettano i controlli del processo e non eliminano lavoro non salvato. La radice dei workspace segue il valore predefinito del template, relativo al clone principale, e il comando dei worker è `pi`. Nessun worker viene avviato dalla sola adozione del template.
+
+Date e conteggi dei documenti di stato, controlli prima del merge e risoluzione dei conflitti seguono il processo adottato. Prove e documentazione non espongono segreti o dati personali e non modificano impostazioni personali (REQ-NFR-002, REQ-NFR-007).
+
+**Decisione dell'utente (2026-11-07):** TEC-028 è aggiunto alla v0.3.0 e la modalità parallela sarà attivata durante l'item; non sono autorizzati avvii di worker, merge o push su `main` automatici.
+
 ## 7. Release acceptance — v0.3.0
 
 - Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database rifiuta lezioni non ancora iniziate, registrazioni valide duplicate, cancellazioni e riscritture, e consente un solo annullamento con data, autore e motivo.
@@ -322,6 +333,7 @@ Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra c
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
+- Processo e skill del template v1.6.1 sono allineati e l'orchestrazione parallela attiva è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
