@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Tutti gli item completati: consultazione, aggiornamento, configurazione locale, nome dell'agente, compattazione del contesto e dettato vocale remoto verificati; chiusura della versione da richiedere | 22/22 items done (100%) |
+| v0.3.0 | Open | Versione aperta per le presenze alle lezioni; requisiti e item da registrare | 0/0 items done (0%) |
 
-I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
+I conteggi riguardano la v0.3.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 0 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 22 |
+| Done | 0 |
 
 ## In progress
 
@@ -55,10 +55,12 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 | Version | Closed | Tag |
 | ------- | ------ | --- |
+| v0.2.0 | 2026-11-07 | `v0.2.0` |
 | v0.1.0 | 2026-11-05 | `v0.1.0` |
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): la v0.2.0 è chiusa con gate, tutte le suite di integrazione e CI superati; oltre agli scenari con OpenRouter reale e sostituto Meta, l'utente dichiara di aver eseguito prove reali via WhatsApp. L'accettazione privacy resta rinviata a TEC-008.
 - Decisione dell'utente (2026-11-07): TEC-026 è aggiunto alla v0.2.0 per applicare configurazione e credenziali esterne da `.env`; le password PostgreSQL non vengono ruotate automaticamente.
 - Decisione dell'utente (2026-11-07): il nome dell'agente è Ambrogio, definito in `SOUL.md`; il nome del profilo WhatsApp su Meta è fuori scope.
 - Decisione dell'utente (2026-11-07): TEC-025 è aggiunto alla v0.2.0 per un contesto del modello separato per interlocutore, con compattazione silenziosa al 40% della finestra del modello configurato e dopo inattività configurabile, con valore predefinito di 4 ore.
