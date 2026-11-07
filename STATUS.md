@@ -8,26 +8,26 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Adozione del template in attesa di chiarimento; consultazione, aggiornamento e dettato remoto da avviare | 14/18 items done (78%) |
+| v0.2.0 | Open | Adozione del template in corso; consultazione, aggiornamento e dettato remoto da avviare | 14/18 items done (78%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 3 |
-| In Progress | 0 |
-| Blocked | 1 |
+| In Progress | 1 |
+| Blocked | 0 |
 | Done | 14 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-023 | EPIC-001 — Fondamenta del progetto | Adozione del template v1.4.0 | `task/TEC-023-adozione-template-v1-4-0` |
 
 ## Blocked
 
-| Item | Epic | Title | Reason |
-| ---- | ---- | ----- | ------ |
-| TEC-023 | EPIC-001 — Fondamenta del progetto | Adozione del template v1.4.0 | Chiarimento sull'associazione del modulo a TEC-019 non assegnato a una versione. |
+None.
 
 ## Recently completed
 
