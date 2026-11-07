@@ -104,10 +104,10 @@ def exercise(root):
     project, agent = make_project(root, 'default')
     backlog = project / 'BACKLOG.md'
     fixture = ('## Version v0.2.0\n**State:** Open\n### EPIC-001 — Synthetic epic\n'
-               '#### TEC-001 — Synthetic first\n- **Status:** Todo\n'
+               '#### TEC-001 — Synthetic first\n- **Type:** Task · **Priority:** P1 · **Status:** Todo\n'
                + ''.join(f'- Synthetic body line {i:03d}\n' for i in range(80))
                + '```\n#### TEC-999 — Not an item\n```\n'
-               + '#### TEC-002 — Synthetic second\n- **Status:** Done\n'
+               + '#### TEC-002 — Synthetic second\n- **Type:** User Story · **Priority:** P2 · **Status:** Done\n'
                + '## Unassigned backlog\n#### TEC-003 — Synthetic unassigned\n'
                + '- **Epic:** EPIC-002 — Synthetic unassigned epic\n'
                + '- TEC-004 — Synthetic short idea\n')
@@ -116,7 +116,26 @@ def exercise(root):
     pi = Pi(project, root, agent)
     try:
         out = open_command(pi, b'Synthetic first')
-        assert b'1 / 4' in out and b'Version v0.2.0 (Open)' in out and b'Synthetic epic' in out
+        assert b'1 / 1 (4 total)' in out and b'Version v0.2.0 (Open)' in out and b'Synthetic epic' in out
+        pi.send(b'S')  # Todo -> all, including unassigned and items without fields
+        pi.wait_for(b'Status: all')
+        pi.send(b't')  # Type: User Story
+        out = pi.wait_for(b'Synthetic second')
+        assert b'Type: User Story' in out
+        pi.send(b'p')  # Priority P0: no match
+        pi.wait_for(b'No items match the filters')
+        pi.send(b'p')  # P1: still no match
+        pi.wait_for(b'Priority: P1')
+        pi.send(b'p')  # P2: second item
+        pi.wait_for(b'Synthetic second')
+        pi.send(b'T')  # Type: all
+        pi.wait_for(b'Type: all')
+        pi.send(b'P')  # P1
+        pi.wait_for(b'Synthetic first')
+        pi.send(b'P')  # P0
+        pi.wait_for(b'No items match the filters')
+        pi.send(b'P')  # all
+        pi.wait_for(b'Synthetic first')
         pi.send(b'\x1b[6~')  # Page Down
         pi.wait_for(b'Synthetic body line 040')
         pi.send(b'\x1b[5~')  # Page Up
@@ -138,7 +157,7 @@ def exercise(root):
         time.sleep(0.3)
         pi.drain()
         assert backlog.read_text() == fixture
-        backlog.write_text('#### TEC-005 — Synthetic refreshed\n')
+        backlog.write_text('#### TEC-005 — Synthetic refreshed\n- **Status:** Todo\n')
         open_command(pi, b'Synthetic refreshed')
         close_view(pi)
         backlog.unlink()
@@ -152,11 +171,11 @@ def exercise(root):
         open_command(pi, b'Cannot read BACKLOG.md')
         close_view(pi)
         backlog.rmdir()
-        backlog.write_text('#### TEC-006 — Synthetic shortcut\n')
+        backlog.write_text('#### TEC-006 — Synthetic shortcut\n- **Status:** Todo\n')
         pi.send(b'\x1b[98;6u')  # Kitty ctrl+shift+b
         pi.wait_for(b'Synthetic shortcut')
         close_view(pi)
-        assert backlog.read_text() == '#### TEC-006 — Synthetic shortcut\n'
+        assert backlog.read_text() == '#### TEC-006 — Synthetic shortcut\n- **Status:** Todo\n'
         assert (project / '.pi/extensions/backlog/index.ts').read_bytes() == before_extension
     finally:
         pi.close()
@@ -164,7 +183,7 @@ def exercise(root):
     # Project setting overrides synthetic global setting; no personal Pi state is read.
     project, agent = make_project(root, 'custom', {'backlogOverlay': {'shortcut': False}},
                                   {'backlogOverlay': {'shortcut': 'alt+b'}})
-    (project / 'BACKLOG.md').write_text('#### TEC-007 — Synthetic custom shortcut\n')
+    (project / 'BACKLOG.md').write_text('#### TEC-007 — Synthetic custom shortcut\n- **Status:** Todo\n')
     pi = Pi(project, root, agent)
     try:
         before = (project / '.pi/settings.json').read_bytes(), (agent / 'settings.json').read_bytes()
@@ -176,7 +195,7 @@ def exercise(root):
         pi.close()
 
     project, agent = make_project(root, 'disabled', project_settings={'backlogOverlay': {'shortcut': False}})
-    (project / 'BACKLOG.md').write_text('#### TEC-008 — Synthetic disabled\n')
+    (project / 'BACKLOG.md').write_text('#### TEC-008 — Synthetic disabled\n- **Status:** Todo\n')
     pi = Pi(project, root, agent)
     try:
         pi.send(b'\x1b[98;6u')
@@ -187,8 +206,77 @@ def exercise(root):
         pi.close()
 
 
+def exercise_branches(root):
+    project, agent = make_project(root, 'branches')
+    remote = root / 'synthetic-remote.git'
+    env = {'PATH': os.environ['PATH'], 'HOME': str(root), 'GIT_CONFIG_NOSYSTEM': '1',
+           'GIT_AUTHOR_NAME': 'Synthetic', 'GIT_AUTHOR_EMAIL': 'synthetic@example.invalid',
+           'GIT_COMMITTER_NAME': 'Synthetic', 'GIT_COMMITTER_EMAIL': 'synthetic@example.invalid'}
+
+    def git(*args, cwd=project, date=None):
+        extra = {'GIT_AUTHOR_DATE': date, 'GIT_COMMITTER_DATE': date} if date else {}
+        return subprocess.check_output(['git', *args], cwd=cwd, env={**env, **extra}, stderr=subprocess.DEVNULL, text=True).strip()
+
+    backlog = project / 'BACKLOG.md'
+    def content(state):
+        return ('## Version v0.2.0\n**State:** Open\n### EPIC-001 — Synthetic epic\n'
+                f'#### TEC-001 — Synthetic branch item\n- **Type:** Task · **Priority:** P1 · **Status:** {state}\n')
+
+    git('init', '-q', '-b', 'main')
+    backlog.write_text(content('Todo'))
+    git('add', 'BACKLOG.md')
+    git('commit', '-qm', 'base', date='2020-01-01T00:00:00Z')
+    git('switch', '-qc', 'task/TEC-001-first')
+    backlog.write_text(content('Blocked'))
+    git('commit', '-qam', 'first', date='2020-01-02T00:00:00Z')
+    first_commit = git('rev-parse', 'HEAD')
+    git('switch', '-q', 'main')
+    git('switch', '-qc', 'task/TEC-001-second')
+    backlog.write_text(content('Done'))
+    git('commit', '-qam', 'second', date='2020-01-03T00:00:00Z')
+    git('switch', '-q', 'main')
+    git('clone', '-q', '--bare', str(project), str(remote), cwd=root)
+    git('--git-dir', str(remote), 'update-ref', '-d', 'refs/heads/task/TEC-001-first', cwd=root)
+    # The remote branch first appears only in the viewer's background fetch.
+    git('remote', 'add', 'origin', str(remote))
+    git('fetch', '-q', 'origin')
+    git('switch', '-q', 'task/TEC-001-second')
+    backlog.write_text(content('In Progress'))
+    git('commit', '-qam', 'local', date='2020-01-04T00:00:00Z')
+    git('switch', '-q', 'main')
+    # Remove the other local branch so that the competing branch is remote-tracking.
+    git('branch', '-D', 'task/TEC-001-first')
+    assert not git('branch', '-r', '--list', 'origin/task/TEC-001-first')
+    git('--git-dir', str(remote), 'update-ref', 'refs/heads/task/TEC-001-first', first_commit, cwd=root)
+    before = backlog.read_bytes(), git('status', '--porcelain')
+    pi = Pi(project, root, agent)
+    try:
+        open_command(pi, b'Synthetic branch item')
+        pi.send(b'S')
+        out = pi.wait_for(b'also in: origin/task/TEC-001-first', 20)
+        assert b'from task/TEC-001-second' in out
+        assert b'In Progress' in out
+        assert git('branch', '-r', '--list', 'origin/task/TEC-001-first')
+        close_view(pi)
+        assert before == (backlog.read_bytes(), git('status', '--porcelain'))
+    finally:
+        pi.close()
+
+    # Unreachable synthetic remote: failure is shown and existing refs remain useful.
+    git('remote', 'set-url', 'origin', str(root / 'missing.git'))
+    pi = Pi(project, root, agent)
+    try:
+        open_command(pi, b'Synthetic branch item')
+        pi.send(b'S')
+        pi.wait_for(b'fetch failed: showing last known state', 20)
+        assert before == (backlog.read_bytes(), git('status', '--porcelain'))
+    finally:
+        pi.close()
+
+
 if __name__ == '__main__':
     assert subprocess.check_output(['pi', '--version'], text=True).strip() == '1.5.0'
     with tempfile.TemporaryDirectory(prefix='pilates-pi-backlog-') as temporary:
         exercise(Path(temporary))
+        exercise_branches(Path(temporary))
     print('Synthetic isolated Pi backlog TUI checks passed')
