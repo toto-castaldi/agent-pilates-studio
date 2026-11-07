@@ -1,9 +1,10 @@
+import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
 
 class SafeError extends Error {}
 
-export async function startLocal({ lstat, mkdir, readFile, writeFile, randomBytes, spawnSync, processEnv, execPath, log, errorLog }) {
+export async function startLocal({ lstat, mkdir, open, readFile, writeFile, randomBytes, spawnSync, processEnv, execPath, log, errorLog }) {
   // Never print subprocess output: Compose, Prisma and npm may include sensitive data.
   function run(command, args, env, stage) {
     log(stage);
@@ -17,8 +18,18 @@ export async function startLocal({ lstat, mkdir, readFile, writeFile, randomByte
   }
 
   try {
-    await privateFile('.env');
-    const config = parseEnv(await readFile('.env', 'utf8'));
+    // Check and read the same opened file, even when .env is a symlink.
+    // Nonblocking open prevents a FIFO target from hanging the startup.
+    const file = await open('.env', constants.O_RDONLY | constants.O_NONBLOCK);
+    let contents;
+    try {
+      const info = await file.stat();
+      if (!info.isFile() || (info.mode & 0o077) !== 0) throw new SafeError('Un file di configurazione o segreto non è privato.');
+      contents = await file.readFile('utf8');
+    } finally {
+      await file.close();
+    }
+    const config = parseEnv(contents);
     const required = {
       DB_ADMIN_PASSWORD: 'db-admin',
       DB_MIGRATOR_PASSWORD: 'db-migrator',

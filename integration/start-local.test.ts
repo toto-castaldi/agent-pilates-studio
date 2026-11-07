@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cp, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -42,8 +42,11 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
     await writeFile(join(dir, 'compose.override.yaml'), 'services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  hermes:\n    networks: [private]\nnetworks:\n  private:\n    internal: true\n');
-    await writeFile(join(dir, '.env'), config, { mode: 0o600 });
+    await writeFile(join(dir, 'private.env'), config, { mode: 0o600 });
+    await symlink('private.env', join(dir, '.env'));
     start(); // No node_modules or volumes: also exercises dependency preparation.
+    assert.equal(await readlink(join(dir, '.env')), 'private.env');
+    assert.equal(await readFile(join(dir, 'private.env'), 'utf8'), config);
     const db = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
     await db.connect();
     try {
