@@ -330,7 +330,8 @@
 #### TEC-023 — Adozione del template v1.4.0
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-023-adozione-template-v1-4-0`
 - **Dependencies:** TEC-022
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-014
 - **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
