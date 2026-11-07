@@ -111,7 +111,7 @@ Hermes deve poter ottenere risposte tramite OpenRouter e accedere al database co
 
 Da un repository appena clonato o con volumi Docker rimossi, l'operatore, dopo aver copiato `.env.example` in `.env` e compilato localmente configurazione e credenziali, deve poter avviare con un solo comando lo stack locale utilizzabile. Il comando deve provvedere alle inizializzazioni necessarie, incluse le migrazioni del database, e indicare l'esito senza esporre dati sensibili. Docker, Compose, runtime e servizi esterni necessari restano prerequisiti; il port forwarding verso `jarvis` per la callback pubblica resta esterno al comando. La raggiungibilità pubblica e la conversazione reale dipendono dalla configurazione esterna e non sono implicite nell'avvio locale.
 
-La configurazione locale contenente credenziali deve restare privata e fuori dal repository; l'esempio non contiene valori reali. `.env` può essere un collegamento simbolico a un file regolare privato: l'avvio deve verificare il file effettivamente letto e rifiutare destinazioni mancanti, non regolari o non private senza esporre i dati. L'avvio deve preservare dati e credenziali esistenti e mantenere le separazioni e le protezioni richieste da REQ-DB-002, REQ-WA-002 e REQ-NFR-002. La sola prova pubblica temporanea precedente non autorizza l'uso continuativo.
+La configurazione locale contenente credenziali deve restare privata e fuori dal repository; l'esempio non contiene valori reali. `.env` può essere un collegamento simbolico a un file regolare privato: l'avvio deve verificare il file effettivamente letto e rifiutare destinazioni mancanti, non regolari o non private senza esporre i dati. L'avvio deve preservare i dati, le credenziali PostgreSQL e le credenziali interne generate esistenti, e mantenere le separazioni e le protezioni richieste da REQ-DB-002, REQ-WA-002 e REQ-NFR-002; le modifiche intenzionali alla configurazione e alle credenziali esterne seguono REQ-AGENT-006. La sola prova pubblica temporanea precedente non autorizza l'uso continuativo.
 
 #### REQ-AGENT-004 — Contesto per interlocutore e compattazione
 
@@ -122,6 +122,12 @@ Quando una conversazione riprende dopo un periodo di inattività configurabile d
 #### REQ-AGENT-005 — Nome dell'agente
 
 L'agente ha un nome proprio, unico e stabile, definito nel file `SOUL.md` versionato come unica fonte, senza duplicazioni nel codice. Il nome viene concordato con l'utente all'avvio dell'item che lo introduce e registrato in questo requisito. Quando un interlocutore chiede il suo nome o chi è, l'agente risponde con il proprio nome, senza dire di non averne uno né invitare a sceglierne uno. Nella prima risposta di una conversazione senza turni precedenti, l'agente si presenta brevemente con il nome e risponde comunque alla richiesta; nei messaggi successivi non si ripresenta e non firma i messaggi. Il nome è lo stesso per tutti gli interlocutori e non modifica ruolo, regole di comportamento, privilegi o attribuzione dell'autore (REQ-STUDIO-003). Il nome visualizzato del profilo WhatsApp Business su Meta è fuori scope.
+
+#### REQ-AGENT-006 — Configurazione locale da un'unica fonte
+
+Per l'avvio locale, l'operatore modifica solo `.env` privato: il comando applica automaticamente le modifiche valide alla configurazione e alle credenziali esterne WhatsApp e OpenRouter, inclusi numeri autorizzati e canale home, senza richiedere modifiche manuali a copie o file intermedi. Gateway e broker devono usare coerentemente la configurazione applicata; un avvio fallito non deve lasciare servizi in esecuzione con configurazioni di autorizzazione discordanti. L'esito positivo non attesta la validità delle credenziali presso Meta o OpenRouter.
+
+Le password PostgreSQL già inizializzate e le credenziali interne generate non vengono ruotate automaticamente: una password PostgreSQL in `.env` discordante arresta l'avvio con un messaggio non sensibile. La configurazione collegata, la persistenza, l'autenticazione e l'isolamento delle credenziali restano protetti secondo REQ-AGENT-003, REQ-DB-002, REQ-WA-002 e REQ-NFR-002; l'applicazione non modifica le impostazioni sui servizi esterni.
 
 ### Comunicazione WhatsApp Business
 

@@ -172,6 +172,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, US-005 è aggiunto alla v0.2.0 per dare all'agente un nome, definito in `SOUL.md`, con cui si presenta e risponde.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-026 è aggiunto alla v0.2.0 per applicare all'avvio le modifiche di configurazione e credenziali esterne da `.env`, senza rotazione automatica delle password PostgreSQL.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -429,6 +431,24 @@
   - Gli scenari con la domanda sul nome, il primo messaggio di una conversazione nuova e un messaggio successivo senza ripresentazione sono aggiunti al catalogo di TEC-012. Vengono eseguiti con il modello reale e l'esito viene registrato. La verifica locale di `SOUL.md` controlla la presenza del nome e l'assenza di segreti e dati reali.
   - Il nome visualizzato del profilo WhatsApp Business su Meta resta fuori scope e non viene modificato.
 
+### EPIC-003 — Dati e operatività
+
+#### TEC-026 — Applicare la configurazione locale da `.env`
+
+- **Epic:** EPIC-003 — Dati e operatività
+- **Module:** MOD-001 — Agente
+- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-009, TEC-021, TEC-010, BUG-001
+- **Requirements:** REQ-AGENT-003, REQ-AGENT-006, REQ-DB-002, REQ-WA-002, REQ-WA-003, REQ-NFR-002
+- **Design references:** TECHNICAL-DESIGN §3, §5, §7, §9, §10
+- **Description:** Usare `.env` privato come unica fonte operativa per configurazione e credenziali esterne dello stack locale, senza richiedere all'operatore di aggiornare copie o file di segreti. La rotazione delle password PostgreSQL resta fuori scope e viene segnalata se necessaria.
+- **Acceptance criteria:**
+  - Modificando solo `.env` e rilanciando `npm run start:local`, aggiunte e rimozioni di numeri autorizzati, cambio del canale home e modifiche valide alle credenziali e impostazioni WhatsApp/OpenRouter vengono applicati senza modifiche manuali a file intermedi. Broker e gateway usano entrambi i valori aggiornati, anche dopo riavvio o ricreazione e sostituzione del file di configurazione; il canale home deve restare nella lista autorizzata. L'avvio non modifica le impostazioni presso Meta o OpenRouter né dichiara verificata la validità esterna dei token.
+  - Una configurazione assente, non valida o non privata è rifiutata senza esporne i valori. Una differenza nelle password PostgreSQL esistenti arresta l'avvio prima di applicare le altre modifiche, senza cambiare password nel database o nei file; credenziali interne generate, dati e volumi sono conservati. Non vengono esposte all'agente credenziali amministrative o di migrazione, né montato l'intero `.env` nell'agente.
+  - Su errori o aggiornamenti parziali il comando non dichiara riuscita e non lascia gateway e broker attivi con liste di autorizzazione discordanti; l'eventuale indisponibilità e il recupero sono documentati. Gli accessi, l'autenticazione webhook e le protezioni di REQ-NFR-002 rimangono applicati; segreti, messaggi e numeri non compaiono nei log o nell'output.
+  - Test unitari in memoria verificano configurazione, applicazione e casi di errore con dati sintetici. Prove separate con Docker e PostgreSQL reale verificano primo avvio, modifiche, riavvio, persistenza, configurazione `.env` anche tramite link privato, password database discordante e fallimenti; con gateway e broker reali, webhook firmati e sostituti sintetici verificano che un mittente aggiunto sia ammesso, uno rimosso sia respinto e i valori applicati siano coerenti in entrambi i servizi. Non servono credenziali o chiamate reali Meta/OpenRouter.
+  - README, eventuali esempi e design spiegano la fonte unica, le modifiche applicabili, i limiti della rotazione PostgreSQL, il comportamento in caso di errore e l'eventuale interruzione dei turni; le prove non leggono né modificano configurazioni reali dell'operatore.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -563,7 +583,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-US-005 dipende da TEC-011 e TEC-012, già completati, ed è indipendente da TEC-025 e dagli item della pianificazione. TEC-025 dipende da TEC-011 e BUG-001, già completati, ed è indipendente dagli item della pianificazione. TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-026 dipende da TEC-009, TEC-021, TEC-010 e BUG-001, già completati; è indipendente dagli item di pianificazione rimasti. US-005 dipende da TEC-011 e TEC-012, già completati, ed è indipendente da TEC-025 e dagli item della pianificazione. TEC-025 dipende da TEC-011 e BUG-001, già completati, ed è indipendente dagli item della pianificazione. TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.

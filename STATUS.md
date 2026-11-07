@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Template adottato; consultazione e aggiornamento verificati; dettato remoto, compattazione del contesto e nome dell'agente da avviare | 18/21 items done (86%) |
+| v0.2.0 | Open | Consultazione e aggiornamento verificati; configurazione locale, dettato, compattazione e nome dell'agente da avviare | 18/22 items done (82%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 18 |
@@ -46,6 +46,7 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
+| TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | P1 |
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | P1 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
@@ -62,6 +63,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-026 è aggiunto alla v0.2.0 per applicare configurazione e credenziali esterne da `.env`; le password PostgreSQL non vengono ruotate automaticamente.
 - Decisione dell'utente (2026-11-07): US-005 è aggiunto alla v0.2.0 per dare all'agente un nome, da concordare all'avvio dell'item. Il nome è fissato in `SOUL.md`, usato nella presentazione iniziale e quando gli viene chiesto; il nome del profilo WhatsApp su Meta è fuori scope.
 - Decisione dell'utente (2026-11-07): TEC-025 è aggiunto alla v0.2.0 per un contesto del modello separato per interlocutore, con compattazione silenziosa al 40% della finestra del modello configurato e dopo inattività configurabile, con valore predefinito di 4 ore.
 - Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`.
