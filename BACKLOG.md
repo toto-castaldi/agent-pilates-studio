@@ -460,7 +460,8 @@
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
+- **Branch:** `us/US-003-consultare-pianificazione-settimanale`
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4
@@ -470,6 +471,7 @@
   - L'agente risponde anche a domande per giorno, per orario specifico, per cliente ("quando si allena Cristina?") e al riepilogo della settimana; l'assenza di risultati è indicata esplicitamente.
   - Le risposte usano i dati strutturati e ignorano le regole disattivate; su richiesta indicano autore e data di inserimento di una regola.
   - Gli scenari sono aggiunti al catalogo di TEC-012 con regole sintetiche, comprese regole disattivate e fasce al confine, ed eseguiti con il modello reale, con esito registrato.
+- **Outcome:** Consultazione verificata con `SOUL.md` esistente e scenario sintetico su gateway, PostgreSQL e OpenRouter reali: giorni, fasce, orari, cliente, settimana, dati strutturati, regola disattivata, autore/data e stato invariato. Superati gate rapido, `test:local` e scenario finale; il confronto delle risposte è lessicale. Una regressione conversazionale precedente è fallita una volta e passata al riesame, causa non determinata; evidenze e limiti in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.
 
 #### US-004 — Aggiornare e disattivare le regole
 

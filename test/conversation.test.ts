@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, hasHomeChannelNotice, responseMatches, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, hasHomeChannelNotice, responseMatches, snapshotsMatch, stateMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -33,6 +33,14 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Qual è il cognome?', { contains: [], anyOf: [['cognome']], question: true }));
   assert.equal(responseMatches('Il cognome è Rossi.', { contains: [], anyOf: [['cognome']], question: true }), false);
   assert.equal(responseMatches('Confermi Antonio?', { contains: ['Antonio'], excludes: ['confermi'] }), false);
+  const grouped = { contains: [], groups: [{ time: '09:00', contains: ['Antonio', 'Lucia'] }, { time: '10:00', contains: ['Elisa'] }] };
+  assert.ok(responseMatches('09:00 Antonio e Lucia\n10:00 Elisa', grouped));
+  assert.equal(responseMatches('09:00 Antonio ed Elisa\n10:00 Lucia', grouped), false);
+  assert.equal(responseMatches('09:00 Antonio e Lucia\n10:30 Elisa', grouped), false);
+  const days = { contains: [], dayGroups: [{ day: 'lunedì', groups: [{ time: '09:00', contains: ['Antonio'] }] }, { day: 'venerdì', groups: [{ time: '10:00', contains: ['Lucia'] }] }] };
+  assert.ok(responseMatches('Lunedì\n09:00 Antonio\nVenerdì\n10:00 Lucia', days));
+  assert.equal(responseMatches('Lunedì\n10:00 Lucia\nVenerdì\n09:00 Antonio', days), false);
+  assert.equal(responseMatches('09:00 Antonio\n10:00 Lucia', days), false);
 });
 
 test('state rejects missing or extra records and wrong attribution, slot, date or activity', () => {
@@ -41,9 +49,21 @@ test('state rejects missing or extra records and wrong attribution, slot, date o
   assert.equal(stateMatches({ ...actual, rules: [...actual.rules, actual.rules[0]] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], authorPhone: '999' }] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], active: false }] }, expected), false);
+  const inactiveExpected = { ...expected, rules: [{ ...expected.rules[0], active: false }] };
+  assert.ok(stateMatches({ ...actual, rules: [{ ...actual.rules[0], active: false }] }, inactiveExpected));
+  assert.equal(stateMatches(actual, inactiveExpected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], hasCreatedAt: false }] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], slots: [{ weekday: 4, time: '09:00' }] }] }, expected), false);
   assert.equal(stateMatches({ ...actual, rules: [{ ...actual.rules[0], clients: ['Altro Cliente'] }] }, expected), false);
+});
+
+test('consultation snapshots detect changes to rules, clients and deactivation metadata', () => {
+  const before = { ...actual, rules: [{ ...actual.rules[0], deactivationReason: 'sintetico', deactivatedAt: '2024-01-15' }] };
+  assert.ok(snapshotsMatch(before, structuredClone(before)));
+  assert.equal(snapshotsMatch(before, { ...before, clients: [] }), false);
+  assert.equal(snapshotsMatch(before, { ...before, rules: [{ ...before.rules[0], active: false }] }), false);
+  const changedMetadata = { ...before.rules[0], deactivationReason: 'cambiato' };
+  assert.equal(snapshotsMatch(before, { ...before, rules: [changedMetadata] }), false);
 });
 
 test('multi-client and multi-slot groups allow different decompositions but no missing or duplicate associations', () => {

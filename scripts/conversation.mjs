@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
-import { hasHomeChannelNotice, responseMatches, stateMatches } from '../dist/src/conversation.js';
+import { hasHomeChannelNotice, responseMatches, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -36,7 +36,12 @@ process.on('SIGINT', () => { interrupted = true; });
 process.on('SIGTERM', () => { interrupted = true; });
 const safeEnv = Object.fromEntries(['PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_CONFIG', 'XDG_RUNTIME_DIR', 'TMPDIR', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'NO_PROXY', 'HTTPS_PROXY', 'HTTP_PROXY'].filter((key) => process.env[key]).map((key) => [key, process.env[key]]));
 let failed = false;
-for (const scenario of catalog.scenarios) {
+const selectedId = process.env.CONVERSATION_SCENARIO;
+if (selectedId && !catalog.scenarios.some((scenario) => scenario.id === selectedId)) {
+  console.error('Scenario richiesto non presente nel catalogo.');
+  process.exit(1);
+}
+for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.id === selectedId)) {
   if (interrupted) { failed = true; break; }
   if (!/^[a-z0-9-]{1,80}$/.test(scenario.id) || !/^1555555\d{4}$/.test(scenario.sender)
       || !Array.isArray(scenario.turns) || !scenario.turns.length
@@ -130,14 +135,46 @@ for (const scenario of catalog.scenarios) {
     let count = 0;
     stage = 'stato iniziale';
     const snapshot = async () => {
-      const clients = (await client.query('SELECT first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName" FROM app.clients ORDER BY id')).rows;
-      const rules = (await client.query(`SELECT r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
+      const clients = (await client.query('SELECT id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at AS "createdAt" FROM app.clients ORDER BY id')).rows;
+      const rules = (await client.query(`SELECT r.id, r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", r.created_at AS "createdAt", r.deactivated_at AS "deactivatedAt", r.deactivated_by_phone AS "deactivatedByPhone", r.deactivated_by_name AS "deactivatedByName", r.deactivation_reason AS "deactivationReason", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
         COALESCE((SELECT json_agg(c.first_name || ' ' || c.last_name ORDER BY c.id) FROM app.rule_clients rc JOIN app.clients c ON c.id = rc.client_id WHERE rc.rule_id = r.id), '[]'::json) AS clients,
         COALESCE((SELECT json_agg(json_build_object('weekday', s.weekday, 'time', to_char(s.start_time, 'HH24:MI')) ORDER BY s.weekday, s.start_time) FROM app.rule_slots s WHERE s.rule_id = r.id), '[]'::json) AS slots
         FROM app.training_rules r ORDER BY r.id`)).rows;
       return { clients, rules };
     };
     if (!stateMatches(await snapshot(), scenario.initial)) throw new Error('initial state');
+    let seededSnapshot;
+    if (scenario.setup) {
+      stage = 'preparazione dati sintetici';
+      const setup = scenario.setup;
+      if (!Array.isArray(setup.clients) || !Array.isArray(setup.rules) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(setup.createdAt)) throw new Error('setup');
+      await client.query('BEGIN');
+      await client.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), $1, $2, clock_timestamp() + interval '10 minutes')", [scenario.sender, scenario.profile]);
+      const ids = new Map();
+      for (const person of setup.clients) {
+        const result = await client.query('INSERT INTO app.clients (first_name, last_name, created_at) VALUES ($1, $2, $3) RETURNING id', [person.firstName, person.lastName, setup.createdAt]);
+        ids.set(`${person.firstName} ${person.lastName}`, result.rows[0].id);
+      }
+      for (const rule of setup.rules) {
+        const result = await client.query('INSERT INTO app.training_rules (rule_text, created_at) VALUES ($1, $2) RETURNING id', [rule.text, setup.createdAt]);
+        const id = result.rows[0].id;
+        for (const name of rule.clients) {
+          if (!ids.has(name)) throw new Error('unknown client');
+          await client.query('INSERT INTO app.rule_clients (rule_id, client_id) VALUES ($1, $2)', [id, ids.get(name)]);
+        }
+        for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
+        if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, setup.createdAt]);
+      }
+      await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
+      await client.query('COMMIT');
+      seededSnapshot = await snapshot();
+      const author = { authorPhone: scenario.sender, authorName: scenario.profile };
+      const expected = {
+        clients: setup.clients.map((person) => ({ ...person, ...author })),
+        rules: setup.rules.map((rule) => ({ textContains: [rule.text], clients: rule.clients, slots: rule.slots, active: rule.active, ...author })),
+      };
+      if (!stateMatches(seededSnapshot, expected) || seededSnapshot.rules.some((rule) => rule.createdAt.toISOString() !== new Date(setup.createdAt).toISOString())) throw new Error('setup state');
+    }
     for (const [index, turn] of scenario.turns.entries()) {
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
@@ -183,6 +220,8 @@ for (const scenario of catalog.scenarios) {
           responseMatches(text, { contains: [], anyOf: turn.response.anyOf }) ? 'alternative presenti' : 'alternative mancanti',
           responseMatches(text, { contains: [], excludes: turn.response.excludes }) ? 'esclusioni rispettate' : `esclusioni violate ${turn.response.excludes.map((word, index) => normalized.includes(word.toLocaleLowerCase('it-IT')) ? index + 1 : 0).filter(Boolean).join('/')}`,
           responseMatches(text, { contains: [], question: turn.response.question }) ? 'requisito domanda rispettato' : 'requisito domanda non rispettato',
+          responseMatches(text, { contains: [], groups: turn.response.groups }) ? 'raggruppamenti presenti' : 'raggruppamenti mancanti',
+          responseMatches(text, { contains: [], dayGroups: turn.response.dayGroups }) ? 'giorni associati' : 'associazioni giorno mancanti',
           /altro|altra|aiut|ulterior|aggiung|serv/i.test(text) ? 'possibile domanda accessoria' : 'nessuna domanda accessoria riconosciuta',
           /registr|salvat|inser|proced/i.test(text) ? 'menzione registrazione' : 'nessuna menzione registrazione',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
@@ -198,7 +237,8 @@ for (const scenario of catalog.scenarios) {
         throw new Error('response mismatch');
       }
       stage = `turno ${index + 1}: stato database`;
-      if (!stateMatches(await snapshot(), turn.expected)) throw new Error('database mismatch');
+      const current = await snapshot();
+      if (turn.unchanged ? !seededSnapshot || !snapshotsMatch(seededSnapshot, current) : !stateMatches(current, turn.expected)) throw new Error('database mismatch');
     }
     console.log(`${scenario.id}: OK`);
   } catch {
