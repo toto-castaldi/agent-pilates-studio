@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione verificata; avvio con configurazione collegata, consultazione, aggiornamento e dettato remoto da avviare | 12/16 items done (75%) |
+| v0.2.0 | Open | Avvio con configurazione collegata in corso; consultazione, aggiornamento e dettato remoto da avviare | 12/16 items done (75%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
-| In Progress | 0 |
+| Todo | 3 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 12 |
 
 ## In progress
 
-None.
+| Item | Epic | Title | Branch |
+| ---- | ---- | ----- | ------ |
+| TEC-021 | EPIC-001 — Fondamenta del progetto | Avvio locale con configurazione collegata | `task/TEC-021-avvio-configurazione-collegata` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Title | Priority |
 | ---- | ---- | ----- | -------- |
-| TEC-021 | EPIC-001 — Fondamenta del progetto | Avvio locale con configurazione collegata | P1 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | Consultare la pianificazione settimanale | P1 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |

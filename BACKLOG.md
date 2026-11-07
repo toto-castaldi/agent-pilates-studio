@@ -293,7 +293,8 @@
 #### TEC-021 — Avvio locale con configurazione collegata
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-021-avvio-configurazione-collegata`
 - **Dependencies:** TEC-009
 - **Requirements:** REQ-AGENT-003, REQ-NFR-002
 - **Design references:** TECHNICAL-DESIGN §7, §9
