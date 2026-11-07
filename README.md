@@ -90,10 +90,11 @@ Per verificare Pi 1.5.0 installato in modalità offline e senza credenziali real
 Se Pi gira su un server senza schede audio raggiunto via SSH, il dettato di Pi Voice può usare il microfono del client Ubuntu con PipeWire: sshd inoltra il socket Pulse del client come socket Unix (`RemoteForward`, nessuna porta TCP), ALSA sul server è instradato verso Pulse e `PULSE_SERVER` indica il socket inoltrato. La [procedura](docs/operations/TEC-020-dettato-vocale-remoto.md) descrive pacchetti e configurazione di sshd (comandi amministrativi a cura dell'operatore), configurazione dell'utente su server e client, verifica e limiti. La configurazione di Pi Voice non cambia e resta esclusa da Git.
 
 ```bash
+npm run voice:setup      # sul server, come utente di Pi; usa sudo per pacchetti e sshd
 npm run voice:diagnose
 ```
 
-Il comando, in sola lettura, controlla sul server plugin ALSA Pulse, `pactl`, dispositivo ALSA predefinito, `PULSE_SERVER`, socket, raggiungibilità del server audio del client e presenza di una sorgente audio, e indica il rimedio per ogni passo mancante. Non installa pacchetti, non modifica file e non registra audio.
+`voice:setup` configura il server in modo idempotente, senza sovrascrivere file personali con altra configurazione, e stampa la riga `RemoteForward` per il client. `voice:diagnose`, in sola lettura, controlla sul server plugin ALSA Pulse, `pactl`, dispositivo ALSA predefinito, `PULSE_SERVER`, socket, raggiungibilità del server audio del client e presenza di una sorgente audio, e indica il rimedio per ogni passo mancante. Non installa pacchetti, non modifica file e non registra audio.
 
 ## Avvio locale con un comando
 

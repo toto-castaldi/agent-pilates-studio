@@ -26,6 +26,7 @@
     "db:init-secrets": "node scripts/init-secrets.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "voice:diagnose": "node scripts/voice-diagnose.mjs",
+    "voice:setup": "bash scripts/voice-server-setup.sh",
     "build": "npm run clean --silent && tsc"
   },
   "devDependencies": {

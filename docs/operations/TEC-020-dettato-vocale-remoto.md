@@ -26,6 +26,14 @@ La configurazione di Pi Voice (`.pi/pi-voice.json`) e i suoi log non vanno modif
 
 ## Server
 
+I passi 1–4 sono automatizzati da uno script idempotente, da eseguire sul server come l'utente che usa Pi, dalla radice del progetto:
+
+```bash
+npm run voice:setup
+```
+
+Lo script (`scripts/voice-server-setup.sh`) usa `sudo` solo per i passi amministrativi 1 e 2, chiedendo la password; non va eseguito come root. Salta i passi già completati, non sovrascrive un `~/.asoundrc` con altra configurazione né un `~/.bashrc` che imposta già `PULSE_SERVER`, e se la configurazione sshd non è valida rimuove il file aggiunto senza ricaricare sshd. Alla fine stampa la riga `RemoteForward` da aggiungere sul client. I passi seguenti descrivono le stesse operazioni per l'esecuzione manuale.
+
 ### 1. Pacchetti di sistema — comando amministrativo, a cura dell'operatore
 
 ```bash
