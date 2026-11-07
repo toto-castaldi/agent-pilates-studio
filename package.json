@@ -25,6 +25,7 @@
     "test:start": "npm run build --silent && node --test dist/integration/start-local.test.js",
     "db:init-secrets": "node scripts/init-secrets.mjs",
     "db:migrate": "node scripts/migrate.mjs",
+    "voice:diagnose": "node scripts/voice-diagnose.mjs",
     "build": "npm run clean --silent && tsc"
   },
   "devDependencies": {
