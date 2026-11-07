@@ -277,7 +277,8 @@
 #### TEC-020 — Dettato vocale Pi su server remoto
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-020-dettato-vocale-pi-su-server-remoto`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-012
 - **Design references:** PROCESS §3, §6; AGENTS §6, §9; TECHNICAL-DESIGN §8
