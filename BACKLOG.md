@@ -148,7 +148,7 @@
 
 ## Version v0.2.0
 
-**State:** Open
+**State:** Closed (2026-11-07)
 
 **Goal:** Il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
@@ -580,6 +580,12 @@
   - Su richiesta l'agente mostra lo storico delle regole di un cliente, comprese quelle disattivate, con date, autori e motivi.
   - Gli scenari, compresi i casi espliciti, impliciti e di gruppo, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-010 coprono il rifiuto di cancellazione e riscrittura.
 - **Outcome:** Verificato il comportamento già previsto da `SOUL.md` ed estesi catalogo e harness a disattivazioni, sostituzioni, gruppi, storico e conservazione tra turni. Superati gate rapido, `test:local`, `test:db`, `test:author` e due esecuzioni degli undici scenari OpenRouter con webhook sintetico e sostituto Meta; limiti lessicali e delle prove documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.
+
+## Version v0.3.0
+
+**State:** Open
+
+**Goal:** Il titolare e i collaboratori registrano via WhatsApp presenze e assenze dei clienti alle singole lezioni, con correzioni tracciate, storico e consultazione.
 
 ## Dependencies and suggested order
 

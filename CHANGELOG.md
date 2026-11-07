@@ -6,6 +6,8 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-07
+
 ### Added
 
 - Dettato vocale Pi su server remoto tramite socket Pulse del client inoltrato via SSH, con procedura, configurazione del server `npm run voice:setup` e diagnosi in sola lettura `npm run voice:diagnose` (TEC-020).

@@ -1,6 +1,6 @@
 # Requirements — agent-pilates-studio
 
-**Target version:** v0.2.0
+**Target version:** v0.3.0
 
 **State:** baseline
 
