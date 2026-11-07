@@ -123,6 +123,8 @@ Quando una conversazione riprende dopo un periodo di inattività configurabile d
 
 L'agente ha un nome proprio, unico e stabile, definito nel file `SOUL.md` versionato come unica fonte, senza duplicazioni nel codice. Il nome viene concordato con l'utente all'avvio dell'item che lo introduce e registrato in questo requisito. Quando un interlocutore chiede il suo nome o chi è, l'agente risponde con il proprio nome, senza dire di non averne uno né invitare a sceglierne uno. Nella prima risposta di una conversazione senza turni precedenti, l'agente si presenta brevemente con il nome e risponde comunque alla richiesta; nei messaggi successivi non si ripresenta e non firma i messaggi. Il nome è lo stesso per tutti gli interlocutori e non modifica ruolo, regole di comportamento, privilegi o attribuzione dell'autore (REQ-STUDIO-003). Il nome visualizzato del profilo WhatsApp Business su Meta è fuori scope.
 
+**Decisione dell'utente (2026-11-07):** il nome dell'agente è Ambrogio.
+
 #### REQ-AGENT-006 — Configurazione locale da un'unica fonte
 
 Per l'avvio locale, l'operatore modifica solo `.env` privato: il comando applica automaticamente le modifiche valide alla configurazione e alle credenziali esterne WhatsApp e OpenRouter, inclusi numeri autorizzati e canale home, senza richiedere modifiche manuali a copie o file intermedi. Gateway e broker devono usare coerentemente la configurazione applicata; un avvio fallito non deve lasciare servizi in esecuzione con configurazioni di autorizzazione discordanti. L'esito positivo non attesta la validità delle credenziali presso Meta o OpenRouter.
