@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -65,6 +65,58 @@ test('local start validates private configuration, preserves secrets and suppres
     }
     await chmod(join(dir, '.env'), 0o644);
     assert.notEqual(start().status, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('local start accepts a private configuration symlink and rejects unsafe targets', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'pilates-start-link-'));
+  const bin = join(dir, 'bin');
+  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, COMPOSE_PROJECT_NAME: 'synthetic-link' };
+  const start = () => spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8', timeout: 5000 });
+  const link = join(dir, '.env');
+  const target = join(dir, 'private.env');
+  try {
+    await mkdir(bin);
+    await mkdir(join(dir, 'node_modules/prisma/build'), { recursive: true });
+    await writeFile(join(dir, 'node_modules/prisma/build/index.js'), '');
+    await writeFile(join(bin, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    await writeFile(join(bin, 'npm'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    await writeFile(target, configuration, { mode: 0o600 });
+    await symlink('private.env', link);
+    let result = start();
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /sono sani/);
+    assert.equal(await readlink(link), 'private.env');
+    assert.equal(await readFile(target, 'utf8'), configuration);
+    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-sensitive|15555550102/);
+
+    await chmod(target, 0o644);
+    result = start();
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(result.stdout + result.stderr, /Installazione dipendenze|synthetic-sensitive|15555550102/);
+    await chmod(target, 0o600);
+    await unlink(link);
+    await symlink('missing.env', link);
+    assert.notEqual(start().status, 0);
+    await unlink(link);
+    await symlink('.', link);
+    assert.notEqual(start().status, 0);
+    await unlink(link);
+    const fifo = join(dir, 'synthetic-fifo');
+    assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+    await symlink('synthetic-fifo', link);
+    result = start();
+    assert.notEqual(result.status, 0);
+    assert.equal(result.error, undefined); // A FIFO must not block startup.
+    await unlink(link);
+    await symlink('private.env', link);
+    const secret = join(dir, '.local/secrets/db-admin');
+    await rename(secret, `${secret}.original`);
+    await symlink('db-admin.original', secret);
+    assert.notEqual(start().status, 0);
+    assert.equal((await lstat(secret)).isSymbolicLink(), true);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

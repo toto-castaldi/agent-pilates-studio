@@ -55,3 +55,39 @@ test('local start validates configuration, preserves secrets and suppresses chil
   system.mode('.env', 0o644);
   assert.equal(await startLocal(system), 1);
 });
+
+test('local start follows only the configuration link and validates the opened file', async () => {
+  const system = memorySystem();
+  system.put('private.env', configuration);
+  system.link('.env', 'private.env');
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('private.env'), configuration);
+  system.mode('private.env', 0o644);
+  const calls = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  assert.equal(system.calls.length, calls);
+  system.link('.env', 'missing.env');
+  assert.equal(await startLocal(system), 1);
+  await system.mkdir('directory', { mode: 0o700 });
+  system.link('.env', 'directory');
+  assert.equal(await startLocal(system), 1);
+  system.link('.env', 'private.env');
+  system.mode('private.env', 0o600);
+  system.link('.local/secrets/db-admin', 'other-secret');
+  assert.equal(await startLocal(system), 1);
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);
+});
+
+test('configuration validation and reading use the same opened file', async () => {
+  const system = memorySystem();
+  system.put('private.env', configuration);
+  system.put('other.env', configuration.replace('POSTGRES_PORT=55432', 'POSTGRES_PORT=70000'), 0o644);
+  system.link('.env', 'private.env');
+  const open = system.open;
+  system.open = async (path: string) => {
+    const handle = await open(path);
+    system.link('.env', 'other.env');
+    return handle;
+  };
+  assert.equal(await startLocal(system), 0);
+});

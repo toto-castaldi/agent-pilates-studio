@@ -293,7 +293,7 @@
 #### TEC-021 — Avvio locale con configurazione collegata
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Type:** Task · **Priority:** P1 · **Status:** Done
 - **Branch:** `task/TEC-021-avvio-configurazione-collegata`
 - **Dependencies:** TEC-009
 - **Requirements:** REQ-AGENT-003, REQ-NFR-002
@@ -303,6 +303,7 @@
   - L'avvio accetta `.env` come file regolare o collegamento simbolico a un file regolare privato, verificando il file effettivamente letto; rifiuta destinazioni mancanti, non regolari o accessibili a gruppo o altri senza esporre dati sensibili.
   - La protezione degli altri file segreti resta invariata; configurazione, collegamento, dati e credenziali esistenti non vengono modificati o eliminati dall'avvio.
   - Test in memoria e prove separate con file e collegamenti sintetici verificano successo, destinazioni non valide e permessi; la documentazione descrive il comportamento e i suoi limiti.
+- **Outcome:** `.env` può essere un link a un file regolare privato, verificato e letto dallo stesso descrittore; i segreti separati continuano a rifiutare link. Superati gate rapido, `test:local` con file sintetici e `test:start` su stack Docker isolato con link, persistenza e migrazioni. Le ACL e modifiche concorrenti in loco restano fuori dai controlli; nessuna prova con servizi Meta/OpenRouter reali. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
