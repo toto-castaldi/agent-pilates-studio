@@ -22,6 +22,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- L'assistente si chiama Ambrogio, si presenta all'inizio della conversazione e risponde alle domande sulla propria identità (US-005).
 - L'avvio locale applica da `.env` la configurazione esterna, riallinea gateway e broker e preserva le credenziali database e interne (TEC-026).
 - Template v1.5.0 adottato con shared claims e vista Pi del backlog con filtri e stati dai branch (TEC-024).
 - Verificata la consultazione settimanale con scenari sintetici, regole disattivate e controlli sulle fasce orarie (US-003).

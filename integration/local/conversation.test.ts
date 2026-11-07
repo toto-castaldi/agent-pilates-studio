@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { stateMatches } from '../../src/conversation.js';
+import { responseMatches, stateMatches } from '../../src/conversation.js';
 
 test('conversation catalog is synthetic, complete and excluded from CI', async () => {
   const catalog = JSON.parse(await readFile('scenarios/basic.json', 'utf8'));
@@ -42,6 +42,26 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   for (const id of ['consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  const naming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-prima-conversazione');
+  const otherNaming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-altro-interlocutore');
+  assert.ok(naming && otherNaming);
+  assert.notEqual(naming.sender, otherNaming.sender);
+  const requirements = await readFile('docs/REQUIREMENTS.md', 'utf8');
+  const name = requirements.match(/il nome dell'agente è ([\p{L}]+)\./u)?.[1];
+  assert.ok(name);
+  assert.ok(naming.turns[0].response.contains.includes(name));
+  assert.ok(naming.turns[1].response.excludes.includes(name));
+  assert.ok(naming.turns.slice(2).every((turn: { response: { contains: string[] } }) => turn.response.contains.includes(name)));
+  assert.ok(otherNaming.turns[0].response.contains.includes(name));
+  assert.ok(otherNaming.turns[1].response.contains.includes(name));
+  assert.ok(otherNaming.turns[2].response.excludes.includes(name));
+  assert.ok(responseMatches(`Sono ${name}; non ci sono lezioni.`, naming.turns[0].response));
+  assert.equal(responseMatches(`Sono ${name}.`, naming.turns[0].response), false);
+  assert.equal(responseMatches('Non ci sono lezioni.', naming.turns[0].response), false);
+  assert.ok(responseMatches('Non ci sono lezioni.', naming.turns[1].response));
+  assert.equal(responseMatches(`Sono ${name}; non ci sono lezioni.`, naming.turns[1].response), false);
+  assert.ok(responseMatches(`Sono ${name}.`, naming.turns[2].response));
+  assert.equal(responseMatches('Non ho un nome.', naming.turns[2].response), false);
   const consultation = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'consultazione-pianificazione');
   assert.ok(consultation.setup.rules.some((rule: { active?: boolean }) => rule.active === false));
   const times = new Set(consultation.setup.rules.flatMap((rule: { slots: { time: string }[] }) => rule.slots.map((slot) => slot.time)));

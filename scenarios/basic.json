@@ -2,6 +2,29 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "nome-prima-conversazione",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Chi si allena lunedì?", "response": { "contains": ["Ambrogio"], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "E martedì chi si allena?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Come ti chiami?", "response": { "contains": ["Ambrogio"], "excludes": ["non ho un nome", "non ho nome", "scegliere un nome", "chiamarmi come preferisci"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Chi sei?", "response": { "contains": ["Ambrogio"], "excludes": ["non ho un nome", "non ho nome", "scegliere un nome", "chiamarmi come preferisci"] }, "expected": { "clients": [], "rules": [] } }
+      ]
+    },
+    {
+      "id": "nome-altro-interlocutore",
+      "sender": "15555550103",
+      "profile": "Collaboratore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Come ti chiami?", "response": { "contains": ["Ambrogio"], "excludes": ["non ho un nome", "non ho nome", "scegliere un nome", "chiamarmi come preferisci"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Chi sei?", "response": { "contains": ["Ambrogio"], "excludes": ["non ho un nome", "non ho nome", "scegliere un nome", "chiamarmi come preferisci"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Chi si allena giovedì?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio"] }, "expected": { "clients": [], "rules": [] } }
+      ]
+    },
+    {
       "id": "consultazione-pianificazione",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",

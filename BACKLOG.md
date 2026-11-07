@@ -417,7 +417,7 @@
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
 - **Branch:** `us/US-005-nome-agente`
 - **Dependencies:** TEC-011, TEC-012
 - **Requirements:** REQ-AGENT-005, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -431,6 +431,7 @@
   - Le modifiche a `SOUL.md` raggiungono le sessioni già aperte secondo il meccanismo documentato di TEC-011, senza intervento manuale sulle sessioni.
   - Gli scenari con la domanda sul nome, il primo messaggio di una conversazione nuova e un messaggio successivo senza ripresentazione sono aggiunti al catalogo di TEC-012. Vengono eseguiti con il modello reale e l'esito viene registrato. La verifica locale di `SOUL.md` controlla la presenza del nome e l'assenza di segreti e dati reali.
   - Il nome visualizzato del profilo WhatsApp Business su Meta resta fuori scope e non viene modificato.
+- **Outcome:** Nome Ambrogio e istruzioni di presentazione in `SOUL.md`; scenari per due interlocutori sintetici e controlli locali aggiornati. Superati gate rapido, `test:local`, `test:author`, `test:start` e i 14 scenari con OpenRouter reale e sostituto Meta; refresh delle sessioni verificato con modello sintetico. I controlli conversazionali sono lessicali e i due interlocutori sono provati in stack separati; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.
 
 ### EPIC-003 — Dati e operatività
 

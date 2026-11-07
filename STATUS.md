@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione, aggiornamento e configurazione locale verificati; nome dell'agente in corso | 19/22 items done (86%) |
+| v0.2.0 | Open | Consultazione, aggiornamento, configurazione locale e nome dell'agente verificati | 20/22 items done (91%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 2 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 19 |
+| Done | 20 |
 
 ## In progress
 
-| Item | Epic | Module | Title | Branch |
-| ---- | ---- | ------ | ----- | ------ |
-| US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | `us/US-005-nome-agente` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | 2026-11-07 |
 | TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
@@ -42,7 +41,6 @@ None.
 | TEC-021 | EPIC-001 — Fondamenta del progetto | — | Avvio locale con configurazione collegata | 2026-11-07 |
 | BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
-| TEC-012 | EPIC-004 — Pianificazione delle lezioni | — | Scenari conversazionali e harness | 2026-11-06 |
 
 ## Next ready items
 
@@ -64,7 +62,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 ## Notes
 
 - Decisione dell'utente (2026-11-07): TEC-026 è aggiunto alla v0.2.0 per applicare configurazione e credenziali esterne da `.env`; le password PostgreSQL non vengono ruotate automaticamente.
-- Decisione dell'utente (2026-11-07): US-005 è aggiunto alla v0.2.0 per dare all'agente un nome, da concordare all'avvio dell'item. Il nome è fissato in `SOUL.md`, usato nella presentazione iniziale e quando gli viene chiesto; il nome del profilo WhatsApp su Meta è fuori scope.
+- Decisione dell'utente (2026-11-07): il nome dell'agente è Ambrogio, definito in `SOUL.md`; il nome del profilo WhatsApp su Meta è fuori scope.
 - Decisione dell'utente (2026-11-07): TEC-025 è aggiunto alla v0.2.0 per un contesto del modello separato per interlocutore, con compattazione silenziosa al 40% della finestra del modello configurato e dopo inattività configurabile, con valore predefinito di 4 ore.
 - Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`.
 - Decisione dell'utente (2026-11-07): TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0 e definire il solo modulo architetturale Agente.
