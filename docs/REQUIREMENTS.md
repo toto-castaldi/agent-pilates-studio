@@ -47,6 +47,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Contesto del modello separato per interlocutore e compattato automaticamente a soglia e dopo inattività (REQ-AGENT-004).
+- Nome dell'agente definito in `SOUL.md`, usato quando si presenta e quando gli viene chiesto (REQ-AGENT-005).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.2.0
@@ -57,6 +58,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
 - Dati dei clienti oltre a nome, cognome e regole di allenamento.
 - Job cron e messaggi pianificati dell'agente (previsti in un item non assegnato, TEC-019).
+- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, che resta gestito manualmente dall'operatore.
 - Messa in esercizio continuativa del gateway pubblico.
 - Creazione del server, installazione dei suoi prerequisiti Docker/Compose, gestione di DNS o certificati HTTPS.
 - Deploy automatico e piattaforme di monitoraggio avanzato.
@@ -116,6 +118,10 @@ La configurazione locale contenente credenziali deve restare privata e fuori dal
 Ogni interlocutore autorizzato ha un proprio contesto di conversazione con il modello, separato da quello degli altri. Quando il contesto inviato al modello raggiunge il 40% della finestra di contesto del modello configurato, l'agente lo compatta automaticamente, riassumendo la parte meno recente e conservando il contesto dello studio e i turni recenti necessari a proseguire. Il 40% è la soglia di attivazione, non un tetto rigido: sono ammessi superamenti temporanei fino alla compattazione. La soglia segue il modello configurato e non è fissata per un modello specifico.
 
 Quando una conversazione riprende dopo un periodo di inattività configurabile dall'operatore, con valore predefinito di 4 ore, il contesto viene compattato prima di elaborare il nuovo messaggio. La compattazione è silenziosa: gli utilizzatori non ricevono avvisi di sistema sul suo avvio, sul completamento o sugli errori (REQ-WA-003). La compattazione non modifica i dati del database né l'attribuzione dell'autore (REQ-STUDIO-003). Riassunti e cronologia persistono come le sessioni di Hermes, non compaiono nei log e possono transitare verso OpenRouter come le conversazioni (REQ-NFR-002, REQ-NFR-005, REQ-OPS-002).
+
+#### REQ-AGENT-005 — Nome dell'agente
+
+L'agente ha un nome proprio, unico e stabile, definito nel file `SOUL.md` versionato come unica fonte, senza duplicazioni nel codice. Il nome viene concordato con l'utente all'avvio dell'item che lo introduce e registrato in questo requisito. Quando un interlocutore chiede il suo nome o chi è, l'agente risponde con il proprio nome, senza dire di non averne uno né invitare a sceglierne uno. Nella prima risposta di una conversazione senza turni precedenti, l'agente si presenta brevemente con il nome e risponde comunque alla richiesta; nei messaggi successivi non si ripresenta e non firma i messaggi. Il nome è lo stesso per tutti gli interlocutori e non modifica ruolo, regole di comportamento, privilegi o attribuzione dell'autore (REQ-STUDIO-003). Il nome visualizzato del profilo WhatsApp Business su Meta è fuori scope.
 
 ### Comunicazione WhatsApp Business
 
@@ -249,6 +255,7 @@ Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra c
 - Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
 - Processo e strumenti del template v1.5.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in Pi con filtri e stati dai branch, gli shared claims sono attivi e il modulo concordato è documentato.
 - Il contesto di ciascun utilizzatore è separato e viene compattato automaticamente al 40% della finestra del modello configurato e alla ripresa dopo l'inattività configurata, senza avvisi agli utilizzatori.
+- L'agente risponde con il proprio nome quando gli viene chiesto e si presenta con il nome nella prima risposta di una conversazione nuova, senza ripresentarsi nei messaggi successivi.
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

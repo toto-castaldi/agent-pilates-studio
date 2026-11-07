@@ -170,6 +170,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-025 è aggiunto alla v0.2.0 per separare il contesto del modello per interlocutore e compattarlo automaticamente al 40% della finestra e dopo inattività.
 
+**Scope change (2026-11-07):** su accordo dell'utente, US-005 è aggiunto alla v0.2.0 per dare all'agente un nome, definito in `SOUL.md`, con cui si presenta e risponde.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -409,6 +411,24 @@
   - Riassunti e cronologia restano nel volume SQLite di Hermes, persistono a riavvio e ricreazione, sono inclusi nel backup e non compaiono nei log (REQ-NFR-002).
   - Test in memoria coprono il calcolo della soglia e la validazione della configurazione. Una prova di integrazione con gateway reale, modello sintetico con finestra ridotta e inattività simulata verifica entrambe le attivazioni. Gli eventuali adattamenti a punti interni di Hermes sono documentati in `docs/TECHNICAL-DESIGN.md` e richiedono nuove verifiche agli aggiornamenti.
 
+#### US-005 — Nome dell'agente
+
+- **Epic:** EPIC-002 — Agente e integrazioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** TEC-011, TEC-012
+- **Requirements:** REQ-AGENT-005, REQ-STUDIO-003, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §6, §8
+- **Description:** Come titolare o collaboratore, voglio che l'agente abbia un nome con cui si presenta e risponde, così da riconoscerlo e rivolgermi a lui in modo naturale. Oggi, alla domanda «come ti chiami tu?», l'agente risponde di essere l'assistente dello studio Pilates, di non avere un nome specifico e di poter essere chiamato come si preferisce.
+- **Acceptance criteria:**
+  - All'avvio dell'item il nome è concordato con l'utente e registrato in REQ-AGENT-005. È definito solo in `hermes/SOUL.md`, senza duplicazioni nel codice né in altre configurazioni (AGENTS §5).
+  - Alle domande sul nome o sull'identità, ad esempio «come ti chiami?» o «chi sei?», l'agente risponde con il proprio nome. Non dice di non averne uno e non invita a sceglierne un altro. Il nome è lo stesso per mittenti diversi e nei turni successivi.
+  - Nella prima risposta di una conversazione senza turni precedenti l'agente si presenta brevemente con il nome e risponde comunque alla richiesta. Nei messaggi successivi della stessa conversazione non si ripresenta e non firma i messaggi.
+  - Il nome non modifica ruolo, regole di comportamento, privilegi né attribuzione dell'autore. I comportamenti degli scenari esistenti restano invariati.
+  - Le modifiche a `SOUL.md` raggiungono le sessioni già aperte secondo il meccanismo documentato di TEC-011, senza intervento manuale sulle sessioni.
+  - Gli scenari con la domanda sul nome, il primo messaggio di una conversazione nuova e un messaggio successivo senza ripresentazione sono aggiunti al catalogo di TEC-012. Vengono eseguiti con il modello reale e l'esito viene registrato. La verifica locale di `SOUL.md` controlla la presenza del nome e l'assenza di segreti e dati reali.
+  - Il nome visualizzato del profilo WhatsApp Business su Meta resta fuori scope e non viene modificato.
+
 ### EPIC-004 — Pianificazione delle lezioni
 
 **Scope:** regole di allenamento settimanali dei clienti, anagrafica minima dei clienti, consultazione della pianificazione, contesto dell'agente e verifica del comportamento conversazionale.
@@ -543,7 +563,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-025 dipende da TEC-011 e BUG-001, già completati, ed è indipendente dagli item della pianificazione. TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+US-005 dipende da TEC-011 e TEC-012, già completati, ed è indipendente da TEC-025 e dagli item della pianificazione. TEC-025 dipende da TEC-011 e BUG-001, già completati, ed è indipendente dagli item della pianificazione. TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.
