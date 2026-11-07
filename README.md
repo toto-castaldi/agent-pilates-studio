@@ -46,6 +46,10 @@ Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e av
 
 Le prove end-to-end con servizi e credenziali reali si eseguono separatamente come descritto in [Hermes e WhatsApp Cloud](#hermes-e-whatsapp-cloud); non fanno parte della CI.
 
+## Template di origine
+
+La [registrazione del template](docs/TEMPLATE-ORIGIN.md) distingue basi adottate, riferimenti solo confrontati e personalizzazioni dello studio. La procedura manuale permette di valutare aggiornamenti senza adottarli automaticamente; la prova isolata è inclusa in `npm run test:local`.
+
 ## Configurazione Pi
 
 Con Pi installato, avviarlo direttamente dalla radice del progetto:

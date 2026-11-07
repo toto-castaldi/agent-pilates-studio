@@ -101,7 +101,7 @@ L'ambiente locale usa Docker Compose; TEC-009 usa Node.js e npm sull'host, `.env
 
 ## 10. Open decisions
 
-- Forma della registrazione versionata del template di origine, granularità delle basi adottate e gestione delle divergenze e delle basi storiche sconosciute — TEC-022. La scelta deve consentire confronti riproducibili senza implicare l'adozione automatica degli aggiornamenti.
+- TEC-022 registra in `docs/TEMPLATE-ORIGIN.md` basi verificabili per risorsa o gruppo, riferimenti soltanto confrontati, divergenze e basi sconosciute; la procedura è manuale e non adotta aggiornamenti. Resta da decidere separatamente se e come allineare processo e risorse condivise al template.
 - Audit di campi, conservazione e retention dei log Cloudflare e copertura dei formati locali, senza streaming remoto del tunnel condiviso — TEC-008, non assegnato. I rischi e le prove sono descritti in `docs/operations/TEC-005-prove-preliminari.md`; l'indagine rinviata non costituisce prova di conformità completa. REQ-NFR-002 resta vincolante e documenta la sola prova temporanea autorizzata.
 - Abilitazione dei job cron, permessi di creazione e accesso al database dei turni pianificati senza mittente autenticato — TEC-019, non assegnato.
 - Verifica conversazionale con il modello reale e scenari di registrazione, consultazione e aggiornamento — TEC-012, US-002, US-003 e US-004.

@@ -214,6 +214,7 @@
   - `docs/TECHNICAL-DESIGN.md` §8 e README descrivono i livelli di test, i relativi comandi e quando eseguirli; gli script `npm test` e `build` mantengono il comportamento attuale.
   - Passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, e tutte le suite separate interessate dalle modifiche, inclusa `npm run test:local`.
 - **Outcome:** Gate rapido, unità in memoria e prove locali separate; CI e documentazione aggiornate. Superati `npm ci`, lint, typecheck, unità, build, `test:local`, `test:pi` e tutte le suite Docker (`test:db`, `test:hermes`, `test:author`, `test:upgrade`, `test:start`); workflow GitHub verificato come contratto ma non eseguito da remoto. Gate riportato separatamente nel template con commit locale `b4bc15f`, senza altri allineamenti né push. Completato il 2026-11-06.
+- **Nota successiva:** TEC-022 ha verificato che `b4bc15f3a5944330826d9379fef6d60987ec1798` è pubblicato ed è antenato del tag `v1.4.0` del template; gli altri aggiornamenti non sono adottati.
 
 #### TEC-016 — Versionamento del template Pi per lo stato del progetto
 
@@ -310,7 +311,8 @@
 #### TEC-022 — Tracciabilità e aggiornamento dal template
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-022-tracciabilita-aggiornamento-template`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-013
 - **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §10
@@ -321,6 +323,7 @@
   - Una procedura documentata spiega come reperire un riferimento preciso del template, confrontarlo con le basi note e con il progetto, gestire basi sconosciute e divergenze, valutare gli aggiornamenti e registrare separatamente confronto e adozione. Non prevede sovrascritture o merge automatici; l'eventuale adozione segue il processo del progetto e richiede una decisione separata.
   - Una prova ripetibile in un ambiente isolato, con un clone pulito e riferimenti di prova, verifica la reperibilità delle informazioni versionate e il confronto, anche in presenza di personalizzazioni e di una base sconosciuta; non modifica il working tree o i dati personali dell'operatore. Le prove con Git, filesystem o rete restano separate dai test unitari in memoria del gate rapido.
   - La documentazione e le evidenze non contengono segreti o dati personali; non vengono adottate novità del template né modificati o pubblicati il repository del template o le configurazioni personali. Il riferimento alla modifica TEC-015 non è presentato come pubblicato senza verifica.
+- **Outcome:** Registrazione delle basi verificabili, inventario delle divergenze e procedura manuale senza adozione automatica; verificati pubblicazione del riporto TEC-015 e riferimento `v1.4.0`, con basi sconosciute esplicite. Superati `test:local` con clone pulito e confronti sintetici, lint, typecheck, unità e build. Nessuna modifica o pubblicazione del template; l'eventuale allineamento del processo richiede decisione separata. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
