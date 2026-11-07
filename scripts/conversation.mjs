@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
+import { runProcess } from '../dist/src/conversation-process.js';
 import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -82,9 +83,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     await mkdir(socketDirectory, { mode: 0o700 });
     await writeFile(override, `services:\n  model-proxy:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_proxy.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/model_proxy.py')}:/model_proxy.py:ro`)}\n      - ${JSON.stringify(`${socketDirectory}:/run/host-proxy:ro`)}\n    logging:\n      driver: none\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/meta_stub.py')}:/meta_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-proxy:8089/api/v1\n      NO_PROXY: model-proxy,meta-stub,localhost,127.0.0.1\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/gateway-launcher.sh')}:/opt/hermes/libexec/hermes:ro`)}\n      - ${JSON.stringify(`${join(directory, 'config.yaml')}:/opt/data/config.yaml:ro`)}\n`);
     composeReady = true;
+    stage = 'costruzione immagine';
     compose('build', 'hermes');
     if (interrupted) throw new Error('interrupted');
+    stage = 'avvio PostgreSQL';
     compose('up', '-d', '--wait', 'postgres');
+    stage = 'bootstrap database';
     compose('run', '--rm', 'db-bootstrap');
     const address = (service) => {
       const id = compose('ps', '-q', service).trim();
@@ -92,6 +96,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       if (!ip) throw new Error('address');
       return ip;
     };
+    stage = 'indirizzo PostgreSQL';
     const host = address('postgres');
     // Keep the real key only in this process. A relay uses a private Unix
     // socket and a random synthetic token; only this proxy attaches the real
@@ -123,13 +128,17 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       proxy.listen(join(socketDirectory, 'socket'), resolveListen);
     });
     await chmod(join(socketDirectory, 'socket'), 0o600);
+    stage = 'migrazioni';
     const url = new URL(`postgresql://${host}:5432/studio?schema=public`);
     url.username = 'studio_migrator';
     url.password = secrets['db-migrator'];
     execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], { env: { ...env, DATABASE_URL: url.toString() }, stdio: 'pipe', timeout: 120_000 });
     client = new Client({ host, port: 5432, database: 'studio', user: 'studio_migrator', password: secrets['db-migrator'], connectionTimeoutMillis: 15_000, query_timeout: 30_000 });
+    stage = 'connessione database';
     await client.connect();
-    compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-proxy', 'meta-stub', 'hermes');
+    stage = 'avvio gateway e sostituti';
+    await runProcess('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, 'up', '-d', '--wait', '--wait-timeout', '150', 'model-proxy', 'meta-stub', 'hermes'], env, 240_000);
+    stage = 'indirizzi gateway e sostituto Meta';
     const gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observations = `http://${address('meta-stub')}:8088/observations`;
     let count = 0;
@@ -241,6 +250,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           responseMatches(text, { contains: [], dayGroups: turn.response.dayGroups }) ? 'giorni associati' : 'associazioni giorno mancanti',
           /altro|altra|aiut|ulterior|aggiung|serv/i.test(text) ? 'possibile domanda accessoria' : 'nessuna domanda accessoria riconosciuta',
           /registr|salvat|inser|proced/i.test(text) ? 'menzione registrazione' : 'nessuna menzione registrazione',
+          /fuori programma|fuori dalla pianificazione|nessuna regola|senza regola|non programm|non pianificat|non attes|non previst/i.test(text) ? 'possibile indicazione non atteso' : 'nessuna indicazione non atteso riconosciuta',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
           /conferm|ambigu|manc|precis|chied|quale|qual è/i.test(text) ? 'possibile richiesta chiarimento' : 'nessun chiarimento riconosciuto',
           /database|sql|strument|tool|dati/i.test(text) ? 'menzione dati/tool' : 'nessuna menzione dati/tool',
@@ -263,6 +273,18 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     console.log(`${scenario.id}: OK`);
   } catch {
     failed = true;
+    if (stage === 'avvio gateway e sostituti') {
+      try {
+        for (const line of compose('ps', '--all', '--format', 'json').trim().split('\n').filter(Boolean)) {
+          const row = JSON.parse(line);
+          if (['postgres', 'author-broker', 'hermes', 'model-proxy', 'meta-stub'].includes(row.Service)) {
+            const state = ['running', 'exited', 'created', 'restarting'].includes(row.State) ? row.State : 'other';
+            const health = ['healthy', 'unhealthy', 'starting'].includes(row.Health) ? row.Health : 'none';
+            console.error(`Servizio ${row.Service}: ${state}, ${health}.`);
+          }
+        }
+      } catch { console.error('Stato sintetico dei servizi non disponibile.'); }
+    }
     console.error(`${scenario.id}: ERRORE (${stage}); nessun dettaglio sensibile viene stampato.`);
     console.error(`Proxy OpenRouter: richieste ${proxyStats.requests}, rifiutate ${proxyStats.denied}, risposte ${proxyStats.completed}, errori ${proxyStats.failures}, ultimo HTTP ${proxyStats.status}.`);
   } finally {

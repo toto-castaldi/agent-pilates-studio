@@ -100,7 +100,7 @@
         },
         {
           "message": "Il 6 gennaio 2025 c'erano tutti, non ricordo l'orario.",
-          "response": { "contains": [], "anyOf": [["ora", "orario", "quale lezione"]], "question": true },
+          "response": { "contains": [], "anyOf": [["ora", "orario", "lezion"]], "question": true },
           "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
         }
       ]

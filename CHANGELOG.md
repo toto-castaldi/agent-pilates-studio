@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Registrazione conversazionale delle presenze, anche per clienti attesi in date passate, con segnalazione di duplicati e clienti non attesi (US-006).
 - Schema versionato per presenze e assenze con autore autenticato, annullamento tracciato e storico protetto (TEC-027).
 - Lavoro parallelo opzionale con la skill `orchestrate`: un worker Pi per item in un clone separato, claim condiviso, attesa del via dell'utente e merge solo su richiesta (TEC-028).
 

@@ -637,7 +637,7 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
 - **Branch:** `us/US-006-registrare-presenze-lezione`
 - **Dependencies:** TEC-027
 - **Requirements:** REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -649,6 +649,7 @@
   - Un cliente presente ma non atteso è registrato e segnalato nel riepilogo; un cliente nuovo è creato secondo REQ-STUDIO-002, chiedendo il cognome se manca; nessuna regola di allenamento viene creata o modificata.
   - Una lezione non ancora iniziata è rifiutata con un messaggio chiaro; una seconda comunicazione per un cliente già registrato alla stessa lezione non crea un duplicato e l'agente lo segnala.
   - Gli scenari, compresi nomi espliciti, "c'erano tutti", "tutti tranne", data passata con regole cambiate, cliente non atteso, cliente nuovo e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
+- **Outcome:** Contesto e scenari per presenze, attesi storici, clienti extra, duplicati e lezioni future; harness esteso al confronto delle registrazioni e corretto per l'avvio asincrono del relay. Superati gate, `test:local`, `test:db`, `test:author` e tre scenari US-006 con OpenRouter reale più una regressione; fallimenti precedenti, limiti lessicali e mancata ripetizione del catalogo completo sono documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.
 
 #### US-007 — Registrare le assenze a una lezione
 
