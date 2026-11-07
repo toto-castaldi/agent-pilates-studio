@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Aggiornamento del template, consultazione e dettato remoto da avviare | 16/19 items done (84%) |
+| v0.2.0 | Open | Consultazione e dettato remoto da avviare | 17/19 items done (89%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 2 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 16 |
+| Done | 17 |
 
 ## In progress
 
@@ -29,18 +29,18 @@ None.
 
 ## Recently completed
 
-| Item | Epic | Title | Date |
-| ---- | ---- | ----- | ---- |
-| US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | 2026-11-07 |
-| TEC-023 | EPIC-001 — Fondamenta del progetto | Adozione del template v1.4.0 | 2026-11-07 |
-| TEC-022 | EPIC-001 — Fondamenta del progetto | Tracciabilità e aggiornamento dal template | 2026-11-07 |
-| TEC-021 | EPIC-001 — Fondamenta del progetto | Avvio locale con configurazione collegata | 2026-11-07 |
-| BUG-001 | EPIC-002 — Agente e integrazioni | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
-| US-002 | EPIC-004 — Pianificazione delle lezioni | Registrare una regola di allenamento | 2026-11-06 |
-| TEC-012 | EPIC-004 — Pianificazione delle lezioni | Scenari conversazionali e harness | 2026-11-06 |
-| TEC-018 | EPIC-001 — Fondamenta del progetto | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
-| TEC-011 | EPIC-004 — Pianificazione delle lezioni | Contesto dell'agente dello studio | 2026-11-06 |
-| TEC-017 | EPIC-001 — Fondamenta del progetto | Template Pi per lavorare in autonomia | 2026-11-06 |
+| Item | Epic | Module | Title | Date |
+| ---- | ---- | ------ | ----- | ---- |
+| TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
+| US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
+| TEC-023 | EPIC-001 — Fondamenta del progetto | — | Adozione del template v1.4.0 | 2026-11-07 |
+| TEC-022 | EPIC-001 — Fondamenta del progetto | — | Tracciabilità e aggiornamento dal template | 2026-11-07 |
+| TEC-021 | EPIC-001 — Fondamenta del progetto | — | Avvio locale con configurazione collegata | 2026-11-07 |
+| BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
+| US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
+| TEC-012 | EPIC-004 — Pianificazione delle lezioni | — | Scenari conversazionali e harness | 2026-11-06 |
+| TEC-018 | EPIC-001 — Fondamenta del progetto | — | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
+| TEC-011 | EPIC-004 — Pianificazione delle lezioni | — | Contesto dell'agente dello studio | 2026-11-06 |
 
 ## Next ready items
 
@@ -49,7 +49,6 @@ None.
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | P2 |
-| TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 
 TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
@@ -62,7 +61,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
-- Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`; l'attivazione avverrà durante l'item.
+- Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`.
 - Decisione dell'utente (2026-11-07): TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0 e definire il solo modulo architetturale Agente.
 - Decisione dell'utente (2026-11-07): TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli in TEC-022.
 - Decisione dell'utente (2026-11-07): TEC-021 è aggiunto alla v0.2.0 per consentire `.env` come collegamento simbolico privato.

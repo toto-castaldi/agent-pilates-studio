@@ -53,7 +53,9 @@ export function checkWorkAlonePrompt(prompt: string) {
     'non è identificabile univocamente', 'chiedi chiarimenti', 'non scegliere né avviare un\'altra attività',
     'criteri di accettazione', 'verifiche richieste', 'Definition of Done', 'finish-task',
     'blocchi, decisioni necessarie o autorizzazioni richieste',
-    'Non effettuare merge o push senza una richiesta esplicita dell\'utente', 'non inserirli in file, commit o log',
+    'solo i push del branch dell\'item previsti dal processo ai cambi di stato',
+    'merge, push su `main` e altri push richiedono una richiesta esplicita',
+    'istruzioni più restrittive dell\'utente', 'non inserirli in file, commit o log',
   ]) {
     assert.ok(prompt.includes(required), `Missing instruction: ${required}`);
   }

@@ -1,26 +1,27 @@
 # Origine e confronto del template
 
-Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente.
+Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0.
 
 ## Riferimenti e limiti dell'evidenza
 
 - Origine dichiarata: <https://github.com/toto-castaldi/agile-project-template>.
 - Base di confronto della copia iniziale per le risorse indicate sotto: commit template `aba6fcd50d25861a2ab0ea759f937d45e817dec7`, senza tag noto. Nel commit iniziale del progetto `e9db82b1a1c7007a469bf6668e7a4f50b6e7ecaf` i blob delle risorse elencate coincidono con quelli di tale commit del template. È evidenza del contenuto iniziale, non prova che il repository del progetto discenda Git da quel commit né che ogni file del template sia stato adottato.
 - Riferimento confrontato e adottato da TEC-023 per le risorse sotto: tag annotato `v1.4.0`, commit `e16bbec69c067bc9432bc588acd0d232716f3dbf`, verificato il 2026-11-07. Il branch predefinito pubblico `main` puntava allo stesso commit. Per eventuali confronti futuri fissare e verificare un nuovo commit; un riferimento solo confrontato non è automaticamente adottato.
+- Riferimento fissato da TEC-024: tag `v1.5.0`, commit `0cea2fd0ee138edbb845a01aa6bced2872145d2a`, verificato il 2026-11-07 con clone isolato. L'adozione è limitata alle risorse indicate sotto.
 - Il riporto parziale di TEC-015 nel template è il commit `b4bc15f3a5944330826d9379fef6d60987ec1798`, antenato del tag `v1.4.0`; la sua pubblicazione è stata verificata il 2026-11-07 sul repository pubblico. Il commit del progetto `6b3b5aca1f7b9774d16c610e0e336e9d79102abd` contiene le modifiche locali al gate. Il riporto non equivale all'adozione delle altre modifiche intervenute nel template.
 - Per risorse non elencate, elementi aggiunti successivamente o provenienze non dimostrate, la base adottata è **sconosciuta**. L'assenza di una corrispondenza non dimostra l'assenza di una provenienza dal template.
 
-## Inventario dopo TEC-023
+## Inventario dopo TEC-023 e aggiornamento TEC-024
 
-La base `aba6fcd50d25861a2ab0ea759f937d45e817dec7` si riferisce ai blob iniziali verificati. Per le risorse dichiarate adottate la nuova base è il commit `e16bbec69c067bc9432bc588acd0d232716f3dbf` (`v1.4.0`); le personalizzazioni successive restano nel progetto.
+La base `aba6fcd50d25861a2ab0ea759f937d45e817dec7` si riferisce ai blob iniziali verificati. Le basi successive sono `e16bbec69c067bc9432bc588acd0d232716f3dbf` (`v1.4.0`) e, per le risorse indicate, `0cea2fd0ee138edbb845a01aa6bced2872145d2a` (`v1.5.0`); le personalizzazioni restano nel progetto.
 
 | Risorsa o gruppo | Base iniziale verificata | Confronto con v1.4.0 e stato attuale |
 | --- | --- | --- |
-| `docs/PROCESS.md` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` | Adottato v1.4.0 senza divergenze. Il gate TEC-015 rimane nel processo e in `AGENTS.md`; la regola sui moduli è interpretata come concordato in `docs/TECHNICAL-DESIGN.md` §10. |
-| `.agents/skills/add-item`, `start-task`, `finish-task`, `close-version`, `kickoff`, `merge-task` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` per ciascun `SKILL.md` | Adottati i file v1.4.0 senza divergenze; il riferimento a tutte le suite in `close-version` include quelle elencate in `AGENTS.md`. |
+| `docs/PROCESS.md` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` | Adottato v1.5.0 senza divergenze. Il gate TEC-015 rimane nel processo e in `AGENTS.md`; la regola sui moduli è interpretata come concordato in `docs/TECHNICAL-DESIGN.md` §10. |
+| `.agents/skills/add-item`, `start-task`, `finish-task`, `close-version`, `kickoff`, `merge-task` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` per ciascun `SKILL.md` | Adottati i file v1.5.0 senza divergenze; il riferimento a tutte le suite in `close-version` include quelle elencate in `AGENTS.md`. |
 | `CLAUDE.md`, `.claude/skills`, `docs/adr/_TEMPLATE.md`, `docs/spikes/_TEMPLATE.md` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` | Identici a v1.4.0, come verificato da TEC-022; `.claude/skills` è un collegamento versionato. |
 | `AGENTS.md`, `BACKLOG.md`, `STATUS.md`, `README.md`, `CHANGELOG.md`, `.gitignore`, `docs/REQUIREMENTS.md`, `docs/TECHNICAL-DESIGN.md`, `docs/adr/README.md`, `docs/spikes/README.md` | `aba6fcd50d25861a2ab0ea759f937d45e817dec7` | Copie iniziali corrispondenti, poi personalizzate per lo studio: non sostituirle con i file generici del template. |
-| `.pi/extensions/backlog/index.ts` | Nessuna base precedente | Adottato da v1.4.0 con modifiche locali: riconoscimento di idee non assegnate su una sola riga e intestazione epic dal campo dell'item quando manca un epic contenitore. |
+| `.pi/extensions/backlog/index.ts` | Nessuna base precedente | Aggiornato sulle funzionalità v1.5.0 con adattamenti locali: riconoscimento di idee non assegnate su una sola riga, intestazione epic dal campo dell'item quando manca un epic contenitore e segnalazione degli errori imprevisti durante il refresh. |
 | Prompt e configurazione Pi dello studio, codice, test e documentazione operativa | Sconosciuta o non applicabile | Risorse proprie o personalizzate; non presumere che siano condivise o che vadano sovrascritte. Non leggere configurazioni personali per il confronto. |
 
 TEC-023 allinea il processo e le skill al riferimento fissato, risolvendo il disallineamento rilevato da TEC-022 senza sovrascrivere le risorse personalizzate dello studio. L'interpretazione concordata dell'espressione «unassigned» è documentata in `docs/TECHNICAL-DESIGN.md` §10; nessuna deroga al processo è introdotta. Le regole proprie dello studio restano in `AGENTS.md`.

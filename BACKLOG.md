@@ -352,7 +352,8 @@
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-024-adozione-template-v1-5-0`
 - **Dependencies:** TEC-023
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-010, REQ-NFR-013, REQ-NFR-014, REQ-NFR-015
 - **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
@@ -364,6 +365,7 @@
   - Il visualizzatore Pi aggiornato mantiene gli item non assegnati, inclusi quelli su una riga, e i metadati epic già supportati; consente filtri per tipo, priorità e stato, navigazione tra risultati e consultazione degli stati dai branch locali e remote-tracking non integrati, con indicazione della provenienza e dei conflitti. All'apertura usa i riferimenti disponibili e aggiorna la vista dopo il fetch in background; errori e limiti sono visibili. Non modifica i file di lavoro; il fetch può aggiornare o rimuovere riferimenti remoti locali.
   - Test ripetibili con repository, branch e remoti sintetici verificano risoluzione degli stati, precedenza e branch multipli, filtri e navigazione, fetch riuscito o fallito e assenza di modifiche ai file di lavoro, oltre alle personalizzazioni già esistenti. Una prova Pi isolata verifica caricamento e uso dell'estensione e documenta i limiti. Le prove con Git, rete locale, processi o Pi restano separate dal gate in memoria e non leggono né modificano configurazioni personali.
   - Test o prove isolate con remoti sintetici verificano il flusso degli shared claims, inclusi branch esistente, fetch o push fallito e assenza di `origin`, senza pubblicare branch reali. README e documentazione pertinente descrivono filtri, fetch, gestione dei claim, effetti sui riferimenti Git e limiti; `docs/TEMPLATE-ORIGIN.md` distingue le risorse effettivamente adottate dalle divergenze e dai confronti. Non si modificano né pubblicano il repository del template o dati personali.
+- **Outcome:** Adottati processo e skill v1.5.0, shared claims e visualizzatore con filtri e stati dai branch, preservando gli adattamenti dello studio. Superati confronto del riferimento fissato, gate rapido, `test:local` con remoti sintetici e `test:pi` con TUI isolata; i claim non sono atomici e la prova Pi non copre tutti i terminali né un turno del modello. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
