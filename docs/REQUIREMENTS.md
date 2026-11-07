@@ -42,6 +42,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Template Pi condiviso per lavorare autonomamente su un'attività già avviata (REQ-NFR-010).
 - Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
 - Dettato vocale Pi su server remoto tramite il microfono del client inoltrato via SSH (REQ-NFR-012).
+- Tracciabilità del template di origine e procedura per valutarne futuri aggiornamenti (REQ-NFR-013).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
@@ -213,6 +214,10 @@ Quando l'assistente Pi del progetto pone domande all'utente con i tool `question
 #### REQ-NFR-012 — Dettato vocale Pi su server remoto
 
 Quando l'operatore usa Pi su un server remoto senza dispositivi audio, collegato via SSH da un client Linux con PipeWire o PulseAudio, il dettato del pacchetto Pi Voice deve poter acquisire il microfono del client. L'audio passa dal socket Pulse del client inoltrato via SSH come socket Unix, senza aprire porte TCP e senza modificare la configurazione di Pi Voice. Il repository documenta la procedura per server e client, con verifica e limiti, e fornisce uno script di diagnosi in sola lettura che indica i passi mancanti. Documentazione, script e output non contengono segreti, dati personali o audio, e i dati personali di Pi restano esclusi da Git (REQ-NFR-002, REQ-NFR-007). L'installazione dei pacchetti di sistema e la configurazione di `sshd` richiedono privilegi amministrativi e restano a cura dell'operatore.
+
+#### REQ-NFR-013 — Tracciabilità del template di origine
+
+Il repository deve rendere riconoscibile il template da cui è nato e conservare riferimenti verificabili alle versioni o ai commit pertinenti, distinguendo ciò che è stato adottato da ciò che è stato solo confrontato e dichiarando eventuali basi storiche sconosciute. L'operatore deve poter valutare futuri aggiornamenti tramite una procedura riproducibile che distingua le risorse condivise dalle personalizzazioni del progetto, senza sovrascritture o merge automatici. L'effettiva adozione degli aggiornamenti richiede una decisione separata e il rispetto del processo e dei vincoli di sicurezza del progetto (REQ-NFR-002).
 
 ## 7. Release acceptance — v0.2.0
 

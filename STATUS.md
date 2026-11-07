@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Registrazione e avvio con configurazione collegata verificati; consultazione, aggiornamento e dettato remoto da avviare | 13/16 items done (81%) |
+| v0.2.0 | Open | Registrazione e avvio con configurazione collegata verificati; consultazione, aggiornamento, dettato remoto e tracciabilità del template da avviare | 13/17 items done (76%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 13 |
@@ -50,6 +50,7 @@ None.
 | US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | Dettato vocale Pi su server remoto | P2 |
+| TEC-022 | EPIC-001 — Fondamenta del progetto | Tracciabilità e aggiornamento dal template | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | Job cron e messaggi pianificati dell'agente | P2 |
 
 TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
@@ -62,6 +63,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli ora.
 - Decisione dell'utente (2026-11-07): TEC-021 è aggiunto alla v0.2.0 per consentire `.env` come collegamento simbolico privato.
 - Decisione dell'utente (2026-11-06): BUG-001 è aggiunto allo scope della v0.2.0: canale home fissato in configurazione, cron rinviati a TEC-019 non assegnato.
 - Decisione dell'utente (2026-11-06): TEC-020 è aggiunto allo scope della v0.2.0 per il dettato vocale Pi su server remoto tramite inoltro audio SSH.

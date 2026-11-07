@@ -162,6 +162,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-021 è aggiunto alla v0.2.0 per l'avvio locale con `.env` come collegamento simbolico privato.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli ora.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -304,6 +306,21 @@
   - La protezione degli altri file segreti resta invariata; configurazione, collegamento, dati e credenziali esistenti non vengono modificati o eliminati dall'avvio.
   - Test in memoria e prove separate con file e collegamenti sintetici verificano successo, destinazioni non valide e permessi; la documentazione descrive il comportamento e i suoi limiti.
 - **Outcome:** `.env` può essere un link a un file regolare privato, verificato e letto dallo stesso descrittore; i segreti separati continuano a rifiutare link. Superati gate rapido, `test:local` con file sintetici e `test:start` su stack Docker isolato con link, persistenza e migrazioni. Le ACL e modifiche concorrenti in loco restano fuori dai controlli; nessuna prova con servizi Meta/OpenRouter reali. Completato il 2026-11-07.
+
+#### TEC-022 — Tracciabilità e aggiornamento dal template
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** none
+- **Requirements:** REQ-NFR-002, REQ-NFR-013
+- **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §10
+- **Description:** Rendere esplicita e verificabile l'origine da `https://github.com/toto-castaldi/agile-project-template` e predisporre una procedura manuale per valutare futuri aggiornamenti. L'adozione delle novità del template è esclusa da questa attività e richiede una decisione separata.
+- **Acceptance criteria:**
+  - Una registrazione versionata nel progetto indica URL e riferimenti pertinenti del template con commit completi e, se disponibili, tag; distingue per risorsa o gruppo la base effettivamente adottata dall'ultima versione solo confrontata. Le basi non ricostruibili e i riferimenti non verificabili sono esplicitamente dichiarati, senza attribuire al progetto una versione non dimostrata; un clone pulito conserva tali informazioni senza dipendere da remote Git locali.
+  - Un inventario distingue risorse condivise dal template, risorse personalizzate dello studio e relative divergenze, incluse `docs/PROCESS.md` e le skill. Il confronto considera anche il ritorno parziale di TEC-015 e segnala l'eventuale disallineamento del processo rispetto alla regola nell'introduzione di `PROCESS`, proponendo come risolverlo senza modificarlo silenziosamente.
+  - Una procedura documentata spiega come reperire un riferimento preciso del template, confrontarlo con le basi note e con il progetto, gestire basi sconosciute e divergenze, valutare gli aggiornamenti e registrare separatamente confronto e adozione. Non prevede sovrascritture o merge automatici; l'eventuale adozione segue il processo del progetto e richiede una decisione separata.
+  - Una prova ripetibile in un ambiente isolato, con un clone pulito e riferimenti di prova, verifica la reperibilità delle informazioni versionate e il confronto, anche in presenza di personalizzazioni e di una base sconosciuta; non modifica il working tree o i dati personali dell'operatore. Le prove con Git, filesystem o rete restano separate dai test unitari in memoria del gate rapido.
+  - La documentazione e le evidenze non contengono segreti o dati personali; non vengono adottate novità del template né modificati o pubblicati il repository del template o le configurazioni personali. Il riferimento alla modifica TEC-015 non è presentato come pubblicato senza verifica.
 
 ### EPIC-002 — Agente e integrazioni
 
@@ -455,7 +472,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018 e TEC-020 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.
