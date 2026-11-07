@@ -223,6 +223,14 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     expectFailure(backup, /Stop Hermes before taking a backup/);
     await assert.rejects(access(backupDirectory));
     await migrator.query("INSERT INTO app.stack_probe VALUES (77, 'backup-synthetic')");
+    await migrator.query('BEGIN');
+    const backupBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [backupBinding.pid, backupBinding.txid]);
+    const backupClient = (await migrator.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Backup', 'Synthetic') RETURNING id")).rows[0].id;
+    const backupAttendance = (await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'present') RETURNING id", [backupClient])).rows[0].id;
+    await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [backupAttendance]);
+    await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [backupClient]);
+    await migrator.query('COMMIT');
     compose('stop', 'hermes');
     expectFailure(backup, /Stop author-broker before taking a backup/);
     compose('stop', 'author-broker');
@@ -271,6 +279,12 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     restored = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await restored.connect();
     assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    assert.deepEqual((await restored.query("SELECT outcome, lesson_date::text AS lesson_date, start_time::text AS start_time, created_at IS NOT NULL AS created, created_by_phone, created_by_name, cancelled_at IS NOT NULL AS cancelled, cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance ORDER BY id")).rows, [
+      { outcome: 'present', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: true, cancelled_by_phone: '15555550102', cancelled_by_name: 'Synthetic Profile', cancellation_reason: 'synthetic correction' },
+      { outcome: 'excused_absence', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
+    ]);
+    await assert.rejects(restored.query('DELETE FROM app.attendance'), { code: '42501' });
+    await assert.rejects(restored.query('TRUNCATE app.attendance'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await restoredAgent.connect();

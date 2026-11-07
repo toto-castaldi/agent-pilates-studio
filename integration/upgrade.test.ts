@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -66,20 +66,36 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     const oldDatabase = compose(oldOverride, 'ps', '-q', 'postgres').trim();
     const oldDatabaseImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', oldDatabase], { encoding: 'utf8' }).trim();
     let databaseHost = address(oldDatabase);
-    const migrate = (host: string) => {
+    const legacyMigrations = join(directory, 'legacy-migrations');
+    await mkdir(legacyMigrations);
+    for (const item of ['migration_lock.toml', '20261104000000_init', '20261105000000_studio_planning']) {
+      await cp(join('prisma/migrations', item), join(legacyMigrations, item), { recursive: true });
+    }
+    const legacyConfig = join(directory, 'legacy.config.mjs');
+    await writeFile(legacyConfig, `export default { schema: ${JSON.stringify(resolve('prisma/schema.prisma'))}, migrations: { path: ${JSON.stringify(legacyMigrations)} }, datasource: { url: process.env.DATABASE_URL } };\n`);
+    const migrate = (host: string, legacy = false) => {
       const url = new URL(`postgresql://${host}:5432/studio?schema=public`);
       url.username = 'studio_migrator';
       url.password = password;
-      execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], {
+      execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy', ...(legacy ? ['--config', legacyConfig] : [])], {
         env: { ...env, DATABASE_URL: url.toString() }, stdio: 'pipe', timeout: 90_000,
       });
     };
-    migrate(databaseHost);
+    migrate(databaseHost, true);
     migrator = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_migrator', password });
     await migrator.connect();
     assert.match((await migrator.query<{ server_version: string }>('SHOW server_version')).rows[0].server_version, /^17\.9/);
     await migrator.query('CREATE TABLE app.upgrade_probe (id int PRIMARY KEY, value text NOT NULL)');
     await migrator.query("INSERT INTO app.upgrade_probe VALUES (1, 'synthetic-before-upgrade')");
+    await migrator.query('BEGIN');
+    const oldBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [oldBinding.pid, oldBinding.txid]);
+    const oldClient = (await migrator.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Upgrade', 'Synthetic') RETURNING id")).rows[0].id;
+    const oldRule = (await migrator.query("INSERT INTO app.training_rules (rule_text) VALUES ('synthetic upgrade rule') RETURNING id")).rows[0].id;
+    await migrator.query('INSERT INTO app.rule_clients (client_id, rule_id) VALUES ($1, $2)', [oldClient, oldRule]);
+    await migrator.query("INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, 1, '09:00')", [oldRule]);
+    await migrator.query('COMMIT');
+    assert.equal((await migrator.query("SELECT to_regclass('app.attendance') AS name")).rows[0].name, null);
     compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
     compose(oldOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const oldGateway = compose(oldOverride, 'ps', '-q', 'hermes').trim();
@@ -113,6 +129,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.connect();
     assert.match((await migrator.query('SHOW server_version')).rows[0].server_version, /^17\.10/);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
+    assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.clients c JOIN app.rule_clients rc ON rc.client_id = c.id JOIN app.training_rules r ON r.id = rc.rule_id JOIN app.rule_slots s ON s.rule_id = r.id WHERE c.first_name = 'Upgrade' AND r.rule_text = 'synthetic upgrade rule' AND s.weekday = 1")).rows[0].n, 1);
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM app.attendance')).rows[0].n, 0);
     agent = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await agent.connect();
     assert.equal((await agent.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');

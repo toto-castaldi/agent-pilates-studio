@@ -117,6 +117,16 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     await waitFor('SELECT count(*) FROM app.training_rules WHERE deactivated_at IS NOT NULL', 1);
     const deactivated = (await migrator.query("SELECT deactivated_by_phone, deactivated_by_name, deactivation_reason FROM app.training_rules WHERE rule_text = 'alpha rule'")).rows[0];
     assert.deepEqual(deactivated, { deactivated_by_phone: '15555550103', deactivated_by_name: 'Synthetic Beta', deactivation_reason: 'synthetic reason' });
+    await waitObservation((entry) => entry.user.includes('deactivate-alpha') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', 'synthetic-attendance-insert', 'attendance-insert'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.attendance', 1);
+    assert.deepEqual((await migrator.query('SELECT created_by_phone, created_by_name FROM app.attendance')).rows[0], { created_by_phone: '15555550102', created_by_name: 'Synthetic Alpha' });
+    await waitObservation((entry) => entry.user.includes('attendance-insert') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-attendance-cancel', 'attendance-cancel'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.attendance WHERE cancelled_at IS NOT NULL', 1);
+    assert.deepEqual((await migrator.query('SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance')).rows[0], { cancelled_by_phone: '15555550103', cancelled_by_name: 'Synthetic Beta', cancellation_reason: 'synthetic reason' });
     let gatewayId = compose('ps', '-q', 'hermes').trim();
     execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /tmp/pilates-injection-marker'], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
@@ -238,6 +248,8 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     await agent1.query('BEGIN');
     await assert.rejects(agent1.query("INSERT INTO app.clients (first_name, last_name) VALUES ('replay', 'synthetic')"), { code: '42501' });
     await agent1.query('ROLLBACK');
+    await assert.rejects(agent1.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1"), { code: '42501' });
+    await assert.rejects(agent1.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged' WHERE id = (SELECT id FROM app.attendance LIMIT 1)"), { code: '42501' });
 
     const noNamePayload = JSON.parse(body('15555550102', 'Synthetic Alpha', 'synthetic-no-name', 'x')) as { entry: Array<{ changes: Array<{ value: { contacts?: unknown } }> }> };
     delete noNamePayload.entry[0].changes[0].value.contacts;
