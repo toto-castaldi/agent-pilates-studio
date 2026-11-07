@@ -16,6 +16,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Estesi gli scenari di registrazione e le verifiche dell'harness a gruppi, più orari, chiarimenti e attribuzione dell'autore (US-002).
 - I tool Pi di domanda segnalano l'attesa dell'utente nei terminali compatibili, tramite il pacchetto condiviso fissato (TEC-018).
 - Gate di chiusura rapido con test in memoria e suite locali e di integrazione separate, mantenute nella CI (TEC-015).
 - Allineati documentazione e test all'avvio diretto Pi, preservando le impostazioni personali e verificando il quality gate (TEC-014).

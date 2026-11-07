@@ -130,7 +130,7 @@ for (const scenario of catalog.scenarios) {
     stage = 'stato iniziale';
     const snapshot = async () => {
       const clients = (await client.query('SELECT first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName" FROM app.clients ORDER BY id')).rows;
-      const rules = (await client.query(`SELECT r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active,
+      const rules = (await client.query(`SELECT r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
         COALESCE((SELECT json_agg(c.first_name || ' ' || c.last_name ORDER BY c.id) FROM app.rule_clients rc JOIN app.clients c ON c.id = rc.client_id WHERE rc.rule_id = r.id), '[]'::json) AS clients,
         COALESCE((SELECT json_agg(json_build_object('weekday', s.weekday, 'time', to_char(s.start_time, 'HH24:MI')) ORDER BY s.weekday, s.start_time) FROM app.rule_slots s WHERE s.rule_id = r.id), '[]'::json) AS slots
         FROM app.training_rules r ORDER BY r.id`)).rows;
@@ -170,7 +170,12 @@ for (const scenario of catalog.scenarios) {
         const flags = [
           /errore|error|failed|fallit|impossibil|unable|sorry/.test(normalized) ? 'errore segnalato' : 'nessun errore riconosciuto',
           turn.response.contains.every((word) => normalized.includes(word.toLocaleLowerCase('it-IT'))) ? 'nomi presenti' : 'nomi mancanti',
-          responseMatches(text, { ...turn.response, contains: [] }) ? 'orario presente' : 'orario mancante',
+          responseMatches(text, { contains: [], times: turn.response.times }) ? 'orari presenti' : 'orari mancanti',
+          responseMatches(text, { contains: [], anyOf: turn.response.anyOf }) ? 'alternative presenti' : 'alternative mancanti',
+          responseMatches(text, { contains: [], excludes: turn.response.excludes }) ? 'esclusioni rispettate' : `esclusioni violate ${turn.response.excludes.map((word, index) => normalized.includes(word.toLocaleLowerCase('it-IT')) ? index + 1 : 0).filter(Boolean).join('/')}`,
+          responseMatches(text, { contains: [], question: turn.response.question }) ? 'requisito domanda rispettato' : 'requisito domanda non rispettato',
+          /altro|altra|aiut|ulterior|aggiung|serv/i.test(text) ? 'possibile domanda accessoria' : 'nessuna domanda accessoria riconosciuta',
+          /registr|salvat|inser|proced/i.test(text) ? 'menzione registrazione' : 'nessuna menzione registrazione',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
           /conferm|ambigu|manc|precis|chied|quale|qual è/i.test(text) ? 'possibile richiesta chiarimento' : 'nessun chiarimento riconosciuto',
           /database|sql|strument|tool|dati/i.test(text) ? 'menzione dati/tool' : 'nessuna menzione dati/tool',
