@@ -43,7 +43,7 @@ Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e 
 - Stato di attesa dell'utente segnalato al terminale dai tool Pi di domanda (REQ-NFR-011).
 - Dettato vocale Pi su server remoto tramite il microfono del client inoltrato via SSH (REQ-NFR-012).
 - Tracciabilità del template di origine e procedura per valutarne futuri aggiornamenti (REQ-NFR-013).
-- Adozione del processo e degli strumenti condivisi del template v1.4.0, con modulo architetturale e consultazione Pi del backlog (REQ-NFR-014).
+- Adozione del processo e degli strumenti condivisi del template v1.4.0, con modulo architetturale e consultazione Pi del backlog (REQ-NFR-014), aggiornati alla v1.5.0 con filtri, stati dai branch e shared claims attivi (REQ-NFR-015).
 - Gate di chiusura dello sviluppo basati su soli test di unità in memoria (REQ-NFR-008).
 - Canale home fissato in configurazione e nessun avviso di sistema di Hermes inviato agli utilizzatori (REQ-WA-003).
 - Le capacità della v0.1.0 restano disponibili e i loro requisiti restano vincolanti.
@@ -206,7 +206,7 @@ Il repository deve includere il template Pi `/start`, utilizzabile per ottenere 
 
 Il repository deve includere il template Pi `/work-alone`, che istruisce l'assistente a implementare autonomamente l'attività già avviata e a fermarsi solo quando ha bisogno dell'intervento dell'utente. L'attività è identificata dal branch e dai documenti canonici; se non è identificabile univocamente o non è avviata, l'assistente chiede chiarimenti anziché sceglierne o avviarne un'altra.
 
-Il template richiede di seguire il processo, i criteri di accettazione, le verifiche e la Definition of Done del progetto, chiedendo intervento per blocchi, decisioni necessarie o autorizzazioni richieste. La sua invocazione non autorizza merge o push: restano soggetti a richiesta esplicita. Il template è un'istruzione al modello, non una garanzia tecnica; deve essere privo di segreti e dati personali, nel rispetto di REQ-NFR-002 e REQ-NFR-007.
+Il template richiede di seguire il processo, i criteri di accettazione, le verifiche e la Definition of Done del progetto, chiedendo intervento per blocchi, decisioni necessarie o autorizzazioni richieste. Con l'adozione di REQ-NFR-015 (TEC-024), sono consentiti i soli push del branch dell'item previsti dagli shared claims attivi ai cambi di stato; merge, push su `main` e altri push restano soggetti a richiesta esplicita. Fino all'adozione resta valido il divieto di push senza richiesta esplicita. Il template è un'istruzione al modello, non una garanzia tecnica; deve essere privo di segreti e dati personali, nel rispetto di REQ-NFR-002 e REQ-NFR-007.
 
 #### REQ-NFR-011 — Stato di attesa dei tool Pi di domanda
 
@@ -228,13 +228,19 @@ Il progetto deve definire un solo modulo architetturale, `MOD-001 — Agente`, p
 
 In Pi l'operatore deve poter consultare gli item di `BACKLOG.md` senza modificarli, navigando tra gli item e scorrendone il contenuto; il visualizzatore si apre con `/backlog` e dispone di una scorciatoia configurabile o disattivabile. Gli strumenti rispettano REQ-NFR-002, REQ-NFR-007 e il gate di REQ-NFR-008; le prove non leggono né modificano impostazioni personali.
 
+#### REQ-NFR-015 — Template v1.5.0 e coordinamento del lavoro parallelo
+
+Il progetto deve aggiornare processo, skill e visualizzatore Pi del backlog al template `agile-project-template` v1.5.0, preservando le personalizzazioni e le protezioni dello studio e registrando risorse adottate e divergenze secondo REQ-NFR-013. Il visualizzatore deve permettere di filtrare gli item per tipo, priorità e stato e mostrare anche gli stati risultanti dai branch degli item; le personalizzazioni del visualizzatore previste da REQ-NFR-014 restano disponibili. La consultazione non modifica i file di lavoro; l'aggiornamento dei riferimenti Git tramite fetch in background e i suoi limiti devono essere documentati.
+
+Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra copie del progetto: prima di avviare un item si controllano i branch esistenti e, ai cambi di stato, si pubblica il branch dell'item secondo il processo adottato. Un errore di fetch o push e l'assenza di `origin` sono gestiti e segnalati secondo tale processo. Non è autorizzato il push automatico di `main`, né il merge automatico. La compatibilità con `/work-alone` segue REQ-NFR-010; gli altri vincoli di sicurezza e del gate rimangono invariati (REQ-NFR-002, REQ-NFR-007, REQ-NFR-008).
+
 ## 7. Release acceptance — v0.2.0
 
 - Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
 - Un utilizzatore chiede chi si allena in un giorno, una fascia o un orario e quando si allena un cliente, e riceve risposte coerenti con le regole attive.
 - Un utilizzatore comunica cambiamenti espliciti o impliciti; l'agente disattiva le regole superate con motivo, data e autore, lo comunica e mantiene lo storico; il database rifiuta la cancellazione delle regole.
 - Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
-- Processo e strumenti del template v1.4.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in sola lettura in Pi e il modulo concordato è documentato.
+- Processo e strumenti del template v1.5.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in Pi con filtri e stati dai branch, gli shared claims sono attivi e il modulo concordato è documentato.
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

@@ -74,3 +74,9 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
 - Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare l'elenco dei numeri consentiti.
 - Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). La prova pubblica temporanea non autorizza l'uso continuativo; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
+
+## 10. Parallel work
+
+- **Shared claims:** `on`
+
+I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS.md` §6.4. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.

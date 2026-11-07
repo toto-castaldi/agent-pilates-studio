@@ -166,6 +166,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0, il visualizzatore Pi del backlog e il modulo architetturale Agente.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 e attivare gli shared claims, consentendo i relativi push dei branch item anche con `/work-alone`.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-013 — Separazione della configurazione Pi condivisa e personale
@@ -346,6 +348,25 @@
 - **Decision:** Su accordo dell'utente (2026-11-07), «unassigned» nella regola del modulo di PROCESS v1.4.0 significa privo di modulo, non privo di versione: TEC-019 può avere `MOD-001` senza essere assegnato a una versione. L'interpretazione è coerente con la skill `add-item` del template.
 - **Outcome:** Adottati processo e skill v1.4.0 senza divergenze, modulo Agente e visualizzatore Pi revisionato con adattamenti documentati. Superati confronto dei file, `test:local`, `test:pi` con TUI Pi 1.5.0 isolata e gate rapido; la prova TUI non copre ogni terminale o dimensione né un turno reale del modello. Completato il 2026-11-07.
 
+#### TEC-024 — Adozione del template v1.5.0
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Module:** MOD-001 — Agente
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-024-adozione-template-v1-5-0`
+- **Dependencies:** TEC-023
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-010, REQ-NFR-013, REQ-NFR-014, REQ-NFR-015
+- **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Adottare processo, skill e visualizzatore Pi del template `agile-project-template` tag `v1.5.0`, commit `0cea2fd0ee138edbb845a01aa6bced2872145d2a`, a partire dalla base adottata con TEC-023. Attivare gli shared claims e mantenere le personalizzazioni e le protezioni dello studio; non aggiornare il template indiscriminatamente.
+- **Acceptance criteria:**
+  - Processo e skill condivise sono confrontati e allineati al riferimento fissato; eventuali conflitti o deroghe sono concordati e registrati, senza sovrascrivere le personalizzazioni dello studio. `AGENTS.md` attiva gli shared claims secondo il processo adottato, mantenendo invariati sicurezza e gate rapido.
+  - Prima di avviare un item `Todo` si controllano i branch locali e remoti dopo il fetch previsto; un branch corrispondente o un errore di fetch sono segnalati e gestiti secondo il processo. Il branch item è pubblicato ai cambi di stato previsti; un push fallito e l'assenza di `origin` sono gestiti e segnalati secondo il processo. I claim non costituiscono un blocco atomico tra avvii concorrenti. Merge e push su `main` non sono automatici.
+  - `/work-alone` e la documentazione pertinente sono allineati a REQ-NFR-010: sono consentiti solo i push del branch item previsti dagli shared claims ai cambi di stato; gli altri push e i merge richiedono una richiesta esplicita. I template restano istruzioni, non garanzie tecniche.
+  - Il visualizzatore Pi aggiornato mantiene gli item non assegnati, inclusi quelli su una riga, e i metadati epic già supportati; consente filtri per tipo, priorità e stato, navigazione tra risultati e consultazione degli stati dai branch locali e remote-tracking non integrati, con indicazione della provenienza e dei conflitti. All'apertura usa i riferimenti disponibili e aggiorna la vista dopo il fetch in background; errori e limiti sono visibili. Non modifica i file di lavoro; il fetch può aggiornare o rimuovere riferimenti remoti locali.
+  - Test ripetibili con repository, branch e remoti sintetici verificano risoluzione degli stati, precedenza e branch multipli, filtri e navigazione, fetch riuscito o fallito e assenza di modifiche ai file di lavoro, oltre alle personalizzazioni già esistenti. Una prova Pi isolata verifica caricamento e uso dell'estensione e documenta i limiti. Le prove con Git, rete locale, processi o Pi restano separate dal gate in memoria e non leggono né modificano configurazioni personali.
+  - Test o prove isolate con remoti sintetici verificano il flusso degli shared claims, inclusi branch esistente, fetch o push fallito e assenza di `origin`, senza pubblicare branch reali. README e documentazione pertinente descrivono filtri, fetch, gestione dei claim, effetti sui riferimenti Git e limiti; `docs/TEMPLATE-ORIGIN.md` distingue le risorse effettivamente adottate dalle divergenze e dai confronti. Non si modificano né pubblicano il repository del template o dati personali.
+- **Outcome:** Adottati processo e skill v1.5.0, shared claims e visualizzatore con filtri e stati dai branch, preservando gli adattamenti dello studio. Superati confronto del riferimento fissato, gate rapido, `test:local` con remoti sintetici e `test:pi` con TUI isolata; i claim non sono atomici e la prova Pi non copre tutti i terminali né un turno del modello. Completato il 2026-11-07.
+
 ### EPIC-002 — Agente e integrazioni
 
 #### BUG-001 — Avviso del canale home inviato agli utilizzatori
@@ -502,7 +523,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.2.0:
 
-TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
+TEC-024 dipende da TEC-023 già completato ed è indipendente dagli item della pianificazione. TEC-023 dipende da TEC-022 già completato ed è indipendente dagli item della pianificazione. TEC-021 dipende da TEC-009 già completato. TEC-013 è indipendente dagli item della pianificazione e dipende da TEC-007 già completato. TEC-014 dipende da TEC-013 ed è necessario per ripristinare il quality gate, richiesto anche per completare TEC-010; non impedisce di proseguire l'implementazione di TEC-010. TEC-015 non ha dipendenze ed è suggerito prima di TEC-011, così il lavoro successivo usa già i gate di chiusura rapidi. TEC-016 dipende da TEC-007 e TEC-014, entrambi completati, ed è indipendente dagli item della pianificazione. TEC-017, TEC-018, TEC-020 e TEC-022 non hanno dipendenze e sono indipendenti dagli item della pianificazione. BUG-001 non ha dipendenze ed è suggerito prima di US-002, così gli scenari conversazionali non filtrano più l'avviso. TEC-019, non assegnato, dipende da BUG-001.
 
 1. SPIKE-002.
 2. TEC-010.

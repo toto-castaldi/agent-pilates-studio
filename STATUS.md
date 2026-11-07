@@ -8,7 +8,7 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione e aggiornamento delle regole verificati; dettato remoto da avviare | 17/18 items done (94%) |
+| v0.2.0 | Open | Template adottato; consultazione e aggiornamento verificati, dettato remoto da avviare | 18/19 items done (95%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
@@ -17,7 +17,7 @@ I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una vers
 | Todo | 1 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 17 |
+| Done | 18 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
 | TEC-023 | EPIC-001 — Fondamenta del progetto | — | Adozione del template v1.4.0 | 2026-11-07 |
@@ -40,7 +41,6 @@ None.
 | US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
 | TEC-012 | EPIC-004 — Pianificazione delle lezioni | — | Scenari conversazionali e harness | 2026-11-06 |
 | TEC-018 | EPIC-001 — Fondamenta del progetto | — | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
-| TEC-011 | EPIC-004 — Pianificazione delle lezioni | — | Contesto dell'agente dello studio | 2026-11-06 |
 
 ## Next ready items
 
@@ -60,6 +60,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 
 ## Notes
 
+- Decisione dell'utente (2026-11-07): TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 con shared claims attivi e la relativa eccezione ai push in `/work-alone`.
 - Decisione dell'utente (2026-11-07): TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0 e definire il solo modulo architetturale Agente.
 - Decisione dell'utente (2026-11-07): TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli in TEC-022.
 - Decisione dell'utente (2026-11-07): TEC-021 è aggiunto alla v0.2.0 per consentire `.env` come collegamento simbolico privato.

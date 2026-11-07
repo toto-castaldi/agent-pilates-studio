@@ -14,6 +14,7 @@
  * It never writes any file.
  */
 
+import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -27,6 +28,8 @@ import { matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@ea
 
 const BACKLOG_FILE = "BACKLOG.md";
 const DEFAULT_SHORTCUT = "ctrl+shift+b";
+const FETCH_TIMEOUT_MS = 10_000;
+const GIT_TIMEOUT_MS = 5_000;
 
 interface BacklogItem {
 	/** Heading text after `#### `, e.g. `US-001 — Title`. */
@@ -39,9 +42,57 @@ interface BacklogItem {
 	epic?: string;
 	/** Raw Markdown lines of the item body, in file order. */
 	body: string[];
+	/** Ref that supplied the item; absent for the working tree. */
+	source?: string;
+	alsoIn?: string[];
 }
 
+type FetchState = "none" | "fetching" | "failed" | "done";
 type LoadResult = { items: BacklogItem[] } | { message: string };
+
+const ALL = "all";
+const FILTERS = [
+	{ key: "t", field: "Type", values: [ALL, "User Story", "Task", "Spike", "Bug"] },
+	{ key: "p", field: "Priority", values: [ALL, "P0", "P1", "P2"] },
+	{ key: "s", field: "Status", values: [ALL, "Todo", "In Progress", "Blocked", "Done"] },
+] as const;
+type FilterField = (typeof FILTERS)[number]["field"];
+type Filters = Record<FilterField, string>;
+
+function defaultFilters(): Filters {
+	return { Type: ALL, Priority: ALL, Status: "Todo" };
+}
+
+function fieldValue(item: BacklogItem, field: string): string | undefined {
+	const wanted = field.toLowerCase();
+	for (const line of item.body) {
+		const bullet = /^[-*+]\s+(.*)$/.exec(line);
+		if (!bullet) continue;
+		const text = bullet[1]!;
+		const matches = [...text.matchAll(/\*\*([^*:]+):\*\*\s*/g)];
+		for (let i = 0; i < matches.length; i++) {
+			const m = matches[i]!;
+			if (m[1]!.trim().toLowerCase() !== wanted) continue;
+			const start = m.index! + m[0].length;
+			const end = i + 1 < matches.length ? matches[i + 1]!.index! : text.length;
+			return text.slice(start, end).replace(/\s*·\s*$/, "").trim();
+		}
+	}
+	return undefined;
+}
+
+function matchesFilters(item: BacklogItem, filters: Filters): boolean {
+	return FILTERS.every(({ field }) => {
+		const selected = filters[field];
+		if (selected === ALL) return true;
+		const value = fieldValue(item, field);
+		return value !== undefined && value.toLowerCase().startsWith(selected.toLowerCase());
+	});
+}
+
+function describeFilters(filters: Filters): string {
+	return FILTERS.map(({ field }) => `${field}: ${filters[field]}`).join(" · ");
+}
 
 // ---------------------------------------------------------------------------
 // Parsing
@@ -118,6 +169,112 @@ function loadBacklog(cwd: string): LoadResult {
 }
 
 // ---------------------------------------------------------------------------
+// Item branches
+// ---------------------------------------------------------------------------
+
+const ITEM_BRANCH = /^(?:us|task|spike|fix)\/([A-Za-z]+-\d+)(?:-|$)/;
+
+function itemId(item: BacklogItem): string | undefined {
+	return /^([A-Za-z]+-\d+)\b/.exec(item.heading)?.[1]?.toUpperCase();
+}
+
+/** Run git without prompts; null means failure, timeout, or missing git. */
+function git(cwd: string, args: string[], timeout = GIT_TIMEOUT_MS): Promise<string | null> {
+	return new Promise((resolve) => {
+		try {
+			execFile("git", args, {
+				cwd, timeout, maxBuffer: 32 * 1024 * 1024,
+				env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+			}, (error, stdout) => resolve(error ? null : stdout));
+		} catch {
+			resolve(null);
+		}
+	});
+}
+
+const splitLines = (out: string | null) => (out ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+
+async function gitRemotes(cwd: string): Promise<string[] | null> {
+	if ((await git(cwd, ["rev-parse", "--is-inside-work-tree"]))?.trim() !== "true") return null;
+	return splitLines(await git(cwd, ["remote"]));
+}
+
+async function mergeTargets(cwd: string, remotes: string[]): Promise<string[]> {
+	const targets: string[] = [];
+	const exists = async (ref: string) => (await git(cwd, ["rev-parse", "--verify", "--quiet", ref])) !== null;
+	if (await exists("refs/heads/main")) targets.push("refs/heads/main");
+	for (const remote of remotes) {
+		const head = (await git(cwd, ["symbolic-ref", "--quiet", `refs/remotes/${remote}/HEAD`]))?.trim();
+		if (head) targets.push(head);
+		else if (await exists(`refs/remotes/${remote}/main`)) targets.push(`refs/remotes/${remote}/main`);
+	}
+	return targets;
+}
+
+interface Candidate { ref: string; time: number }
+
+async function itemBranches(cwd: string, remotes: string[]): Promise<Map<string, Candidate[]>> {
+	const roots = ["refs/heads", "refs/remotes"];
+	const current = (await git(cwd, ["symbolic-ref", "--quiet", "--short", "HEAD"]))?.trim();
+	const merged = new Set<string>();
+	for (const target of await mergeTargets(cwd, remotes)) {
+		for (const ref of splitLines(await git(cwd, ["for-each-ref", "--format=%(refname)", `--merged=${target}`, ...roots]))) merged.add(ref);
+	}
+	const byName = new Map<string, Candidate & { local: boolean }>();
+	const refs = splitLines(await git(cwd, ["for-each-ref", "--format=%(refname)%09%(committerdate:unix)", ...roots]));
+	for (const entry of refs) {
+		const [full, time] = entry.split("\t");
+		if (!full || merged.has(full)) continue;
+		let name: string;
+		let local: boolean;
+		if (full.startsWith("refs/heads/")) {
+			name = full.slice("refs/heads/".length);
+			local = true;
+		} else {
+			const rest = full.slice("refs/remotes/".length);
+			const remote = remotes.find((r) => rest.startsWith(`${r}/`));
+			if (!remote) continue;
+			name = rest.slice(remote.length + 1);
+			local = false;
+		}
+		if (!ITEM_BRANCH.test(name)) continue;
+		const ref = local ? name : full.slice("refs/remotes/".length);
+		const known = byName.get(name);
+		if (known && (known.local || !local)) continue;
+		byName.set(name, { ref, time: Number(time) || 0, local });
+	}
+	const currentId = current ? ITEM_BRANCH.exec(current)?.[1]?.toUpperCase() : undefined;
+	const byId = new Map<string, Candidate[]>();
+	for (const [name, candidate] of byName) {
+		const id = ITEM_BRANCH.exec(name)![1]!.toUpperCase();
+		if (id === currentId) continue;
+		const list = byId.get(id) ?? [];
+		list.push({ ref: candidate.ref, time: candidate.time });
+		byId.set(id, list);
+	}
+	for (const list of byId.values()) list.sort((a, b) => b.time - a.time);
+	return byId;
+}
+
+async function resolveFromBranches(cwd: string, remotes: string[], base: BacklogItem[]): Promise<BacklogItem[]> {
+	const ids = new Set(base.map(itemId).filter((id): id is string => id !== undefined));
+	const branches = await itemBranches(cwd, remotes);
+	const resolved = new Map<string, BacklogItem>();
+	for (const [id, candidates] of branches) {
+		if (!ids.has(id)) continue;
+		for (const candidate of candidates) {
+			const text = await git(cwd, ["show", `${candidate.ref}:./${BACKLOG_FILE}`]);
+			const item = text === null ? undefined : parseBacklog(text).find((i) => itemId(i) === id);
+			if (!item) continue;
+			const alsoIn = candidates.filter((c) => c !== candidate).map((c) => c.ref);
+			resolved.set(id, { ...item, source: candidate.ref, alsoIn: alsoIn.length > 0 ? alsoIn : undefined });
+			break;
+		}
+	}
+	return base.map((item) => resolved.get(itemId(item) ?? "") ?? item);
+}
+
+// ---------------------------------------------------------------------------
 // Styling
 // ---------------------------------------------------------------------------
 
@@ -191,6 +348,8 @@ function renderBodyLine(theme: Theme, line: string, width: number): string[] {
 // ---------------------------------------------------------------------------
 
 class BacklogOverlay {
+	private matching: number[] = [];
+	private fetchState: FetchState = "none";
 	private index = 0;
 	private scroll = 0;
 	private bodyHeight = 10;
@@ -198,12 +357,51 @@ class BacklogOverlay {
 	private cachedLines?: string[];
 
 	constructor(
-		private readonly load: LoadResult,
+		private load: LoadResult,
+		private readonly filters: Filters,
 		private readonly theme: Theme,
 		private readonly rows: () => number,
 		private readonly requestRender: () => void,
 		private readonly done: () => void,
-	) {}
+	) { this.applyFilters(); }
+
+	setItems(items: BacklogItem[]): void {
+		this.load = { items };
+		this.applyFilters(true);
+		this.invalidate();
+		this.requestRender();
+	}
+
+	setFetchState(state: FetchState): void {
+		this.fetchState = state;
+		this.invalidate();
+		this.requestRender();
+	}
+
+	private applyFilters(keepScroll = false): void {
+		if (!("items" in this.load)) return;
+		const current = this.matching[this.index];
+		this.matching = [];
+		this.load.items.forEach((item, i) => { if (matchesFilters(item, this.filters)) this.matching.push(i); });
+		const kept = current === undefined ? -1 : this.matching.indexOf(current);
+		this.index = kept >= 0 ? kept : 0;
+		if (!(keepScroll && kept >= 0)) this.scroll = 0;
+	}
+
+	private cycleFilter(data: string): boolean {
+		let step = 0;
+		const filter = FILTERS.find((f) => {
+			if (matchesKey(data, f.key)) step = 1;
+			else if (matchesKey(data, `shift+${f.key}`)) step = -1;
+			return step !== 0;
+		});
+		if (!filter) return false;
+		const values: readonly string[] = filter.values;
+		const at = Math.max(0, values.indexOf(this.filters[filter.field]));
+		this.filters[filter.field] = values[(at + step + values.length) % values.length]!;
+		this.applyFilters();
+		return true;
+	}
 
 	invalidate(): void {
 		this.cachedWidth = undefined;
@@ -216,7 +414,13 @@ class BacklogOverlay {
 			return;
 		}
 		if (!("items" in this.load)) return;
-		const count = this.load.items.length;
+		if (this.cycleFilter(data)) {
+			this.invalidate();
+			this.requestRender();
+			return;
+		}
+		const count = this.matching.length;
+		if (count === 0) return;
 		const before = { index: this.index, scroll: this.scroll };
 
 		if (matchesKey(data, "left") || matchesKey(data, "up")) {
@@ -274,22 +478,45 @@ class BacklogOverlay {
 		}
 
 		const items = this.load.items;
-		const item = items[this.index]!;
-
-		// Header: position, version with state, epic.
-		const position = th.bold(`${this.index + 1} / ${items.length}`);
+		const fetchNotice = this.fetchState === "fetching" ? th.fg("dim", "fetching…")
+			: this.fetchState === "failed" ? th.fg("warning", "fetch failed: showing last known state") : "";
+		const filterLine = [th.fg("muted", describeFilters(this.filters)), fetchNotice].filter(Boolean).join(th.fg("dim", " · "));
+		const help = th.fg("dim", "←/→ item · t/p/s filter · PgUp/PgDn scroll · Esc/q close");
+		if (this.matching.length === 0) {
+			lines.push(rule("╭", "╮", "Backlog"));
+			lines.push(row(` ${th.bold(`0 / 0 (${items.length} total)`)}`));
+			lines.push(row(` ${filterLine}`));
+			lines.push(rule("├", "┤"));
+			lines.push(row(""));
+			lines.push(row(" No items match the filters"));
+			for (let i = 0; i < Math.max(0, totalHeight - 9); i++) lines.push(row(""));
+			lines.push(rule("├", "┤"));
+			lines.push(row(` ${help}`));
+			lines.push(rule("╰", "╯"));
+			this.cachedWidth = width;
+			this.cachedLines = lines;
+			return lines;
+		}
+		const item = items[this.matching[this.index]!]!;
+		const position = th.bold(`${this.index + 1} / ${this.matching.length} (${items.length} total)`);
 		const version = item.version
 			? item.version + (item.versionState ? ` (${item.versionState})` : "")
 			: "no version";
 		const header = [position, th.fg("muted", version), th.fg("muted", item.epic ?? "no epic")].join(
 			th.fg("dim", " · "),
 		);
+		const origin: string[] = [];
+		if (item.source) {
+			const from = th.fg("accent", `from ${item.source}`);
+			const also = item.alsoIn ? th.fg("warning", `also in: ${item.alsoIn.join(", ")}`) : "";
+			origin.push(...wrapTextWithAnsi([from, also].filter(Boolean).join(th.fg("dim", " · ")), textW));
+		}
 		const title = wrapTextWithAnsi(th.bold(styleInline(th, item.heading)), textW);
 
 		const body: string[] = [];
 		for (const l of item.body) body.push(...renderBodyLine(th, l, textW));
 
-		const fixed = 2 /* borders */ + 1 /* header */ + 1 /* separator */ + title.length + 1 /* blank */ + 1 /* separator */ + 1 /* help */;
+		const fixed = 2 /* borders */ + 2 /* header, filters */ + origin.length + 1 /* separator */ + title.length + 1 /* blank */ + 1 /* separator */ + 1 /* help */;
 		this.bodyHeight = Math.max(3, totalHeight - fixed);
 		const maxScroll = Math.max(0, body.length - this.bodyHeight);
 		if (this.scroll > maxScroll) this.scroll = maxScroll;
@@ -298,6 +525,8 @@ class BacklogOverlay {
 
 		lines.push(rule("╭", "╮", "Backlog"));
 		lines.push(row(` ${header}`));
+		lines.push(row(` ${filterLine}`));
+		for (const l of origin) lines.push(row(` ${l}`));
 		lines.push(rule("├", "┤"));
 		for (const l of title) lines.push(row(` ${l}`));
 		lines.push(row(""));
@@ -307,7 +536,7 @@ class BacklogOverlay {
 				? `lines ${this.scroll + 1}-${Math.min(body.length, this.scroll + this.bodyHeight)} of ${body.length}`
 				: "";
 		lines.push(rule("├", "┤", range));
-		lines.push(row(` ${th.fg("dim", "←/→ item · PgUp/PgDn scroll · Esc/q close")}`));
+		lines.push(row(` ${help}`));
 		lines.push(rule("╰", "╯"));
 
 		this.cachedWidth = width;
@@ -355,8 +584,30 @@ function resolveShortcut(cwd: string): ShortcutSetting {
 	};
 }
 
+async function refreshFromBranches(cwd: string, base: BacklogItem[], overlay: BacklogOverlay, isClosed: () => boolean): Promise<void> {
+	try {
+		const remotes = await gitRemotes(cwd);
+		if (remotes === null || isClosed()) return;
+		const fetch = remotes.length > 0 ? git(cwd, ["fetch", "--prune", "--quiet"], FETCH_TIMEOUT_MS) : null;
+		if (fetch) overlay.setFetchState("fetching");
+		const local = await resolveFromBranches(cwd, remotes, base);
+		if (!isClosed()) overlay.setItems(local);
+		if (!fetch) return;
+		const fetched = (await fetch) !== null;
+		if (isClosed()) return;
+		if (!fetched) { overlay.setFetchState("failed"); return; }
+		const updated = await resolveFromBranches(cwd, remotes, base);
+		if (isClosed()) return;
+		overlay.setItems(updated);
+		overlay.setFetchState("done");
+	} catch {
+		if (!isClosed()) overlay.setFetchState("failed");
+	}
+}
+
 export default function (pi: ExtensionAPI) {
 	let open = false;
+	const filters = defaultFilters();
 
 	const show = async (ctx: ExtensionContext) => {
 		if (ctx.mode !== "tui") {
@@ -368,15 +619,20 @@ export default function (pi: ExtensionAPI) {
 		try {
 			// Read the file again at every opening, so the overlay always shows the current backlog.
 			const load = loadBacklog(ctx.cwd);
+			let closed = false;
 			await ctx.ui.custom<void>(
-				(tui, theme, _keybindings, done) =>
-					new BacklogOverlay(
+				(tui, theme, _keybindings, done) => {
+					const overlay = new BacklogOverlay(
 						load,
+						filters,
 						theme,
 						() => tui.terminal.rows,
 						() => tui.requestRender(),
-						() => done(),
-					),
+						() => { closed = true; done(); },
+					);
+					if ("items" in load) void refreshFromBranches(ctx.cwd, load.items, overlay, () => closed);
+					return overlay;
+				},
 				{
 					overlay: true,
 					overlayOptions: { anchor: "center", width: "80%", minWidth: 50, maxHeight: "90%", margin: 1 },
