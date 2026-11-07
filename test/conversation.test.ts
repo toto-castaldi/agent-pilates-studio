@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, hasHomeChannelNotice, historyPreserved, responseMatches, snapshotsMatch, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, snapshotsMatch, stateMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -10,6 +10,34 @@ const actual: ActualState = {
   clients: [...expected.clients],
   rules: [{ text: 'Antonio Rossi venerdì alle 9', clients: ['Antonio Rossi'], slots: [{ weekday: 5, time: '09:00' }], authorPhone: '15555550102', authorName: 'Sintetico', active: true, hasCreatedAt: true }],
 };
+
+test('attendance snapshots check exact rows, authenticated authors and unchanged rules and clients', () => {
+  const client = { ...actual.clients[0], id: '1', createdAt: '2024-01-01T09:00:00Z' };
+  const rule = { ...actual.rules[0], id: '10', createdAt: '2024-01-01T09:00:00Z' };
+  const before = { clients: [client], rules: [rule], attendance: [] };
+  const row = { id: '4', client: 'Antonio Rossi', lessonDate: '2025-01-06', time: '19:00', outcome: 'present', authorPhone: '15555550102', authorName: 'Sintetico', createdAt: '2026-01-01T09:00:00Z', cancelledAt: null, cancelledByPhone: null, cancelledByName: null, cancellationReason: null };
+  const after = { ...before, attendance: [row] };
+  const expectation = { addedClients: [], attendance: [row] };
+  assert.ok(attendanceScenarioMatches(before, after, expectation));
+  assert.equal(stateMatches(after, expected), false);
+  for (const change of [{ lessonDate: '2025-01-07' }, { time: '19:01' }, { outcome: 'excused_absence' }, { authorPhone: '999' }, { authorName: 'Falso' }, { createdAt: '' }, { cancelledAt: '2026-01-01' }]) {
+    assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [{ ...row, ...change }] }, expectation), false);
+  }
+  assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [row, row] }, expectation), false);
+  assert.equal(attendanceScenarioMatches(before, { ...after, rules: [] }, expectation), false);
+  assert.equal(attendanceScenarioMatches(before, { ...after, clients: [{ ...client, createdAt: '2025-01-01' }] }, expectation), false);
+  const extra = { firstName: 'Lucia', lastName: 'Verdi', id: '2', createdAt: '2026-01-01T09:00:00Z', authorPhone: '15555550102', authorName: 'Sintetico' };
+  assert.ok(attendanceScenarioMatches(before, { ...after, clients: [client, extra] }, { ...expectation, addedClients: [extra] }));
+  assert.equal(attendanceScenarioMatches(before, { ...after, clients: [client, { ...extra, authorPhone: '999' }] }, { ...expectation, addedClients: [extra] }), false);
+  assert.ok(historyPreserved(after, after));
+  assert.equal(historyPreserved(after, { ...after, attendance: [{ ...row, id: '5' }] }), false);
+});
+
+test('relative day uses the Rome calendar across midnight and DST', () => {
+  assert.equal(romeDate(new Date('2025-01-05T23:30:00Z')), '2025-01-06');
+  assert.equal(romeDate(new Date('2025-07-05T22:30:00Z')), '2025-07-06');
+  assert.equal(romeDate(new Date('2025-01-05T22:30:00Z')), '2025-01-05');
+});
 
 test('home-channel notices are detected rather than excluded from replies', () => {
   assert.equal(hasHomeChannelNotice('📬 No home channel is set for Whatsapp. Synthetic notice.'), true);
