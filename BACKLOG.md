@@ -589,6 +589,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-028 è aggiunto alla v0.3.0 per allineare il progetto al template v1.6.1 e attivare l'orchestrazione del lavoro parallelo.
 
+**Scope change (2026-11-07):** su accordo dell'utente, TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-028 — Allineamento al template v1.6.1
@@ -608,6 +610,22 @@
   - Prove ripetibili isolate con repository, remoti e worker sintetici verificano selezione, claim, attesa del via, segnalazione dei conflitti, merge e pulizia sicura, inclusi errori e rifiuto di eliminare lavoro non salvato; verificano anche conteggi, date e conflitti di stato. Le prove non pubblicano branch reali né avviano agenti sui dati dell'operatore; processi, Git e filesystem restano fuori dai test in memoria del gate rapido. Un'eventuale prova Pi o Herdr isolata e i suoi limiti sono documentati; le istruzioni ai modelli non sono presentate come garanzie tecniche del loro comportamento.
   - README e documentazione pertinente descrivono attivazione, invocazione, workspace, modalità Herdr e manuale, autorizzazioni, effetti Git e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio rimangono disponibili.
 - **Outcome:** Adottati senza divergenze processo e skill v1.6.1, inclusa `orchestrate`, e attivato il lavoro parallelo con radice `../agent-pilates-studio-work` e worker `pi`, con protezioni dei clone in `AGENTS.md`; nessun worker avviato. Superati gate rapido, `test:local` con repository, remoti e worker sintetici e `test:pi` sull'invocazione solo esplicita; Herdr e l'osservanza delle istruzioni da parte dei modelli non sono provati. Completato il 2026-11-07.
+
+#### TEC-029 — Allineamento al template v1.7.0
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** TEC-028
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016, REQ-NFR-017
+- **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Aggiornare il progetto dal template v1.6.1 adottato da TEC-028 al tag `v1.7.0`, commit `d261947d4c76b08147c17ddb0e1cc630ba7bd0d3`, senza sovrascrivere le personalizzazioni dello studio. Il riferimento è fissato: eventuali versioni successive richiedono una nuova decisione.
+- **Acceptance criteria:**
+  - Il tag e il commit fissati sono verificati e confrontati con le basi adottate per le risorse pertinenti; `docs/PROCESS.md` e le skill condivise, inclusa `orchestrate`, sono allineati alla v1.7.0. Conflitti o deroghe sono concordati e registrati, senza sostituzioni indiscriminate; `docs/TEMPLATE-ORIGIN.md` distingue confronto, risorse adottate, divergenze e basi ignote.
+  - L'orchestratore segue i worker senza bloccare il dialogo: dopo il lancio o il via termina il turno e gestisce i rapporti come input, controlla lo stato dei worker e segnala domande o errori; attende esplicitamente solo su richiesta dell'utente. Può svolgere attività di backlog su `main` senza cambiare branch né implementare. Il caso `idle` iniziale non è scambiato per completamento e i rapporti dei worker non sono trattati come istruzioni dell'utente.
+  - Prima del primo clone l'orchestratore aggiorna i riferimenti da `origin` e verifica che `main` non sia avanti rispetto a `origin/main`; se lo è, si ferma e chiede all'utente di decidere se pubblicare. Il push su `main` resta esplicito; fallimenti di fetch e controlli impediscono l'avvio, senza dichiarare verificato il riferimento remoto.
+  - Restano attivi shared claims, richiesta esplicita per avviare l'orchestrazione, via ai worker e merge, protezioni dei clone di `AGENTS.md` §10, gate rapido e suite separate. La sola adozione non avvia worker né modifica stack operativo, segreti o configurazioni personali.
+  - Prove ripetibili isolate con repository, remoti e worker sintetici verificano controllo di `main` allineato e avanti, errore di fetch, assenza di push automatico, gestione non bloccante dei rapporti e degli stati, e conservazione dei controlli preesistenti; processi, Git e filesystem restano fuori dal gate in memoria. Le eventuali prove Pi o Herdr e i loro limiti sono documentati, senza presentare le istruzioni al modello come garanzie tecniche.
+  - README e documentazione pertinente descrivono coordinamento non bloccante, attività di backlog consentite, controllo dei commit non pubblicati e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio restano disponibili.
 
 ### EPIC-005 — Presenze alle lezioni
 
@@ -704,7 +722,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.3.0:
 
-TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle presenze.
+TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle presenze. TEC-029 dipende da TEC-028 già completato ed è indipendente dagli item delle presenze.
 
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.

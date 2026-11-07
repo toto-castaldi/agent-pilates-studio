@@ -47,7 +47,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016).
+- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -325,6 +325,14 @@ Date e conteggi dei documenti di stato, controlli prima del merge e risoluzione 
 
 **Decisione dell'utente (2026-11-07):** TEC-028 è aggiunto alla v0.3.0 e la modalità parallela sarà attivata durante l'item; non sono autorizzati avvii di worker, merge o push su `main` automatici.
 
+#### REQ-NFR-017 — Template v1.7.0 e coordinamento non bloccante
+
+Il progetto deve allineare il processo e le skill condivise al template `agile-project-template` v1.7.0, preservando personalizzazioni e protezioni dello studio. Il riferimento adottato e le eventuali divergenze sono registrati secondo REQ-NFR-013; conflitti o deroghe richiedono accordo esplicito. Restano validi REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-015 e REQ-NFR-016.
+
+Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza bloccarsi in attesa dei worker: può svolgere attività di backlog che restano su `main`, senza implementare né cambiare branch, e gestisce i rapporti dei worker secondo il processo. Prima di avviare i worker verifica che `main` non contenga commit assenti da `origin/main`, perché i clone provengono da `origin`; se ne contiene, chiede all'utente come procedere e non pubblica `main` senza richiesta esplicita. L'adozione del template non avvia worker né autorizza merge o push su `main`.
+
+**Decisione dell'utente (2026-11-07):** TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante.
+
 ## 7. Release acceptance — v0.3.0
 
 - Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database rifiuta lezioni non ancora iniziate, registrazioni valide duplicate, cancellazioni e riscritture, e consente un solo annullamento con data, autore e motivo.
@@ -333,7 +341,7 @@ Date e conteggi dei documenti di stato, controlli prima del merge e risoluzione 
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
-- Processo e skill del template v1.6.1 sono allineati e l'orchestrazione parallela attiva è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016).
+- Processo e skill del template v1.7.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
