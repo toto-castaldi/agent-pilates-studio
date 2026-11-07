@@ -330,7 +330,7 @@
 #### TEC-023 — Adozione del template v1.4.0
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-023-adozione-template-v1-4-0`
 - **Dependencies:** TEC-022
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-014
@@ -344,6 +344,7 @@
   - Test ripetibili con dati e configurazioni sintetici verificano struttura e navigazione del backlog, aggiornamento alla riapertura, errori, scorciatoia e sola lettura; una prova Pi 1.5.0 isolata verifica caricamento e uso dell'estensione in TUI, documentandone i limiti. Le prove con file, processi o Pi restano separate dal gate in memoria e non leggono né modificano impostazioni personali; sono aggiornati i controlli Git e CI pertinenti.
   - README e documentazione pertinente descrivono uso, fiducia nel progetto, ricaricamento, configurazione della scorciatoia e limiti. `docs/TEMPLATE-ORIGIN.md` registra per risorsa il riferimento effettivamente adottato e le eventuali divergenze o basi ignote, distinguendolo dai confronti; non si modificano né pubblicano il repository del template o dati personali.
 - **Decision:** Su accordo dell'utente (2026-11-07), «unassigned» nella regola del modulo di PROCESS v1.4.0 significa privo di modulo, non privo di versione: TEC-019 può avere `MOD-001` senza essere assegnato a una versione. L'interpretazione è coerente con la skill `add-item` del template.
+- **Outcome:** Adottati processo e skill v1.4.0 senza divergenze, modulo Agente e visualizzatore Pi revisionato con adattamenti documentati. Superati confronto dei file, `test:local`, `test:pi` con TUI Pi 1.5.0 isolata e gate rapido; la prova TUI non copre ogni terminale o dimensione né un turno reale del modello. Completato il 2026-11-07.
 
 ### EPIC-002 — Agente e integrazioni
 
