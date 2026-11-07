@@ -277,7 +277,7 @@
 #### TEC-020 — Dettato vocale Pi su server remoto
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Type:** Task · **Priority:** P2 · **Status:** Done
 - **Branch:** `task/TEC-020-dettato-vocale-pi-su-server-remoto`
 - **Dependencies:** none
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-012
@@ -303,6 +303,7 @@
   - La logica di valutazione dello script è separata dagli effetti sul sistema e coperta da test di unità in memoria con esiti sintetici, inclusi i casi di successo e di ciascun passo mancante. Eventuali prove con processi o file system restano fuori dal gate rapido.
   - Prova reale sull'ambiente dell'operatore, documentata senza dati personali: con il tunnel attivo, lo script segnala tutti i passi soddisfatti e il dettato Pi Voice (`Ctrl+Space`) trascrive in una sessione Pi dentro Herdr. Dopo una riconnessione SSH il dettato funziona di nuovo senza interventi manuali sul socket.
   - I file personali di Pi Voice (`.pi/pi-voice.json`, log) restano esclusi da Git e non vengono modificati per la soluzione. Passano `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`.
+- **Outcome:** Procedura in `docs/operations/TEC-020-dettato-vocale-remoto.md`, `npm run voice:diagnose` in sola lettura con valutazione separata e coperta da test unitari in memoria, e `npm run voice:setup` idempotente per la configurazione del server con `sudo` solo per pacchetti e sshd. Verificato che il registratore di Pi Voice apre il dispositivo tramite ALSA e accetta solo `PULSE_SERVER` di forma `unix:`; la diagnosi evita la creazione del cookie Pulse. Prova simulata con PulseAudio estratto e sorgente sintetica; prova reale dell'operatore con PipeWire e Herdr: diagnosi tutta soddisfatta, dettato riuscito in Pi e di nuovo dopo la riconnessione SSH senza riavvio. Superati gate rapido e `test:local`. Completato il 2026-11-07.
 
 #### TEC-021 — Avvio locale con configurazione collegata
 

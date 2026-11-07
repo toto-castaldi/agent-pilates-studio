@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione, aggiornamento, configurazione locale e nome dell'agente verificati; dettato vocale remoto in corso | 20/22 items done (91%) |
+| v0.2.0 | Open | Consultazione, aggiornamento, configurazione locale e nome dell'agente verificati; dettato vocale remoto disponibile | 21/22 items done (95%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 1 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 20 |
+| Done | 21 |
 
 ## In progress
 
-| Item | Epic | Module | Title | Branch |
-| ---- | ---- | ------ | ----- | ------ |
-| TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | `task/TEC-020-dettato-vocale-pi-su-server-remoto` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | 2026-11-07 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | 2026-11-07 |
 | TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
@@ -42,7 +41,6 @@ None.
 | TEC-022 | EPIC-001 — Fondamenta del progetto | — | Tracciabilità e aggiornamento dal template | 2026-11-07 |
 | TEC-021 | EPIC-001 — Fondamenta del progetto | — | Avvio locale con configurazione collegata | 2026-11-07 |
 | BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
-| US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
 
 ## Next ready items
 

@@ -144,6 +144,12 @@ Sul server di destinazione, senza installare pacchetti né modificare la configu
 
 La prova non sostituisce quella reale: non usa SSH, PipeWire, un microfono né Herdr.
 
-### Prova reale
+### Prova reale (2026-11-07)
 
-Da eseguire nell'ambiente dell'operatore: con il tunnel attivo la diagnosi segnala tutti i passi soddisfatti, il dettato trascrive in una sessione Pi dentro Herdr e, dopo una riconnessione SSH, funziona di nuovo senza interventi sul socket.
+Nell'ambiente dell'operatore: server Ubuntu 26.04 con OpenSSH 10.2 e linger attivo, client Ubuntu con PipeWire, Pi dentro Herdr. Il server è stato configurato con `npm run voice:setup` e il client con la riga `RemoteForward` stampata dallo script.
+
+- Con il tunnel attivo, `npm run voice:diagnose` ha segnalato tutti i passi soddisfatti, con quattro sorgenti di acquisizione disponibili; la diagnosi ripetuta da una sessione Pi avviata prima della configurazione, con `PULSE_SERVER` impostato per il solo comando, ha dato lo stesso esito.
+- In una nuova sessione Pi dentro Herdr il dettato `Ctrl+Space` ha trascritto il parlato nell'editor.
+- Dopo la chiusura e la riapertura della connessione SSH, la stessa sessione Pi ha trascritto di nuovo senza riavvio e senza interventi manuali sul socket.
+
+La sessione Pi avviata prima della configurazione non aveva `PULSE_SERVER`, come previsto dai limiti. Non sono stati registrati audio, trascrizioni, indirizzi o nomi di dispositivi; `.pi/pi-voice.json` e i log di Pi Voice non sono stati modificati.

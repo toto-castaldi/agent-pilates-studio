@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Dettato vocale Pi su server remoto tramite socket Pulse del client inoltrato via SSH, con procedura, configurazione del server `npm run voice:setup` e diagnosi in sola lettura `npm run voice:diagnose` (TEC-020).
 - Visualizzatore Pi `/backlog` in sola lettura con navigazione, scorrimento e scorciatoia configurabile (TEC-023).
 - Tracciabilità del template di origine e procedura manuale per confrontare aggiornamenti senza adottarli automaticamente (TEC-022).
 - Catalogo e harness isolato per scenari conversazionali con modello OpenRouter reale (TEC-012).
