@@ -3,6 +3,28 @@ export interface ClientState {
   lastName: string;
   authorPhone: string;
   authorName: string | null;
+  id?: string;
+  createdAt?: string;
+}
+
+export interface AttendanceState {
+  client: string;
+  lessonDate: string;
+  time: string;
+  outcome: string;
+  authorPhone: string;
+  authorName: string | null;
+  createdAt?: string;
+  cancelledAt?: string | null;
+  cancelledByPhone?: string | null;
+  cancelledByName?: string | null;
+  cancellationReason?: string | null;
+  id?: string;
+}
+
+export interface AttendanceExpectation {
+  attendance: AttendanceState[];
+  addedClients: ClientState[];
 }
 
 export interface Slot {
@@ -44,6 +66,7 @@ export interface ActualRule {
 export interface ActualState {
   clients: ClientState[];
   rules: ActualRule[];
+  attendance?: AttendanceState[];
 }
 
 export interface ExpectedResponse {
@@ -61,6 +84,12 @@ const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('
 const slotKey = (slot: Slot) => JSON.stringify([slot.weekday, slot.time]);
 const edgeKey = (client: string, slot: Slot) => JSON.stringify([normalized(client), slot.weekday, slot.time]);
 const weekdays = ['', 'luned', 'marted', 'mercoled', 'gioved', 'venerd', 'sabat', 'domenic'];
+
+export function romeDate(instant: Date): string {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(instant);
+  const part = (type: string) => parts.find((entry) => entry.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
 
 export function hasHomeChannelNotice(text: string): boolean {
   return /no home channel is set|nessun canale principale impostato|\/sethome/i.test(text);
@@ -101,6 +130,7 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
 // SQL decomposition. Each resulting rule must belong to one group; the union
 // of its Cartesian associations must cover the group exactly once.
 export function stateMatches(actual: ActualState, expected: ExpectedState): boolean {
+  if (actual.attendance?.length) return false;
   if (actual.clients.length !== expected.clients.length) return false;
   const remainingClients = [...actual.clients];
   for (const client of expected.clients) {
@@ -144,9 +174,39 @@ export function stateMatches(actual: ActualState, expected: ExpectedState): bool
   return groups.every(({ edges, seen }) => edges.size === seen.size);
 }
 
+// Attendance scenarios compare the entire rule snapshot and all attendance
+// rows, including cancelled ones, rather than only the currently valid rows.
+export function attendanceScenarioMatches(before: ActualState, actual: ActualState, expected: AttendanceExpectation): boolean {
+  if (JSON.stringify(before.rules) !== JSON.stringify(actual.rules)) return false;
+  if (JSON.stringify(before.clients) !== JSON.stringify(actual.clients.slice(0, before.clients.length))) return false;
+  const added = actual.clients.slice(before.clients.length);
+  if (added.length !== expected.addedClients.length) return false;
+  const remaining = [...added];
+  for (const client of expected.addedClients) {
+    const index = remaining.findIndex((row) => normalized(row.firstName) === normalized(client.firstName)
+      && normalized(row.lastName) === normalized(client.lastName) && row.authorPhone === client.authorPhone
+      && row.authorName === client.authorName && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt)));
+    if (index < 0) return false;
+    remaining.splice(index, 1);
+  }
+  const rows = [...(actual.attendance ?? [])];
+  if (rows.length !== expected.attendance.length) return false;
+  for (const item of expected.attendance) {
+    const index = rows.findIndex((row) => normalized(row.client) === normalized(item.client)
+      && row.lessonDate === item.lessonDate && row.time === item.time && row.outcome === item.outcome
+      && row.authorPhone === item.authorPhone && row.authorName === item.authorName
+      && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt))
+      && !row.cancelledAt && !row.cancelledByPhone && !row.cancelledByName && !row.cancellationReason);
+    if (index < 0) return false;
+    rows.splice(index, 1);
+  }
+  return true;
+}
+
 // Existing rules and their associations are immutable. Only the first
 // deactivation may change a previously active row between turns.
 export function historyPreserved(previous: ActualState, current: ActualState): boolean {
+  if (!(previous.attendance ?? []).every((row) => row.id && (current.attendance ?? []).some((next) => JSON.stringify(row) === JSON.stringify(next)))) return false;
   return previous.rules.every((before) => {
     if (!before.id || !before.createdAt) return false;
     const matches = current.rules.filter((row) => row.id === before.id);

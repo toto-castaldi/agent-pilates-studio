@@ -2,6 +2,110 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "presenze-data-odierna",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }], "rules": [] },
+      "turns": [
+        {
+          "message": "Oggi alle 00:00 c'era Anna Verdi.",
+          "response": { "contains": ["Anna"], "times": ["00:00"], "anyOf": [["non attes", "non previst", "extra", "recuper"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$TODAY", "time": "00:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Oggi alle 00:00 c'era Anna Verdi.",
+          "response": { "contains": ["Anna"], "anyOf": [["già", "gia", "esiste", "duplicat"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$TODAY", "time": "00:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        }
+      ]
+    },
+    {
+      "id": "presenze-nomi-duplicato-futuro",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Lunedì 6 gennaio 2025 alle 19 c'erano Mario Rossi e Lucia Bianchi.",
+          "response": { "contains": ["Mario", "Lucia"], "times": ["19:00"], "anyOf": [["non attes", "non previst", "extra", "recuper"]], "excludes": ["confermi", "posso procedere", "vuoi che registr"] },
+          "attendanceExpected": {
+            "addedClients": [{ "firstName": "Mario", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Lucia", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "attendance": [{ "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Alla lezione del 6 gennaio 2025 alle 19 c'era Mario Rossi.",
+          "response": { "contains": ["Mario"], "anyOf": [["già", "gia", "esiste", "duplicat"]] },
+          "attendanceExpected": {
+            "addedClients": [{ "firstName": "Mario", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Lucia", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "attendance": [{ "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Il 6 gennaio 2099 alle 19 c'era Anna Verdi.",
+          "response": { "contains": [], "anyOf": [["futur", "non è ancora", "non ancora", "non iniziat", "deve ancora"]] },
+          "attendanceExpected": {
+            "addedClients": [{ "firstName": "Mario", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Lucia", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "attendance": [{ "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Il 13 gennaio 2025 alle 19 c'era Giulia.",
+          "response": { "contains": [], "anyOf": [["cognome", "nome completo"]], "question": true },
+          "attendanceExpected": {
+            "addedClients": [{ "firstName": "Mario", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Lucia", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "attendance": [{ "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Il cognome è Verdi.",
+          "response": { "contains": ["Giulia"], "times": ["19:00"], "anyOf": [["non attes", "non previst", "extra", "recuper"]] },
+          "attendanceExpected": {
+            "addedClients": [{ "firstName": "Mario", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Lucia", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "firstName": "Giulia", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "attendance": [{ "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Giulia Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "presenze-attesi-storici",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }, { "firstName": "Carla", "lastName": "Rossi" }],
+        "rules": [
+          { "text": "Ada Verdi e Bruno Neri insieme lunedì alle 19:00", "clients": ["Ada Verdi", "Bruno Neri"], "slots": [{ "weekday": 1, "time": "19:00" }], "active": false, "deactivatedAt": "2025-01-07T09:00:00Z" },
+          { "text": "Bruno Neri e Carla Rossi insieme lunedì alle 19:00", "clients": ["Bruno Neri", "Carla Rossi"], "slots": [{ "weekday": 1, "time": "19:00" }], "createdAt": "2025-01-08T09:00:00Z" }
+        ]
+      },
+      "turns": [
+        {
+          "message": "Lunedì 6 gennaio 2025 alle 19 c'erano tutti.",
+          "response": { "contains": ["Ada", "Bruno"], "excludes": ["Carla", "confermi", "posso procedere", "vuoi che registr"] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Lunedì 13 gennaio 2025 alle 19 c'erano tutti tranne Bruno Neri.",
+          "response": { "contains": ["Carla"], "excludes": ["Ada", "confermi", "posso procedere", "vuoi che registr"] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Lunedì 6 gennaio 2025 alle 20 c'erano tutti.",
+          "response": { "contains": [], "anyOf": [["nessun", "non risult", "non trovo", "non ci sono", "non ho trovato"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        },
+        {
+          "message": "Il 6 gennaio 2025 c'erano tutti, non ricordo l'orario.",
+          "response": { "contains": [], "anyOf": [["ora", "orario", "lezion"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
+        }
+      ]
+    },
+    {
       "id": "nome-prima-conversazione",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",

@@ -8,7 +8,8 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
-import { hasHomeChannelNotice, historyPreserved, responseMatches, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
+import { runProcess } from '../dist/src/conversation-process.js';
+import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -82,9 +83,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     await mkdir(socketDirectory, { mode: 0o700 });
     await writeFile(override, `services:\n  model-proxy:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_proxy.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/model_proxy.py')}:/model_proxy.py:ro`)}\n      - ${JSON.stringify(`${socketDirectory}:/run/host-proxy:ro`)}\n    logging:\n      driver: none\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/meta_stub.py')}:/meta_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-proxy:8089/api/v1\n      NO_PROXY: model-proxy,meta-stub,localhost,127.0.0.1\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/gateway-launcher.sh')}:/opt/hermes/libexec/hermes:ro`)}\n      - ${JSON.stringify(`${join(directory, 'config.yaml')}:/opt/data/config.yaml:ro`)}\n`);
     composeReady = true;
+    stage = 'costruzione immagine';
     compose('build', 'hermes');
     if (interrupted) throw new Error('interrupted');
+    stage = 'avvio PostgreSQL';
     compose('up', '-d', '--wait', 'postgres');
+    stage = 'bootstrap database';
     compose('run', '--rm', 'db-bootstrap');
     const address = (service) => {
       const id = compose('ps', '-q', service).trim();
@@ -92,6 +96,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       if (!ip) throw new Error('address');
       return ip;
     };
+    stage = 'indirizzo PostgreSQL';
     const host = address('postgres');
     // Keep the real key only in this process. A relay uses a private Unix
     // socket and a random synthetic token; only this proxy attaches the real
@@ -123,13 +128,17 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       proxy.listen(join(socketDirectory, 'socket'), resolveListen);
     });
     await chmod(join(socketDirectory, 'socket'), 0o600);
+    stage = 'migrazioni';
     const url = new URL(`postgresql://${host}:5432/studio?schema=public`);
     url.username = 'studio_migrator';
     url.password = secrets['db-migrator'];
     execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], { env: { ...env, DATABASE_URL: url.toString() }, stdio: 'pipe', timeout: 120_000 });
     client = new Client({ host, port: 5432, database: 'studio', user: 'studio_migrator', password: secrets['db-migrator'], connectionTimeoutMillis: 15_000, query_timeout: 30_000 });
+    stage = 'connessione database';
     await client.connect();
-    compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-proxy', 'meta-stub', 'hermes');
+    stage = 'avvio gateway e sostituti';
+    await runProcess('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, 'up', '-d', '--wait', '--wait-timeout', '150', 'model-proxy', 'meta-stub', 'hermes'], env, 240_000);
+    stage = 'indirizzi gateway e sostituto Meta';
     const gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observations = `http://${address('meta-stub')}:8088/observations`;
     let count = 0;
@@ -141,7 +150,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         COALESCE((SELECT json_agg(c.first_name || ' ' || c.last_name ORDER BY c.id) FROM app.rule_clients rc JOIN app.clients c ON c.id = rc.client_id WHERE rc.rule_id = r.id), '[]'::json) AS clients,
         COALESCE((SELECT json_agg(json_build_object('weekday', s.weekday, 'time', to_char(s.start_time, 'HH24:MI')) ORDER BY s.weekday, s.start_time) FROM app.rule_slots s WHERE s.rule_id = r.id), '[]'::json) AS slots
         FROM app.training_rules r ORDER BY r.id`)).rows;
-      return { clients, rules };
+      const attendance = (await client.query(`SELECT a.id::text AS id, c.first_name || ' ' || c.last_name AS client,
+        to_char(a.lesson_date, 'YYYY-MM-DD') AS "lessonDate", to_char(a.start_time, 'HH24:MI') AS time,
+        a.outcome, a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName",
+        a.cancelled_at::text AS "cancelledAt", a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
+        FROM app.attendance a JOIN app.clients c ON c.id = a.client_id ORDER BY a.id`)).rows;
+      return { clients, rules, attendance };
     };
     let previous = await snapshot();
     if (!stateMatches(previous, scenario.initial)) throw new Error('initial state');
@@ -158,14 +172,17 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         ids.set(`${person.firstName} ${person.lastName}`, result.rows[0].id);
       }
       for (const rule of setup.rules) {
-        const result = await client.query('INSERT INTO app.training_rules (rule_text, created_at) VALUES ($1, $2) RETURNING id', [rule.text, setup.createdAt]);
+        const createdAt = rule.createdAt ?? setup.createdAt;
+        if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(createdAt)
+          || (rule.deactivatedAt && !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(rule.deactivatedAt))) throw new Error('setup dates');
+        const result = await client.query('INSERT INTO app.training_rules (rule_text, created_at) VALUES ($1, $2) RETURNING id', [rule.text, createdAt]);
         const id = result.rows[0].id;
         for (const name of rule.clients) {
           if (!ids.has(name)) throw new Error('unknown client');
           await client.query('INSERT INTO app.rule_clients (rule_id, client_id) VALUES ($1, $2)', [id, ids.get(name)]);
         }
         for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
-        if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, setup.createdAt]);
+        if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, rule.deactivatedAt ?? setup.createdAt]);
       }
       await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
       await client.query('COMMIT');
@@ -176,12 +193,17 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         rules: setup.rules.map((rule) => ({ textContains: [rule.text], clients: rule.clients, slots: rule.slots, ...author,
           deactivation: rule.active === false ? { ...author, reasonAnyOf: ['Fine abitudine sintetica'] } : undefined })),
       };
-      if (!stateMatches(seededSnapshot, expected) || seededSnapshot.rules.some((rule) => new Date(rule.createdAt).getTime() !== new Date(setup.createdAt).getTime())) throw new Error('setup state');
+      if (!stateMatches(seededSnapshot, expected) || seededSnapshot.rules.some((rule, index) =>
+        new Date(rule.createdAt).getTime() !== new Date(setup.rules[index].createdAt ?? setup.createdAt).getTime()
+        || (setup.rules[index].active === false && new Date(rule.deactivatedAt).getTime() !== new Date(setup.rules[index].deactivatedAt ?? setup.createdAt).getTime()))) throw new Error('setup state');
       previous = seededSnapshot;
     }
     for (const [index, turn] of scenario.turns.entries()) {
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
+      const today = romeDate(new Date());
+      const attendanceExpected = turn.attendanceExpected && { ...turn.attendanceExpected,
+        attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: entry.lessonDate === '$TODAY' ? today : entry.lessonDate })) };
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
         metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
         contacts: [{ wa_id: scenario.sender, profile: { name: scenario.profile } }],
@@ -228,6 +250,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           responseMatches(text, { contains: [], dayGroups: turn.response.dayGroups }) ? 'giorni associati' : 'associazioni giorno mancanti',
           /altro|altra|aiut|ulterior|aggiung|serv/i.test(text) ? 'possibile domanda accessoria' : 'nessuna domanda accessoria riconosciuta',
           /registr|salvat|inser|proced/i.test(text) ? 'menzione registrazione' : 'nessuna menzione registrazione',
+          /fuori programma|fuori dalla pianificazione|nessuna regola|senza regola|non programm|non pianificat|non attes|non previst/i.test(text) ? 'possibile indicazione non atteso' : 'nessuna indicazione non atteso riconosciuta',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
           /conferm|ambigu|manc|precis|chied|quale|qual è/i.test(text) ? 'possibile richiesta chiarimento' : 'nessun chiarimento riconosciuto',
           /database|sql|strument|tool|dati/i.test(text) ? 'menzione dati/tool' : 'nessuna menzione dati/tool',
@@ -243,12 +266,25 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       stage = `turno ${index + 1}: stato database`;
       const current = await snapshot();
       if (!historyPreserved(previous, current)
-        || (turn.unchanged ? !seededSnapshot || !snapshotsMatch(seededSnapshot, current) : !stateMatches(current, turn.expected))) throw new Error('database mismatch');
+        || (attendanceExpected ? !seededSnapshot || !attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
+          : turn.unchanged ? !seededSnapshot || !snapshotsMatch(seededSnapshot, current) : !stateMatches(current, turn.expected))) throw new Error('database mismatch');
       previous = current;
     }
     console.log(`${scenario.id}: OK`);
   } catch {
     failed = true;
+    if (stage === 'avvio gateway e sostituti') {
+      try {
+        for (const line of compose('ps', '--all', '--format', 'json').trim().split('\n').filter(Boolean)) {
+          const row = JSON.parse(line);
+          if (['postgres', 'author-broker', 'hermes', 'model-proxy', 'meta-stub'].includes(row.Service)) {
+            const state = ['running', 'exited', 'created', 'restarting'].includes(row.State) ? row.State : 'other';
+            const health = ['healthy', 'unhealthy', 'starting'].includes(row.Health) ? row.Health : 'none';
+            console.error(`Servizio ${row.Service}: ${state}, ${health}.`);
+          }
+        }
+      } catch { console.error('Stato sintetico dei servizi non disponibile.'); }
+    }
     console.error(`${scenario.id}: ERRORE (${stage}); nessun dettaglio sensibile viene stampato.`);
     console.error(`Proxy OpenRouter: richieste ${proxyStats.requests}, rifiutate ${proxyStats.denied}, risposte ${proxyStats.completed}, errori ${proxyStats.failures}, ultimo HTTP ${proxyStats.status}.`);
   } finally {

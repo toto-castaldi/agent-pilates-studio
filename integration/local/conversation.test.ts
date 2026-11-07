@@ -22,6 +22,23 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         assert.ok(scenario.setup && !turn.expected);
         continue;
       }
+      if (turn.attendanceExpected) {
+        assert.ok(scenario.setup && !turn.expected);
+        assert.ok(Array.isArray(turn.attendanceExpected.addedClients) && Array.isArray(turn.attendanceExpected.attendance));
+        for (const row of turn.attendanceExpected.attendance) {
+          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY)$/.test(row.lessonDate));
+          assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+          assert.equal(row.outcome, 'present');
+          assert.equal(row.authorPhone, scenario.sender);
+          assert.equal(row.authorName, scenario.profile);
+        }
+        for (const person of turn.attendanceExpected.addedClients) {
+          assert.ok(person.firstName && person.lastName);
+          assert.equal(person.authorPhone, scenario.sender);
+          assert.equal(person.authorName, scenario.profile);
+        }
+        continue;
+      }
       assert.ok(Array.isArray(turn.expected.clients) && Array.isArray(turn.expected.rules));
       for (const rule of turn.expected.rules) {
         assert.ok(rule.clients.length && rule.slots.length);
@@ -39,9 +56,15 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       }
     }
   }
-  for (const id of ['consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
+  for (const id of ['presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  const historical = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'presenze-attesi-storici');
+  assert.ok(historical.setup.rules.some((rule: { active?: boolean; deactivatedAt?: string }) => rule.active === false && rule.deactivatedAt === '2025-01-07T09:00:00Z'));
+  assert.ok(historical.setup.rules.some((rule: { createdAt?: string }) => rule.createdAt === '2025-01-08T09:00:00Z'));
+  assert.deepEqual(historical.turns.slice(0, 2).map((turn: { attendanceExpected: { attendance: { client: string }[] } }) => turn.attendanceExpected.attendance.map((row) => row.client)), [['Ada Verdi', 'Bruno Neri'], ['Ada Verdi', 'Bruno Neri', 'Carla Rossi']]);
+  const today = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'presenze-data-odierna');
+  assert.ok(today.turns.every((turn: { attendanceExpected: { attendance: { lessonDate: string }[] } }) => turn.attendanceExpected.attendance[0].lessonDate === '$TODAY'));
   const naming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-prima-conversazione');
   const otherNaming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-altro-interlocutore');
   assert.ok(naming && otherNaming);
