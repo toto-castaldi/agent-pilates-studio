@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione e aggiornamento verificati; configurazione locale, dettato, compattazione e nome dell'agente da avviare | 18/22 items done (82%) |
+| v0.2.0 | Open | Consultazione, aggiornamento e configurazione locale verificati | 19/22 items done (86%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
+| Todo | 3 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 18 |
+| Done | 19 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 | US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | 2026-11-07 |
 | US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | 2026-11-07 |
@@ -40,13 +41,11 @@ None.
 | BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
 | US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
 | TEC-012 | EPIC-004 — Pianificazione delle lezioni | — | Scenari conversazionali e harness | 2026-11-06 |
-| TEC-018 | EPIC-001 — Fondamenta del progetto | — | Stato di attesa nei tool Pi di domanda | 2026-11-06 |
 
 ## Next ready items
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
-| TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | P1 |
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | P1 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |

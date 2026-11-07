@@ -26,7 +26,7 @@ test('local start validates configuration, preserves secrets and suppresses chil
   assert.equal(await startLocal(system), 0);
   assert.equal(system.content('.local/secrets/db-admin'), password);
   assert.ok(system.calls.some((call) => call.args.includes('--force-recreate') && call.args.includes('--no-deps') && call.args.includes('hermes')));
-  assert.ok(system.calls.every((call) => call.stdio === 'ignore'));
+  assert.ok(system.calls.every((call) => call.stdio === 'ignore' || (Array.isArray(call.stdio) && call.stdio.join(',') === 'ignore,pipe,ignore')));
   assert.ok(system.calls.every((call) => call.env.DB_ADMIN_PASSWORD === undefined && call.env.WHATSAPP_HOME_CHANNEL === undefined));
   assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);
   system.failCommand('hermes');
@@ -54,6 +54,108 @@ test('local start validates configuration, preserves secrets and suppresses chil
   }
   system.mode('.env', 0o644);
   assert.equal(await startLocal(system), 1);
+});
+
+test('external configuration is replaced only after both services stop and both are recreated', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const internal = system.content('.local/secrets/bridge-token');
+  const changed = configuration
+    .replace('synthetic-sensitive-model-token', 'new-synthetic-model-token')
+    .replace('synthetic-sensitive-app-secret', 'new-synthetic-app-secret')
+    .replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS=15555550103')
+    .replace('WHATSAPP_HOME_CHANNEL=15555550102', 'WHATSAPP_HOME_CHANNEL=15555550103');
+  system.put('.env', changed);
+  const start = system.calls.length;
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/whatsapp-allowed-users'), '15555550103\n');
+  assert.equal(system.content('.local/secrets/whatsapp-app-secret'), 'new-synthetic-app-secret\n');
+  assert.equal(system.content('.local/secrets/bridge-token'), internal);
+  const calls = system.calls.slice(start);
+  assert.deepEqual(calls.filter((call) => call.args.includes('kill') || call.args.includes('stop')).slice(0, 2).map((call) => call.args.slice(-2)), [['SIGKILL', 'hermes'], ['stop', 'author-broker']]);
+  assert.ok(calls.some((call) => call.args.includes('--force-recreate') && call.args.includes('author-broker')));
+  assert.ok(calls.some((call) => call.args.includes('--force-recreate') && call.args.includes('hermes')));
+  const count = system.calls.length;
+  system.put('.env', changed.replace('synthetic-admin-password', 'different-admin-password').replace('15555550103', '15555550104'));
+  assert.equal(await startLocal(system), 1);
+  assert.equal(system.calls.length, count);
+  assert.equal(system.content('.local/secrets/whatsapp-allowed-users'), '15555550103\n');
+});
+
+test('missing database credential with an existing volume is never reconstructed', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  const spawn = system.spawnSync;
+  system.spawnSync = (command, args, options) => {
+    const result = spawn(command, args, options);
+    return args.includes('volume') ? { ...result, stdout: 'synthetic_postgres_data\n' } : result;
+  };
+  assert.equal(await startLocal(system), 1);
+  assert.match(system.errors.at(-1) ?? '', /Segreto database mancante/);
+  assert.equal(system.content('.local/secrets/db-admin'), undefined);
+  assert.equal(system.calls.some((call) => call.args.includes('stop')), false);
+});
+
+test('database authentication failure precedes external changes and service shutdown', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const spawn = system.spawnSync;
+  system.spawnSync = (command, args, options) => {
+    const result = spawn(command, args, options);
+    if (args.includes('volume')) return { ...result, stdout: 'synthetic_postgres_data\n' };
+    if (args.includes('db-bootstrap') && args.includes('--entrypoint')) return { ...result, status: 1 };
+    return result;
+  };
+  system.put('.env', configuration.replace('synthetic-sensitive-app-secret', 'new-synthetic-app-secret'));
+  const before = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  assert.equal(system.content('.local/secrets/whatsapp-app-secret'), 'synthetic-sensitive-app-secret\n');
+  assert.equal(system.calls.slice(before).some((call) => call.args.includes('kill')), false);
+});
+
+test('temporary database probe is removed even when role authentication fails', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const spawn = system.spawnSync;
+  system.spawnSync = (command, args, options) => {
+    const result = spawn(command, args, options);
+    if (args.includes('volume')) return { ...result, stdout: 'synthetic_postgres_data\n' };
+    if (args.includes('ps')) return { ...result, stdout: '' };
+    if (args.includes('db-bootstrap') && args.includes('--entrypoint')) return { ...result, status: 1 };
+    return result;
+  };
+  const before = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  const calls = system.calls.slice(before);
+  assert.ok(calls.some((call) => call.args.includes('--use-aliases')));
+  assert.deepEqual(calls.slice(-2).map((call) => call.args[0]), ['stop', 'rm']);
+  assert.equal(calls.some((call) => call.args.includes('kill')), false);
+});
+
+test('failed application and failed gateway startup stop both services', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const spawn = system.spawnSync;
+  let failGateway = true;
+  system.spawnSync = (command, args, options) => {
+    const result = spawn(command, args, options);
+    if (failGateway && args.includes('up') && args.includes('hermes')) { failGateway = false; return { status: 1, stdout: '' }; }
+    return result;
+  };
+  const count = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  assert.deepEqual(system.calls.slice(count).slice(-2).map((call) => call.args.slice(-2)), [['SIGKILL', 'hermes'], ['stop', 'author-broker']]);
+  const rename = system.rename;
+  system.rename = async () => { throw new Error('synthetic write failure'); };
+  const before = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  assert.deepEqual(system.calls.slice(before).slice(-2).map((call) => call.args.slice(-2)), [['SIGKILL', 'hermes'], ['stop', 'author-broker']]);
+  system.rename = rename;
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);
 });
 
 test('local start follows only the configuration link and validates the opened file', async () => {
