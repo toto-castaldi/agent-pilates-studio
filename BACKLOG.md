@@ -641,6 +641,22 @@
   - Le assenze rispettano le regole di REQ-STUDIO-006: nessuna assenza per lezioni non ancora iniziate e al più una registrazione valida per cliente e lezione, anche tra presenza e assenza.
   - Gli scenari, compresi assenza giustificata e non giustificata, tipo mancante, attesi non citati con risposta e senza risposta, "tutti tranne" e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
 
+#### US-008 — Correggere presenze e assenze
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** US-007
+- **Requirements:** REQ-STUDIO-003, REQ-STUDIO-008, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §5
+- **Description:** Come insegnante, voglio correggere una presenza o un'assenza registrata per errore, così che i dati restino corretti senza perdere lo storico.
+- **Acceptance criteria:**
+  - Una correzione chiara ("Mario Rossi ieri alle 19 non c'era, era assente giustificato") annulla la registrazione errata con data, autore ricavato dal sistema e motivo, registra quella corretta e l'agente comunica entrambe le operazioni.
+  - Una richiesta di sola eliminazione ("togli la presenza di Lucia di sabato alle 19") annulla la registrazione con motivo senza crearne un'altra; il cambio del tipo di assenza segue lo stesso schema.
+  - Se la registrazione da correggere non è identificabile o la richiesta è ambigua, l'agente chiede chiarimenti e non annulla nulla.
+  - Nessuna registrazione viene cancellata o riscritta e un annullamento non viene modificato; su richiesta l'agente mostra lo storico di una lezione o di un cliente, comprese le registrazioni annullate, con date, autori e motivi.
+  - Gli scenari, compresi presenza trasformata in assenza, cambio del tipo di assenza, annullamento semplice, richiesta ambigua e consultazione dello storico, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-027 coprono il rifiuto di cancellazione e riscrittura.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -650,6 +666,7 @@ v0.3.0:
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.
 3. US-007.
+4. US-008.
 
 1. TEC-001.
 2. TEC-002.
