@@ -85,6 +85,17 @@ Per verificare Pi 1.5.0 installato in modalità offline e senza credenziali real
 
 `npm run test:pi-package` installa in una directory temporanea il commit configurato, usando la rete pubblica senza impostazioni o credenziali personali; verifica il commit effettivo, l'unicità e provenienza dei tool, i test di compatibilità con l'originale e una prova Pi 1.5.0 con pseudoterminale e OSC 7501. La prova usa domande sintetiche e comandi senza modello: verifica il ripristino allo stato `idle`, non il ritorno a `working` durante un turno reale né la visualizzazione di ogni terminale.
 
+### Dettato vocale su server remoto
+
+Se Pi gira su un server senza schede audio raggiunto via SSH, il dettato di Pi Voice può usare il microfono del client Ubuntu con PipeWire: sshd inoltra il socket Pulse del client come socket Unix (`RemoteForward`, nessuna porta TCP), ALSA sul server è instradato verso Pulse e `PULSE_SERVER` indica il socket inoltrato. La [procedura](docs/operations/TEC-020-dettato-vocale-remoto.md) descrive pacchetti e configurazione di sshd (comandi amministrativi a cura dell'operatore), configurazione dell'utente su server e client, verifica e limiti. La configurazione di Pi Voice non cambia e resta esclusa da Git.
+
+```bash
+npm run voice:setup      # sul server, come utente di Pi; usa sudo per pacchetti e sshd
+npm run voice:diagnose
+```
+
+`voice:setup` configura il server in modo idempotente, senza sovrascrivere file personali con altra configurazione, e stampa la riga `RemoteForward` per il client. `voice:diagnose`, in sola lettura, controlla sul server plugin ALSA Pulse, `pactl`, dispositivo ALSA predefinito, `PULSE_SERVER`, socket, raggiungibilità del server audio del client e presenza di una sorgente audio, e indica il rimedio per ogni passo mancante. Non installa pacchetti, non modifica file e non registra audio.
+
 ## Avvio locale con un comando
 
 Servono Node.js 24.14.0 e npm 11.9.0, Docker e Docker Compose funzionanti, rete per immagini e dipendenze e credenziali Meta/OpenRouter. Da un clone nuovo, copiare l'esempio e renderlo privato, quindi compilare `.env` con un editor locale, senza inserire i valori nella cronologia della shell o in chat:
