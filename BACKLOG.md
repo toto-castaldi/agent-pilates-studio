@@ -625,6 +625,22 @@
   - Una lezione non ancora iniziata è rifiutata con un messaggio chiaro; una seconda comunicazione per un cliente già registrato alla stessa lezione non crea un duplicato e l'agente lo segnala.
   - Gli scenari, compresi nomi espliciti, "c'erano tutti", "tutti tranne", data passata con regole cambiate, cliente non atteso, cliente nuovo e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
 
+#### US-007 — Registrare le assenze a una lezione
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** US-006
+- **Requirements:** REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §5
+- **Description:** Come insegnante, voglio comunicare all'agente le assenze dei clienti con il loro tipo, così che lo storico distingua le assenze giustificate da quelle non giustificate.
+- **Acceptance criteria:**
+  - Un messaggio come "alle 19 Anna Verdi era assente, aveva avvisato" registra un'assenza giustificata, con data, orario e autore ricavato dal sistema; "Anna non è venuta e non ha avvisato" registra un'assenza non giustificata.
+  - Se il tipo non è indicato, l'agente chiede se l'assenza è giustificata e registra solo dopo la risposta.
+  - Quando l'insegnante comunica le presenze e alcuni clienti attesi non sono citati, oppure usa "tutti tranne <nome>", l'agente registra le presenze e chiede per i clienti attesi rimanenti se erano assenti e con quale tipo; senza risposta non registra assenze per quei clienti.
+  - Le assenze rispettano le regole di REQ-STUDIO-006: nessuna assenza per lezioni non ancora iniziate e al più una registrazione valida per cliente e lezione, anche tra presenza e assenza.
+  - Gli scenari, compresi assenza giustificata e non giustificata, tipo mancante, attesi non citati con risposta e senza risposta, "tutti tranne" e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -633,6 +649,7 @@ v0.3.0:
 
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.
+3. US-007.
 
 1. TEC-001.
 2. TEC-002.
