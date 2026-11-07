@@ -17,7 +17,7 @@ export interface RuleState {
   authorPhone: string;
   authorName: string | null;
   together?: boolean;
-  active?: boolean;
+  deactivation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
 }
 
 export interface ExpectedState {
@@ -33,6 +33,12 @@ export interface ActualRule {
   authorName: string | null;
   active: boolean;
   hasCreatedAt: boolean;
+  id?: string;
+  createdAt?: string;
+  deactivatedAt?: string | null;
+  deactivatedByPhone?: string | null;
+  deactivatedByName?: string | null;
+  deactivationReason?: string | null;
 }
 
 export interface ActualState {
@@ -48,6 +54,7 @@ export interface ExpectedResponse {
   question?: boolean;
   groups?: { time: string; contains: string[] }[];
   dayGroups?: { day: string; groups?: { time: string; contains: string[] }[]; times?: string[] }[];
+  date?: boolean;
 }
 
 const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('it-IT');
@@ -79,6 +86,7 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
     if (!expected.dayGroups.every((expectedDay) => days.some((day, index) => fold(day[0]) === fold(normalized(expectedDay.day))
       && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
   }
+  if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(text)) return false;
   return (expected.times ?? []).every((time) => {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return false;
     const [hours, minutes] = time.split(':').map(Number);
@@ -117,7 +125,12 @@ export function stateMatches(actual: ActualState, expected: ExpectedState): bool
       || new Set(row.slots.map(slotKey)).size !== row.slots.length) return false;
     const edges = row.clients.flatMap((client) => row.slots.map((slot) => edgeKey(client, slot)));
     const matches = groups.filter(({ rule, edges: expectedEdges }) => row.authorPhone === rule.authorPhone
-      && row.authorName === rule.authorName && row.active === (rule.active ?? true)
+      && row.authorName === rule.authorName
+      && (rule.deactivation
+        ? !row.active && !!row.deactivatedAt && row.deactivatedByPhone === rule.deactivation.authorPhone
+          && row.deactivatedByName === rule.deactivation.authorName && !!row.deactivationReason?.trim()
+          && (!rule.deactivation.reasonAnyOf || rule.deactivation.reasonAnyOf.some((word) => normalized(row.deactivationReason ?? '').includes(normalized(word))))
+        : row.active && !row.deactivatedAt && !row.deactivatedByPhone && !row.deactivatedByName && !row.deactivationReason)
       && rule.textContains.every((word) => normalized(row.text).includes(normalized(word)))
       && row.slots.every((slot) => weekdays[slot.weekday]
         && normalized(row.text).includes(weekdays[slot.weekday])
@@ -129,4 +142,26 @@ export function stateMatches(actual: ActualState, expected: ExpectedState): bool
     for (const edge of edges) matches[0].seen.add(edge);
   }
   return groups.every(({ edges, seen }) => edges.size === seen.size);
+}
+
+// Existing rules and their associations are immutable. Only the first
+// deactivation may change a previously active row between turns.
+export function historyPreserved(previous: ActualState, current: ActualState): boolean {
+  return previous.rules.every((before) => {
+    if (!before.id || !before.createdAt) return false;
+    const matches = current.rules.filter((row) => row.id === before.id);
+    if (matches.length !== 1) return false;
+    const after = matches[0];
+    if (before.createdAt !== after.createdAt || before.text !== after.text
+      || before.authorPhone !== after.authorPhone || before.authorName !== after.authorName
+      || JSON.stringify([...before.clients].sort()) !== JSON.stringify([...after.clients].sort())
+      || JSON.stringify(before.slots.map(slotKey).sort()) !== JSON.stringify(after.slots.map(slotKey).sort())) return false;
+    if (!before.active) {
+      return !after.active && before.deactivatedAt === after.deactivatedAt
+        && before.deactivatedByPhone === after.deactivatedByPhone
+        && before.deactivatedByName === after.deactivatedByName
+        && before.deactivationReason === after.deactivationReason;
+    }
+    return true;
+  });
 }
