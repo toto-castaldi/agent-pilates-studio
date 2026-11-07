@@ -475,7 +475,8 @@
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
+- **Branch:** `us/US-004-aggiornare-disattivare-regole`
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4, §5
@@ -486,6 +487,7 @@
   - Nessuna regola viene cancellata o riscritta; una disattivazione già avvenuta non viene modificata. Una regola di gruppo che cambia per un solo cliente viene disattivata e sostituita da regole che descrivono la nuova situazione.
   - Su richiesta l'agente mostra lo storico delle regole di un cliente, comprese quelle disattivate, con date, autori e motivi.
   - Gli scenari, compresi i casi espliciti, impliciti e di gruppo, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-010 coprono il rifiuto di cancellazione e riscrittura.
+- **Outcome:** Verificato il comportamento già previsto da `SOUL.md` ed estesi catalogo e harness a disattivazioni, sostituzioni, gruppi, storico e conservazione tra turni. Superati gate rapido, `test:local`, `test:db`, `test:author` e due esecuzioni degli undici scenari OpenRouter con webhook sintetico e sostituto Meta; limiti lessicali e delle prove documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.
 
 ## Dependencies and suggested order
 

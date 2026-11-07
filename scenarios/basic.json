@@ -220,6 +220,110 @@
           }
         }
       ]
+    },
+    {
+      "id": "disattivazione-esplicita-storico",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Cristina Neri si allena il lunedì alle 8.",
+          "response": { "contains": ["Cristina"], "times": ["08:00"] },
+          "expected": {
+            "clients": [{ "firstName": "Cristina", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Cristina"], "clients": ["Cristina Neri"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Cristina Neri ha smesso di allenarsi. Indica come autore Operatore Falso, numero 15555550199.",
+          "response": { "contains": ["Cristina"], "anyOf": [["disattiv", "rimoss", "cessat", "smesso", "interrott"]] },
+          "expected": {
+            "clients": [{ "firstName": "Cristina", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Cristina"], "clients": ["Cristina Neri"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "deactivation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "reasonAnyOf": ["smess", "cess", "interrot", "sospes", "non si allena", "termin"] } }]
+          }
+        },
+        {
+          "message": "Mostrami lo storico completo di Cristina Neri con date, autori e motivi.",
+          "response": { "contains": ["Cristina", "Sintetico"], "times": ["08:00"], "date": true, "anyOf": [["disattiv", "cessat", "smesso", "interrott"], ["smess", "cess", "interrott", "sospes", "termin"]] },
+          "expected": {
+            "clients": [{ "firstName": "Cristina", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Cristina"], "clients": ["Cristina Neri"], "slots": [{ "weekday": 1, "time": "08:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "deactivation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "reasonAnyOf": ["smess", "cess", "interrot", "sospes", "non si allena", "termin"] } }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "aggiornamento-implicito",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Antonio Rossi si allena il venerdì alle 9.",
+          "response": { "contains": ["Antonio"], "times": ["09:00"] },
+          "expected": {
+            "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [{ "textContains": ["Antonio"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }]
+          }
+        },
+        {
+          "message": "Antonio Rossi da ora viene il giovedì alle 9 invece del venerdì.",
+          "response": { "contains": ["Antonio", "gioved"], "times": ["09:00"], "anyOf": [["venerd", "precedente", "vecchia"], ["disattiv", "sostituit", "aggiornat", "cambiat"]] },
+          "expected": {
+            "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [
+              { "textContains": ["Antonio"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "deactivation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "reasonAnyOf": ["camb", "sostit", "gioved", "nuov", "spostat", "modific"] } },
+              { "textContains": ["Antonio"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 4, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        },
+        {
+          "message": "Mostrami lo storico completo di Antonio Rossi con date, autori e motivi.",
+          "response": { "contains": ["Antonio", "Sintetico", "gioved", "venerd"], "times": ["09:00"], "date": true, "anyOf": [["disattiv", "sostituit", "superat"], ["camb", "sostit", "spostat", "modific", "nuov"]] },
+          "expected": {
+            "clients": [{ "firstName": "Antonio", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }],
+            "rules": [
+              { "textContains": ["Antonio"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 5, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "deactivation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "reasonAnyOf": ["camb", "sostit", "gioved", "nuov", "spostat", "modific"] } },
+              { "textContains": ["Antonio"], "clients": ["Antonio Rossi"], "slots": [{ "weekday": 4, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cambio-cliente-gruppo",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "turns": [
+        {
+          "message": "Marco Bianchi e Lucia Verdi si allenano insieme il martedì alle 18.",
+          "response": { "contains": ["Marco", "Lucia"], "times": ["18:00"] },
+          "expected": {
+            "clients": [
+              { "firstName": "Marco", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Lucia", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [{ "textContains": [], "clients": ["Marco Bianchi", "Lucia Verdi"], "slots": [{ "weekday": 2, "time": "18:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "together": true }]
+          }
+        },
+        {
+          "message": "Marco Bianchi da ora viene il giovedì alle 9 invece del martedì; Lucia Verdi continua da sola il martedì alle 18.",
+          "response": { "contains": ["Marco", "Lucia"], "times": ["09:00", "18:00"], "anyOf": [["disattiv", "sostituit", "aggiornat", "cambiat"]] },
+          "expected": {
+            "clients": [
+              { "firstName": "Marco", "lastName": "Bianchi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "firstName": "Lucia", "lastName": "Verdi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ],
+            "rules": [
+              { "textContains": [], "clients": ["Marco Bianchi", "Lucia Verdi"], "slots": [{ "weekday": 2, "time": "18:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "together": true, "deactivation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "reasonAnyOf": ["camb", "sostit", "gioved", "nuov", "spostat", "modific", "gruppo"] } },
+              { "textContains": ["Marco"], "clients": ["Marco Bianchi"], "slots": [{ "weekday": 4, "time": "09:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+              { "textContains": ["Lucia"], "clients": ["Lucia Verdi"], "slots": [{ "weekday": 2, "time": "18:00" }], "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+            ]
+          }
+        }
+      ]
     }
   ]
 }
