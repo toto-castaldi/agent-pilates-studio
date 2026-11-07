@@ -8,16 +8,16 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.2.0 | Open | Consultazione, aggiornamento, configurazione locale e nome dell'agente verificati | 20/22 items done (91%) |
+| v0.2.0 | Open | Consultazione, aggiornamento, configurazione locale, nome dell'agente e compattazione del contesto verificati; resta il dettato remoto | 21/22 items done (95%) |
 
 I conteggi riguardano la v0.2.0; TEC-008 e TEC-019 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 2 |
+| Todo | 1 |
 | In Progress | 0 |
 | Blocked | 0 |
-| Done | 20 |
+| Done | 21 |
 
 ## In progress
 
@@ -31,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | 2026-11-07 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | 2026-11-07 |
 | TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
 | TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
@@ -40,13 +41,11 @@ None.
 | TEC-022 | EPIC-001 — Fondamenta del progetto | — | Tracciabilità e aggiornamento dal template | 2026-11-07 |
 | TEC-021 | EPIC-001 — Fondamenta del progetto | — | Avvio locale con configurazione collegata | 2026-11-07 |
 | BUG-001 | EPIC-002 — Agente e integrazioni | — | Avviso del canale home inviato agli utilizzatori | 2026-11-06 |
-| US-002 | EPIC-004 — Pianificazione delle lezioni | — | Registrare una regola di allenamento | 2026-11-06 |
 
 ## Next ready items
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
-| TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |

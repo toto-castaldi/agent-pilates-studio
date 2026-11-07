@@ -55,7 +55,7 @@ npm test
 npm run build
 ```
 
-`npm test` ricompila ed esegue solo test di unità in memoria: i test non avviano processi e non usano filesystem, git, rete o Docker. La compilazione e l'eventuale `npm ci` da lockfile sono preparazione, non comportamento dei test. Le suite separate si eseguono durante l'item quando servono a provarne i criteri o la DoD; alla chiusura di versione e in CI si eseguono tutte le suite di integrazione, inclusi `npm run test:local`, `test:pi`, `test:pi-package`, `test:db`, `test:hermes`, `test:author`, `test:upgrade` e `test:start`. Le prove end-to-end reali Meta/OpenRouter richiedono servizi e credenziali esterni e sono documentate e verificate separatamente secondo i criteri di release.
+`npm test` ricompila ed esegue solo test di unità in memoria: i test non avviano processi e non usano filesystem, git, rete o Docker. La compilazione e l'eventuale `npm ci` da lockfile sono preparazione, non comportamento dei test. Le suite separate si eseguono durante l'item quando servono a provarne i criteri o la DoD; alla chiusura di versione e in CI si eseguono tutte le suite di integrazione, inclusi `npm run test:local`, `test:pi`, `test:pi-package`, `test:db`, `test:hermes`, `test:author`, `test:compaction`, `test:upgrade` e `test:start`. Le prove end-to-end reali Meta/OpenRouter richiedono servizi e credenziali esterni e sono documentate e verificate separatamente secondo i criteri di release.
 
 Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi; non usare un database simulato come prova dei privilegi.
 

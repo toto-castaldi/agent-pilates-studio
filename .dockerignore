@@ -9,5 +9,6 @@
 !prisma/
 !prisma/**
 !scripts/
+!scripts/compaction-policy.mjs
 !scripts/migrate.mjs
 !scripts/migrator.Dockerfile

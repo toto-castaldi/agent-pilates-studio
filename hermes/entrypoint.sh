@@ -50,6 +50,19 @@ case "$WHATSAPP_CLOUD_PHONE_NUMBER_ID" in
   *[!0-9]*|'') exit 1 ;;
 esac
 
+# Derive the compaction trigger from the configured model at every start. A
+# missing or ambiguous window stops the gateway instead of using Hermes' higher
+# default trigger.
+settings="$(/usr/local/bin/node /opt/pilates/compaction-settings.mjs)"
+PILATES_COMPACTION_THRESHOLD_TOKENS="${settings% *}"
+PILATES_IDLE_COMPACT_SECONDS="${settings#* }"
+for value in "$PILATES_COMPACTION_THRESHOLD_TOKENS" "$PILATES_IDLE_COMPACT_SECONDS"; do
+  case "$value" in
+    ''|0*|*[!0-9]*) exit 1 ;;
+  esac
+done
+export PILATES_COMPACTION_THRESHOLD_TOKENS PILATES_IDLE_COMPACT_SECONDS
+
 trap - EXIT
 printf '%s\n' hermes_launch >&3
 exec 3>&-

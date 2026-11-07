@@ -27,10 +27,15 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
-  const startResult = (extra: NodeJS.ProcessEnv = {}) => spawnSync('npm', ['run', 'start:local', '--silent'], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 600_000 });
+  // start:local starts services with --no-deps; the synthetic model catalog read by
+  // Hermes at every start (TEC-025) must already be running.
+  const startResult = (extra: NodeJS.ProcessEnv = {}) => {
+    compose('up', '-d', '--no-deps', 'model-stub');
+    return spawnSync('npm', ['run', 'start:local', '--silent'], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8', timeout: 600_000 });
+  };
   const start = () => {
     const result = startResult();
     assert.equal(result.status, 0, `start failed: ${result.stdout}\n${result.stderr}`);
@@ -45,7 +50,8 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
-    await writeFile(join(dir, 'compose.override.yaml'), `services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes: ["./integration/model_stub.py:/model_stub.py:ro"]\n    networks: [private]\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes: ["./scenarios/meta_stub.py:/meta_stub.py:ro"]\n    networks: [private]\n  hermes:\n    networks: [private]\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n      NO_PROXY: model-stub,meta-stub,localhost,127.0.0.1\n    volumes: ["./scenarios/gateway-launcher.sh:/opt/hermes/libexec/hermes:ro"]\nnetworks:\n  private:\n    internal: true\n`);
+    // The model stub can build the shared image because it starts before start:local.
+    await writeFile(join(dir, 'compose.override.yaml'), `services:\n  postgres:\n    networks: [default, private]\n  author-broker:\n    networks: [private]\n  model-stub:\n    image: ${project}-hermes\n    build:\n      context: .\n      dockerfile: hermes/Dockerfile\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes: ["./integration/model_stub.py:/model_stub.py:ro"]\n    networks: [private]\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes: ["./scenarios/meta_stub.py:/meta_stub.py:ro"]\n    networks: [private]\n  hermes:\n    networks: [private]\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n      NO_PROXY: model-stub,meta-stub,localhost,127.0.0.1\n    volumes: ["./scenarios/gateway-launcher.sh:/opt/hermes/libexec/hermes:ro"]\nnetworks:\n  private:\n    internal: true\n`);
     await writeFile(join(dir, 'private.env'), config, { mode: 0o600 });
     await symlink('private.env', join(dir, '.env'));
     start(); // No node_modules or volumes: also exercises dependency preparation.
@@ -65,6 +71,8 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       await assert.rejects(agent.query('CREATE TABLE app.forbidden (id int)'));
     } finally { await agent.end(); }
     const hermes = compose('ps', '-q', 'hermes').trim();
+    const compactionSettings = (container: string) => execFileSync('docker', ['exec', container, 'sh', '-c', 'for f in /proc/[0-9]*/environ; do { tr "\\0" "\\n" < "$f"; } 2>/dev/null | grep -E "^PILATES_(COMPACTION_THRESHOLD_TOKENS|IDLE_COMPACT_SECONDS)="; done | sort -u'], { encoding: 'utf8' }).trim().split('\n');
+    assert.deepEqual(compactionSettings(hermes), ['PILATES_COMPACTION_THRESHOLD_TOKENS=26214', 'PILATES_IDLE_COMPACT_SECONDS=1800']);
     const mounts = execFileSync('docker', ['inspect', '--format', '{{json .Mounts}}', hermes], { encoding: 'utf8' });
     assert.doesNotMatch(mounts, /db-admin|db-migrator|\.env/);
     execFileSync('docker', ['exec', '--user', 'root', hermes, 'sh', '-c', 'printf synthetic-volume-marker > /opt/data/start-probe']);
@@ -111,6 +119,8 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       return execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', id], { encoding: 'utf8' }).trim();
     };
     const gatewayId = compose('ps', '-q', 'hermes').trim();
+    // A changed model updates the compaction threshold at the next start (TEC-025).
+    assert.deepEqual(compactionSettings(gatewayId), ['PILATES_COMPACTION_THRESHOLD_TOKENS=52428', 'PILATES_IDLE_COMPACT_SECONDS=1800']);
     execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_home_channel)" = 15555550103 && test "$PILATES_MODEL" = synthetic/updated-model'], { stdio: 'pipe' });
     const gateway = `http://${address('hermes')}:8090/whatsapp/updated`;
     const meta = `http://${address('meta-stub')}:8088/observations`;

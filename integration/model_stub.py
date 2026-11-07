@@ -12,7 +12,10 @@ async def observe(request):
 
 
 async def models(request):
-    return web.json_response({'object': 'list', 'data': [{'id': 'synthetic/test-model', 'object': 'model', 'context_length': 65536}]})
+    return web.json_response({'object': 'list', 'data': [
+        {'id': 'synthetic/test-model', 'object': 'model', 'context_length': 65536},
+        {'id': 'synthetic/updated-model', 'object': 'model', 'context_length': 131072},
+    ]})
 
 
 async def chat(request):

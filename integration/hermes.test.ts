@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
 import { access, appendFile, chmod, cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
@@ -36,7 +36,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     POSTGRES_PORT: '0',
     WHATSAPP_WEBHOOK_PORT: '0',
     WHATSAPP_WEBHOOK_PATH: '/webhooks/whatsapp',
-    PILATES_MODEL: 'openai/gpt-6.1-terra',
+    PILATES_MODEL: 'synthetic/test-model',
   };
   const compose = (...args: string[]) =>
     execFileSync('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, ...args], {
@@ -58,10 +58,11 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
   let imageBuilt = false;
   try {
     await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
-    await writeFile(override, 'networks:\n  default:\n    internal: true\n');
+    // The gateway derives its compaction threshold from a model catalog at start.
+    await writeFile(override, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
     compose('build', 'hermes');
     imageBuilt = true;
-    compose('up', '-d', '--wait', 'postgres');
+    compose('up', '-d', '--wait', 'postgres', 'model-stub');
     compose('run', '--rm', 'db-bootstrap');
     const databaseId = compose('ps', '-q', 'postgres').trim();
     const address = (container: string) => execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', container], { encoding: 'utf8' }).trim();
@@ -145,7 +146,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.equal(tool.loaded, true);
     assert.deepEqual(tool.enabled, ['studio-postgres']);
     assert.equal(tool.untrusted.error, 'An authenticated WhatsApp turn is required.');
-    assert.equal(tool.model.default, 'openai/gpt-6.1-terra');
+    assert.equal(tool.model.default, env.PILATES_MODEL);
     assert.equal(tool.model.provider, 'openrouter');
     assert.equal(tool.results[0].rows?.[0].role, 'studio_agent');
     assert.equal(tool.results[1].status, 'INSERT 0 1');

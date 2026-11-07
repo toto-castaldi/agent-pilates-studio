@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
+import { idleSeconds } from './compaction-policy.mjs';
 
 class SafeError extends Error {}
 
@@ -71,6 +72,12 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     if (!/^\/[A-Za-z0-9/_-]+$/.test(webhookPath) || webhookPath === '/health' || !/^[A-Za-z0-9._/-]+$/.test(model)) {
       throw new SafeError('Percorso webhook o modello non valido.');
     }
+    let idle;
+    try {
+      idle = idleSeconds(config.PILATES_IDLE_COMPACT_SECONDS);
+    } catch {
+      throw new SafeError('PILATES_IDLE_COMPACT_SECONDS non valido: indicare secondi interi positivi.');
+    }
     const directory = resolve(config.SECRETS_DIR || '.local/secrets');
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
@@ -91,7 +98,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (databaseKeys.has(key)) missingDatabaseFile = true;
       }
     }
-    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model };
+    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle) };
     for (const key of Object.keys(required)) delete env[key];
     const compose = (...args) => ['compose', '--env-file', '/dev/null', ...args];
     // Never reconstruct missing internal credentials over an existing volume.
