@@ -18,6 +18,10 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
       assert.ok(turn.response.contains.length || turn.response.anyOf?.length);
+      if (turn.unchanged) {
+        assert.ok(scenario.setup && !turn.expected);
+        continue;
+      }
       assert.ok(Array.isArray(turn.expected.clients) && Array.isArray(turn.expected.rules));
       for (const rule of turn.expected.rules) {
         assert.ok(rule.clients.length && rule.slots.length);
@@ -30,9 +34,14 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       }
     }
   }
-  for (const id of ['registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato']) {
+  for (const id of ['consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  const consultation = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'consultazione-pianificazione');
+  assert.ok(consultation.setup.rules.some((rule: { active?: boolean }) => rule.active === false));
+  const times = new Set(consultation.setup.rules.flatMap((rule: { slots: { time: string }[] }) => rule.slots.map((slot) => slot.time)));
+  for (const time of ['05:59', '06:00', '12:59', '13:00', '17:59', '18:00']) assert.ok(times.has(time));
+  assert.ok(consultation.turns.every((turn: { unchanged?: boolean }) => turn.unchanged));
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
   assert.doesNotMatch(workflow, /test:conversation/);
 });

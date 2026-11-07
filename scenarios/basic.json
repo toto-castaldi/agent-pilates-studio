@@ -2,6 +2,48 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "consultazione-pianificazione",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-15T09:00:00Z",
+        "clients": [
+          { "firstName": "Ada", "lastName": "Verdi" },
+          { "firstName": "Alice", "lastName": "Rossi" },
+          { "firstName": "Bruno", "lastName": "Neri" },
+          { "firstName": "Carla", "lastName": "Bianchi" },
+          { "firstName": "Diego", "lastName": "Gialli" },
+          { "firstName": "Elena", "lastName": "Viola" },
+          { "firstName": "Fabio", "lastName": "Blu" },
+          { "firstName": "Gina", "lastName": "Grigi" },
+          { "firstName": "Irene", "lastName": "Rosa" }
+        ],
+        "rules": [
+          { "text": "Ada Verdi venerdì alle 06:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 5, "time": "06:00" }] },
+          { "text": "Alice Rossi e Bruno Neri insieme venerdì alle 09:00", "clients": ["Alice Rossi", "Bruno Neri"], "slots": [{ "weekday": 5, "time": "09:00" }] },
+          { "text": "Carla Bianchi venerdì alle 12:59", "clients": ["Carla Bianchi"], "slots": [{ "weekday": 5, "time": "12:59" }] },
+          { "text": "Diego Gialli venerdì alle 13:00", "clients": ["Diego Gialli"], "slots": [{ "weekday": 5, "time": "13:00" }] },
+          { "text": "Elena Viola venerdì alle 17:59", "clients": ["Elena Viola"], "slots": [{ "weekday": 5, "time": "17:59" }] },
+          { "text": "Fabio Blu venerdì alle 18:00", "clients": ["Fabio Blu"], "slots": [{ "weekday": 5, "time": "18:00" }] },
+          { "text": "Gina Grigi venerdì alle 05:59", "clients": ["Gina Grigi"], "slots": [{ "weekday": 5, "time": "05:59" }] },
+          { "text": "Irene Rosa venerdì alle 10:00", "clients": ["Irene Rosa"], "slots": [{ "weekday": 5, "time": "10:00" }], "active": false },
+          { "text": "Alice Rossi lunedì alle 10:00; nota storica: mercoledì alle 11:00", "clients": ["Alice Rossi"], "slots": [{ "weekday": 1, "time": "10:00" }] }
+        ]
+      },
+      "turns": [
+        { "message": "Venerdì mattina mi dici nelle lezioni chi si allena? Raggruppa per orario.", "response": { "contains": ["Ada", "Alice", "Bruno", "Carla"], "times": ["06:00", "09:00", "12:59"], "excludes": ["Diego", "Elena", "Fabio", "Gina", "Irene"], "groups": [{ "time": "06:00", "contains": ["Ada"] }, { "time": "09:00", "contains": ["Alice", "Bruno"] }, { "time": "12:59", "contains": ["Carla"] }] }, "unchanged": true },
+        { "message": "Chi si allena venerdì pomeriggio?", "response": { "contains": ["Diego", "Elena"], "times": ["13:00", "17:59"], "excludes": ["Ada", "Alice", "Bruno", "Carla", "Fabio", "Gina", "Irene"], "groups": [{ "time": "13:00", "contains": ["Diego"] }, { "time": "17:59", "contains": ["Elena"] }] }, "unchanged": true },
+        { "message": "Chi si allena venerdì sera?", "response": { "contains": ["Fabio"], "times": ["18:00"], "excludes": ["Ada", "Alice", "Bruno", "Carla", "Diego", "Elena", "Gina", "Irene"], "groups": [{ "time": "18:00", "contains": ["Fabio"] }] }, "unchanged": true },
+        { "message": "Chi si allena lunedì?", "response": { "contains": ["Alice"], "times": ["10:00"], "excludes": ["Bruno", "Irene"], "groups": [{ "time": "10:00", "contains": ["Alice"] }] }, "unchanged": true },
+        { "message": "Chi si allena venerdì alle 9?", "response": { "contains": ["Alice", "Bruno"], "times": ["09:00"], "excludes": ["Ada", "Carla", "Diego", "Elena", "Fabio", "Gina", "Irene"], "groups": [{ "time": "09:00", "contains": ["Alice", "Bruno"] }] }, "unchanged": true },
+        { "message": "Quando si allena Alice Rossi?", "response": { "contains": ["Alice"], "anyOf": [["lunedì", "lunedi"], ["venerdì", "venerdi"]], "times": ["10:00", "09:00"], "excludes": ["Irene"], "dayGroups": [{ "day": "lunedì", "times": ["10:00"] }, { "day": "venerdì", "times": ["09:00"] }] }, "unchanged": true },
+        { "message": "Mostrami il riepilogo settimanale delle lezioni.", "response": { "contains": ["Ada", "Alice", "Bruno", "Carla", "Diego", "Elena", "Fabio", "Gina"], "anyOf": [["lunedì", "lunedi"], ["venerdì", "venerdi"]], "times": ["05:59", "06:00", "09:00", "10:00", "12:59", "13:00", "17:59", "18:00"], "excludes": ["Irene"], "groups": [{ "time": "05:59", "contains": ["Gina"] }, { "time": "06:00", "contains": ["Ada"] }, { "time": "09:00", "contains": ["Alice", "Bruno"] }, { "time": "10:00", "contains": ["Alice"] }, { "time": "12:59", "contains": ["Carla"] }, { "time": "13:00", "contains": ["Diego"] }, { "time": "17:59", "contains": ["Elena"] }, { "time": "18:00", "contains": ["Fabio"] }], "dayGroups": [{ "day": "lunedì", "groups": [{ "time": "10:00", "contains": ["Alice"] }] }, { "day": "venerdì", "groups": [{ "time": "05:59", "contains": ["Gina"] }, { "time": "06:00", "contains": ["Ada"] }, { "time": "09:00", "contains": ["Alice", "Bruno"] }, { "time": "12:59", "contains": ["Carla"] }, { "time": "13:00", "contains": ["Diego"] }, { "time": "17:59", "contains": ["Elena"] }, { "time": "18:00", "contains": ["Fabio"] }] }] }, "unchanged": true },
+        { "message": "Chi si allena mercoledì?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista"]], "excludes": ["Alice", "Irene"] }, "unchanged": true },
+        { "message": "Chi ha inserito e in quale data la regola di Ada Verdi del venerdì alle 6?", "response": { "contains": ["Operatore", "Sintetico"], "anyOf": [["15/01/2024", "15-01-2024", "15 gennaio 2024", "2024-01-15"]], "excludes": ["15555550102"] }, "unchanged": true }
+      ]
+    },
+    {
       "id": "registrazione-consultazione",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",

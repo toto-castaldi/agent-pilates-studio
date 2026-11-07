@@ -17,6 +17,7 @@ export interface RuleState {
   authorPhone: string;
   authorName: string | null;
   together?: boolean;
+  active?: boolean;
 }
 
 export interface ExpectedState {
@@ -45,6 +46,8 @@ export interface ExpectedResponse {
   excludes?: string[];
   times?: string[];
   question?: boolean;
+  groups?: { time: string; contains: string[] }[];
+  dayGroups?: { day: string; groups?: { time: string; contains: string[] }[]; times?: string[] }[];
 }
 
 const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('it-IT');
@@ -56,12 +59,26 @@ export function hasHomeChannelNotice(text: string): boolean {
   return /no home channel is set|nessun canale principale impostato|\/sethome/i.test(text);
 }
 
+// Snapshots are produced by the same ordered SQL queries, including attribution
+// and deactivation metadata. Consultation must not change any selected field.
+export function snapshotsMatch(before: ActualState, after: ActualState): boolean {
+  return JSON.stringify(before) === JSON.stringify(after);
+}
+
 export function responseMatches(text: string, expected: ExpectedResponse): boolean {
   const value = normalized(text);
   if (!expected.contains.every((word) => value.includes(normalized(word)))) return false;
   if (!(expected.anyOf ?? []).every((choices) => choices.length > 0 && choices.some((word) => value.includes(normalized(word))))) return false;
   if ((expected.excludes ?? []).some((word) => value.includes(normalized(word)))) return false;
   if (expected.question && !/[?？]/.test(text)) return false;
+  if (!(expected.groups ?? []).every((group) => group.contains.length > 0
+    && text.split(/\n+/).some((line) => responseMatches(line, { contains: group.contains, times: [group.time] })))) return false;
+  if (expected.dayGroups?.length) {
+    const days = [...value.matchAll(/luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica/g)];
+    const fold = (day: string) => day.normalize('NFD').replace(/\p{M}/gu, '');
+    if (!expected.dayGroups.every((expectedDay) => days.some((day, index) => fold(day[0]) === fold(normalized(expectedDay.day))
+      && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
+  }
   return (expected.times ?? []).every((time) => {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return false;
     const [hours, minutes] = time.split(':').map(Number);
@@ -95,12 +112,12 @@ export function stateMatches(actual: ActualState, expected: ExpectedState): bool
     || rule.clients.some((client) => !clientNames.has(normalized(client)))
     || edges.size !== rule.clients.length * rule.slots.length)) return false;
   for (const row of actual.rules) {
-    if (!row.active || !row.hasCreatedAt || !row.text.trim() || !row.clients.length || !row.slots.length
+    if (!row.hasCreatedAt || !row.text.trim() || !row.clients.length || !row.slots.length
       || new Set(row.clients.map(normalized)).size !== row.clients.length
       || new Set(row.slots.map(slotKey)).size !== row.slots.length) return false;
     const edges = row.clients.flatMap((client) => row.slots.map((slot) => edgeKey(client, slot)));
     const matches = groups.filter(({ rule, edges: expectedEdges }) => row.authorPhone === rule.authorPhone
-      && row.authorName === rule.authorName
+      && row.authorName === rule.authorName && row.active === (rule.active ?? true)
       && rule.textContains.every((word) => normalized(row.text).includes(normalized(word)))
       && row.slots.every((slot) => weekdays[slot.weekday]
         && normalized(row.text).includes(weekdays[slot.weekday])
