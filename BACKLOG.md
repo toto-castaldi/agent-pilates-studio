@@ -352,7 +352,8 @@
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** In Progress
+- **Branch:** `task/TEC-024-adozione-template-v1-5-0`
 - **Dependencies:** TEC-023
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-010, REQ-NFR-013, REQ-NFR-014, REQ-NFR-015
 - **Design references:** PROCESS §3, §4, §6, §7, §8; TECHNICAL-DESIGN §3, §8, §10; `docs/TEMPLATE-ORIGIN.md`
