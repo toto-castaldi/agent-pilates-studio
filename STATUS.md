@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Schema delle presenze e template v1.6.1 completati; registrazione conversazionale pronta | 2/6 items done (33%) |
+| v0.3.0 | Open | Schema delle presenze completato; registrazione conversazionale in corso | 2/6 items done (33%) |
 
 I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
-| In Progress | 0 |
+| Todo | 3 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 2 |
 
 ## In progress
 
-None.
+| Item | Epic | Module | Title | Branch |
+| ---- | ---- | ------ | ----- | ------ |
+| US-006 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le presenze a una lezione | `us/US-006-registrare-presenze-lezione` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
-| US-006 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le presenze a una lezione | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 

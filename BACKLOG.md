@@ -637,7 +637,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `us/US-006-registrare-presenze-lezione`
 - **Dependencies:** TEC-027
 - **Requirements:** REQ-STUDIO-002, REQ-STUDIO-003, REQ-STUDIO-006, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4, §5, §6
