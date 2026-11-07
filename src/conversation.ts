@@ -52,8 +52,8 @@ const slotKey = (slot: Slot) => JSON.stringify([slot.weekday, slot.time]);
 const edgeKey = (client: string, slot: Slot) => JSON.stringify([normalized(client), slot.weekday, slot.time]);
 const weekdays = ['', 'luned', 'marted', 'mercoled', 'gioved', 'venerd', 'sabat', 'domenic'];
 
-export function isHarnessNotice(text: string): boolean {
-  return text.startsWith('📬 No home channel is set for ');
+export function hasHomeChannelNotice(text: string): boolean {
+  return /no home channel is set|nessun canale principale impostato|\/sethome/i.test(text);
 }
 
 export function responseMatches(text: string, expected: ExpectedResponse): boolean {

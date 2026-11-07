@@ -16,6 +16,7 @@ WHATSAPP_ACCESS_TOKEN=synthetic-sensitive-access-token
 WHATSAPP_APP_SECRET=synthetic-sensitive-app-secret
 WHATSAPP_VERIFY_TOKEN=synthetic-sensitive-verify-token
 WHATSAPP_ALLOWED_USERS=15555550102
+WHATSAPP_HOME_CHANNEL=15555550102
 WHATSAPP_PHONE_NUMBER_ID=123456789
 `;
 
@@ -56,6 +57,12 @@ test('local start validates private configuration, preserves secrets and suppres
     result = start();
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /WHATSAPP_ALLOWED_USERS/);
+    for (const value of ['', '15555550103', '1555555010']) {
+      await writeFile(join(dir, '.env'), configuration.replace('WHATSAPP_HOME_CHANNEL=15555550102', `WHATSAPP_HOME_CHANNEL=${value}`));
+      result = start();
+      assert.notEqual(result.status, 0);
+      assert.doesNotMatch(result.stderr, /1555555010/);
+    }
     await chmod(join(dir, '.env'), 0o644);
     assert.notEqual(start().status, 0);
   } finally {

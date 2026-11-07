@@ -12,7 +12,7 @@ if [ -f /opt/data/.env ] && grep -Eqi '^[[:space:]]*(export[[:space:]]+)?(WHATSA
   exit 1
 fi
 
-for name in db_agent bridge_token openrouter_key whatsapp_access_token whatsapp_app_secret whatsapp_verify_token whatsapp_allowed_users whatsapp_phone_number_id; do
+for name in db_agent bridge_token openrouter_key whatsapp_access_token whatsapp_app_secret whatsapp_verify_token whatsapp_allowed_users whatsapp_home_channel whatsapp_phone_number_id; do
   if [ ! -s "/run/secrets/$name" ]; then
     exit 1
   fi
@@ -31,11 +31,20 @@ export WHATSAPP_CLOUD_ACCESS_TOKEN="$(cat /run/secrets/whatsapp_access_token)"
 export WHATSAPP_CLOUD_APP_SECRET="$(cat /run/secrets/whatsapp_app_secret)"
 export WHATSAPP_CLOUD_VERIFY_TOKEN="$(cat /run/secrets/whatsapp_verify_token)"
 export WHATSAPP_CLOUD_ALLOWED_USERS="$(cat /run/secrets/whatsapp_allowed_users)"
+export WHATSAPP_CLOUD_HOME_CHANNEL="$(cat /run/secrets/whatsapp_home_channel)"
+unset WHATSAPP_CLOUD_HOME_CHANNEL_NAME WHATSAPP_CLOUD_HOME_CHANNEL_THREAD_ID
 export WHATSAPP_CLOUD_PHONE_NUMBER_ID="$(cat /run/secrets/whatsapp_phone_number_id)"
 export WHATSAPP_CLOUD_ALLOW_ALL_USERS=false
 export GATEWAY_ALLOW_ALL_USERS=false
 case "$WHATSAPP_CLOUD_ALLOWED_USERS" in
   *[!0-9,]*|,*|*,|*,,*|'') exit 1 ;;
+esac
+case "$WHATSAPP_CLOUD_HOME_CHANNEL" in
+  *[!0-9]*|'') exit 1 ;;
+esac
+case ",$WHATSAPP_CLOUD_ALLOWED_USERS," in
+  *",$WHATSAPP_CLOUD_HOME_CHANNEL,"*) ;;
+  *) exit 1 ;;
 esac
 case "$WHATSAPP_CLOUD_PHONE_NUMBER_ID" in
   *[!0-9]*|'') exit 1 ;;

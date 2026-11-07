@@ -293,7 +293,8 @@
 #### BUG-001 — Avviso del canale home inviato agli utilizzatori
 
 - **Epic:** EPIC-002 — Agente e integrazioni
-- **Type:** Bug · **Priority:** P0 · **Status:** Todo
+- **Type:** Bug · **Priority:** P0 · **Status:** Done
+- **Branch:** `fix/BUG-001-avviso-canale-home`
 - **Dependencies:** none
 - **Requirements:** REQ-WA-001, REQ-WA-002, REQ-WA-003, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §3, §6, §7, §9
@@ -307,6 +308,7 @@
   - Con il canale configurato nessun utilizzatore riceve l'avviso né suggerimenti di `/sethome`, alla prima conversazione e dopo riavvio o ricreazione del gateway; `/sethome` inviato da un utilizzatore non modifica il canale home configurato. I job cron restano disabilitati fino a TEC-019.
   - Un test di regressione con gateway reale, webhook firmato e dati sintetici verifica che i messaggi inviati al sostituto Meta non contengano l'avviso e che `/sethome` non cambi il canale; il filtro dell'avviso nell'harness di TEC-012 è rimosso, così gli scenari falliscono se riappare.
   - Log e output rispettano REQ-NFR-002; `docs/TECHNICAL-DESIGN.md` descrive la scelta.
+- **Outcome:** Canale home privato e validato, `/sethome` bloccato, cron del gateway disabilitati e filtro dell'harness rimosso. Verificati gateway reale con webhook firmati, sostituti Meta e modello sintetici, riavvio e ricreazione, cron scaduto, privacy dei log, avvio e upgrade isolati; nessuna nuova prova Meta/OpenRouter reale né accettazione privacy. Completato il 2026-11-06.
 
 ### EPIC-004 — Pianificazione delle lezioni
 
@@ -394,7 +396,7 @@
   - Un cliente nuovo viene creato con nome e cognome, chiedendo il cognome se manca; con il solo nome l'agente usa l'unico cliente corrispondente oppure chiede il cognome se ce ne sono più di uno.
   - L'agente chiede conferma solo in caso di ambiguità, ad esempio orario o giorno mancanti, e altrimenti registra senza conferma.
   - Test su PostgreSQL reale verificano il percorso di scrittura e che l'autore non possa essere indicato dal modello; gli scenari di questi casi sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato.
-- **Outcome:** Estesi catalogo e harness a registrazioni semplici, più orari e gruppi, chiarimenti e autore non dichiarabile, con verifica delle associazioni indipendente dalla scomposizione. Superati gate rapido, `test:local`, `test:db`, `test:author` e otto scenari OpenRouter con webhook sintetico e sostituto Meta; esiti preliminari e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`. BUG-001 resta filtrato dall'harness; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-06.
+- **Outcome:** Estesi catalogo e harness a registrazioni semplici, più orari e gruppi, chiarimenti e autore non dichiarabile, con verifica delle associazioni indipendente dalla scomposizione. Superati gate rapido, `test:local`, `test:db`, `test:author` e otto scenari OpenRouter con webhook sintetico e sostituto Meta; esiti preliminari e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`. Durante queste prove l'avviso BUG-001 era filtrato dall'harness; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-06. Il filtro è stato successivamente rimosso da BUG-001.
 
 #### US-003 — Consultare la pianificazione settimanale
 
