@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronto: Registrare le assenze a una lezione | 4/7 items done (57%) |
+| v0.3.0 | Open | In corso: Registrare le assenze a una lezione | 4/7 items done (57%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
-| In Progress | 0 |
+| Todo | 2 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 4 |
 
 ## In progress
 
-None.
+| Item | Epic | Module | Title | Branch |
+| ---- | ---- | ------ | ----- | ------ |
+| US-007 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le assenze a una lezione | `us/US-007-registrare-assenze-lezione` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
-| US-007 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le assenze a una lezione | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 | US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
