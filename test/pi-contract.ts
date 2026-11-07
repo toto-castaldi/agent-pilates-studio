@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 export function checkPiPaths(tracked: string[], secrets: string[], settingsIsFile: boolean, skills: boolean[]) {
-  assert.deepEqual([...tracked].sort(), ['.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.pi/settings.json'], 'Unexpected or missing tracked Pi resource: review the allowlist before sharing it.');
+  assert.deepEqual([...tracked].sort(), ['.pi/extensions/backlog/index.ts', '.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.pi/settings.json'], 'Unexpected or missing tracked Pi resource: review the allowlist before sharing it.');
   assert.ok(secrets.every((path) => path === '.env.example'), 'Unexpected tracked local configuration or secrets.');
   assert.ok(settingsIsFile, 'Project Pi settings must be a regular file.');
   assert.ok(skills.length === 3 && skills.every(Boolean), 'Missing project skill.');

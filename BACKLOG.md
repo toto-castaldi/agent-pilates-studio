@@ -458,6 +458,7 @@
 #### US-003 — Consultare la pianificazione settimanale
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Module:** MOD-001 — Agente
 - **Type:** User Story · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-004, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -472,6 +473,7 @@
 #### US-004 — Aggiornare e disattivare le regole
 
 - **Epic:** EPIC-004 — Pianificazione delle lezioni
+- **Module:** MOD-001 — Agente
 - **Type:** User Story · **Priority:** P1 · **Status:** Todo
 - **Dependencies:** US-002
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-005, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -533,6 +535,7 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
 #### TEC-019 — Job cron e messaggi pianificati dell'agente
 
 - **Epic:** EPIC-002 — Agente e integrazioni
+- **Module:** MOD-001 — Agente
 - **Type:** Task · **Priority:** P2 · **Status:** Todo · **Version:** Non assegnata
 - **Dependencies:** BUG-001
 - **Description:** Abilitare in modo controllato i job cron di Hermes per future funzioni pianificate (ad esempio un riepilogo settimanale), consegnati sul canale home configurato. Prima della pianificazione servono i requisiti dei casi d'uso, la decisione su chi può creare o modificare i job e su come i turni pianificati, privi di un messaggio WhatsApp autenticato, accedono al database senza indebolire REQ-STUDIO-003 e REQ-DB-002.

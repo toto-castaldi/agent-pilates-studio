@@ -46,13 +46,13 @@ None.
 
 ## Next ready items
 
-| Item | Epic | Title | Priority |
-| ---- | ---- | ----- | -------- |
-| US-003 | EPIC-004 — Pianificazione delle lezioni | Consultare la pianificazione settimanale | P1 |
-| US-004 | EPIC-004 — Pianificazione delle lezioni | Aggiornare e disattivare le regole | P1 |
-| TEC-008 | EPIC-003 — Dati e operatività | Audit privacy dei log del proxy | P1 |
-| TEC-020 | EPIC-001 — Fondamenta del progetto | Dettato vocale Pi su server remoto | P2 |
-| TEC-019 | EPIC-002 — Agente e integrazioni | Job cron e messaggi pianificati dell'agente | P2 |
+| Item | Epic | Module | Title | Priority |
+| ---- | ---- | ------ | ----- | -------- |
+| US-003 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Consultare la pianificazione settimanale | P1 |
+| US-004 | EPIC-004 — Pianificazione delle lezioni | MOD-001 | Aggiornare e disattivare le regole | P1 |
+| TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
+| TEC-020 | EPIC-001 — Fondamenta del progetto | — | Dettato vocale Pi su server remoto | P2 |
+| TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 
 TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima dell'avvio; TEC-019 richiede anche requisiti e decisioni.
 
@@ -71,7 +71,7 @@ TEC-008 e TEC-019 non sono assegnati a una versione: serve pianificarli prima de
 - Decisione dell'utente (2026-11-06): TEC-020 è aggiunto allo scope della v0.2.0 per il dettato vocale Pi su server remoto tramite inoltro audio SSH.
 - Decisione dell'utente (2026-11-06): TEC-018 è aggiunto allo scope della v0.2.0 per lo stato `blocked` dei tool Pi di domanda.
 - Decisione dell'utente (2026-11-06): TEC-017 è aggiunto allo scope della v0.2.0 per il template Pi `/work-alone`.
-- Il riporto parziale del gate TEC-015 nel template è pubblicato e antenato di `v1.4.0`; altri allineamenti non sono adottati (TEC-022).
+- Il riporto parziale del gate TEC-015 nel template è pubblicato e antenato di `v1.4.0`; TEC-023 allinea processo e skill al riferimento fissato.
 - Le prove di identità di TEC-010 usano modello e webhook sintetici, non servizi Meta/OpenRouter reali.
 - TEC-003, TEC-004 e US-001 sono confluiti in SPIKE-001. La prova reale WhatsApp/OpenRouter e la verifica SQL tramite il modello sono documentate nel rapporto dello spike.
 - TEC-005 ha verificato la prova WhatsApp temporanea, il backup reale e il ripristino isolato, il riavvio e la riconfigurazione del database operativo e il successivo healthcheck Hermes solo locale; al termine di TEC-005 Hermes era fermo. Gli upgrade tra versioni specifiche sono stati verificati in isolamento. Il debito non assegnato TEC-008 riguarda l'audit completo del proxy: REQ-NFR-002 resta vincolante, l'accettazione privacy della release non è dimostrata e la prova non autorizza l'uso continuativo. Lo streaming remoto del tunnel condiviso resta vietato.

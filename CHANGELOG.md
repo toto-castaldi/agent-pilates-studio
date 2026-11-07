@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Visualizzatore Pi `/backlog` in sola lettura con navigazione, scorrimento e scorciatoia configurabile (TEC-023).
 - Tracciabilità del template di origine e procedura manuale per confrontare aggiornamenti senza adottarli automaticamente (TEC-022).
 - Catalogo e harness isolato per scenari conversazionali con modello OpenRouter reale (TEC-012).
 - Contesto versionato dello studio per Hermes, con refresh delle sessioni e data corrente Europe/Rome (TEC-011).
@@ -21,6 +22,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Processo e skill allineati al template v1.4.0 e modulo architetturale Agente documentato (TEC-023).
 - L'avvio locale accetta `.env` come link simbolico a un file regolare privato (TEC-021).
 - Estesi gli scenari di registrazione e le verifiche dell'harness a gruppi, più orari, chiarimenti e attribuzione dell'autore (US-002).
 - I tool Pi di domanda segnalano l'attesa dell'utente nei terminali compatibili, tramite il pacchetto condiviso fissato (TEC-018).

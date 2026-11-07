@@ -5,6 +5,11 @@
 .pi/prompts/*
 !.pi/prompts/start.md
 !.pi/prompts/work-alone.md
+!.pi/extensions/
+.pi/extensions/*
+!.pi/extensions/backlog/
+.pi/extensions/backlog/*
+!.pi/extensions/backlog/index.ts
 .claude/settings.local.json
 
 # Local configuration and secrets

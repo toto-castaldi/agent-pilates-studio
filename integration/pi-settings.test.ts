@@ -90,6 +90,24 @@ test('Pi discovers approved project templates only with project trust', { timeou
   }
 });
 
+test('Pi discovers the backlog extension only with project trust', { timeout: 90_000 }, () => {
+  const root = mkdtempSync(join(tmpdir(), 'pi-backlog-trust-'));
+  const project = join(root, 'project');
+  const agent = join(root, 'agent');
+  try {
+    mkdirSync(join(project, '.pi', 'extensions', 'backlog'), { recursive: true });
+    mkdirSync(agent);
+    copyFileSync('.pi/extensions/backlog/index.ts', join(project, '.pi', 'extensions', 'backlog', 'index.ts'));
+    for (const approved of [true, false]) {
+      const response = runPi(project, root, agent, approved).find((entry) => entry.id === 'commands');
+      assert.equal(response?.success, true);
+      assert.equal(response?.data?.commands?.some((command) => command.name === 'backlog'), approved);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('direct Pi startup can update project settings if its agent directory is the project .pi directory', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-same-settings-integration-'));
   const project = join(root, 'project');

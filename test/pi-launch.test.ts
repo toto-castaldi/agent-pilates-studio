@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkStartPrompt, checkWorkAlonePrompt } from './pi-contract.js';
 
 test('Pi path policy rejects private files and missing resources in memory', () => {
-  const tracked = ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md'];
+  const tracked = ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts'];
   checkPiPaths(tracked, ['.env.example'], true, [true, true, true]);
   assert.throws(() => checkPiPaths([...tracked, '.pi/auth.json'], [], true, [true, true, true]));
   assert.throws(() => checkPiPaths(['.pi/settings.json'], [], true, [true, true, true]));
