@@ -755,3 +755,12 @@ Gli item non assegnati devono essere pianificati prima dell'implementazione; i r
 - **Dependencies:** US-006
 - **Description:** Registrare quale insegnante ha tenuto ogni lezione puntuale, distinto da chi ha registrato presenze e assenze. Prima della pianificazione servono i requisiti sull'anagrafica degli insegnanti, oggi fuori scope, sul loro rapporto con gli utilizzatori e sulle consultazioni per insegnante.
 - **Requirements:** da definire (cambio di scope rispetto a REQ-STUDIO-006)
+
+#### US-012 — Pacchetti di lezioni e lezioni residue
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P2 · **Status:** Todo · **Version:** Non assegnata
+- **Dependencies:** US-007
+- **Description:** Gestire i pacchetti di lezioni dei clienti (ad esempio 10 lezioni) e calcolare le lezioni usate e residue a partire da presenze e assenze, ad esempio contando come usate le assenze non giustificate. Prima della pianificazione servono i requisiti su pacchetti, scadenze, regole di conteggio ed eventuali pagamenti, oggi fuori scope, e l'aggiornamento di REQ-NFR-005.
+- **Requirements:** da definire (cambio di scope rispetto a REQ-STUDIO-007 e REQ-NFR-005)

@@ -10,7 +10,7 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 | ------- | ----- | ----- | -------- |
 | v0.3.0 | Open | Pianificazione delle presenze alle lezioni: schema, registrazione, correzione e consultazione pianificati | 0/5 items done (0%) |
 
-I conteggi riguardano la v0.3.0; TEC-008, TEC-019, US-010 e US-011 non sono assegnati a una versione.
+I conteggi riguardano la v0.3.0; TEC-008, TEC-019 e US-010–US-012 non sono assegnati a una versione.
 
 | Item state | Count |
 | ---------- | ----: |
