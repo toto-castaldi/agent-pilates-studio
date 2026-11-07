@@ -397,7 +397,8 @@
 
 - **Epic:** EPIC-002 — Agente e integrazioni
 - **Module:** MOD-001 — Agente
-- **Type:** Task · **Priority:** P1 · **Status:** Todo
+- **Type:** Task · **Priority:** P1 · **Status:** In Progress
+- **Branch:** `task/TEC-025-contesto-interlocutore-compattazione`
 - **Dependencies:** TEC-011, BUG-001
 - **Requirements:** REQ-AGENT-004, REQ-WA-003, REQ-STUDIO-003, REQ-OPS-002, REQ-NFR-002, REQ-NFR-005
 - **Design references:** TECHNICAL-DESIGN §6, §7, §10
