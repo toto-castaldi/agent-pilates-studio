@@ -22,8 +22,12 @@ export interface AttendanceState {
   id?: string;
 }
 
+export interface ExpectedAttendance extends AttendanceState {
+  cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
+}
+
 export interface AttendanceExpectation {
-  attendance: (AttendanceState & { cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] } })[];
+  attendance: ExpectedAttendance[];
   addedClients: ClientState[];
 }
 
@@ -78,6 +82,7 @@ export interface ExpectedResponse {
   groups?: { time: string; contains: string[] }[];
   dayGroups?: { day: string; groups?: { time: string; contains: string[] }[]; times?: string[] }[];
   date?: boolean;
+  dates?: string[];
 }
 
 const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('it-IT');
@@ -116,6 +121,14 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
       && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
   }
   if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(text)) return false;
+  const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  if (!(expected.dates ?? []).every((date) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+    const [year, month, day] = date.split('-').map(Number);
+    if (!months[month] || day < 1 || day > 31) return false;
+    const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year}\\b|(?![/.-]\\d)\\b)|\\b0?${day}\\s+${months[month]}(?:\\s+${year}\\b|(?!\\s+\\d{4})\\b))`, 'i');
+    return expression.test(value);
+  })) return false;
   return (expected.times ?? []).every((time) => {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return false;
     const [hours, minutes] = time.split(':').map(Number);
@@ -212,7 +225,7 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
 // deactivation; a cancelled attendance row must remain exactly unchanged.
 export function historyPreserved(previous: ActualState, current: ActualState): boolean {
   if (!(previous.attendance ?? []).every((row) => {
-    if (!row.id) return false;
+    if (!row.id || !row.createdAt) return false;
     const matches = (current.attendance ?? []).filter((next) => next.id === row.id);
     if (matches.length !== 1) return false;
     const next = matches[0];

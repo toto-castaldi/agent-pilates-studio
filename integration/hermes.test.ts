@@ -230,6 +230,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     const backupAttendance = (await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'present') RETURNING id", [backupClient])).rows[0].id;
     await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [backupAttendance]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [backupClient]);
+    await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [backupClient]);
     await migrator.query('COMMIT');
     compose('stop', 'hermes');
     expectFailure(backup, /Stop author-broker before taking a backup/);
@@ -282,6 +283,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.deepEqual((await restored.query("SELECT outcome, lesson_date::text AS lesson_date, start_time::text AS start_time, created_at IS NOT NULL AS created, created_by_phone, created_by_name, cancelled_at IS NOT NULL AS cancelled, cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance ORDER BY id")).rows, [
       { outcome: 'present', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: true, cancelled_by_phone: '15555550102', cancelled_by_name: 'Synthetic Profile', cancellation_reason: 'synthetic correction' },
       { outcome: 'excused_absence', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
+      { outcome: 'excused_absence', lesson_date: '2099-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
     ]);
     await assert.rejects(restored.query('DELETE FROM app.attendance'), { code: '42501' });
     await assert.rejects(restored.query('TRUNCATE app.attendance'), { code: '42501' });

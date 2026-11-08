@@ -749,7 +749,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
+- **Branch:** `us/US-013-assenze-annunciate-in-anticipo`
 - **Dependencies:** US-007
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-STUDIO-008, REQ-STUDIO-010, REQ-DB-002, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4, §5, §8
@@ -763,6 +764,7 @@
   - Una migrazione versionata consente nel database le registrazioni di lezioni non ancora iniziate solo con esito assenza giustificata e il loro annullamento, mantenendo il rifiuto di presenze e assenze non giustificate future, l'unicità, l'autore protetto, l'annullamento unico e il divieto di cancellazione, riscrittura e DDL. I test su PostgreSQL reale verificano anche i confini di oggi per ciascun esito e l'aggiornamento dallo schema di TEC-027 con dati, usando solo dati sintetici. Le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.
   - `SOUL.md` descrive il comportamento senza duplicarlo nel codice e il controllo di coerenza con le migrazioni resta superato. `docs/TECHNICAL-DESIGN.md` §4 e §5 descrivono il vincolo temporale aggiornato. Backup e ripristino restano verificati.
   - Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database. Comprendono il caso "lunedì prossimo <nome> non potrà esserci", la lezione ambigua, il cliente non atteso con e senza conferma, il periodo con e senza conferma, l'annullamento anticipato, la presenza futura rifiutata, e "c'erano tutti" con un'assenza anticipata confermata come presenza e come assenza.
+- **Outcome:** Assenze giustificate anticipate, conferme, annullamenti e conflitti con presenze, con migrazione e autore protetto. Superati gate, PostgreSQL reale, autore, backup/ripristino, upgrade e scenari sintetici con OpenRouter reale; fallimenti e limiti lessicali sono documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-08.
 
 ## Dependencies and suggested order
 

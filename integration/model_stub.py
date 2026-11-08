@@ -28,7 +28,11 @@ async def chat(request):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
-        if 'attendance-insert' in last:
+        if 'future-absence-insert' in last:
+            queries = ["INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_phone, created_by_name) SELECT id, '2099-01-01', '09:00', 'excused_absence', '999', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
+        elif 'future-absence-cancel' in last:
+            queries = ["UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic future cancellation' WHERE lesson_date = '2099-01-01' RETURNING id"]
+        elif 'attendance-insert' in last:
             queries = ["INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_phone, created_by_name) SELECT id, '2020-01-01', '09:00', 'present', '999', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
         elif 'attendance-cancel' in last:
             queries = ["UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic reason' WHERE outcome = 'present' RETURNING id"]

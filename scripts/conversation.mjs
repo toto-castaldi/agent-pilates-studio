@@ -184,6 +184,22 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
         if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, rule.deactivatedAt ?? setup.createdAt]);
       }
+      // Historical anticipations cannot be created through today's clock. Seed
+      // only synthetic rows with the migrator, restoring the trigger before any turn.
+      if (setup.attendance?.length) {
+        stage = 'preparazione fixture presenze: disabilitazione trigger';
+        await client.query('ALTER TABLE app.attendance DISABLE TRIGGER attendance_author');
+        stage = 'preparazione fixture presenze: inserimento';
+        for (const row of setup.attendance) {
+          if (!ids.has(row.client) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate)
+            || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(row.createdAt)
+            || row.outcome !== 'excused_absence') throw new Error('attendance fixture');
+          await client.query('INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile]);
+        }
+        stage = 'preparazione fixture presenze: riabilitazione trigger';
+        await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
+      }
+      stage = 'preparazione fixture: verifica';
       await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
       await client.query('COMMIT');
       seededSnapshot = await snapshot();
@@ -193,7 +209,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         rules: setup.rules.map((rule) => ({ textContains: [rule.text], clients: rule.clients, slots: rule.slots, ...author,
           deactivation: rule.active === false ? { ...author, reasonAnyOf: ['Fine abitudine sintetica'] } : undefined })),
       };
-      if (!stateMatches(seededSnapshot, expected) || seededSnapshot.rules.some((rule, index) =>
+      const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author }));
+      const fixtureTimes = (await client.query("SELECT created_at::text AS created, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated FROM app.attendance ORDER BY id")).rows;
+      if (!stateMatches({ ...seededSnapshot, attendance: [] }, expected)
+        || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows })
+        || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) => !row.anticipated || new Date(row.created).getTime() !== new Date(setupRows[index].createdAt).getTime())
+        || seededSnapshot.rules.some((rule, index) =>
         new Date(rule.createdAt).getTime() !== new Date(setup.rules[index].createdAt ?? setup.createdAt).getTime()
         || (setup.rules[index].active === false && new Date(rule.deactivatedAt).getTime() !== new Date(setup.rules[index].deactivatedAt ?? setup.createdAt).getTime()))) throw new Error('setup state');
       previous = seededSnapshot;
@@ -202,8 +223,19 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
       const today = romeDate(new Date());
+      const nextMonday = new Date(`${today}T00:00:00Z`);
+      nextMonday.setUTCDate(nextMonday.getUTCDate() + ((8 - nextMonday.getUTCDay()) % 7 || 7));
+      const relativeDate = (value) => {
+        if (value === '$TODAY') return today;
+        const match = /^\$NEXT_MONDAY(?:\+(\d+))?$/.exec(value);
+        if (!match) return value;
+        const date = new Date(nextMonday);
+        date.setUTCDate(date.getUTCDate() + Number(match[1] || 0));
+        return date.toISOString().slice(0, 10);
+      };
       const attendanceExpected = turn.attendanceExpected && { ...turn.attendanceExpected,
-        attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: entry.lessonDate === '$TODAY' ? today : entry.lessonDate })) };
+        attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate) })) };
+      const expectedResponse = { ...turn.response, dates: turn.response.dates?.map(relativeDate) };
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
         metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
         contacts: [{ wa_id: scenario.sender, profile: { name: scenario.profile } }],
@@ -237,7 +269,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       count = allEntries.length;
       stage = `turno ${index + 1}: contenuto risposta`;
       const text = incoming.map((item) => item.text).join(' ');
-      if (!responseMatches(text, turn.response)) {
+      if (!responseMatches(text, expectedResponse)) {
         const normalized = text.toLocaleLowerCase('it-IT');
         const flags = [
           /errore|error|failed|fallit|impossibil|unable|sorry/.test(normalized) ? 'errore segnalato' : 'nessun errore riconosciuto',
@@ -253,6 +285,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           /fuori programma|fuori dalla pianificazione|nessuna regola|senza regola|non programm|non pianificat|non attes|non previst/i.test(text) ? 'possibile indicazione non atteso' : 'nessuna indicazione non atteso riconosciuta',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
           /conferm|ambigu|manc|precis|chied|quale|qual è/i.test(text) ? 'possibile richiesta chiarimento' : 'nessun chiarimento riconosciuto',
+          /prima|dopo|inizio|inizi|futur/i.test(text) ? 'riferimento temporale riconosciuto' : 'nessun riferimento temporale riconosciuto',
+          /non posso|impossibil|non si può|non si possono|non è possibile/i.test(text) ? 'rifiuto riconosciuto' : 'nessun rifiuto riconosciuto',
           /database|sql|strument|tool|dati/i.test(text) ? 'menzione dati/tool' : 'nessuna menzione dati/tool',
           ...[['sessione', /session/i], ['accesso', /access|auth|permiss/i], ['canale', /whatsapp|gateway|hermes/i], ['avviso', /warn|attenz|⚠/i], ['token', /token|chiave|key/i], ['configurazione', /configur|setup|install/i]].filter(([, pattern]) => pattern.test(text)).map(([label]) => `categoria ${label}`),
           /^(?:ciao|salve|buongiorno|hello|hi)\b/i.test(text.trim()) ? 'saluto iniziale' : 'senza saluto iniziale',
@@ -265,14 +299,20 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       }
       stage = `turno ${index + 1}: stato database`;
       const current = await snapshot();
-      if (!historyPreserved(previous, current)
-        || (attendanceExpected ? !seededSnapshot || !attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
-          : turn.unchanged ? !seededSnapshot || !snapshotsMatch(seededSnapshot, current) : !stateMatches(current, turn.expected))) throw new Error('database mismatch');
+      const historyOk = historyPreserved(previous, current);
+      const stateOk = attendanceExpected ? !!seededSnapshot && attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
+        : turn.unchanged ? !!seededSnapshot && snapshotsMatch(seededSnapshot, current) : stateMatches(current, turn.expected);
+      if (!historyOk || !stateOk) {
+        const rows = current.attendance ?? [];
+        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}.`);
+        throw new Error('database mismatch');
+      }
       previous = current;
     }
     console.log(`${scenario.id}: OK`);
-  } catch {
+  } catch (error) {
     failed = true;
+    if (typeof error?.code === 'string' && /^[0-9A-Z]{5}$/.test(error.code)) console.error(`Codice SQL sintetico: ${error.code}.`);
     if (stage === 'avvio gateway e sostituti') {
       try {
         for (const line of compose('ps', '--all', '--format', 'json').trim().split('\n').filter(Boolean)) {

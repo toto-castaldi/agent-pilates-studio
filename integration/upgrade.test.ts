@@ -96,6 +96,18 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.query("INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, 1, '09:00')", [oldRule]);
     await migrator.query('COMMIT');
     assert.equal((await migrator.query("SELECT to_regclass('app.attendance') AS name")).rows[0].name, null);
+    // Apply TEC-027 separately and preserve both valid and cancelled rows when
+    // upgrading from that exact schema to the new temporal rule.
+    await cp('prisma/migrations/20261107000000_attendance', join(legacyMigrations, '20261107000000_attendance'), { recursive: true });
+    migrate(databaseHost, true);
+    await migrator.query('BEGIN');
+    const attendanceBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [attendanceBinding.pid, attendanceBinding.txid]);
+    const oldAttendance = (await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'present') RETURNING id", [oldClient])).rows[0].id;
+    await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [oldAttendance]);
+    await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [oldClient]);
+    await migrator.query('COMMIT');
+    const attendanceBefore = (await migrator.query('SELECT * FROM app.attendance ORDER BY id')).rows;
     compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
     compose(oldOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const oldGateway = compose(oldOverride, 'ps', '-q', 'hermes').trim();
@@ -130,7 +142,12 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.match((await migrator.query('SHOW server_version')).rows[0].server_version, /^17\.10/);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
     assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.clients c JOIN app.rule_clients rc ON rc.client_id = c.id JOIN app.training_rules r ON r.id = rc.rule_id JOIN app.rule_slots s ON s.rule_id = r.id WHERE c.first_name = 'Upgrade' AND r.rule_text = 'synthetic upgrade rule' AND s.weekday = 1")).rows[0].n, 1);
-    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM app.attendance')).rows[0].n, 0);
+    assert.deepEqual((await migrator.query('SELECT * FROM app.attendance ORDER BY id')).rows, attendanceBefore);
+    await migrator.query('BEGIN');
+    const newBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [newBinding.pid, newBinding.txid]);
+    await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [oldClient]);
+    await migrator.query('COMMIT');
     agent = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await agent.connect();
     assert.equal((await agent.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
