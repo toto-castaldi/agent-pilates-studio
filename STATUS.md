@@ -8,22 +8,20 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronto: Correggere presenze e assenze | 5/9 items done (56%) |
+| v0.3.0 | Open | Pronto: Correggere presenze e assenze | 6/9 items done (67%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
 | Todo | 3 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Blocked | 0 |
-| Done | 5 |
+| Done | 6 |
 
 ## In progress
 
-| Item | Epic | Module | Title | Branch |
-| ---- | ---- | ------ | ----- | ------ |
-| TEC-030 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.1 | `task/TEC-030-allineamento-template-v1-7-1` |
+None.
 
 ## Blocked
 
@@ -33,6 +31,7 @@ None.
 
 | Item | Epic | Module | Title | Date |
 | ---- | ---- | ------ | ----- | ---- |
+| TEC-030 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.1 | 2026-11-08 |
 | US-007 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le assenze a una lezione | 2026-11-07 |
 | TEC-029 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.0 | 2026-11-07 |
 | US-006 | EPIC-005 — Presenze alle lezioni | MOD-001 | Registrare le presenze a una lezione | 2026-11-07 |
@@ -42,7 +41,6 @@ None.
 | TEC-025 | EPIC-002 — Agente e integrazioni | MOD-001 | Contesto per interlocutore e compattazione automatica | 2026-11-07 |
 | US-005 | EPIC-002 — Agente e integrazioni | MOD-001 | Nome dell'agente | 2026-11-07 |
 | TEC-026 | EPIC-003 — Dati e operatività | MOD-001 | Applicare la configurazione locale da `.env` | 2026-11-07 |
-| TEC-024 | EPIC-001 — Fondamenta del progetto | MOD-001 | Adozione del template v1.5.0 | 2026-11-07 |
 
 ## Next ready items
 
