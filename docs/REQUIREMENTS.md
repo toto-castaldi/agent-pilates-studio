@@ -49,7 +49,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017).
+- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -343,6 +343,14 @@ Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza b
 
 **Decisione dell'utente (2026-11-07):** TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante.
 
+#### REQ-NFR-018 — Template v1.7.1 e fiducia nei clone dei worker
+
+Il progetto deve allineare processo e skill condivise al template `agile-project-template` v1.7.1, preservando le personalizzazioni e le protezioni dello studio. Il riferimento adottato e le eventuali divergenze sono registrati secondo REQ-NFR-013; conflitti o deroghe richiedono accordo esplicito. Restano validi REQ-NFR-002, REQ-NFR-007, REQ-NFR-008 e REQ-NFR-015–017.
+
+Per i futuri worker il comando configurato è `pi --approve`: accorda fiducia ai file locali del clone per la sessione ed evita la richiesta interattiva iniziale. La documentazione deve esplicitare che questo consente il caricamento delle risorse e l'esecuzione delle estensioni del progetto attendibile; non costituisce una garanzia sull'operato del modello. Restano vietate la copia non autorizzata di segreti e stato personale e le modifiche allo stack operativo dello studio da parte dei worker. La sola adozione non avvia worker e non autorizza merge o push su `main`.
+
+**Decisione dell'utente (2026-11-08):** TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare `pi --approve` per i futuri worker.
+
 ## 7. Release acceptance — v0.3.0
 
 - Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database rifiuta lezioni non ancora iniziate, registrazioni valide duplicate, cancellazioni e riscritture, e consente un solo annullamento con data, autore e motivo.
@@ -351,7 +359,7 @@ Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza b
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
-- Processo e skill del template v1.7.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017).
+- Processo e skill del template v1.7.1 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

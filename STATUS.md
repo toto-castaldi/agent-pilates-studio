@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronto: Correggere presenze e assenze | 5/8 items done (62%) |
+| v0.3.0 | Open | Pronto: Correggere presenze e assenze | 5/9 items done (56%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
+| Todo | 4 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 5 |
@@ -49,6 +49,7 @@ None.
 | US-008 | EPIC-005 — Presenze alle lezioni | MOD-001 | Correggere presenze e assenze | P1 |
 | US-013 | EPIC-005 — Presenze alle lezioni | MOD-001 | Assenze annunciate in anticipo | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
+| TEC-030 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.1 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 | US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
 | US-012 | EPIC-005 — Presenze alle lezioni | MOD-001 | Pacchetti di lezioni e lezioni residue | P2 |
@@ -64,6 +65,7 @@ TEC-008, TEC-019, US-011 e US-012 non sono assegnati a una versione: serve piani
 
 ## Notes
 
+- Decisione dell'utente (2026-11-08): TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare `pi --approve` per i futuri worker.
 - Decisione dell'utente (2026-11-08): US-013 è aggiunto alla v0.3.0 per le assenze annunciate in anticipo (REQ-STUDIO-010). Sono sempre giustificate, senza limite di anticipo, e riguardano lezioni attese oppure, con conferma, non attese. Per più lezioni serve la conferma dell'elenco. Dopo la lezione un conflitto con le presenze comunicate richiede conferma. Dipende solo da US-007 e comprende l'annullamento anticipato.
 - Decisione dell'utente (2026-11-07): TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.
 - Decisione dell'utente (2026-11-07): TEC-028 è aggiunto alla v0.3.0 per allineare il template alla v1.6.1 e attivare l'orchestrazione parallela, senza avviare worker per la sola adozione.
