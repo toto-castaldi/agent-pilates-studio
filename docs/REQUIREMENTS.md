@@ -12,7 +12,7 @@ Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in prod
 
 Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
-Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche.
+Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp, e le assenze giustificate annunciate prima della lezione; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche.
 
 ## 2. Actors
 
@@ -38,6 +38,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - **Presenza:** registrazione che un cliente ha partecipato a una lezione puntuale.
 - **Assenza:** registrazione che un cliente non ha partecipato a una lezione puntuale, di tipo giustificata o non giustificata.
 - **Registrazione valida:** presenza o assenza non annullata; solo le registrazioni valide contano nelle consultazioni.
+- **Assenza anticipata:** assenza giustificata registrata prima dell'inizio della lezione puntuale, perché il cliente ha avvisato (REQ-STUDIO-010).
 
 ## 4. Scope
 
@@ -46,6 +47,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Registrazione conversazionale delle presenze dei clienti alle lezioni puntuali, su iniziativa dell'utilizzatore, anche tramite i clienti attesi (REQ-STUDIO-006).
 - Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
+- Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
@@ -57,7 +59,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati (TEC-019 e item non assegnati).
 - Insegnante che ha tenuto la lezione, anagrafica degli istruttori, sale, attrezzature e capienza.
 - Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
-- Assenze annunciate in anticipo, presenze future, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
+- Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
 - Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
 - Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
 - Modifica del nome visualizzato del profilo WhatsApp Business su Meta, messa in esercizio continuativa del gateway pubblico, creazione del server, DNS, certificati, deploy automatico e monitoraggio avanzato.
@@ -216,13 +218,13 @@ Le regole non vengono mai cancellate né riscritte. Quando, da una richiesta esp
 
 #### REQ-STUDIO-006 — Registrazione delle presenze
 
-Un utilizzatore deve poter comunicare conversando via WhatsApp, di propria iniziativa, quali clienti hanno partecipato a una lezione puntuale (ad esempio "oggi alle 19 c'erano Mario Rossi e Lucia Bianchi"). L'agente registra una presenza per ciascun cliente con data e orario d'inizio della lezione, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Date e orari si interpretano nel fuso Europe/Rome rispetto alla data corrente fornita dal sistema. Si possono registrare lezioni passate senza limiti e lezioni di oggi già iniziate; le lezioni non ancora iniziate sono rifiutate anche dal database. Per ogni cliente e lezione puntuale può esistere al più una registrazione valida, presenza o assenza.
+Un utilizzatore deve poter comunicare conversando via WhatsApp, di propria iniziativa, quali clienti hanno partecipato a una lezione puntuale (ad esempio "oggi alle 19 c'erano Mario Rossi e Lucia Bianchi"). L'agente registra una presenza per ciascun cliente con data e orario d'inizio della lezione, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Date e orari si interpretano nel fuso Europe/Rome rispetto alla data corrente fornita dal sistema. Si possono registrare lezioni passate senza limiti e lezioni di oggi già iniziate; le lezioni non ancora iniziate sono rifiutate anche dal database, salvo le assenze anticipate di REQ-STUDIO-010. Per ogni cliente e lezione puntuale può esistere al più una registrazione valida, presenza o assenza.
 
 Con espressioni come "c'erano tutti" o "tutti tranne Lucia", l'agente ricava i clienti attesi dalle regole valide per la lezione e registra le presenze senza chiedere conferma; chiede chiarimenti solo in caso di ambiguità, ad esempio se la lezione non è identificabile o se nessun cliente era atteso. Un cliente presente ma non atteso, ad esempio per un recupero o una lezione extra, viene registrato e segnalato nel riepilogo; un cliente non ancora in anagrafica è creato secondo REQ-STUDIO-002. La registrazione di presenze e assenze non crea, modifica né disattiva regole di allenamento.
 
 #### REQ-STUDIO-007 — Registrazione delle assenze
 
-Un utilizzatore deve poter comunicare che un cliente era assente a una lezione puntuale. L'assenza è registrata con il tipo, giustificata o non giustificata, data e orario d'inizio della lezione, data di registrazione e autore, alle stesse condizioni di data e unicità di REQ-STUDIO-006. Se il tipo non è indicato, l'agente lo chiede prima di registrare l'assenza.
+Un utilizzatore deve poter comunicare che un cliente era assente a una lezione puntuale. L'assenza è registrata con il tipo, giustificata o non giustificata, data e orario d'inizio della lezione, data di registrazione e autore, alle stesse condizioni di data e unicità di REQ-STUDIO-006; le assenze giustificate per lezioni non ancora iniziate seguono REQ-STUDIO-010. Se il tipo non è indicato, l'agente lo chiede prima di registrare l'assenza.
 
 Quando l'utilizzatore comunica le presenze di una lezione e alcuni clienti attesi non sono citati, né come presenti né come assenti, l'agente registra le presenze comunicate e chiede per i clienti attesi rimanenti se erano assenti e con quale tipo. L'agente non registra assenze senza l'indicazione dell'utilizzatore: in assenza di risposta, quei clienti restano privi di registrazione. Un recupero non è collegato all'assenza che compensa.
 
@@ -240,6 +242,14 @@ Un utilizzatore deve poter chiedere conversando:
 - statistiche per periodo, ad esempio i clienti con più assenze, il numero di presenze per cliente o per lezione, e il confronto tra lezioni attese e presenze effettive.
 
 Le risposte si basano sulle sole registrazioni valide e sui dati strutturati; conteggi e statistiche sono calcolati con interrogazioni al database e non stimati dal modello. I periodi relativi ("questa settimana", "ottobre") si interpretano nel fuso Europe/Rome. L'assenza di risultati è indicata esplicitamente. Su richiesta l'agente indica autore e data di registrazione o di annullamento e mostra anche le registrazioni annullate.
+
+#### REQ-STUDIO-010 — Assenze annunciate in anticipo
+
+**Decisione dell'utente (2026-11-08):** un utilizzatore deve poter comunicare, prima della lezione, che un cliente non potrà esserci (ad esempio "lunedì prossimo Anna Rossi non potrà esserci"). L'agente registra un'assenza giustificata per la lezione puntuale futura, con data e orario d'inizio, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Un'assenza anticipata è sempre giustificata e l'agente non chiede il tipo; non c'è un limite di anticipo. Presenze e assenze non giustificate per lezioni non ancora iniziate restano rifiutate anche dal database. Vale l'unicità di REQ-STUDIO-006.
+
+La lezione si ricava dalle regole attive: se il cliente è atteso a una sola lezione nel giorno indicato l'agente ne usa l'orario, altrimenti chiede chiarimenti. Se il cliente non è atteso alla lezione indicata, l'agente lo segnala e registra solo dopo la conferma dell'utilizzatore, ad esempio per un recupero già concordato. Per assenze su più lezioni (ad esempio "per le prossime due settimane" o "tutti i lunedì di dicembre") l'agente elenca le lezioni attese nel periodo e le registra solo dopo la conferma dell'elenco; senza conferma non registra nulla.
+
+Prima dell'inizio della lezione, se il cliente alla fine partecipa, l'agente annulla l'assenza anticipata con data, autore e motivo, senza registrare una presenza futura. Dopo l'inizio della lezione, se l'utilizzatore comunica le presenze con "c'erano tutti", "tutti tranne" o citando un cliente che ha un'assenza anticipata valida, l'agente segnala il conflitto e chiede se il cliente era presente. In caso di conferma annulla l'assenza e registra la presenza secondo REQ-STUDIO-008; altrimenti, anche senza risposta, mantiene l'assenza. Le assenze anticipate valide sono registrazioni valide anche ai fini delle consultazioni di REQ-STUDIO-009.
 
 ## 6. Non-functional requirements
 

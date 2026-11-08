@@ -591,6 +591,8 @@
 
 **Scope change (2026-11-07):** su accordo dell'utente, TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.
 
+**Scope change (2026-11-08):** su accordo dell'utente, US-013 è aggiunto alla v0.3.0 per registrare le assenze giustificate annunciate prima della lezione (REQ-STUDIO-010).
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-028 — Allineamento al template v1.6.1
@@ -722,6 +724,25 @@
   - Su richiesta l'agente indica autore e data di registrazione o di annullamento e mostra le registrazioni annullate.
   - Gli scenari, compresi lezione, data, cliente in un periodo, registrazioni mancanti, statistica con valori attesi, periodo senza risultati e registrazioni annullate escluse, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e stato del database invariato.
 
+#### US-013 — Assenze annunciate in anticipo
+
+- **Epic:** EPIC-005 — Presenze alle lezioni
+- **Module:** MOD-001 — Agente
+- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Dependencies:** US-007
+- **Requirements:** REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-STUDIO-008, REQ-STUDIO-010, REQ-DB-002, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
+- **Design references:** TECHNICAL-DESIGN §4, §5, §8
+- **Description:** Come insegnante, voglio registrare subito l'assenza di un cliente che ha avvisato prima della lezione, così da non doverlo ricordare e riscrivere dopo l'inizio della lezione.
+- **Acceptance criteria:**
+  - Un messaggio come "lunedì prossimo Anna Rossi non potrà esserci", inviato prima della lezione, registra un'assenza giustificata per la lezione futura. Data e orario si ricavano dalla lezione in cui il cliente è atteso secondo le regole attive, nel fuso Europe/Rome; l'autore è ricavato dal sistema. L'agente non chiede il tipo e riepiloga data e orario. Non c'è un limite di anticipo. Se nel giorno indicato il cliente è atteso a più lezioni o la lezione non è identificabile, l'agente chiede chiarimenti e non registra.
+  - Se il cliente non è atteso alla lezione indicata, l'agente lo segnala e registra solo dopo la conferma dell'utilizzatore; senza conferma non registra. Una seconda comunicazione per la stessa lezione non crea duplicati e l'agente lo segnala.
+  - Per un periodo o più lezioni ("per le prossime due settimane", "tutti i lunedì di dicembre") l'agente elenca le lezioni attese ricavate dalle regole attive e registra un'assenza giustificata per ciascuna solo dopo la conferma dell'elenco. Senza conferma non registra nulla; se nel periodo non ci sono lezioni attese lo dice esplicitamente.
+  - Prima dell'inizio della lezione, una comunicazione come "Anna alla fine lunedì viene" annulla l'assenza anticipata con data, autore ricavato dal sistema e motivo, senza registrare una presenza futura. Presenze e assenze non giustificate per lezioni future restano rifiutate con un messaggio chiaro.
+  - Dopo l'inizio della lezione, con "c'erano tutti", "tutti tranne" o citando un cliente che ha un'assenza anticipata valida, l'agente registra le altre presenze, segnala il conflitto e chiede se il cliente era presente. In caso di conferma annulla l'assenza con motivo e registra la presenza, comunicando entrambe le operazioni; altrimenti, anche senza risposta, mantiene l'assenza.
+  - Una migrazione versionata consente nel database le registrazioni di lezioni non ancora iniziate solo con esito assenza giustificata e il loro annullamento, mantenendo il rifiuto di presenze e assenze non giustificate future, l'unicità, l'autore protetto, l'annullamento unico e il divieto di cancellazione, riscrittura e DDL. I test su PostgreSQL reale verificano anche i confini di oggi per ciascun esito e l'aggiornamento dallo schema di TEC-027 con dati, usando solo dati sintetici. Le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.
+  - `SOUL.md` descrive il comportamento senza duplicarlo nel codice e il controllo di coerenza con le migrazioni resta superato. `docs/TECHNICAL-DESIGN.md` §4 e §5 descrivono il vincolo temporale aggiornato. Backup e ripristino restano verificati.
+  - Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database. Comprendono il caso "lunedì prossimo <nome> non potrà esserci", la lezione ambigua, il cliente non atteso con e senza conferma, il periodo con e senza conferma, l'annullamento anticipato, la presenza futura rifiutata, e "c'erano tutti" con un'assenza anticipata confermata come presenza e come assenza.
+
 ## Dependencies and suggested order
 
 L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per rendere disponibile il quality gate.
@@ -733,7 +754,7 @@ TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle p
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.
 3. US-007.
-4. US-008.
+4. US-008 e US-013, indipendenti tra loro; US-013 dipende solo da US-007 e comprende l'annullamento delle assenze anticipate.
 5. US-009.
 
 1. TEC-001.
