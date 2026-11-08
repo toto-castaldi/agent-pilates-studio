@@ -1,20 +1,42 @@
 {
   "id": "US-011",
-  "title": "Insegnante che ha tenuto la lezione",
+  "title": "Anagrafica e regole degli insegnanti",
+  "version": "v0.3.0",
   "epic": "EPIC-005",
   "module": "MOD-001",
   "type": "User Story",
-  "priority": "P2",
+  "priority": "P1",
   "status": "Todo",
   "dependencies": [
-    "US-006"
+    "TEC-033"
   ],
   "requirements": [
-    "REQ-STUDIO-006"
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-012",
+    "REQ-AGENT-006",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
   ],
-  "description": "Registrare quale insegnante ha tenuto ogni lezione puntuale, distinto da chi ha registrato presenze e assenze. Prima della pianificazione servono i requisiti sull'anagrafica degli insegnanti, oggi fuori scope, sul loro rapporto con gli utilizzatori e sulle consultazioni per insegnante.",
-  "acceptance_criteria": [],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §6",
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §9",
+    "TECHNICAL-DESIGN §10"
+  ],
+  "description": "Come titolare o collaboratore, voglio registrare gli insegnanti e le loro abitudini settimanali per fascia o orario, così che ogni lezione abbia un insegnante atteso. Gli insegnanti seguono la struttura dei clienti: regole generali qui, cambi puntuali in US-014. I numeri WhatsApp possono essere collegati agli insegnanti in .env.",
+  "acceptance_criteria": [
+    "\"Antonio Neri allena tutti i mercoledì pomeriggio e i venerdì pomeriggio\" registra una regola dell'insegnante con testo pulito, autore ricavato dal sistema e un intervallo per giorno pari ai limiti della fascia in SOUL.md; \"Francesca Blu tiene il lunedì alle 19\" registra un intervallo di un solo orario. L'agente riepiloga quanto salvato.",
+    "Un insegnante non ancora registrato è creato con nome e cognome, chiedendo il cognome se manca e riconoscendolo per solo nome secondo REQ-STUDIO-002; insegnanti e clienti restano distinti.",
+    "Una regola che si sovrappone a una regola attiva viene segnalata e l'agente chiede sempre conferma. Con la conferma disattiva le regole sovrapposte con data, autore e motivo, registra la nuova e registra di nuovo la parte non sovrapposta delle regole disattivate. Senza conferma non registra nulla. Una disattivazione esplicita (\"Antonio non allena più il venerdì\") segue REQ-STUDIO-005.",
+    "Il collegamento in .env tra numeri autorizzati e insegnanti è applicato dall'avvio locale secondo REQ-AGENT-006 ed è descritto in .env.example con soli valori sintetici. Valori malformati, numeri non autorizzati o collegati a più insegnanti arrestano l'avvio con un messaggio che non espone numeri né nomi.",
+    "Con \"il lunedì alle 18 alleno io\" da un mittente collegato, l'insegnante è ricavato dal sistema e il modello non riceve il numero. Un insegnante dichiarato dal testo per un altro mittente non sostituisce quello collegato. Da un mittente non collegato, o se l'insegnante collegato non esiste, l'agente chiede il nome. Unit test in memoria e una suite di integrazione con webhook firmati verificano ricavo, rifiuto e assenza di numeri e nomi nei log.",
+    "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica del database: regola per fascia, regola per orario, insegnante nuovo, cognome mancante, sovrapposizione confermata e non confermata, disattivazione, mittente collegato e non collegato."
+  ],
   "remarks": [
-    "Requirements: da definire (cambio di scope rispetto a REQ-STUDIO-006)"
+    "Pianificato il 2026-11-08 con il cambio di scope della v0.3.0 (REQ-STUDIO-011–014): le indicazioni e le sostituzioni sono in US-014, le consultazioni in US-015."
   ]
 }
