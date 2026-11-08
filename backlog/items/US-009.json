@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "us/US-009-consultare-presenze-statistiche",
   "dependencies": [
     "US-008"
   ],
