@@ -1,0 +1,33 @@
+{
+  "id": "US-015",
+  "title": "Consultazioni per insegnante",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "US-014"
+  ],
+  "requirements": [
+    "REQ-STUDIO-012",
+    "REQ-STUDIO-013",
+    "REQ-STUDIO-014",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §6"
+  ],
+  "description": "Come titolare o collaboratore, voglio chiedere all'agente chi ha tenuto le lezioni e come sono andate le lezioni di ciascun insegnante, così da seguire l'attività degli insegnanti.",
+  "acceptance_criteria": [
+    "Alla domanda \"chi ha tenuto la lezione di sabato alle 19?\" o \"chi tiene lunedì alle 18?\" l'agente indica l'insegnante della lezione e distingue l'insegnante atteso dall'indicazione o dalla sostituzione; le indicazioni annullate non contano.",
+    "Alla domanda \"che lezioni ha fatto Antonio Neri a ottobre?\" l'agente elenca le lezioni esistenti del periodo con i conteggi delle lezioni tenute, sostituite da altri e tenute in sostituzione, e i clienti presenti con i conteggi.",
+    "Alla domanda \"quali lezioni della settimana scorsa non avevano insegnante?\" l'agente elenca le lezioni esistenti senza indicazione valida né insegnante atteso; alle domande sulle regole attive e sull'insegnante atteso per giorno, fascia o orario risponde in base alle regole valide.",
+    "Conteggi e statistiche sono calcolati con interrogazioni al database, i periodi relativi si interpretano nel fuso Europe/Rome, l'assenza di risultati è indicata esplicitamente e su richiesta l'agente mostra autore, date e storico di regole e indicazioni.",
+    "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e stato del database invariato: lezione con indicazione, lezione con insegnante atteso, sostituzione annullata, lezioni e conteggi di un insegnante, presenti alle sue lezioni, lezioni senza insegnante, periodo senza risultati."
+  ]
+}
