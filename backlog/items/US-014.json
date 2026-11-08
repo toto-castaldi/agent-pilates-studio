@@ -1,0 +1,35 @@
+{
+  "id": "US-014",
+  "title": "Indicazioni e sostituzioni dell'insegnante",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "US-011"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-013",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §6"
+  ],
+  "description": "Come titolare o collaboratore, voglio indicare chi tiene o ha tenuto una lezione puntuale, comprese le sostituzioni, e correggere un'indicazione sbagliata, così che per ogni lezione sia noto l'insegnante effettivo.",
+  "acceptance_criteria": [
+    "\"Ieri alle 19 l'ha tenuta Antonio Neri\" registra un'indicazione per la lezione puntuale con data e orario corretti nel fuso Europe/Rome e autore ricavato dal sistema, anche se la lezione non ha presenze né assenze registrate. L'agente riepiloga quanto salvato e segnala una lezione senza clienti attesi né registrazioni.",
+    "\"Antonio Neri sostituisce Francesca Blu il prossimo lunedì pomeriggio\" registra l'indicazione per l'unica lezione futura di quella fascia in cui Francesca Blu è l'insegnante attesa. Con più lezioni, anche su un periodo, l'agente le elenca e registra solo dopo la conferma; senza conferma non registra nulla.",
+    "Se l'insegnante sostituito non è atteso alla lezione o la lezione non è identificabile, l'agente lo segnala, chiede chiarimenti e non registra. Un insegnante nuovo è creato secondo REQ-STUDIO-011 e nessuna regola viene creata, modificata o disattivata.",
+    "\"L'ho tenuta io\" da un mittente collegato registra l'insegnante collegato ricavato dal sistema. Da un mittente non collegato l'agente chiede il nome. Comunicando le presenze senza nominare l'insegnante, l'agente non lo chiede e non registra indicazioni.",
+    "Una seconda indicazione per una lezione che ne ha già una valida non crea duplicati. L'agente propone la correzione: annulla l'indicazione errata con data, autore e motivo e registra quella corretta secondo REQ-STUDIO-008. Un'indicazione annullata riporta la lezione all'insegnante atteso.",
+    "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica del database: lezione passata, lezione senza registrazioni, sostituzione singola, sostituzione su più lezioni con e senza conferma, sostituito non atteso, mittente collegato e non collegato, presenze senza insegnante, correzione."
+  ]
+}
