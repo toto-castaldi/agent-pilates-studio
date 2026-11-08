@@ -1,6 +1,6 @@
 # Development Process
 
-**Process version:** 1.7.0
+**Process version:** 1.7.1
 
 This document defines the simplified Scrum process shared by every project created from `agile-project-template`. It is project-agnostic and must stay identical across projects, so that improvements made in the template can be copied over unchanged. Project-specific rules (stack, domain, quality gate commands, language) live in `AGENTS.md`.
 
@@ -237,7 +237,7 @@ Optional mode in which one agent, the orchestrator, runs several items at the sa
   - only the orchestrator merges, in the main clone, one item at a time and only on explicit user request (§6.3 unchanged);
   - a conflict in `STATUS.md` is resolved by regenerating it from the merged `BACKLOG.md` (§6.3). Any other conflict that is not trivially resolvable is reported to the user.
 - **Cleanup:** after a verified merge and the deletion of the item branch, the orchestrator ends the worker's agent and removes its clone. It never removes a clone that has uncommitted changes or commits not contained in a remote branch; it reports such a clone to the user instead.
-- The worker agent command comes from `AGENTS.md` §10 (`Worker agent command`, default `pi`). How agents are started and followed is tooling (the `orchestrate` skill) and does not change these rules.
+- The worker agent command comes from `AGENTS.md` §10 (`Worker agent command`, default `pi --approve`). How agents are started and followed is tooling (the `orchestrate` skill) and does not change these rules.
 
 ## 7. STATUS.md
 

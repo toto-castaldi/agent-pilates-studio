@@ -81,11 +81,11 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - **Shared claims:** `on`
 - **Parallel work:** `on`
 - **Workspace root:** `../agent-pilates-studio-work`
-- **Worker agent command:** `pi`
+- **Worker agent command:** `pi --approve`
 
 I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS.md` §6.4. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
 
-Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS.md` §6.5: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. L'adozione della modalità non avvia worker.
+Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS.md` §6.5: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. `--approve` accorda fiducia ai file locali del clone per la sessione: risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite. L'adozione della modalità non avvia worker.
 
 - I clone dei worker contengono solo file versionati: non copiare `.env`, `.local/`, segreti o stato Pi personale senza una richiesta esplicita dell'utente. Il worker prepara il clone con `npm ci` (§6) e non avvia né modifica lo stack operativo dello studio.
 - Prima del primo clone, se `git fetch origin` o il controllo `git log --oneline origin/main..main` falliscono, l'orchestratore non avvia worker e non considera verificato `origin/main`: segnala l'errore e chiede all'utente come procedere. Se `main` è avanti rispetto a `origin/main`, pubblica `main` solo su richiesta esplicita.

@@ -636,7 +636,8 @@
 #### TEC-030 — Allineamento al template v1.7.1
 
 - **Epic:** EPIC-001 — Fondamenta del progetto
-- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-030-allineamento-template-v1-7-1`
 - **Dependencies:** TEC-029
 - **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016, REQ-NFR-017, REQ-NFR-018
 - **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
@@ -647,6 +648,7 @@
   - Restano attivi shared claims, coordinamento non bloccante, richiesta esplicita per avvio dell'orchestrazione, via e merge, protezioni dei clone di `AGENTS.md` §10, gate rapido e suite separate. La sola adozione non avvia worker né modifica stack operativo, segreti o configurazioni personali; non autorizza merge o push su `main`.
   - Prove ripetibili isolate con repository, configurazioni e worker sintetici verificano il passaggio degli argomenti del comando, la conservazione delle protezioni e l'assenza di avvii o push non autorizzati; una prova Pi offline isolata verifica che `--approve` consenta il caricamento delle risorse senza dialogo iniziale, documentandone i limiti. Processi, Git e filesystem restano fuori dai test in memoria; nessuna prova legge o modifica dati personali.
   - La documentazione pertinente e i test sono aggiornati; passano il quality gate e le suite separate interessate. Non si modificano né pubblicano il repository del template o dati personali.
+- **Outcome:** Adottati processo e skill v1.7.1 senza divergenze dopo verifica del tag e confronto delle basi; configurato `pi --approve` preservando le protezioni dello studio. Superati quality gate, `test:local` con comandi e worker sintetici e `test:pi` offline in pseudoterminale, incluso il controllo della fiducia solo di sessione; una prima esecuzione di `test:local` è fallita perché il confronto col clone usava il documento non ancora committato, ed è passata dopo il commit. Herdr reale e osservanza del modello non sono provati. Completato il 2026-11-08.
 
 ### EPIC-005 — Presenze alle lezioni
 
