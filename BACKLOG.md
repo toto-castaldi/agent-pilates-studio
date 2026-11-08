@@ -675,7 +675,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
+- **Branch:** `us/US-007-registrare-assenze-lezione`
 - **Dependencies:** US-006
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-006, REQ-STUDIO-007, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4, §5
@@ -686,6 +687,7 @@
   - Quando l'insegnante comunica le presenze e alcuni clienti attesi non sono citati, oppure usa "tutti tranne <nome>", l'agente registra le presenze e chiede per i clienti attesi rimanenti se erano assenti e con quale tipo; senza risposta non registra assenze per quei clienti.
   - Le assenze rispettano le regole di REQ-STUDIO-006: nessuna assenza per lezioni non ancora iniziate e al più una registrazione valida per cliente e lezione, anche tra presenza e assenza.
   - Gli scenari, compresi assenza giustificata e non giustificata, tipo mancante, attesi non citati con risposta e senza risposta, "tutti tranne" e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database.
+- **Outcome:** Contesto e scenari per assenze giustificate e non, chiarimenti e clienti attesi non citati; verificati con OpenRouter reale in stack isolati, confronto dello stato e degli autori, regressioni, `test:local` e quality gate. Due prove di regressione inizialmente fallite sono passate al riesame, con cause non determinate e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`; catalogo completo e Meta reale non ripetuti, nessuna accettazione privacy. Completato il 2026-11-07.
 
 #### US-008 — Correggere presenze e assenze
 
