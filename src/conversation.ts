@@ -23,7 +23,7 @@ export interface AttendanceState {
 }
 
 export interface ExpectedAttendance extends AttendanceState {
-  cancellation?: { authorPhone: string; authorName: string | null };
+  cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
 }
 
 export interface AttendanceExpectation {
@@ -212,7 +212,8 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
       && (item.cancellation
         ? !!row.cancelledAt && !Number.isNaN(Date.parse(row.cancelledAt))
           && row.cancelledByPhone === item.cancellation.authorPhone && row.cancelledByName === item.cancellation.authorName
-          && !!row.cancellationReason?.trim()
+          && !!row.cancellationReason?.trim() && (!item.cancellation.reasonAnyOf
+            || item.cancellation.reasonAnyOf.some((word) => normalized(row.cancellationReason ?? '').includes(normalized(word))))
         : !row.cancelledAt && !row.cancelledByPhone && !row.cancelledByName && !row.cancellationReason));
     if (index < 0) return false;
     rows.splice(index, 1);
@@ -220,21 +221,19 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
   return true;
 }
 
-// Existing rules and their associations are immutable. Only the first
-// deactivation may change a previously active row between turns.
+// Existing records are immutable except for the first cancellation or
+// deactivation; a cancelled attendance row must remain exactly unchanged.
 export function historyPreserved(previous: ActualState, current: ActualState): boolean {
   if (!(previous.attendance ?? []).every((row) => {
     if (!row.id || !row.createdAt) return false;
     const matches = (current.attendance ?? []).filter((next) => next.id === row.id);
     if (matches.length !== 1) return false;
     const next = matches[0];
-    if (row.client !== next.client || row.lessonDate !== next.lessonDate || row.time !== next.time
-      || row.outcome !== next.outcome || row.createdAt !== next.createdAt || row.authorPhone !== next.authorPhone
-      || row.authorName !== next.authorName) return false;
-    if (row.cancelledAt) return JSON.stringify(row) === JSON.stringify(next);
-    return !next.cancelledAt
-      ? !next.cancelledByPhone && !next.cancelledByName && !next.cancellationReason
-      : !Number.isNaN(Date.parse(next.cancelledAt)) && !!next.cancelledByPhone && !!next.cancellationReason?.trim();
+    if (JSON.stringify(row) === JSON.stringify(next)) return true;
+    if (row.cancelledAt || row.cancelledByPhone || row.cancelledByName || row.cancellationReason
+      || !next.cancelledAt || Number.isNaN(Date.parse(next.cancelledAt)) || !next.cancelledByPhone || !next.cancellationReason?.trim()) return false;
+    return JSON.stringify({ ...next, cancelledAt: row.cancelledAt, cancelledByPhone: row.cancelledByPhone,
+      cancelledByName: row.cancelledByName, cancellationReason: row.cancellationReason }) === JSON.stringify(row);
   })) return false;
   return previous.rules.every((before) => {
     if (!before.id || !before.createdAt) return false;

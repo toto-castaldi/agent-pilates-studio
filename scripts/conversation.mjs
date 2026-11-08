@@ -285,6 +285,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           /fuori programma|fuori dalla pianificazione|nessuna regola|senza regola|non programm|non pianificat|non attes|non previst/i.test(text) ? 'possibile indicazione non atteso' : 'nessuna indicazione non atteso riconosciuta',
           /api|model|modello|provider|openrouter|credit|quota|limit/i.test(text) ? 'menzione servizio/modello' : 'nessuna menzione servizio/modello',
           /conferm|ambigu|manc|precis|chied|quale|qual è/i.test(text) ? 'possibile richiesta chiarimento' : 'nessun chiarimento riconosciuto',
+          /prima|dopo|inizio|inizi|futur/i.test(text) ? 'riferimento temporale riconosciuto' : 'nessun riferimento temporale riconosciuto',
+          /non posso|impossibil|non si può|non si possono|non è possibile/i.test(text) ? 'rifiuto riconosciuto' : 'nessun rifiuto riconosciuto',
           /database|sql|strument|tool|dati/i.test(text) ? 'menzione dati/tool' : 'nessuna menzione dati/tool',
           ...[['sessione', /session/i], ['accesso', /access|auth|permiss/i], ['canale', /whatsapp|gateway|hermes/i], ['avviso', /warn|attenz|⚠/i], ['token', /token|chiave|key/i], ['configurazione', /configur|setup|install/i]].filter(([, pattern]) => pattern.test(text)).map(([label]) => `categoria ${label}`),
           /^(?:ciao|salve|buongiorno|hello|hi)\b/i.test(text.trim()) ? 'saluto iniziale' : 'senza saluto iniziale',

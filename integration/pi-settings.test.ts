@@ -35,6 +35,13 @@ function runPi(project: string, home: string, agentDirectory: string, approved =
   return result.stdout.trim().split('\n').map((line) => JSON.parse(line) as Response);
 }
 
+test('Pi --approve loads an extension without the trust dialog and does not persist trust', { timeout: 120_000 }, () => {
+  const result = spawnSync('python3', ['integration/pi-approve-tui.py'], {
+    encoding: 'utf8', timeout: 110_000, env: { PATH: process.env.PATH },
+  });
+  assert.equal(result.status, 0, `${result.error?.message ?? ''}\n${result.stderr}\n${result.stdout}`);
+});
+
 test('direct Pi startup loads project and personal resources without changing project settings when directories differ', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-settings-integration-'));
   const project = join(root, 'project');

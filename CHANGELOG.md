@@ -9,6 +9,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 ### Added
 
 - Registrazione e annullamento delle assenze giustificate anticipate, con conferme per più lezioni e gestione dei conflitti con le presenze (US-013).
+- Correzione conversazionale di presenze e assenze tramite annullamento tracciato e consultazione dello storico (US-008).
 - Registrazione conversazionale delle assenze giustificate e non giustificate, con chiarimenti per il tipo e per i clienti attesi non citati (US-007).
 - Registrazione conversazionale delle presenze, anche per clienti attesi in date passate, con segnalazione di duplicati e clienti non attesi (US-006).
 - Schema versionato per presenze e assenze con autore autenticato, annullamento tracciato e storico protetto (TEC-027).
@@ -16,6 +17,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Processo e skill allineati al template v1.7.1; i futuri worker usano `pi --approve` con fiducia al clone per la sola sessione (TEC-030).
 - Processo e skill allineati al template v1.7.0: l'orchestratore segue i worker senza bloccarsi, consente attività di backlog su `main` e verifica che `main` sia pubblicato prima di avviare i worker (TEC-029).
 - Processo e skill allineati al template v1.6.1: date dall'orologio di sistema, conteggio meccanico degli stati, controlli dei record prima del merge e rigenerazione di `STATUS.md` nei conflitti (TEC-028).
 

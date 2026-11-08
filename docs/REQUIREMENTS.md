@@ -49,7 +49,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017).
+- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -329,7 +329,7 @@ Gli shared claims della v1.5.0 devono essere attivati per il coordinamento tra c
 
 Il progetto deve allineare processo e skill condivise al template `agile-project-template` v1.6.1, preservando personalizzazioni, requisiti e protezioni dello studio. Il riferimento adottato e le eventuali divergenze sono registrati secondo REQ-NFR-013; conflitti o deroghe richiedono accordo esplicito. Restano validi gli shared claims di REQ-NFR-015, il gate rapido e le verifiche separate di REQ-NFR-008.
 
-La modalità di lavoro parallelo del template deve essere attivata con shared claims: su esplicita richiesta l'operatore può usare un orchestratore e un worker per item, ciascuno in un clone separato. L'orchestratore propone item pronti e segnala sovrapposizioni; i worker effettuano il claim e attendono il via esplicito dell'utente prima di implementare, salvo richiesta di avvio immediato al lancio. Durante l'orchestrazione solo l'orchestratore esegue i merge, uno alla volta e su richiesta esplicita; rilascio dei claim e pulizia dei clone rispettano i controlli del processo e non eliminano lavoro non salvato. La radice dei workspace segue il valore predefinito del template, relativo al clone principale, e il comando dei worker è `pi`. Nessun worker viene avviato dalla sola adozione del template.
+La modalità di lavoro parallelo del template deve essere attivata con shared claims: su esplicita richiesta l'operatore può usare un orchestratore e un worker per item, ciascuno in un clone separato. L'orchestratore propone item pronti e segnala sovrapposizioni; i worker effettuano il claim e attendono il via esplicito dell'utente prima di implementare, salvo richiesta di avvio immediato al lancio. Durante l'orchestrazione solo l'orchestratore esegue i merge, uno alla volta e su richiesta esplicita; rilascio dei claim e pulizia dei clone rispettano i controlli del processo e non eliminano lavoro non salvato. La radice dei workspace segue il valore predefinito del template, relativo al clone principale, e il comando dei worker era `pi` all'adozione della v1.6.1; REQ-NFR-018 lo aggiorna a `pi --approve`. Nessun worker viene avviato dalla sola adozione del template.
 
 Date e conteggi dei documenti di stato, controlli prima del merge e risoluzione dei conflitti seguono il processo adottato. Prove e documentazione non espongono segreti o dati personali e non modificano impostazioni personali (REQ-NFR-002, REQ-NFR-007).
 
@@ -343,6 +343,14 @@ Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza b
 
 **Decisione dell'utente (2026-11-07):** TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante.
 
+#### REQ-NFR-018 — Template v1.7.1 e fiducia nei clone dei worker
+
+Il progetto deve allineare processo e skill condivise al template `agile-project-template` v1.7.1, preservando le personalizzazioni e le protezioni dello studio. Il riferimento adottato e le eventuali divergenze sono registrati secondo REQ-NFR-013; conflitti o deroghe richiedono accordo esplicito. Restano validi REQ-NFR-002, REQ-NFR-007, REQ-NFR-008 e REQ-NFR-015–017.
+
+Per i futuri worker il comando configurato è `pi --approve`: accorda fiducia ai file locali del clone per la sessione ed evita la richiesta interattiva iniziale. La documentazione deve esplicitare che questo consente il caricamento delle risorse e l'esecuzione delle estensioni del progetto attendibile; non costituisce una garanzia sull'operato del modello. Restano vietate la copia non autorizzata di segreti e stato personale e le modifiche allo stack operativo dello studio da parte dei worker. La sola adozione non avvia worker e non autorizza merge o push su `main`.
+
+**Decisione dell'utente (2026-11-08):** TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare `pi --approve` per i futuri worker.
+
 ## 7. Release acceptance — v0.3.0
 
 **Allineamento concordato (2026-11-08):** il criterio database include l'eccezione per le assenze giustificate anticipate di REQ-STUDIO-010.
@@ -354,7 +362,7 @@ Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza b
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
-- Processo e skill del template v1.7.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017).
+- Processo e skill del template v1.7.1 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

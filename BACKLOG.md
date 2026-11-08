@@ -593,6 +593,8 @@
 
 **Scope change (2026-11-08):** su accordo dell'utente, US-013 è aggiunto alla v0.3.0 per registrare le assenze giustificate annunciate prima della lezione (REQ-STUDIO-010).
 
+**Scope change (2026-11-08):** su accordo dell'utente, TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare il comando dei futuri worker.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-028 — Allineamento al template v1.6.1
@@ -630,6 +632,23 @@
   - Prove ripetibili isolate con repository, remoti e worker sintetici verificano controllo di `main` allineato e avanti, errore di fetch, assenza di push automatico, gestione non bloccante dei rapporti e degli stati, e conservazione dei controlli preesistenti; processi, Git e filesystem restano fuori dal gate in memoria. Le eventuali prove Pi o Herdr e i loro limiti sono documentati, senza presentare le istruzioni al modello come garanzie tecniche.
   - README e documentazione pertinente descrivono coordinamento non bloccante, attività di backlog consentite, controllo dei commit non pubblicati e limiti; test e documenti non espongono segreti o dati personali. Il visualizzatore del backlog e gli adattamenti dello studio restano disponibili.
 - **Outcome:** Adottati senza divergenze `docs/PROCESS.md` e `orchestrate` v1.7.0 (tag e commit verificati; altre skill e visualizzatore già allineati) e aggiunto in `AGENTS.md` §10 il fermo su errori di fetch o del controllo di `main`. Superati gate rapido, `test:local` con simulazione sintetica di `main` allineato e avanti, fetch fallito, assenza di push automatico, rapporti e stati dei worker e attività di backlog su `main`, e `test:pi`; Herdr e l'osservanza delle istruzioni da parte dei modelli non sono provati. Completato il 2026-11-07.
+
+#### TEC-030 — Allineamento al template v1.7.1
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Done
+- **Branch:** `task/TEC-030-allineamento-template-v1-7-1`
+- **Dependencies:** TEC-029
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-015, REQ-NFR-016, REQ-NFR-017, REQ-NFR-018
+- **Design references:** PROCESS §3, §6; TECHNICAL-DESIGN §8, §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Aggiornare il progetto dalla v1.7.0 adottata da TEC-029 al tag `v1.7.1` del template, commit `173870cbd7d2722f37adc189b97d7f602988c940`, e configurare `pi --approve` per i futuri worker. Il riferimento è fissato; versioni successive richiedono una decisione separata.
+- **Acceptance criteria:**
+  - Il tag e il commit fissati sono verificati e confrontati con le basi adottate delle risorse pertinenti; `docs/PROCESS.md` e le skill condivise sono allineati alla v1.7.1. Conflitti o deroghe sono concordati e registrati, senza sovrascrivere le personalizzazioni dello studio; `docs/TEMPLATE-ORIGIN.md` distingue confronto, risorse adottate, divergenze e basi ignote.
+  - `AGENTS.md` configura `Worker agent command` come `pi --approve`; il lancio Herdr e la modalità manuale trasmettono comando e argomenti correttamente. La fiducia ai file locali vale per la sessione del worker; resta esplicito che le risorse e le estensioni del progetto attendibile possono essere caricate ed eseguite. Il README descrive comportamento, rischi e limiti senza presentare le istruzioni come garanzie tecniche.
+  - Restano attivi shared claims, coordinamento non bloccante, richiesta esplicita per avvio dell'orchestrazione, via e merge, protezioni dei clone di `AGENTS.md` §10, gate rapido e suite separate. La sola adozione non avvia worker né modifica stack operativo, segreti o configurazioni personali; non autorizza merge o push su `main`.
+  - Prove ripetibili isolate con repository, configurazioni e worker sintetici verificano il passaggio degli argomenti del comando, la conservazione delle protezioni e l'assenza di avvii o push non autorizzati; una prova Pi offline isolata verifica che `--approve` consenta il caricamento delle risorse senza dialogo iniziale, documentandone i limiti. Processi, Git e filesystem restano fuori dai test in memoria; nessuna prova legge o modifica dati personali.
+  - La documentazione pertinente e i test sono aggiornati; passano il quality gate e le suite separate interessate. Non si modificano né pubblicano il repository del template o dati personali.
+- **Outcome:** Adottati processo e skill v1.7.1 senza divergenze dopo verifica del tag e confronto delle basi; configurato `pi --approve` preservando le protezioni dello studio. Superati quality gate, `test:local` con comandi e worker sintetici e `test:pi` offline in pseudoterminale, incluso il controllo della fiducia solo di sessione; una prima esecuzione di `test:local` è fallita perché il confronto col clone usava il documento non ancora committato, ed è passata dopo il commit. Herdr reale e osservanza del modello non sono provati. Completato il 2026-11-08.
 
 ### EPIC-005 — Presenze alle lezioni
 
@@ -695,7 +714,8 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** Todo
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
+- **Branch:** `us/US-008-correggere-presenze-assenze`
 - **Dependencies:** US-007
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-008, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
 - **Design references:** TECHNICAL-DESIGN §4, §5
@@ -706,6 +726,7 @@
   - Se la registrazione da correggere non è identificabile o la richiesta è ambigua, l'agente chiede chiarimenti e non annulla nulla.
   - Nessuna registrazione viene cancellata o riscritta e un annullamento non viene modificato; su richiesta l'agente mostra lo storico di una lezione o di un cliente, comprese le registrazioni annullate, con date, autori e motivi.
   - Gli scenari, compresi presenza trasformata in assenza, cambio del tipo di assenza, annullamento semplice, richiesta ambigua e consultazione dello storico, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-027 coprono il rifiuto di cancellazione e riscrittura.
+- **Outcome:** Correzioni e storico tramite contesto dello studio e scenari sintetici; superati gate, `test:local`, `test:db` su PostgreSQL isolato e scenario US-008 con OpenRouter reale più tre regressioni. Controlli delle risposte lessicali e operazioni SQL non necessariamente atomiche, come documentato in `docs/operations/TEC-012-prove.md`; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-08.
 
 #### US-009 — Consultare presenze, assenze e statistiche
 
@@ -751,7 +772,7 @@ L'ordine non è una pianificazione temporale. TEC-002 precede anche lo spike per
 
 v0.3.0:
 
-TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle presenze. TEC-029 dipende da TEC-028 già completato ed è indipendente dagli item delle presenze.
+TEC-028 dipende da TEC-024 già completato ed è indipendente dagli item delle presenze. TEC-029 dipende da TEC-028 già completato ed è indipendente dagli item delle presenze. TEC-030 dipende da TEC-029 già completato ed è indipendente dagli item delle presenze.
 
 1. TEC-027, che dipende da TEC-010 già completato.
 2. US-006.
