@@ -14,14 +14,16 @@ I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inc
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 4 |
-| In Progress | 0 |
+| Todo | 3 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 5 |
 
 ## In progress
 
-None.
+| Item | Epic | Module | Title | Branch |
+| ---- | ---- | ------ | ----- | ------ |
+| TEC-030 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.1 | `task/TEC-030-allineamento-template-v1-7-1` |
 
 ## Blocked
 
@@ -49,7 +51,6 @@ None.
 | US-008 | EPIC-005 — Presenze alle lezioni | MOD-001 | Correggere presenze e assenze | P1 |
 | US-013 | EPIC-005 — Presenze alle lezioni | MOD-001 | Assenze annunciate in anticipo | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
-| TEC-030 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v1.7.1 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 | US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
 | US-012 | EPIC-005 — Presenze alle lezioni | MOD-001 | Pacchetti di lezioni e lezioni residue | P2 |
