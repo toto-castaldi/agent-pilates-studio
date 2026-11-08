@@ -2,6 +2,58 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "consultazione-presenze-ieri",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Anita", "lastName": "Verdi" }, { "firstName": "Berto", "lastName": "Neri" }],
+        "rules": [{ "text": "Anita Verdi e Berto Neri lunedì martedì mercoledì giovedì venerdì sabato domenica alle 12:00", "clients": ["Anita Verdi", "Berto Neri"], "slots": [{ "weekday": 1, "time": "12:00" }, { "weekday": 2, "time": "12:00" }, { "weekday": 3, "time": "12:00" }, { "weekday": 4, "time": "12:00" }, { "weekday": 5, "time": "12:00" }, { "weekday": 6, "time": "12:00" }, { "weekday": 7, "time": "12:00" }] }],
+        "attendance": [
+          { "client": "Anita Verdi", "lessonDate": "$YESTERDAY", "time": "12:00", "outcome": "present", "createdAt": "$YESTERDAYT14:00:00Z" },
+          { "client": "Berto Neri", "lessonDate": "$YESTERDAY", "time": "12:00", "outcome": "present", "createdAt": "$YESTERDAYT14:00:00Z", "cancelledAt": "$YESTERDAYT15:00:00Z" }
+        ]
+      },
+      "turns": [
+        { "message": "Chi è venuto ieri? Indica anche la data completa con giorno, mese e anno.", "response": { "contains": ["Anita"], "times": ["12:00"], "dates": ["$YESTERDAY"], "excludes": ["Berto"] }, "unchanged": true },
+        { "message": "Di quali lezioni di ieri mancano le presenze?", "response": { "contains": ["Berto"], "times": ["12:00"], "excludes": ["Anita"] }, "unchanged": true }
+      ]
+    },
+    {
+      "id": "consultazione-presenze-statistiche",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }, { "firstName": "Carla", "lastName": "Rossi" }, { "firstName": "Dario", "lastName": "Viola" }, { "firstName": "Emma", "lastName": "Gialli" }, { "firstName": "Fabio", "lastName": "Blu" }],
+        "rules": [
+          { "text": "Ada Verdi, Bruno Neri e Carla Rossi lunedì alle 19:00", "clients": ["Ada Verdi", "Bruno Neri", "Carla Rossi"], "slots": [{ "weekday": 1, "time": "19:00" }], "active": false, "deactivatedAt": "2025-01-07T09:00:00Z" },
+          { "text": "Ada Verdi lunedì alle 19:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }] },
+          { "text": "Ada Verdi, Carla Rossi e Dario Viola lunedì alle 19:00", "clients": ["Ada Verdi", "Carla Rossi", "Dario Viola"], "slots": [{ "weekday": 1, "time": "19:00" }], "createdAt": "2025-01-08T09:00:00Z" },
+          { "text": "Emma Gialli lunedì alle 18:00", "clients": ["Emma Gialli"], "slots": [{ "weekday": 1, "time": "18:00" }] }
+        ],
+        "attendance": [
+          { "client": "Ada Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "createdAt": "2025-01-06T20:00:00Z" },
+          { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "createdAt": "2025-01-01T09:00:00Z" },
+          { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "createdAt": "2025-01-06T20:00:00Z", "cancelledAt": "2025-01-07T09:00:00Z" },
+          { "client": "Dario Viola", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "createdAt": "2025-01-06T20:00:00Z" },
+          { "client": "Emma Gialli", "lessonDate": "2025-01-06", "time": "18:00", "outcome": "present", "createdAt": "2025-01-06T20:00:00Z" },
+          { "client": "Fabio Blu", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "createdAt": "2025-01-06T20:00:00Z" },
+          { "client": "Ada Verdi", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "present", "createdAt": "2025-01-13T20:00:00Z" },
+          { "client": "Dario Viola", "lessonDate": "2025-01-13", "time": "19:00", "outcome": "unexcused_absence", "createdAt": "2025-01-13T20:00:00Z" },
+          { "client": "Emma Gialli", "lessonDate": "2025-01-13", "time": "18:00", "outcome": "present", "createdAt": "2025-01-13T20:00:00Z" }
+        ]
+      },
+      "turns": [
+        { "message": "Chi era presente e chi assente alla lezione del 6 gennaio 2025 alle 19?", "response": { "contains": ["Ada", "Bruno", "Dario", "Fabio"], "excludes": ["Carla"], "anyOf": [["giustificat"], ["non giustificat", "ingiustificat"]] }, "unchanged": true },
+        { "message": "Chi era presente e chi assente il 6 gennaio 2025, per ogni lezione?", "response": { "contains": ["Ada", "Bruno", "Dario", "Emma", "Fabio"], "times": ["18:00", "19:00"], "excludes": ["Carla"] }, "unchanged": true },
+        { "message": "Come è andata Ada Verdi a gennaio 2025? Elenca le lezioni e i conteggi di presenze, assenze giustificate e non giustificate.", "response": { "contains": ["Ada"], "dates": ["2025-01-06", "2025-01-13"], "counts": [{ "labels": ["presenz"], "value": 2 }, { "labels": ["giustificat"], "value": 0 }, { "labels": ["non giustificat", "ingiustificat"], "value": 0 }] }, "unchanged": true, "sqlAggregate": true },
+        { "message": "Per quali clienti mancavano le registrazioni delle lezioni del 6 gennaio 2025?", "response": { "contains": ["Carla"], "times": ["19:00"], "excludes": ["Bruno", "Dario", "Ada", "Emma", "Fabio"] }, "unchanged": true },
+        { "message": "Chi ha avuto più assenze non giustificate a gennaio 2025? Indica il numero.", "response": { "contains": ["Dario"], "counts": [{ "labels": ["assenz", "non giustificat", "ingiustificat", "Dario"], "value": 2 }] }, "unchanged": true, "sqlAggregate": true },
+        { "message": "Quante lezioni erano attese e quante presenze effettive si sono registrate il 6 gennaio 2025? Conta le combinazioni cliente e lezione.", "response": { "contains": [], "counts": [{ "labels": ["attes", "previst"], "value": 4 }, { "labels": ["presenz", "present"], "value": 3 }] }, "unchanged": true, "sqlAggregate": true },
+        { "message": "Mostra lo storico delle registrazioni di Carla Rossi del 6 gennaio 2025, indicando date e autori di registrazione e annullamento e il motivo dell'annullamento.", "response": { "contains": ["Carla", "Operatore"], "anyOf": [["annull", "cancell"], ["errore"]], "dates": ["2025-01-06", "2025-01-07"] }, "unchanged": true },
+        { "message": "Ci sono presenze o assenze registrate nel gennaio 2023?", "response": { "contains": [], "anyOf": [["nessun", "non risult", "non ci sono", "non ho trovato", "non sono state"]] }, "unchanged": true }
+      ]
+    },
+    {
       "id": "assenza-anticipata-singola-annullamento",
       "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
       "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }], "rules": [{ "text": "Anna Verdi lunedì alle 19:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }] }] },

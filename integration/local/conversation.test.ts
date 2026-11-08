@@ -16,15 +16,18 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.ok(stateMatches({ clients: [], rules: [] }, scenario.initial));
     assert.ok(scenario.turns.length >= 2);
     for (const row of scenario.setup?.attendance ?? []) {
-      assert.match(row.createdAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
-      assert.match(row.lessonDate, /^\d{4}-\d\d-\d\d$/);
-      assert.equal(row.outcome, 'excused_absence');
+      assert.match(row.createdAt, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)T\d\d:\d\d:\d\dZ$/);
+      assert.match(row.lessonDate, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)$/);
+      assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
       assert.ok(scenario.setup.clients.some((client: { firstName: string; lastName: string }) => `${client.firstName} ${client.lastName}` === row.client));
-      assert.ok(Date.parse(row.createdAt) < Date.parse(`${row.lessonDate}T${row.time}:00Z`) - 2 * 60 * 60 * 1000);
+      const lessonDate = row.lessonDate.replace('$YESTERDAY', '2025-01-06');
+      const createdAt = row.createdAt.replace('$YESTERDAY', '2025-01-06');
+      if (row.outcome !== 'excused_absence') assert.ok(Date.parse(createdAt) > Date.parse(`${lessonDate}T${row.time}:00Z`));
+      if (row.cancelledAt) assert.ok(Date.parse(row.cancelledAt.replace('$YESTERDAY', '2025-01-06')) > Date.parse(createdAt));
     }
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
-      assert.ok(turn.response.contains.length || turn.response.anyOf?.length);
+      assert.ok(turn.response.contains.length || turn.response.anyOf?.length || turn.response.counts?.length);
       if (turn.unchanged) {
         assert.ok(scenario.setup && !turn.expected);
         continue;
@@ -117,6 +120,16 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   assert.equal(responseMatches(`Sono ${name}; non ci sono lezioni.`, naming.turns[1].response), false);
   assert.ok(responseMatches(`Sono ${name}.`, naming.turns[2].response));
   assert.equal(responseMatches('Non ho un nome.', naming.turns[2].response), false);
+  const relativeAttendance = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'consultazione-presenze-ieri');
+  assert.ok(relativeAttendance?.turns.every((turn: { unchanged?: boolean }) => turn.unchanged));
+  assert.ok(relativeAttendance.setup.attendance.every((row: { lessonDate: string }) => row.lessonDate === '$YESTERDAY'));
+  const attendanceConsultation = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'consultazione-presenze-statistiche');
+  assert.ok(attendanceConsultation);
+  assert.ok(attendanceConsultation.turns.every((turn: { unchanged?: boolean }) => turn.unchanged));
+  assert.equal(attendanceConsultation.turns.filter((turn: { sqlAggregate?: boolean }) => turn.sqlAggregate).length, 3);
+  assert.ok(attendanceConsultation.setup.attendance.some((row: { cancelledAt?: string }) => row.cancelledAt));
+  assert.ok(attendanceConsultation.setup.rules.some((rule: { deactivatedAt?: string }) => rule.deactivatedAt === '2025-01-07T09:00:00Z'));
+  assert.ok(attendanceConsultation.turns.some((turn: { response: { counts?: { value: number }[] } }) => turn.response.counts?.some((count) => count.value === 4)));
   const consultation = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'consultazione-pianificazione');
   assert.ok(consultation.setup.rules.some((rule: { active?: boolean }) => rule.active === false));
   const times = new Set(consultation.setup.rules.flatMap((rule: { slots: { time: string }[] }) => rule.slots.map((slot) => slot.time)));

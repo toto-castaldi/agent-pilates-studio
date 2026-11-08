@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "us/US-009-consultare-presenze-statistiche",
   "dependencies": [
     "US-008"
   ],
@@ -29,5 +30,7 @@
     "Domande statistiche per periodo, come i clienti con più assenze nel mese, le presenze per cliente o per lezione e il confronto tra lezioni attese e presenze effettive, ricevono valori calcolati da interrogazioni al database; i periodi relativi si interpretano nel fuso Europe/Rome e l'assenza di risultati è indicata esplicitamente.",
     "Su richiesta l'agente indica autore e data di registrazione o di annullamento e mostra le registrazioni annullate.",
     "Gli scenari, compresi lezione, data, cliente in un periodo, registrazioni mancanti, statistica con valori attesi, periodo senza risultati e registrazioni annullate escluse, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e stato del database invariato."
-  ]
+  ],
+  "outcome": "Consultazioni e statistiche su registrazioni valide, attesi storici e storico; superati gate, test:local e scenari sintetici con OpenRouter reale, inclusi controlli delle aggregazioni SQL e invarianza del database. Fallimenti e limiti lessicali documentati in docs/operations/TEC-012-prove.md; nessuna nuova prova Meta reale o accettazione privacy.",
+  "closed_at": "2026-11-08"
 }

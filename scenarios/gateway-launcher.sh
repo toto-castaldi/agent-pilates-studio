@@ -27,6 +27,24 @@ async def request(client, method, url, *args, **kwargs):
         url = urlunsplit(("http", "meta-stub:8088", parsed.path, parsed.query, ""))
     return await original_request(client, method, url, *args, **kwargs)
 httpx.AsyncClient.request = request
+# Only the isolated harness counts successful SQL statements containing an
+# aggregate. It sends a fixed marker, never the query, parameters or rows.
+import re
+import asyncpg
+from aiohttp import ClientSession, ClientTimeout
+original_fetch = asyncpg.prepared_stmt.PreparedStatement.fetch
+async def audited_fetch(statement, *args, **kwargs):
+    rows = await original_fetch(statement, *args, **kwargs)
+    query = statement.get_query()
+    if (statement.get_statusmsg() or "").startswith("SELECT") and re.search(r"\b(?:count|sum|avg|min|max)\s*\(", query, re.I):
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=3), trust_env=False) as session:
+                async with session.post("http://meta-stub:8088/synthetic-aggregate") as response:
+                    await response.read()
+        except Exception:
+            pass
+    return rows
+asyncpg.prepared_stmt.PreparedStatement.fetch = audited_fetch
 import pilates_trusted
 pilates_trusted.install()
 # Test-only invariant: inspect the live gateway config during the command.
