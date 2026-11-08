@@ -1,0 +1,38 @@
+{
+  "id": "TEC-005",
+  "title": "Deploy e continuità operativa",
+  "version": "v0.1.0",
+  "epic": "EPIC-003",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "task/TEC-005-deploy-continuita-operativa",
+  "dependencies": [
+    "SPIKE-001"
+  ],
+  "requirements": [
+    "REQ-OPS-001",
+    "REQ-OPS-002",
+    "REQ-OPS-003",
+    "REQ-NFR-002",
+    "REQ-NFR-004"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §1",
+    "§2",
+    "§5",
+    "§7",
+    "§8",
+    "§9"
+  ],
+  "description": "Completare il lavoro operativo. L'operatore ha autorizzato una sola prova pubblica controllata con il rischio residuo dei log del proxy documentato in REQ-NFR-002; l'audit completo è stato separato nel debito non assegnato TEC-008. Restano obbligatori le mitigazioni disponibili e il divieto di streaming remoto di REQ-NFR-004; la prova non autorizza l'uso continuativo.",
+  "acceptance_criteria": [
+    "Una procedura documentata installa e aggiorna intenzionalmente l'ambiente con versioni fissate su un server Linux predisposto con Docker Compose e HTTPS pubblico.",
+    "Una prova verifica il funzionamento in produzione e la persistenza dei dati dopo riavvio e aggiornamento.",
+    "Backup e ripristino vengono eseguiti e verificati con dati di prova; prerequisiti e passaggi sono documentati senza segreti.",
+    "Sono documentati e verificati stato, disponibilità e consultazione dei log Docker di Hermes e PostgreSQL, con protezioni e prove rispetto a REQ-NFR-002. L'audit completo dei log Cloudflare e dei formati locali del proxy è separato in TEC-008; REQ-NFR-002 resta vincolante e la conformità completa non è dichiarata.",
+    "La procedura operativa documenta il divieto di avviare lo streaming remoto dei log del tunnel condiviso, dal dashboard o da CLI, e chiarisce che è una regola operativa, non un blocco tecnico (REQ-NFR-004)."
+  ],
+  "outcome": "Procedura operativa, diagnostica a eventi fissi, backup e ripristino isolato verificati; risposta WhatsApp confermata nella sola prova pubblica autorizzata. Sul server operativo sono verificati riavvio, aggiornamento della configurazione PostgreSQL sulla stessa immagine, stato e persistenza; il gateway è stato verificato anche solo su loopback dopo l'aggiornamento e poi fermato. L'upgrade PostgreSQL 17.9→17.10 e Hermes 0.22.6→0.22.7 è stato verificato separatamente in isolamento con dati sintetici. Audit completo del proxy rinviato a TEC-008, senza dichiarare l'accettazione privacy della release. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}

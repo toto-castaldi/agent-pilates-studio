@@ -2,13 +2,13 @@
 
 ## 0. Process
 
-Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicite nella sezione 8. All'inizio di ogni sessione leggere `STATUS.md` e le parti pertinenti di `BACKLOG.md`.
+Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicite nella sezione 8. All'inizio di ogni sessione eseguire `python3 .agents/tools/backlog.py status` e `show` per gli item pertinenti. Leggere e modificare il backlog solo con questa CLI (`docs/PROCESS.md` §3).
 
 ## 1. Project
 
 - **Name:** `agent-pilates-studio`
 - **Summary:** assistente WhatsApp dello studio Pilates per titolare e collaboratori, basato su Hermes con database relazionale, OpenRouter e WhatsApp Business; installazione, aggiornamento e prova riproducibili.
-- **Current version:** v0.3.0 — vedere `STATUS.md`.
+- **Current version:** v0.3.0 — vedere `python3 .agents/tools/backlog.py status`.
 - **Requirements:** `docs/REQUIREMENTS.md` · **Design:** `docs/TECHNICAL-DESIGN.md`
 
 ## 2. Language
@@ -83,9 +83,9 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - **Workspace root:** `../agent-pilates-studio-work`
 - **Worker agent command:** `pi --approve`
 
-I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS.md` §6.4. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
+Le impostazioni sopra sono attive: leggere `docs/PROCESS-PARALLEL.md` prima di lavorare su un item. I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS-PARALLEL.md` §1. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
 
-Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS.md` §6.5: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. `--approve` accorda fiducia ai file locali del clone per la sessione: risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite. L'adozione della modalità non avvia worker.
+Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS-PARALLEL.md` §2: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. `--approve` accorda fiducia ai file locali del clone per la sessione: risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite. L'adozione della modalità non avvia worker.
 
 - I clone dei worker contengono solo file versionati: non copiare `.env`, `.local/`, segreti o stato Pi personale senza una richiesta esplicita dell'utente. Il worker prepara il clone con `npm ci` (§6) e non avvia né modifica lo stack operativo dello studio.
 - Prima del primo clone, se `git fetch origin` o il controllo `git log --oneline origin/main..main` falliscono, l'orchestratore non avvia worker e non considera verificato `origin/main`: segnala l'errore e chiede all'utente come procedere. Se `main` è avanti rispetto a `origin/main`, pubblica `main` solo su richiesta esplicita.

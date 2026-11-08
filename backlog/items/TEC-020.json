@@ -1,0 +1,31 @@
+{
+  "id": "TEC-020",
+  "title": "Dettato vocale Pi su server remoto",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-020-dettato-vocale-pi-su-server-remoto",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-012"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; AGENTS §6",
+    "§9; TECHNICAL-DESIGN §8"
+  ],
+  "description": "Pi Voice registra l'audio sul server dove gira Pi. Su un server remoto senza schede audio, come quello usato via SSH e Herdr, il dettato fallisce con `DeviceUnavailable: no input device is available`. Si inoltra il socket Pulse del client Ubuntu (PipeWire con `pipewire-pulse`) come socket Unix tramite `RemoteForward`. Sul server ALSA è instradato verso Pulse (`libasound2-plugins`, `~/.asoundrc`) e `PULSE_SERVER` punta al socket inoltrato. Si aggiungono procedura documentata e script di diagnosi.",
+  "acceptance_criteria": [
+    "La documentazione descrive, per server e client Ubuntu: pacchetti di sistema (`libasound2-plugins`, `pulseaudio-utils`); `StreamLocalBindUnlink yes` in `sshd` per i socket rimasti da connessioni interrotte; `~/.asoundrc` con dispositivo predefinito Pulse e `PULSE_SERVER` sul socket inoltrato in un percorso stabile; `RemoteForward` in `~/.ssh/config` del client; verifica con `pactl info` e una breve registrazione. Sono documentati anche i limiti: tunnel legato alla connessione SSH, riavvio dei processi Pi già aperti in Herdr, nessuna porta TCP e accesso al socket limitato all'utente. I comandi amministrativi sono indicati come tali e li esegue l'operatore.",
+    "Uno script versionato, in sola lettura, controlla sul server: presenza del plugin ALSA Pulse e di `pactl`; configurazione ALSA predefinita; `PULSE_SERVER` impostato; esistenza e raggiungibilità del socket; presenza di una sorgente audio. Per ogni passo mancante indica il rimedio, senza installare pacchetti, modificare file o registrare audio. L'output non riporta segreti, dati personali o nomi di dispositivi oltre al necessario.",
+    "La logica di valutazione dello script è separata dagli effetti sul sistema e coperta da test di unità in memoria con esiti sintetici, inclusi i casi di successo e di ciascun passo mancante. Eventuali prove con processi o file system restano fuori dal gate rapido.",
+    "Prova reale sull'ambiente dell'operatore, documentata senza dati personali: con il tunnel attivo, lo script segnala tutti i passi soddisfatti e il dettato Pi Voice (`Ctrl+Space`) trascrive in una sessione Pi dentro Herdr. Dopo una riconnessione SSH il dettato funziona di nuovo senza interventi manuali sul socket.",
+    "I file personali di Pi Voice (`.pi/pi-voice.json`, log) restano esclusi da Git e non vengono modificati per la soluzione. Passano `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`."
+  ],
+  "outcome": "Procedura in `docs/operations/TEC-020-dettato-vocale-remoto.md`, `npm run voice:diagnose` in sola lettura con valutazione separata e coperta da test unitari in memoria, e `npm run voice:setup` idempotente per la configurazione del server con `sudo` solo per pacchetti e sshd. Verificato che il registratore di Pi Voice apre il dispositivo tramite ALSA e accetta solo `PULSE_SERVER` di forma `unix:`; la diagnosi evita la creazione del cookie Pulse. Prova simulata con PulseAudio estratto e sorgente sintetica; prova reale dell'operatore con PipeWire e Herdr: diagnosi tutta soddisfatta, dettato riuscito in Pi e di nuovo dopo la riconnessione SSH senza riavvio. Superati gate rapido e `test:local`. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

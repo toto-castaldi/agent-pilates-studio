@@ -1,0 +1,24 @@
+{
+  "id": "US-010",
+  "title": "Richiesta automatica delle presenze dopo la lezione",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-019",
+    "US-007"
+  ],
+  "requirements": [
+    "REQ-STUDIO-006",
+    "REQ-STUDIO-007",
+    "REQ-WA-003",
+    "REQ-STUDIO-003"
+  ],
+  "description": "Seconda fase della registrazione delle presenze, concordata il 2026-11-07: dopo ogni lezione con clienti attesi, l'agente chiede all'utilizzatore chi è venuto (ad esempio \"alle 19 erano attesi Mario e Lucia: sono venuti?\") e registra la risposta come presenze e assenze. Prima della pianificazione servono i requisiti su destinatari, orari, solleciti e lezioni senza risposta, oltre alle decisioni di TEC-019 sui turni pianificati, sull'autore e sull'accesso al database.",
+  "acceptance_criteria": [],
+  "remarks": [
+    "Requirements: REQ-STUDIO-006, REQ-STUDIO-007, REQ-WA-003, REQ-STUDIO-003 (da integrare con i requisiti del caso d'uso)"
+  ]
+}

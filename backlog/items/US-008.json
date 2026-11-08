@@ -1,0 +1,35 @@
+{
+  "id": "US-008",
+  "title": "Correggere presenze e assenze",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-008-correggere-presenze-assenze",
+  "dependencies": [
+    "US-007"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-008",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5"
+  ],
+  "description": "Come insegnante, voglio correggere una presenza o un'assenza registrata per errore, così che i dati restino corretti senza perdere lo storico.",
+  "acceptance_criteria": [
+    "Una correzione chiara (\"Mario Rossi ieri alle 19 non c'era, era assente giustificato\") annulla la registrazione errata con data, autore ricavato dal sistema e motivo, registra quella corretta e l'agente comunica entrambe le operazioni.",
+    "Una richiesta di sola eliminazione (\"togli la presenza di Lucia di sabato alle 19\") annulla la registrazione con motivo senza crearne un'altra; il cambio del tipo di assenza segue lo stesso schema.",
+    "Se la registrazione da correggere non è identificabile o la richiesta è ambigua, l'agente chiede chiarimenti e non annulla nulla.",
+    "Nessuna registrazione viene cancellata o riscritta e un annullamento non viene modificato; su richiesta l'agente mostra lo storico di una lezione o di un cliente, comprese le registrazioni annullate, con date, autori e motivi.",
+    "Gli scenari, compresi presenza trasformata in assenza, cambio del tipo di assenza, annullamento semplice, richiesta ambigua e consultazione dello storico, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-027 coprono il rifiuto di cancellazione e riscrittura."
+  ],
+  "outcome": "Correzioni e storico tramite contesto dello studio e scenari sintetici; superati gate, `test:local`, `test:db` su PostgreSQL isolato e scenario US-008 con OpenRouter reale più tre regressioni. Controlli delle risposte lessicali e operazioni SQL non necessariamente atomiche, come documentato in `docs/operations/TEC-012-prove.md`; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-08.",
+  "closed_at": "2026-11-08"
+}

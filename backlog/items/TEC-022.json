@@ -1,0 +1,29 @@
+{
+  "id": "TEC-022",
+  "title": "Tracciabilità e aggiornamento dal template",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-022-tracciabilita-aggiornamento-template",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; TECHNICAL-DESIGN §10"
+  ],
+  "description": "Rendere esplicita e verificabile l'origine da `https://github.com/toto-castaldi/agile-project-template` e predisporre una procedura manuale per valutare futuri aggiornamenti. L'adozione delle novità del template è esclusa da questa attività e richiede una decisione separata.",
+  "acceptance_criteria": [
+    "Una registrazione versionata nel progetto indica URL e riferimenti pertinenti del template con commit completi e, se disponibili, tag; distingue per risorsa o gruppo la base effettivamente adottata dall'ultima versione solo confrontata. Le basi non ricostruibili e i riferimenti non verificabili sono esplicitamente dichiarati, senza attribuire al progetto una versione non dimostrata; un clone pulito conserva tali informazioni senza dipendere da remote Git locali.",
+    "Un inventario distingue risorse condivise dal template, risorse personalizzate dello studio e relative divergenze, incluse `docs/PROCESS.md` e le skill. Il confronto considera anche il ritorno parziale di TEC-015 e segnala l'eventuale disallineamento del processo rispetto alla regola nell'introduzione di `PROCESS`, proponendo come risolverlo senza modificarlo silenziosamente.",
+    "Una procedura documentata spiega come reperire un riferimento preciso del template, confrontarlo con le basi note e con il progetto, gestire basi sconosciute e divergenze, valutare gli aggiornamenti e registrare separatamente confronto e adozione. Non prevede sovrascritture o merge automatici; l'eventuale adozione segue il processo del progetto e richiede una decisione separata.",
+    "Una prova ripetibile in un ambiente isolato, con un clone pulito e riferimenti di prova, verifica la reperibilità delle informazioni versionate e il confronto, anche in presenza di personalizzazioni e di una base sconosciuta; non modifica il working tree o i dati personali dell'operatore. Le prove con Git, filesystem o rete restano separate dai test unitari in memoria del gate rapido.",
+    "La documentazione e le evidenze non contengono segreti o dati personali; non vengono adottate novità del template né modificati o pubblicati il repository del template o le configurazioni personali. Il riferimento alla modifica TEC-015 non è presentato come pubblicato senza verifica."
+  ],
+  "outcome": "Registrazione delle basi verificabili, inventario delle divergenze e procedura manuale senza adozione automatica; verificati pubblicazione del riporto TEC-015 e riferimento `v1.4.0`, con basi sconosciute esplicite. Superati `test:local` con clone pulito e confronti sintetici, lint, typecheck, unità e build. Nessuna modifica o pubblicazione del template; l'eventuale allineamento del processo richiede decisione separata. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "TEC-031",
+  "title": "Allineamento al template v2.0.0",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "In Progress",
+  "branch": "task/TEC-031-allineamento-template-v2-0-0",
+  "dependencies": [
+    "TEC-030"
+  ],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-013",
+    "REQ-NFR-014",
+    "REQ-NFR-019"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§4",
+    "§7; TECHNICAL-DESIGN §10; `docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Aggiornare il progetto dalla v1.7.1 adottata da TEC-030 al tag `v2.0.0` del template, commit `e4fb57679f8a523401245e4080bd6aca54f95552`, migrando il backlog in `backlog/` e rimuovendo `BACKLOG.md` e `STATUS.md`. Il riferimento è fissato; versioni successive richiedono una decisione separata.",
+  "acceptance_criteria": [
+    "Il tag e il commit fissati sono verificati; `docs/PROCESS.md`, `docs/PROCESS-PARALLEL.md`, le skill, `.agents/tools/backlog.py` e `.gitattributes` sono adottati; il visualizzatore Pi adotta la v2.0.0 conservando la segnalazione degli errori imprevisti durante il refresh; `docs/TEMPLATE-ORIGIN.md` registra risorse adottate e divergenze.",
+    "Il backlog è migrato con `import-md`: versioni, epic, item, stati, esiti, cambi di scope, note e item non assegnati sono conservati, i conteggi per versione coincidono con l'origine e `backlog check` passa. Le parti escluse sono registrate nelle note.",
+    "`AGENTS.md`, prompt Pi, README e documentazione usano la CLI; le protezioni dello studio per i worker restano invariate.",
+    "Le prove `test:local` e `test:pi` sono adattate allo store, senza perdere la copertura del lavoro parallelo; passano il quality gate e le suite separate interessate. Non si modificano stack operativo, segreti o configurazioni personali."
+  ]
+}

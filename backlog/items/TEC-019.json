@@ -1,0 +1,27 @@
+{
+  "id": "TEC-019",
+  "title": "Job cron e messaggi pianificati dell'agente",
+  "epic": "EPIC-002",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "BUG-001"
+  ],
+  "requirements": [
+    "REQ-WA-003",
+    "REQ-STUDIO-003",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "§5",
+    "§10"
+  ],
+  "description": "Abilitare in modo controllato i job cron di Hermes per future funzioni pianificate (ad esempio un riepilogo settimanale), consegnati sul canale home configurato. Prima della pianificazione servono i requisiti dei casi d'uso, la decisione su chi può creare o modificare i job e su come i turni pianificati, privi di un messaggio WhatsApp autenticato, accedono al database senza indebolire REQ-STUDIO-003 e REQ-DB-002.",
+  "acceptance_criteria": [],
+  "remarks": [
+    "Requirements: REQ-WA-003, REQ-STUDIO-003, REQ-NFR-002 (da integrare con i requisiti dei casi d'uso)"
+  ]
+}

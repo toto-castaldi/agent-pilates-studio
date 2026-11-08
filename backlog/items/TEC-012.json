@@ -1,0 +1,32 @@
+{
+  "id": "TEC-012",
+  "title": "Scenari conversazionali e harness",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "task/TEC-012-scenari-conversazionali-harness",
+  "dependencies": [
+    "TEC-011"
+  ],
+  "requirements": [
+    "REQ-NFR-006",
+    "REQ-NFR-002",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §7",
+    "§8",
+    "§9"
+  ],
+  "description": "Predisporre il catalogo degli scenari conversazionali e un harness eseguibile su richiesta con il modello reale; ogni User Story della v0.2.0 vi aggiunge i propri scenari.",
+  "acceptance_criteria": [
+    "Un catalogo versionato descrive gli scenari con nomi e numeri sintetici: stato iniziale del database, messaggi dell'utilizzatore, contenuto atteso della risposta e stato atteso del database; include almeno uno scenario di base di registrazione e consultazione.",
+    "Un comando npm dedicato esegue gli scenari su uno stack isolato con dati sintetici e modello reale via OpenRouter, facendo passare l'identità del mittente per lo stesso percorso della produzione (webhook sintetico firmato e sostituto locale delle API Meta, o il meccanismo raccomandato da SPIKE-002); verifica lo stato del database in modo deterministico e riporta l'esito per scenario.",
+    "L'harness è escluso da `npm test` e dalla CI, richiede credenziali OpenRouter esterne e si arresta con un messaggio chiaro se mancano; non scrive segreti nei log e rimuove le risorse isolate al termine.",
+    "README e documentazione descrivono prerequisiti, costi indicativi, esecuzione, interpretazione degli esiti e registrazione dei risultati delle prove reali."
+  ],
+  "outcome": "Catalogo sintetico e harness isolato con gateway e broker reali, sostituto Meta e modello OpenRouter; verificati due turni e stato PostgreSQL, casi negativi, pulizia e gate rapido. I limiti del confronto, le prove e l'incidente relativo al file temporaneo della prima versione sono documentati in `docs/operations/TEC-012-prove.md`; nessuna nuova prova Meta o accettazione privacy. Completato il 2026-11-06.",
+  "closed_at": "2026-11-06"
+}

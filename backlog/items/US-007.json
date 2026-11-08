@@ -1,0 +1,36 @@
+{
+  "id": "US-007",
+  "title": "Registrare le assenze a una lezione",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-007-registrare-assenze-lezione",
+  "dependencies": [
+    "US-006"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-006",
+    "REQ-STUDIO-007",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5"
+  ],
+  "description": "Come insegnante, voglio comunicare all'agente le assenze dei clienti con il loro tipo, così che lo storico distingua le assenze giustificate da quelle non giustificate.",
+  "acceptance_criteria": [
+    "Un messaggio come \"alle 19 Anna Verdi era assente, aveva avvisato\" registra un'assenza giustificata, con data, orario e autore ricavato dal sistema; \"Anna non è venuta e non ha avvisato\" registra un'assenza non giustificata.",
+    "Se il tipo non è indicato, l'agente chiede se l'assenza è giustificata e registra solo dopo la risposta.",
+    "Quando l'insegnante comunica le presenze e alcuni clienti attesi non sono citati, oppure usa \"tutti tranne <nome>\", l'agente registra le presenze e chiede per i clienti attesi rimanenti se erano assenti e con quale tipo; senza risposta non registra assenze per quei clienti.",
+    "Le assenze rispettano le regole di REQ-STUDIO-006: nessuna assenza per lezioni non ancora iniziate e al più una registrazione valida per cliente e lezione, anche tra presenza e assenza.",
+    "Gli scenari, compresi assenza giustificata e non giustificata, tipo mancante, attesi non citati con risposta e senza risposta, \"tutti tranne\" e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database."
+  ],
+  "outcome": "Contesto e scenari per assenze giustificate e non, chiarimenti e clienti attesi non citati; verificati con OpenRouter reale in stack isolati, confronto dello stato e degli autori, regressioni, `test:local` e quality gate. Due prove di regressione inizialmente fallite sono passate al riesame, con cause non determinate e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`; catalogo completo e Meta reale non ripetuti, nessuna accettazione privacy. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

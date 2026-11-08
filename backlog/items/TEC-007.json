@@ -1,0 +1,30 @@
+{
+  "id": "TEC-007",
+  "title": "Allowlist Git per la configurazione Pi",
+  "version": "v0.1.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "task/TEC-007-allowlist-git-configurazione-pi",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; AGENTS §9"
+  ],
+  "description": "Consentire il versionamento selettivo della configurazione e delle risorse Pi approvate, mantenendo esclusi i dati locali personali.",
+  "acceptance_criteria": [
+    "`.gitignore` consente di versionare `.pi/settings.json` e `.pi/prompts/avvio.md`; le eventuali estensioni locali sono ammesse singolarmente dopo revisione, non tramite inclusione indiscriminata di `.pi`.",
+    "Il template `/avvio` e la configurazione condivisa sono versionati dopo verifica; non contengono segreti o credenziali. Eventuali riferimenti personali nella configurazione sono segnalati prima della condivisione.",
+    "Le skill esistenti in `.agents/skills/` rimangono versionate senza duplicazioni. Sessioni, autenticazione, log, cache e dipendenze installate di Pi restano esclusi da Git.",
+    "Le regole di inclusione ed esclusione sono verificate con `git check-ignore` o test equivalenti e l'uso della configurazione condivisa è documentato senza segreti."
+  ],
+  "remarks": [
+    "Nota successiva: l'operatore ha intenzionalmente rimosso il template; l'allineamento della documentazione e delle verifiche è affidato a TEC-014 (REQ-NFR-007)."
+  ],
+  "outcome": "Allowlist per configurazione Pi e template `/avvio`, con esclusione dei dati locali e delle estensioni non approvate; regole verificate con test Git e quality gate. I riferimenti personali esterni rimangono documentati come limite di portabilità. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}

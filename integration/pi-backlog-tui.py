@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 SOURCE = Path('.pi/extensions/backlog/index.ts').resolve()
+TOOL = Path('.agents/tools/backlog.py').resolve()
 
 
 class Pi:
@@ -92,6 +93,9 @@ def make_project(root, name, global_settings=None, project_settings=None):
     extension = project / '.pi/extensions/backlog/index.ts'
     extension.parent.mkdir(parents=True)
     shutil.copyfile(SOURCE, extension)
+    tool = project / '.agents/tools/backlog.py'
+    tool.parent.mkdir(parents=True)
+    shutil.copyfile(TOOL, tool)
     agent.mkdir()
     if global_settings is not None:
         (agent / 'settings.json').write_text(json.dumps(global_settings))
@@ -100,24 +104,45 @@ def make_project(root, name, global_settings=None, project_settings=None):
     return project, agent
 
 
+def item(number, title, kind='Task', priority='P1', status='Todo', version='v0.2.0', epic='EPIC-001', criteria=('Synthetic criterion',)):
+    record = {'id': number, 'title': title, 'epic': epic, 'type': kind, 'priority': priority, 'status': status,
+              'dependencies': [], 'acceptance_criteria': list(criteria)}
+    if version is not None:
+        record['version'] = version
+    return record
+
+
+def write_store(project, items):
+    base = project / 'backlog'
+    shutil.rmtree(base, ignore_errors=True)
+    for folder in ('items', 'epics', 'versions'):
+        (base / folder).mkdir(parents=True)
+    (base / 'versions/v0.2.0.json').write_text(json.dumps({'id': 'v0.2.0', 'goal': 'Synthetic', 'state': 'Open'}))
+    for epic, title in (('EPIC-001', 'Synthetic epic'), ('EPIC-002', 'Synthetic unassigned epic')):
+        (base / 'epics' / f'{epic}.json').write_text(json.dumps({'id': epic, 'title': title, 'scope': 'Synthetic'}))
+    for record in items:
+        (base / 'items' / f"{record['id']}.json").write_text(json.dumps(record))
+
+
+def snapshot(project):
+    return sorted((str(path), path.read_bytes()) for path in (project / 'backlog').rglob('*') if path.is_file())
+
+
 def exercise(root):
     project, agent = make_project(root, 'default')
-    backlog = project / 'BACKLOG.md'
-    fixture = ('## Version v0.2.0\n**State:** Open\n### EPIC-001 — Synthetic epic\n'
-               '#### TEC-001 — Synthetic first\n- **Type:** Task · **Priority:** P1 · **Status:** Todo\n'
-               + ''.join(f'- Synthetic body line {i:03d}\n' for i in range(80))
-               + '```\n#### TEC-999 — Not an item\n```\n'
-               + '#### TEC-002 — Synthetic second\n- **Type:** User Story · **Priority:** P2 · **Status:** Done\n'
-               + '## Unassigned backlog\n#### TEC-003 — Synthetic unassigned\n'
-               + '- **Epic:** EPIC-002 — Synthetic unassigned epic\n'
-               + '- TEC-004 — Synthetic short idea\n')
-    backlog.write_text(fixture)
+    body = [f'Synthetic body line {i:03d}' for i in range(80)]
+    write_store(project, [
+        item('TEC-001', 'Synthetic first', criteria=body),
+        item('TEC-002', 'Synthetic second', kind='User Story', priority='P2', status='Done'),
+        item('TEC-003', 'Synthetic unassigned', status='Blocked', version=None, epic='EPIC-002'),
+    ])
+    fixture = snapshot(project)
     before_extension = (project / '.pi/extensions/backlog/index.ts').read_bytes()
     pi = Pi(project, root, agent)
     try:
         out = open_command(pi, b'Synthetic first')
-        assert b'1 / 1 (4 total)' in out and b'Version v0.2.0 (Open)' in out and b'Synthetic epic' in out
-        pi.send(b'S')  # Todo -> all, including unassigned and items without fields
+        assert b'1 / 1 (3 total)' in out and b'Version v0.2.0 (Open)' in out and b'Synthetic epic' in out
+        pi.send(b'S')  # Todo -> all, including unassigned items
         pi.wait_for(b'Status: all')
         pi.send(b't')  # Type: User Story
         out = pi.wait_for(b'Synthetic second')
@@ -145,37 +170,35 @@ def exercise(root):
         pi.send(b'\x1b[C')
         out = pi.wait_for(b'Synthetic unassigned')
         assert b'no version' in out and b'EPIC-002' in out
-        pi.send(b'\x1b[C')
-        pi.wait_for(b'Synthetic short idea')
-        pi.send(b'\x1b[D')
-        pi.wait_for(b'Synthetic unassigned')
         pi.send(b'\x1b[H')  # Home
         pi.wait_for(b'Synthetic first')
         pi.send(b'\x1b[F')  # End
-        pi.wait_for(b'Synthetic short idea')
+        pi.wait_for(b'Synthetic unassigned')
         pi.send(b'\x1b')  # Escape
         time.sleep(0.3)
         pi.drain()
-        assert backlog.read_text() == fixture
-        backlog.write_text('#### TEC-005 — Synthetic refreshed\n- **Status:** Todo\n')
+        assert snapshot(project) == fixture
+        write_store(project, [item('TEC-005', 'Synthetic refreshed')])
         open_command(pi, b'Synthetic refreshed')
         close_view(pi)
-        backlog.unlink()
-        open_command(pi, b'BACKLOG.md not found')
+        tool = project / '.agents/tools/backlog.py'
+        hidden = project / 'hidden-tool.py'
+        tool.rename(hidden)
+        open_command(pi, b'backlog.py not found')
         close_view(pi)
-        backlog.write_text('No items here.\n')
-        open_command(pi, b'BACKLOG.md contains no items')
+        hidden.rename(tool)
+        write_store(project, [])
+        open_command(pi, b'The backlog contains no items')
         close_view(pi)
-        backlog.unlink()
-        backlog.mkdir()
-        open_command(pi, b'Cannot read BACKLOG.md')
+        (project / 'backlog/items/TEC-009.json').write_text('{')
+        open_command(pi, b'Cannot read the backlog')
         close_view(pi)
-        backlog.rmdir()
-        backlog.write_text('#### TEC-006 — Synthetic shortcut\n- **Status:** Todo\n')
+        write_store(project, [item('TEC-006', 'Synthetic shortcut')])
+        expected = snapshot(project)
         pi.send(b'\x1b[98;6u')  # Kitty ctrl+shift+b
         pi.wait_for(b'Synthetic shortcut')
         close_view(pi)
-        assert backlog.read_text() == '#### TEC-006 — Synthetic shortcut\n- **Status:** Todo\n'
+        assert snapshot(project) == expected
         assert (project / '.pi/extensions/backlog/index.ts').read_bytes() == before_extension
     finally:
         pi.close()
@@ -183,7 +206,7 @@ def exercise(root):
     # Project setting overrides synthetic global setting; no personal Pi state is read.
     project, agent = make_project(root, 'custom', {'backlogOverlay': {'shortcut': False}},
                                   {'backlogOverlay': {'shortcut': 'alt+b'}})
-    (project / 'BACKLOG.md').write_text('#### TEC-007 — Synthetic custom shortcut\n- **Status:** Todo\n')
+    write_store(project, [item('TEC-007', 'Synthetic custom shortcut')])
     pi = Pi(project, root, agent)
     try:
         before = (project / '.pi/settings.json').read_bytes(), (agent / 'settings.json').read_bytes()
@@ -195,7 +218,7 @@ def exercise(root):
         pi.close()
 
     project, agent = make_project(root, 'disabled', project_settings={'backlogOverlay': {'shortcut': False}})
-    (project / 'BACKLOG.md').write_text('#### TEC-008 — Synthetic disabled\n- **Status:** Todo\n')
+    write_store(project, [item('TEC-008', 'Synthetic disabled')])
     pi = Pi(project, root, agent)
     try:
         pi.send(b'\x1b[98;6u')
@@ -217,14 +240,14 @@ def exercise_branches(root):
         extra = {'GIT_AUTHOR_DATE': date, 'GIT_COMMITTER_DATE': date} if date else {}
         return subprocess.check_output(['git', *args], cwd=cwd, env={**env, **extra}, stderr=subprocess.DEVNULL, text=True).strip()
 
-    backlog = project / 'BACKLOG.md'
-    def content(state):
-        return ('## Version v0.2.0\n**State:** Open\n### EPIC-001 — Synthetic epic\n'
-                f'#### TEC-001 — Synthetic branch item\n- **Type:** Task · **Priority:** P1 · **Status:** {state}\n')
+    backlog = project / 'backlog/items/TEC-001.json'
+    def content(state, title='Synthetic branch item'):
+        return json.dumps(item('TEC-001', title, status=state))
 
+    write_store(project, [item('TEC-001', 'Synthetic branch item')])
     git('init', '-q', '-b', 'main')
     backlog.write_text(content('Todo'))
-    git('add', 'BACKLOG.md')
+    git('add', 'backlog')
     git('commit', '-qm', 'base', date='2020-01-01T00:00:00Z')
     git('switch', '-qc', 'task/TEC-001-first')
     backlog.write_text(content('Blocked'))
@@ -266,15 +289,15 @@ def exercise_branches(root):
 
     # On the item branch, its uncommitted working-tree copy wins over every ref.
     git('switch', '-q', 'task/TEC-001-second')
-    backlog.write_text(content('Todo').replace('Synthetic branch item', 'Synthetic working copy'))
+    backlog.write_text(content('Todo', 'Synthetic working copy'))
     pi = Pi(project, root, agent)
     try:
         out = open_command(pi, b'Synthetic working copy') + pi.drain(3)
         assert b'from task/TEC-001-second' not in out and b'also in:' not in out
-        assert backlog.read_text().startswith('## Version') and 'Synthetic working copy' in backlog.read_text()
+        assert 'Synthetic working copy' in backlog.read_text()
     finally:
         pi.close()
-    git('restore', 'BACKLOG.md')
+    git('restore', 'backlog/items/TEC-001.json')
     git('switch', '-q', 'main')
 
     # Unreachable synthetic remote: failure is shown and existing refs remain useful.

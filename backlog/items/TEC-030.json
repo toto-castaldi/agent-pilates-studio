@@ -1,0 +1,38 @@
+{
+  "id": "TEC-030",
+  "title": "Allineamento al template v1.7.1",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-030-allineamento-template-v1-7-1",
+  "dependencies": [
+    "TEC-029"
+  ],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-013",
+    "REQ-NFR-015",
+    "REQ-NFR-016",
+    "REQ-NFR-017",
+    "REQ-NFR-018"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; TECHNICAL-DESIGN §8",
+    "§10; `docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Aggiornare il progetto dalla v1.7.0 adottata da TEC-029 al tag `v1.7.1` del template, commit `173870cbd7d2722f37adc189b97d7f602988c940`, e configurare `pi --approve` per i futuri worker. Il riferimento è fissato; versioni successive richiedono una decisione separata.",
+  "acceptance_criteria": [
+    "Il tag e il commit fissati sono verificati e confrontati con le basi adottate delle risorse pertinenti; `docs/PROCESS.md` e le skill condivise sono allineati alla v1.7.1. Conflitti o deroghe sono concordati e registrati, senza sovrascrivere le personalizzazioni dello studio; `docs/TEMPLATE-ORIGIN.md` distingue confronto, risorse adottate, divergenze e basi ignote.",
+    "`AGENTS.md` configura `Worker agent command` come `pi --approve`; il lancio Herdr e la modalità manuale trasmettono comando e argomenti correttamente. La fiducia ai file locali vale per la sessione del worker; resta esplicito che le risorse e le estensioni del progetto attendibile possono essere caricate ed eseguite. Il README descrive comportamento, rischi e limiti senza presentare le istruzioni come garanzie tecniche.",
+    "Restano attivi shared claims, coordinamento non bloccante, richiesta esplicita per avvio dell'orchestrazione, via e merge, protezioni dei clone di `AGENTS.md` §10, gate rapido e suite separate. La sola adozione non avvia worker né modifica stack operativo, segreti o configurazioni personali; non autorizza merge o push su `main`.",
+    "Prove ripetibili isolate con repository, configurazioni e worker sintetici verificano il passaggio degli argomenti del comando, la conservazione delle protezioni e l'assenza di avvii o push non autorizzati; una prova Pi offline isolata verifica che `--approve` consenta il caricamento delle risorse senza dialogo iniziale, documentandone i limiti. Processi, Git e filesystem restano fuori dai test in memoria; nessuna prova legge o modifica dati personali.",
+    "La documentazione pertinente e i test sono aggiornati; passano il quality gate e le suite separate interessate. Non si modificano né pubblicano il repository del template o dati personali."
+  ],
+  "outcome": "Adottati processo e skill v1.7.1 senza divergenze dopo verifica del tag e confronto delle basi; configurato `pi --approve` preservando le protezioni dello studio. Superati quality gate, `test:local` con comandi e worker sintetici e `test:pi` offline in pseudoterminale, incluso il controllo della fiducia solo di sessione; una prima esecuzione di `test:local` è fallita perché il confronto col clone usava il documento non ancora committato, ed è passata dopo il commit. Herdr reale e osservanza del modello non sono provati. Completato il 2026-11-08.",
+  "closed_at": "2026-11-08"
+}

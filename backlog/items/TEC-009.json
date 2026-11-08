@@ -1,0 +1,39 @@
+{
+  "id": "TEC-009",
+  "title": "Avvio locale con un comando",
+  "version": "v0.1.0",
+  "epic": "EPIC-003",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "task/TEC-009-avvio-locale-con-un-comando",
+  "dependencies": [
+    "SPIKE-001"
+  ],
+  "requirements": [
+    "REQ-AGENT-001",
+    "REQ-AGENT-003",
+    "REQ-DB-001",
+    "REQ-DB-002",
+    "REQ-WA-002",
+    "REQ-NFR-002",
+    "REQ-NFR-004"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "§5",
+    "§7",
+    "§9",
+    "§10"
+  ],
+  "description": "Semplificare il primo avvio e i successivi avvii locali: l'operatore copia e compila `.env` da `.env.example`, quindi usa un solo comando per inizializzare e avviare lo stack. Il port forwarding verso `jarvis` per la callback pubblica resta esterno; non è autorizzata l'esposizione pubblica continuativa.",
+  "acceptance_criteria": [
+    "Con i prerequisiti documentati e `.env` compilato, un solo comando documentato prepara le dipendenze necessarie, inizializza i ruoli e applica le migrazioni, avvia PostgreSQL e Hermes e verifica lo stato dei servizi. Funziona sia da clone pulito sia dopo la rimozione dei volumi Docker, senza ulteriori comandi di inizializzazione manuali.",
+    "Il comando segnala configurazione mancante o non valida e guasti con esito negativo, senza dichiarare utilizzabile uno stack non sano. Riavvi ripetuti conservano dati e credenziali esistenti; nessun volume viene eliminato automaticamente.",
+    "`.env.example` documenta le impostazioni necessarie senza valori reali; le credenziali compilate in `.env` restano locali, private e fuori dal repository. Il comando non espone segreti, messaggi o numeri in output o log e mantiene le credenziali amministrative e di migrazione indisponibili all'agente, l'autenticazione webhook e l'allowlist.",
+    "Test ripetibili con credenziali e dati sintetici verificano il primo avvio su PostgreSQL reale, migrazioni, stato, riavvio e persistenza, gestione degli errori e protezioni pertinenti; le prove reali Meta/OpenRouter restano distinte e richiedono servizi e credenziali esterni.",
+    "README e istruzioni descrivono prerequisiti, configurazione privata, comando unico, verifica e arresto, il port forwarding esterno e i limiti privacy. Non viene avviato streaming remoto dei log del tunnel condiviso; l'avvio locale non autorizza l'uso pubblico continuativo."
+  ],
+  "outcome": "Comando locale con configurazione privata, dipendenze da lockfile, bootstrap, migrazioni e healthcheck; credenziali esistenti preservate e output dei sottoprocessi soppresso. Verificati con dati sintetici avvio da copia pulita e dopo rimozione dei volumi isolati, riavvio e persistenza PostgreSQL e Hermes, privilegi ed errori; superati quality gate e test di integrazione. Meta/OpenRouter reali e accettazione privacy non riverificati. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}

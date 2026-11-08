@@ -1,0 +1,33 @@
+{
+  "id": "TEC-014",
+  "title": "Allineamento delle verifiche alla configurazione Pi",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Done",
+  "branch": "task/TEC-014-allineamento-verifiche-configurazione-pi",
+  "dependencies": [
+    "TEC-013"
+  ],
+  "requirements": [
+    "REQ-NFR-001",
+    "REQ-NFR-002",
+    "REQ-NFR-003",
+    "REQ-NFR-007"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; AGENTS §6",
+    "§9"
+  ],
+  "description": "Allineare test e documentazione alle modifiche intenzionali dell'operatore alla configurazione Pi, senza ripristinare il launcher e il template rimossi né modificare impostazioni e dati personali senza accordo.",
+  "acceptance_criteria": [
+    "I test automatici Pi e la prova con Pi reale offline non richiedono `scripts/pi.sh` né il template `/avvio` rimossi; verificano in modo ripetibile, con dati sintetici, l'assetto effettivamente concordato senza limitarsi a sopprimere i controlli falliti.",
+    "Le verifiche Git continuano a proteggere sessioni, autenticazione, log, credenziali e dati locali; nessun segreto o dato personale è inserito nel repository o esposto nei risultati. Impostazioni e dati personali esistenti non sono modificati senza accordo.",
+    "Il README e la documentazione pertinente descrivono l'avvio e le risorse Pi effettive senza indicare procedure o file rimossi; le eventuali limitazioni non verificate sono esplicite.",
+    "Da ambiente pulito passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`; la CI continua a eseguire il quality gate senza deploy automatico."
+  ],
+  "outcome": "Test e README allineati all'avvio diretto Pi, senza ripristinare i file rimossi o leggere le impostazioni personali. Verificati regole Git, contratto CI e quality gate da clone pulito; Pi 1.5.0 offline ha superato due prove sintetiche con directory distinte e coincidenti. L'esecuzione remota GitHub e la disponibilità delle risorse personali esterne non sono state verificate. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}

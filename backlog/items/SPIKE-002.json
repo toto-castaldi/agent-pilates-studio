@@ -1,0 +1,34 @@
+{
+  "id": "SPIKE-002",
+  "title": "Identità del mittente e contesto dell'agente",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "type": "Spike",
+  "priority": "P0",
+  "status": "Done",
+  "branch": "spike/SPIKE-002-identita-mittente-contesto-agente",
+  "dependencies": [],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-004",
+    "REQ-NFR-002",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "§5",
+    "§6",
+    "§7",
+    "§10"
+  ],
+  "description": "Stabilire come l'autore delle modifiche venga ricavato dal mittente WhatsApp senza che il modello possa dichiararlo o alterarlo, e come fornire all'agente un contesto versionato.",
+  "acceptance_criteria": [
+    "Un rapporto in `docs/spikes/` documenta, per Hermes 0.22.7 e il gateway WhatsApp Cloud nativo, se e come il numero del mittente e il nome del profilo WhatsApp siano disponibili ai tool del plugin, e se derivino dal messaggio autenticato.",
+    "Il rapporto propone un meccanismo con cui l'autore registrato nel database è ricavato dal sistema e non è falsificabile dal modello, neppure con SQL costruito ad arte nella singola istruzione (ad esempio tramite impostazioni di sessione, trigger o parametri iniettati dal plugin); confronta le alternative con rischi e costi, incluse eventuali modifiche al gateway.",
+    "Il rapporto indica come Hermes carichi il file `SOUL.md` versionato nel progetto (posizione in `HERMES_HOME`, copia nell'immagine o montaggio in sola lettura, controlli anti-injection), come fornire data corrente e fuso orario Europe/Rome, come le modifiche raggiungano le sessioni già aperte e come il file interagisca con la memoria e le sessioni SQLite di Hermes; il file deve persistere tra riavvii e aggiornamenti.",
+    "Una prova locale con webhook e dati sintetici dimostra la propagazione dell'identità fino al plugin e verifica che numeri, nomi e messaggi non compaiano nei log (REQ-NFR-002).",
+    "Il rapporto contiene raccomandazioni per TEC-010, TEC-011 e US-002 e non include segreti né dati reali; il codice esplorativo non viene integrato."
+  ],
+  "outcome": "Rapporto su identità autenticata, contesto database protetto, `SOUL.md` e sessioni; prove sintetiche del gateway e su PostgreSQL reale, con limiti e raccomandazioni per gli item successivi. Quality gate superato dopo il ripristino delle risorse Pi condivise. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}
