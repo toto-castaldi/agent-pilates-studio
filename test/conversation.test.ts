@@ -92,6 +92,8 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Il 9 novembre e il 16 novembre 2026 alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
   assert.ok(responseMatches('09/11/2026 e 2026-11-16', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
   assert.equal(responseMatches('Il 9 novembre alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }), false);
+  assert.equal(responseMatches('Il 9 novembre 2025', { contains: [], dates: ['2026-11-09'] }), false);
+  assert.equal(responseMatches('09/11/2025', { contains: [], dates: ['2026-11-09'] }), false);
 });
 
 test('state rejects missing or extra records and wrong attribution, slot, date or activity', () => {

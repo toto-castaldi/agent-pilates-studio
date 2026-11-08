@@ -345,9 +345,12 @@ Durante il lavoro parallelo l'orchestratore resta disponibile all'utente senza b
 
 ## 7. Release acceptance — v0.3.0
 
-- Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database rifiuta lezioni non ancora iniziate, registrazioni valide duplicate, cancellazioni e riscritture, e consente un solo annullamento con data, autore e motivo.
+**Allineamento concordato (2026-11-08):** il criterio database include l'eccezione per le assenze giustificate anticipate di REQ-STUDIO-010.
+
+- Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database ammette per lezioni non ancora iniziate solo assenze giustificate anticipate e rifiuta presenze e assenze non giustificate future, registrazioni valide duplicate, cancellazioni e riscritture. Consente un solo annullamento con data, autore e motivo.
 - Un utilizzatore comunica via WhatsApp le presenze di una lezione, anche con "c'erano tutti" o "tutti tranne", e l'agente le registra in base ai clienti attesi, segnalando i clienti non attesi e creando quelli nuovi.
 - Un utilizzatore comunica assenze giustificate e non giustificate; l'agente chiede il tipo quando manca e chiede degli attesi non citati, senza registrare assenze non confermate.
+- Un utilizzatore annuncia un'assenza anticipata; l'agente registra l'assenza giustificata, chiede le conferme previste per lezioni non attese e periodi, consente l'annullamento anticipato e gestisce i conflitti con le presenze come in REQ-STUDIO-010.
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.

@@ -187,15 +187,19 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       // Historical anticipations cannot be created through today's clock. Seed
       // only synthetic rows with the migrator, restoring the trigger before any turn.
       if (setup.attendance?.length) {
+        stage = 'preparazione fixture presenze: disabilitazione trigger';
         await client.query('ALTER TABLE app.attendance DISABLE TRIGGER attendance_author');
+        stage = 'preparazione fixture presenze: inserimento';
         for (const row of setup.attendance) {
           if (!ids.has(row.client) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate)
-            || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\dZ$/.test(row.createdAt)
+            || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(row.createdAt)
             || row.outcome !== 'excused_absence') throw new Error('attendance fixture');
           await client.query('INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile]);
         }
+        stage = 'preparazione fixture presenze: riabilitazione trigger';
         await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
       }
+      stage = 'preparazione fixture: verifica';
       await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
       await client.query('COMMIT');
       seededSnapshot = await snapshot();
@@ -293,14 +297,20 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       }
       stage = `turno ${index + 1}: stato database`;
       const current = await snapshot();
-      if (!historyPreserved(previous, current)
-        || (attendanceExpected ? !seededSnapshot || !attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
-          : turn.unchanged ? !seededSnapshot || !snapshotsMatch(seededSnapshot, current) : !stateMatches(current, turn.expected))) throw new Error('database mismatch');
+      const historyOk = historyPreserved(previous, current);
+      const stateOk = attendanceExpected ? !!seededSnapshot && attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
+        : turn.unchanged ? !!seededSnapshot && snapshotsMatch(seededSnapshot, current) : stateMatches(current, turn.expected);
+      if (!historyOk || !stateOk) {
+        const rows = current.attendance ?? [];
+        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}.`);
+        throw new Error('database mismatch');
+      }
       previous = current;
     }
     console.log(`${scenario.id}: OK`);
-  } catch {
+  } catch (error) {
     failed = true;
+    if (typeof error?.code === 'string' && /^[0-9A-Z]{5}$/.test(error.code)) console.error(`Codice SQL sintetico: ${error.code}.`);
     if (stage === 'avvio gateway e sostituti') {
       try {
         for (const line of compose('ps', '--all', '--format', 'json').trim().split('\n').filter(Boolean)) {

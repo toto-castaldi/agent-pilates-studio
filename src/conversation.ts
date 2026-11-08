@@ -126,7 +126,7 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
     const [year, month, day] = date.split('-').map(Number);
     if (!months[month] || day < 1 || day > 31) return false;
-    const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year})?\\b|\\b0?${day}\\s+${months[month]}(?:\\s+${year})?\\b)`, 'i');
+    const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year}\\b|(?![/.-]\\d)\\b)|\\b0?${day}\\s+${months[month]}(?:\\s+${year}\\b|(?!\\s+\\d{4})\\b))`, 'i');
     return expression.test(value);
   })) return false;
   return (expected.times ?? []).every((time) => {

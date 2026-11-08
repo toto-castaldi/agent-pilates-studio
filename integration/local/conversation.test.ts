@@ -15,6 +15,13 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.match(scenario.sender, /^1555555\d{4}$/);
     assert.ok(stateMatches({ clients: [], rules: [] }, scenario.initial));
     assert.ok(scenario.turns.length >= 2);
+    for (const row of scenario.setup?.attendance ?? []) {
+      assert.match(row.createdAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
+      assert.match(row.lessonDate, /^\d{4}-\d\d-\d\d$/);
+      assert.equal(row.outcome, 'excused_absence');
+      assert.ok(scenario.setup.clients.some((client: { firstName: string; lastName: string }) => `${client.firstName} ${client.lastName}` === row.client));
+      assert.ok(Date.parse(row.createdAt) < Date.parse(`${row.lessonDate}T${row.time}:00Z`) - 2 * 60 * 60 * 1000);
+    }
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
       assert.ok(turn.response.contains.length || turn.response.anyOf?.length);
@@ -63,7 +70,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   for (const id of ['assenze-esplicite-chiarimento', 'assenze-attesi-presenze', 'presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
-  for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-tutti-tranne', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
   const future = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-singola-annullamento');
   assert.ok(future.turns[2].attendanceExpected.attendance[0].cancellation);
   const conflict = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-conflitto-presenza');
