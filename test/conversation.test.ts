@@ -38,6 +38,16 @@ test('attendance snapshots check exact rows, authenticated authors and unchanged
   assert.equal(attendanceScenarioMatches(before, { ...after, clients: [client, { ...extra, authorPhone: '999' }] }, { ...expectation, addedClients: [extra] }), false);
   assert.ok(historyPreserved(after, after));
   assert.equal(historyPreserved(after, { ...after, attendance: [{ ...row, id: '5' }] }), false);
+  const cancelled = { ...row, cancelledAt: '2026-01-02T09:00:00Z', cancelledByPhone: '15555550102', cancelledByName: 'Sintetico', cancellationReason: 'correzione' };
+  const cancelledState = { ...after, attendance: [cancelled] };
+  const cancelledExpected = { addedClients: [], attendance: [{ ...row, cancellation: { authorPhone: '15555550102', authorName: 'Sintetico' } }] };
+  assert.ok(historyPreserved(after, cancelledState));
+  assert.ok(attendanceScenarioMatches(before, cancelledState, cancelledExpected));
+  assert.equal(attendanceScenarioMatches(before, after, cancelledExpected), false);
+  assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [{ ...cancelled, cancelledByPhone: '999' }] }, cancelledExpected), false);
+  assert.equal(attendanceScenarioMatches(before, { ...after, attendance: [{ ...cancelled, cancellationReason: ' ' }] }, cancelledExpected), false);
+  assert.equal(historyPreserved(cancelledState, { ...after, attendance: [{ ...cancelled, cancellationReason: 'riscritto' }] }), false);
+  assert.equal(historyPreserved(after, { ...after, attendance: [{ ...cancelled, outcome: 'excused_absence' }] }), false);
 });
 
 test('relative day uses the Rome calendar across midnight and DST', () => {
@@ -79,6 +89,9 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Inserita il 07/11/2026', { contains: [], date: true }));
   assert.ok(responseMatches('Disattivata il 7 novembre 2026', { contains: [], date: true }));
   assert.equal(responseMatches('Inserita il 07/11', { contains: [], date: true }), false);
+  assert.ok(responseMatches('Il 9 novembre e il 16 novembre 2026 alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
+  assert.ok(responseMatches('09/11/2026 e 2026-11-16', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
+  assert.equal(responseMatches('Il 9 novembre alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }), false);
 });
 
 test('state rejects missing or extra records and wrong attribution, slot, date or activity', () => {

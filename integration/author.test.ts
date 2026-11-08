@@ -127,6 +127,16 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-attendance-cancel', 'attendance-cancel'))).status, 200);
     await waitFor('SELECT count(*) FROM app.attendance WHERE cancelled_at IS NOT NULL', 1);
     assert.deepEqual((await migrator.query('SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance')).rows[0], { cancelled_by_phone: '15555550103', cancelled_by_name: 'Synthetic Beta', cancellation_reason: 'synthetic reason' });
+    await waitObservation((entry) => entry.user.includes('attendance-cancel') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', 'synthetic-future-insert', 'future-absence-insert'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.attendance', 2);
+    assert.deepEqual((await migrator.query("SELECT created_by_phone, created_by_name FROM app.attendance WHERE lesson_date = '2099-01-01'")).rows[0], { created_by_phone: '15555550102', created_by_name: 'Synthetic Alpha' });
+    await waitObservation((entry) => entry.user.includes('future-absence-insert') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-future-cancel', 'future-absence-cancel'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.attendance WHERE cancelled_at IS NOT NULL', 2);
+    assert.deepEqual((await migrator.query("SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance WHERE lesson_date = '2099-01-01'")).rows[0], { cancelled_by_phone: '15555550103', cancelled_by_name: 'Synthetic Beta', cancellation_reason: 'synthetic future cancellation' });
     let gatewayId = compose('ps', '-q', 'hermes').trim();
     execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /tmp/pilates-injection-marker'], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');

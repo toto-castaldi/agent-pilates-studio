@@ -26,11 +26,15 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         assert.ok(scenario.setup && !turn.expected);
         assert.ok(Array.isArray(turn.attendanceExpected.addedClients) && Array.isArray(turn.attendanceExpected.attendance));
         for (const row of turn.attendanceExpected.attendance) {
-          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY)$/.test(row.lessonDate));
+          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY|\$NEXT_MONDAY(?:\+\d+)?)$/.test(row.lessonDate));
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);
           assert.equal(row.authorName, scenario.profile);
+          if (row.cancellation) {
+            assert.equal(row.cancellation.authorPhone, scenario.sender);
+            assert.equal(row.cancellation.authorName, scenario.profile);
+          }
         }
         for (const person of turn.attendanceExpected.addedClients) {
           assert.ok(person.firstName && person.lastName);
@@ -59,6 +63,12 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   for (const id of ['assenze-esplicite-chiarimento', 'assenze-attesi-presenze', 'presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  const future = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-singola-annullamento');
+  assert.ok(future.turns[2].attendanceExpected.attendance[0].cancellation);
+  const conflict = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-conflitto-presenza');
+  assert.ok(conflict.setup.attendance[0].createdAt < `${conflict.setup.attendance[0].lessonDate}T19:00:00Z`);
+  assert.ok(conflict.turns[1].attendanceExpected.attendance[0].cancellation);
   const explicitAbsences = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenze-esplicite-chiarimento');
   assert.deepEqual(explicitAbsences.turns.map((turn: { attendanceExpected: { attendance: unknown[] } }) => turn.attendanceExpected.attendance.length), [1, 2, 2, 3, 3, 3]);
   assert.equal(explicitAbsences.turns[2].response.question, true);

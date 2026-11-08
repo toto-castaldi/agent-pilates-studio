@@ -8,7 +8,7 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | In corso: Assenze annunciate in anticipo | 5/8 items done (62%) |
+| v0.3.0 | Open | In corso: Assenze annunciate in anticipo | 5/8 items done (63%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 

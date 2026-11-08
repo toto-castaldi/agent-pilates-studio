@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Registrazione e annullamento delle assenze giustificate anticipate, con conferme per più lezioni e gestione dei conflitti con le presenze (US-013).
 - Registrazione conversazionale delle assenze giustificate e non giustificate, con chiarimenti per il tipo e per i clienti attesi non citati (US-007).
 - Registrazione conversazionale delle presenze, anche per clienti attesi in date passate, con segnalazione di duplicati e clienti non attesi (US-006).
 - Schema versionato per presenze e assenze con autore autenticato, annullamento tracciato e storico protetto (TEC-027).

@@ -40,9 +40,22 @@ export async function checkAttendance(agent: Client, migrator: Client, clientId:
   await rejectInTransaction("UPDATE app.attendance SET outcome = 'excused_absence' WHERE id = $1", '42501', [first.id]);
   // Use the database clock on both sides of the current local minute; this also
   // covers midnight without assuming the host timezone.
-  const boundary = (offset: string) => `WITH t AS (SELECT date_trunc('minute', clock_timestamp() AT TIME ZONE 'Europe/Rome') ${offset} interval '1 minute' AS local_start) INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT $1, local_start::date, local_start::time, 'present' FROM t RETURNING id`;
-  await agent.query(boundary('-'), [clientId]);
-  await rejectInTransaction(boundary('+'), '23514', [clientId]);
+  const boundary = (offset: string, minutes: number, outcome: string) => `WITH t AS (SELECT date_trunc('minute', clock_timestamp() AT TIME ZONE 'Europe/Rome') ${offset} interval '${minutes} minute' AS local_start) INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_phone, created_by_name) SELECT $1, local_start::date, local_start::time, '${outcome}', 'forged', 'forged' FROM t RETURNING *`;
+  for (const [index, outcome] of ['present', 'unexcused_absence', 'excused_absence'].entries()) {
+    await agent.query(boundary('-', index + 1, outcome), [clientId]);
+  }
+  await rejectInTransaction(boundary('+', 1, 'present'), '23514', [clientId]);
+  await rejectInTransaction(boundary('+', 1, 'unexcused_absence'), '23514', [clientId]);
+  const future = (await agent.query(boundary('+', 1, 'excused_absence'), [clientId])).rows[0];
+  assert.equal(future.created_by_phone, '15555550102');
+  assert.equal(future.created_by_name, 'Synthetic Profile');
+  await rejectInTransaction(boundary('+', 1, 'excused_absence'), '23505', [clientId]);
+  await rejectInTransaction("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-03-29', '02:30', 'excused_absence')", '23514', [clientId]);
+  await agent.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic future cancellation', cancelled_by_phone = 'forged' WHERE id = $1", [future.id]);
+  const cancelledFuture = (await agent.query('SELECT cancelled_by_phone, cancellation_reason FROM app.attendance WHERE id = $1', [future.id])).rows[0];
+  assert.deepEqual(cancelledFuture, { cancelled_by_phone: '15555550102', cancellation_reason: 'synthetic future cancellation' });
+  await rejectInTransaction("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'again' WHERE id = $1", '23514', [future.id]);
+  await agent.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [clientId]);
   await agent.query('COMMIT');
   await assert.rejects(agent.query('UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = $1 WHERE id = $2', ['synthetic', first.id]), { code: '42501' });
   for (const connection of [agent, migrator]) {

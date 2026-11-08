@@ -2,6 +2,70 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "assenza-anticipata-singola-annullamento",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }], "rules": [{ "text": "Anna Verdi lunedì alle 19:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }] }] },
+      "turns": [
+        { "message": "Lunedì prossimo Anna Verdi non potrà esserci.", "response": { "contains": ["Anna"], "times": ["19:00"], "dates": ["$NEXT_MONDAY"], "anyOf": [["assenz", "assent"]], "excludes": ["giustificata o non"] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Anna Verdi lunedì prossimo non potrà esserci.", "response": { "contains": ["Anna"], "anyOf": [["già", "gia", "esiste", "registrat"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Anna alla fine lunedì prossimo alle 19 viene.", "response": { "contains": ["Anna"], "anyOf": [["annull", "cancell", "rimos"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }] } },
+        { "message": "Registra Anna presente lunedì prossimo alle 19.", "response": { "contains": [], "anyOf": [["futur", "non ancora", "non è ancora", "non iniziat", "deve ancora"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }] } }
+      ]
+    },
+    {
+      "id": "assenza-anticipata-ambigua-non-attesa",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }], "rules": [{ "text": "Anna Verdi lunedì alle 18:00 e alle 19:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "18:00" }, { "weekday": 1, "time": "19:00" }] }] },
+      "turns": [
+        { "message": "Lunedì prossimo Anna Verdi non potrà esserci.", "response": { "contains": ["Anna"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Non so ancora a quale lezione, lascia stare.", "response": { "contains": [], "anyOf": [["ok", "capito", "bene", "registr", "d'accordo"]] }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Bruno Neri non potrà esserci lunedì prossimo alle 19.", "response": { "contains": ["Bruno"], "question": true, "anyOf": [["non attes", "non previst", "non risulta", "non programm", "non pianificat"]] }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "No, non registrare.", "response": { "contains": [], "anyOf": [["ok", "capito", "bene", "registr", "d'accordo"]] }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Bruno Neri non potrà esserci lunedì prossimo alle 19, era un recupero concordato.", "response": { "contains": ["Bruno"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Sì, confermo la registrazione.", "response": { "contains": ["Bruno"], "anyOf": [["assenz", "assent"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Bruno Neri", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "assenza-anticipata-periodo",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }], "rules": [{ "text": "Anna Verdi lunedì alle 19:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }] }] },
+      "turns": [
+        { "message": "Anna Verdi non potrà esserci i prossimi due lunedì, a partire dal prossimo lunedì.", "response": { "contains": ["Anna"], "times": ["19:00"], "dates": ["$NEXT_MONDAY", "$NEXT_MONDAY+7"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Non confermo, lascia stare.", "response": { "contains": [], "anyOf": [["ok", "capito", "bene", "registr", "d'accordo"]] }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Anna Verdi non potrà esserci i prossimi due lunedì, a partire dal prossimo lunedì.", "response": { "contains": ["Anna"], "times": ["19:00"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [] } },
+        { "message": "Sì, confermo entrambe le lezioni.", "response": { "contains": ["Anna"], "anyOf": [["assenz", "assent"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY+7", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Bruno Neri non potrà esserci i prossimi due lunedì.", "response": { "contains": ["Bruno"], "anyOf": [["nessun", "non risult", "non ci sono", "non ha lezioni"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY+7", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "assenza-anticipata-conflitto-presenza",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }], "rules": [{ "text": "Anna Verdi e Bruno Neri lunedì alle 19:00", "clients": ["Anna Verdi", "Bruno Neri"], "slots": [{ "weekday": 1, "time": "19:00" }] }], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "createdAt": "2025-01-01T09:00:00Z" }] },
+      "turns": [
+        { "message": "Lunedì 6 gennaio 2025 alle 19 c'erano tutti.", "response": { "contains": ["Anna", "Bruno"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Sì, Anna era presente.", "response": { "contains": ["Anna"], "anyOf": [["annull", "cancell"], ["presen"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "assenza-anticipata-conflitto-assenza",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }], "rules": [{ "text": "Anna Verdi e Bruno Neri lunedì alle 19:00", "clients": ["Anna Verdi", "Bruno Neri"], "slots": [{ "weekday": 1, "time": "19:00" }] }], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "createdAt": "2025-01-01T09:00:00Z" }] },
+      "turns": [
+        { "message": "Lunedì 6 gennaio 2025 alle 19 c'erano tutti tranne Anna Verdi.", "response": { "contains": ["Anna", "Bruno"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Alla stessa lezione c'erano tutti.", "response": { "contains": ["Anna"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "No, Anna era assente.", "response": { "contains": ["Anna"], "anyOf": [["assenz", "assent"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "assenza-anticipata-conflitto-esplicito",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Neri" }], "rules": [{ "text": "Anna Verdi e Bruno Neri lunedì alle 19:00", "clients": ["Anna Verdi", "Bruno Neri"], "slots": [{ "weekday": 1, "time": "19:00" }] }], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "createdAt": "2025-01-01T09:00:00Z" }] },
+      "turns": [
+        { "message": "Lunedì 6 gennaio 2025 alle 19 c'erano Anna Verdi e Bruno Neri.", "response": { "contains": ["Anna", "Bruno"], "question": true }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Non so se Anna fosse presente, lascia così.", "response": { "contains": [], "anyOf": [["ok", "capito", "bene", "d'accordo", "Anna"]] }, "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
       "id": "assenze-esplicite-chiarimento",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",
@@ -34,7 +98,7 @@
           "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
         },
         {
-          "message": "Il 6 gennaio 2099 alle 19 Anna Verdi era assente e aveva avvisato.",
+          "message": "Il 6 gennaio 2099 alle 19 Anna Verdi era assente e non aveva avvisato.",
           "response": { "contains": [], "anyOf": [["futur", "non è ancora", "non ancora", "non iniziat", "deve ancora"]] },
           "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Anna Verdi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Bruno Neri", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "client": "Carla Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] }
         }
