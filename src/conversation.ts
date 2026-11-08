@@ -83,6 +83,7 @@ export interface ExpectedResponse {
   dayGroups?: { day: string; groups?: { time: string; contains: string[] }[]; times?: string[] }[];
   date?: boolean;
   dates?: string[];
+  counts?: { labels: string[]; value: number }[];
 }
 
 const normalized = (value: string) => value.normalize('NFC').toLocaleLowerCase('it-IT');
@@ -94,6 +95,25 @@ export function romeDate(instant: Date): string {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(instant);
   const part = (type: string) => parts.find((entry) => entry.type === type)?.value;
   return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+// Freeze relative fixture dates at the start of a scenario, in Rome's calendar.
+export function scenarioRelativeDate(reference: Date, value: string): string {
+  const today = romeDate(reference);
+  if (value === '$TODAY') return today;
+  const date = new Date(`${today}T00:00:00Z`);
+  if (value === '$YESTERDAY') {
+    date.setUTCDate(date.getUTCDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }
+  const match = /^\$NEXT_MONDAY(?:\+(\d+))?$/.exec(value);
+  if (!match) return value;
+  date.setUTCDate(date.getUTCDate() + ((8 - date.getUTCDay()) % 7 || 7) + Number(match[1] || 0));
+  return date.toISOString().slice(0, 10);
+}
+
+export function scenarioRelativeTimestamp(reference: Date, value: string | undefined): string | undefined {
+  return value?.replace(/^\$YESTERDAY(?=T)/, scenarioRelativeDate(reference, '$YESTERDAY'));
 }
 
 export function hasHomeChannelNotice(text: string): boolean {
@@ -112,6 +132,17 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
   if (!(expected.anyOf ?? []).every((choices) => choices.length > 0 && choices.some((word) => value.includes(normalized(word))))) return false;
   if ((expected.excludes ?? []).some((word) => value.includes(normalized(word)))) return false;
   if (expected.question && !/[?？]/.test(text)) return false;
+  if (!(expected.counts ?? []).every(({ labels, value: count }) => {
+    if (!Number.isInteger(count) || count < 0 || count > 10 || !labels.length) return false;
+    const words = ['zero', 'un[oa]?', 'due', 'tre', 'quattro', 'cinque', 'sei', 'sette', 'otto', 'nove', 'dieci'];
+    const number = `(?:(?<!\\d)${count}(?!\\d)|\\b${words[count]}\\b)`;
+    return labels.some((label) => {
+      if (!label) return false;
+      const escaped = normalized(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const between = '[^\\d]{0,40}';
+      return new RegExp(`(?:${number}${between}${escaped}|${escaped}${between}${number})`, 'i').test(value);
+    });
+  })) return false;
   if (!(expected.groups ?? []).every((group) => group.contains.length > 0
     && text.split(/\n+/).some((line) => responseMatches(line, { contains: group.contains, times: [group.time] })))) return false;
   if (expected.dayGroups?.length) {
@@ -120,14 +151,15 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
     if (!expected.dayGroups.every((expectedDay) => days.some((day, index) => fold(day[0]) === fold(normalized(expectedDay.day))
       && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
   }
-  if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(text)) return false;
+  const dateText = value.replace(/[*_`~]/g, '');
+  if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(dateText)) return false;
   const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
   if (!(expected.dates ?? []).every((date) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
     const [year, month, day] = date.split('-').map(Number);
     if (!months[month] || day < 1 || day > 31) return false;
     const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year}\\b|(?![/.-]\\d)\\b)|\\b0?${day}\\s+${months[month]}(?:\\s+${year}\\b|(?!\\s+\\d{4})\\b))`, 'i');
-    return expression.test(value);
+    return expression.test(dateText);
   })) return false;
   return (expected.times ?? []).every((time) => {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) return false;

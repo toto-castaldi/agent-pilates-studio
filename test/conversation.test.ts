@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, snapshotsMatch, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -82,6 +82,15 @@ test('relative day uses the Rome calendar across midnight and DST', () => {
   assert.equal(romeDate(new Date('2025-01-05T23:30:00Z')), '2025-01-06');
   assert.equal(romeDate(new Date('2025-07-05T22:30:00Z')), '2025-07-06');
   assert.equal(romeDate(new Date('2025-01-05T22:30:00Z')), '2025-01-05');
+  const reference = new Date('2025-01-05T23:30:00Z');
+  assert.equal(scenarioRelativeDate(reference, '$TODAY'), '2025-01-06');
+  assert.equal(scenarioRelativeDate(reference, '$YESTERDAY'), '2025-01-05');
+  assert.equal(scenarioRelativeTimestamp(reference, '$YESTERDAYT14:00:00Z'), '2025-01-05T14:00:00Z');
+  assert.equal(scenarioRelativeTimestamp(reference, undefined), undefined);
+  assert.equal(scenarioRelativeDate(reference, '$NEXT_MONDAY'), '2025-01-13');
+  assert.equal(scenarioRelativeDate(reference, '$NEXT_MONDAY+7'), '2025-01-20');
+  assert.equal(scenarioRelativeDate(new Date('2025-01-01T00:00:00Z'), '$YESTERDAY'), '2024-12-31');
+  assert.equal(scenarioRelativeDate(reference, '2025-02-01'), '2025-02-01');
 });
 
 test('home-channel notices are detected rather than excluded from replies', () => {
@@ -119,9 +128,19 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.equal(responseMatches('Inserita il 07/11', { contains: [], date: true }), false);
   assert.ok(responseMatches('Il 9 novembre e il 16 novembre 2026 alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
   assert.ok(responseMatches('09/11/2026 e 2026-11-16', { contains: [], dates: ['2026-11-09', '2026-11-16'] }));
+  assert.ok(responseMatches('_09/11/2026_ e *16 novembre 2026*', { contains: [], dates: ['2026-11-09', '2026-11-16'], date: true }));
   assert.equal(responseMatches('Il 9 novembre alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }), false);
   assert.equal(responseMatches('Il 9 novembre 2025', { contains: [], dates: ['2026-11-09'] }), false);
   assert.equal(responseMatches('09/11/2025', { contains: [], dates: ['2026-11-09'] }), false);
+  const counts = { contains: [], counts: [{ labels: ['presenz'], value: 2 }, { labels: ['attes', 'previst'], value: 4 }] };
+  assert.ok(responseMatches('Presenze: 2; lezioni previste: 4', counts));
+  assert.ok(responseMatches('Due presenze e quattro lezioni attese', counts));
+  assert.ok(responseMatches('2. Dario\n\n2 assenze', { contains: [], counts: [{ labels: ['Dario'], value: 2 }] }));
+  assert.ok(responseMatches('Presenze: _2_; lezioni previste: 4', counts));
+  assert.equal(responseMatches('Presenze: 3; lezioni previste: 4', counts), false);
+  assert.equal(responseMatches('Nel 2025: presenze 3; lezioni previste 4', counts), false);
+  assert.equal(responseMatches('Presenze: 12; lezioni previste: 4', counts), false);
+  assert.equal(responseMatches('Presenze: 2; lezioni previste: 4', { contains: [], counts: [{ labels: [], value: 2 }] }), false);
 });
 
 test('state rejects missing or extra records and wrong attribution, slot, date or activity', () => {
@@ -145,6 +164,11 @@ test('consultation snapshots detect changes to rules, clients and deactivation m
   assert.equal(snapshotsMatch(before, { ...before, rules: [{ ...before.rules[0], active: false }] }), false);
   const changedMetadata = { ...before.rules[0], deactivationReason: 'cambiato' };
   assert.equal(snapshotsMatch(before, { ...before, rules: [changedMetadata] }), false);
+  const attendance = { id: '1', client: 'Antonio Rossi', lessonDate: '2025-01-06', time: '19:00', outcome: 'present', authorPhone: '15555550102', authorName: 'Sintetico', createdAt: '2025-01-06T20:00:00Z' };
+  const withAttendance = { ...before, attendance: [attendance] };
+  assert.ok(snapshotsMatch(withAttendance, structuredClone(withAttendance)));
+  assert.equal(snapshotsMatch(withAttendance, { ...withAttendance, attendance: [{ ...attendance, outcome: 'excused_absence' }] }), false);
+  assert.equal(snapshotsMatch(withAttendance, { ...withAttendance, attendance: [] }), false);
 });
 
 test('deactivated rules require date, authenticated author and nonempty reason', () => {

@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
-import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
+import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -141,6 +141,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     stage = 'indirizzi gateway e sostituto Meta';
     const gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observations = `http://${address('meta-stub')}:8088/observations`;
+    const queryObservations = `http://${address('meta-stub')}:8088/synthetic-query-observations`;
+    const aggregateCount = async () => {
+      const data = await (await fetch(queryObservations, { signal: AbortSignal.timeout(15_000) })).json();
+      if (!Number.isSafeInteger(data.aggregates) || data.aggregates < 0) throw new Error('invalid audit');
+      return data.aggregates;
+    };
     let count = 0;
     stage = 'stato iniziale';
     const snapshot = async () => {
@@ -159,10 +165,14 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     };
     let previous = await snapshot();
     if (!stateMatches(previous, scenario.initial)) throw new Error('initial state');
+    const reference = new Date();
+    const relativeDate = (value) => scenarioRelativeDate(reference, value);
+    const relativeTimestamp = (value) => scenarioRelativeTimestamp(reference, value);
     let seededSnapshot;
     if (scenario.setup) {
       stage = 'preparazione dati sintetici';
-      const setup = scenario.setup;
+      const setup = { ...scenario.setup, attendance: scenario.setup.attendance?.map((row) => ({ ...row,
+        lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })) };
       if (!Array.isArray(setup.clients) || !Array.isArray(setup.rules) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(setup.createdAt)) throw new Error('setup');
       await client.query('BEGIN');
       await client.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), $1, $2, clock_timestamp() + interval '10 minutes')", [scenario.sender, scenario.profile]);
@@ -184,17 +194,24 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
         if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, rule.deactivatedAt ?? setup.createdAt]);
       }
-      // Historical anticipations cannot be created through today's clock. Seed
-      // only synthetic rows with the migrator, restoring the trigger before any turn.
+      // Seed synthetic historical rows with the migrator, restoring the author
+      // trigger inside the same transaction before any conversational turn.
       if (setup.attendance?.length) {
         stage = 'preparazione fixture presenze: disabilitazione trigger';
         await client.query('ALTER TABLE app.attendance DISABLE TRIGGER attendance_author');
         stage = 'preparazione fixture presenze: inserimento';
         for (const row of setup.attendance) {
           if (!ids.has(row.client) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate)
+            || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)
             || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(row.createdAt)
-            || row.outcome !== 'excused_absence') throw new Error('attendance fixture');
-          await client.query('INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5, $6, $7)', [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile]);
+            || !['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome)
+            || (row.cancelledAt && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(row.cancelledAt)
+              || Date.parse(row.cancelledAt) <= Date.parse(row.createdAt)))) throw new Error('attendance fixture');
+          await client.query(`INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name,
+            cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile,
+            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile : null,
+            row.cancelledAt ? 'Errore sintetico' : null]);
         }
         stage = 'preparazione fixture presenze: riabilitazione trigger';
         await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
@@ -209,11 +226,15 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         rules: setup.rules.map((rule) => ({ textContains: [rule.text], clients: rule.clients, slots: rule.slots, ...author,
           deactivation: rule.active === false ? { ...author, reasonAnyOf: ['Fine abitudine sintetica'] } : undefined })),
       };
-      const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author }));
-      const fixtureTimes = (await client.query("SELECT created_at::text AS created, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated FROM app.attendance ORDER BY id")).rows;
+      const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author,
+        cancellation: row.cancelledAt ? { ...author, reasonAnyOf: ['Errore sintetico'] } : undefined }));
+      const fixtureTimes = (await client.query("SELECT created_at::text AS created, cancelled_at::text AS cancelled, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated, ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') <= clock_timestamp() AS started FROM app.attendance ORDER BY id")).rows;
       if (!stateMatches({ ...seededSnapshot, attendance: [] }, expected)
         || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows })
-        || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) => !row.anticipated || new Date(row.created).getTime() !== new Date(setupRows[index].createdAt).getTime())
+        || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) =>
+          (row.anticipated && setupRows[index].outcome !== 'excused_absence') || (!row.started && setupRows[index].outcome !== 'excused_absence')
+          || new Date(row.created).getTime() !== new Date(setupRows[index].createdAt).getTime()
+          || (setupRows[index].cancelledAt && new Date(row.cancelled).getTime() !== new Date(setupRows[index].cancelledAt).getTime()))
         || seededSnapshot.rules.some((rule, index) =>
         new Date(rule.createdAt).getTime() !== new Date(setup.rules[index].createdAt ?? setup.createdAt).getTime()
         || (setup.rules[index].active === false && new Date(rule.deactivatedAt).getTime() !== new Date(setup.rules[index].deactivatedAt ?? setup.createdAt).getTime()))) throw new Error('setup state');
@@ -222,20 +243,10 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     for (const [index, turn] of scenario.turns.entries()) {
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
-      const today = romeDate(new Date());
-      const nextMonday = new Date(`${today}T00:00:00Z`);
-      nextMonday.setUTCDate(nextMonday.getUTCDate() + ((8 - nextMonday.getUTCDay()) % 7 || 7));
-      const relativeDate = (value) => {
-        if (value === '$TODAY') return today;
-        const match = /^\$NEXT_MONDAY(?:\+(\d+))?$/.exec(value);
-        if (!match) return value;
-        const date = new Date(nextMonday);
-        date.setUTCDate(date.getUTCDate() + Number(match[1] || 0));
-        return date.toISOString().slice(0, 10);
-      };
       const attendanceExpected = turn.attendanceExpected && { ...turn.attendanceExpected,
         attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate) })) };
       const expectedResponse = { ...turn.response, dates: turn.response.dates?.map(relativeDate) };
+      const aggregatesBefore = turn.sqlAggregate ? await aggregateCount() : 0;
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
         metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
         contacts: [{ wa_id: scenario.sender, profile: { name: scenario.profile } }],
@@ -280,6 +291,21 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           responseMatches(text, { contains: [], question: turn.response.question }) ? 'requisito domanda rispettato' : 'requisito domanda non rispettato',
           responseMatches(text, { contains: [], groups: turn.response.groups }) ? 'raggruppamenti presenti' : 'raggruppamenti mancanti',
           responseMatches(text, { contains: [], dayGroups: turn.response.dayGroups }) ? 'giorni associati' : 'associazioni giorno mancanti',
+          responseMatches(text, { contains: [], date: expectedResponse.date, dates: expectedResponse.dates }) ? 'date riconosciute' : 'date non riconosciute',
+          ...(expectedResponse.dates ?? []).map((date, index) => {
+            const [year, month, day] = date.split('-').map(Number);
+            const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+            const dayFound = new RegExp(`(?<!\\d)0?${day}(?!\\d)`).test(text);
+            const monthFound = normalized.includes(months[month]) || new RegExp(`(?<!\\d)0?${month}(?!\\d)`).test(text);
+            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}`;
+          }),
+          ...(turn.response.counts ?? []).map((item, index) => {
+            const positions = item.labels.map((label) => normalized.indexOf(label.toLocaleLowerCase('it-IT'))).filter((position) => position >= 0);
+            const numbers = [...text.matchAll(new RegExp(`(?<!\\d)${item.value}(?!\\d)`, 'g'))].map((match) => match.index);
+            const distance = positions.length && numbers.length ? Math.min(...positions.flatMap((position) => numbers.map((number) => Math.abs(number - position)))) : -1;
+            const bounded = new RegExp(`\\b${item.value}\\b`).test(text);
+            return `conteggio ${index + 1} ${responseMatches(text, { contains: [], counts: [item] }) ? 'riconosciuto' : 'non riconosciuto'}, etichetta ${positions.length ? 'presente' : 'assente'}, cifra ${numbers.length ? 'presente' : 'assente'}, parola numerica ${bounded ? 'presente' : 'assente'}, distanza minima ${distance}`;
+          }),
           /altro|altra|aiut|ulterior|aggiung|serv/i.test(text) ? 'possibile domanda accessoria' : 'nessuna domanda accessoria riconosciuta',
           /registr|salvat|inser|proced/i.test(text) ? 'menzione registrazione' : 'nessuna menzione registrazione',
           /fuori programma|fuori dalla pianificazione|nessuna regola|senza regola|non programm|non pianificat|non attes|non previst/i.test(text) ? 'possibile indicazione non atteso' : 'nessuna indicazione non atteso riconosciuta',
@@ -297,6 +323,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         console.error(`Diagnostica sintetica: ${flags.join(', ')}.`);
         throw new Error('response mismatch');
       }
+      stage = `turno ${index + 1}: aggregazione SQL`;
+      if (turn.sqlAggregate && await aggregateCount() <= aggregatesBefore) throw new Error('no aggregate query');
       stage = `turno ${index + 1}: stato database`;
       const current = await snapshot();
       const historyOk = historyPreserved(previous, current);
