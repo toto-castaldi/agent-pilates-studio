@@ -1,0 +1,38 @@
+{
+  "id": "TEC-010",
+  "title": "Schema della pianificazione settimanale",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Done",
+  "branch": "task/TEC-010-schema-pianificazione-settimanale",
+  "dependencies": [
+    "SPIKE-002"
+  ],
+  "requirements": [
+    "REQ-DB-001",
+    "REQ-DB-002",
+    "REQ-STUDIO-001",
+    "REQ-STUDIO-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-005",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5",
+    "§8",
+    "§10"
+  ],
+  "description": "Introdurre con migrazioni Prisma le tabelle di dominio per clienti e regole di allenamento, con privilegi dell'agente che impediscono cancellazione e riscrittura delle regole e un autore non falsificabile secondo il meccanismo raccomandato da SPIKE-002.",
+  "acceptance_criteria": [
+    "Una migrazione versionata crea nello schema `app` i clienti (nome, cognome, univoci senza distinzione tra maiuscole e minuscole, data e autore di creazione), le regole (testo pulito, data di inserimento, autore, data, autore e motivo di disattivazione), gli slot settimanali della regola (giorno ISO 1–7 e ora di inizio) e il legame N:N tra regole e clienti; vincoli e controlli impediscono giorni non validi e stati di disattivazione incoerenti.",
+    "L'autore è composto dal numero WhatsApp del mittente e dal nome del profilo, facoltativo, ed è impostato dal sistema secondo SPIKE-002; un valore fornito dal modello non viene accettato.",
+    "Il ruolo dell'agente può leggere e inserire clienti, regole, slot e legami; sulla tabella delle regole non ha `DELETE` e può aggiornare solo i campi di disattivazione, una sola volta; sulle altre tabelle mantiene il DML previsto da REQ-DB-002 e il DDL resta rifiutato.",
+    "Test su PostgreSQL reale verificano migrazione da uno stato pulito e dallo schema della v0.1.0, vincoli, unicità dei clienti, rifiuto di `DELETE` e di riscrittura delle regole, autore non falsificabile e rifiuto del DDL, con soli dati sintetici.",
+    "`docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte."
+  ],
+  "outcome": "Migrazione, vincoli e privilegi per clienti, regole, slot e legami; broker isolato e propagazione dell'autore da webhook WhatsApp firmati, con rifiuto di falsificazioni e replay. Verificati upgrade dalla v0.1.0, PostgreSQL reale, turni concorrenti con gateway reale e modello sintetico, avvio, recupero e quality gate; nessuna nuova prova Meta/OpenRouter reale. Completato il 2026-11-05.",
+  "closed_at": "2026-11-05"
+}

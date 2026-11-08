@@ -38,7 +38,7 @@ export function checkPiReadme(readme: string) {
 
 export function checkStartPrompt(prompt: string) {
   assert.match(prompt, /^---\ndescription: [^\n]+\n---\n/);
-  for (const required of ['STATUS.md', 'BACKLOG.md', 'AGENTS.md', 'sola lettura', 'branch', 'working tree', 'priorità', 'dipendenze', 'successiva richiesta esplicita', 'Non leggere né mostrare segreti']) {
+  for (const required of ['backlog.py status', 'AGENTS.md', 'sola lettura', 'branch', 'working tree', 'priorità', 'dipendenze', 'successiva richiesta esplicita', 'Non leggere né mostrare segreti']) {
     assert.ok(prompt.includes(required), `Missing instruction: ${required}`);
   }
   assert.match(prompt, /Non modificare file, branch o stato del backlog/);
@@ -49,7 +49,7 @@ export function checkWorkAlonePrompt(prompt: string) {
   assert.match(prompt, /^---\ndescription: [^\n]+\n---\n/);
   for (const required of [
     'Implementa l\'attività già avviata in autonomia', 'Fermati solo quando serve l\'intervento dell\'utente',
-    'branch corrente', 'BACKLOG.md', 'STATUS.md', 'AGENTS.md', 'docs/PROCESS.md', 'In Progress',
+    'branch corrente', 'backlog.py', 'AGENTS.md', 'docs/PROCESS.md', 'In Progress',
     'non è identificabile univocamente', 'chiedi chiarimenti', 'non scegliere né avviare un\'altra attività',
     'criteri di accettazione', 'verifiche richieste', 'Definition of Done', 'finish-task',
     'blocchi, decisioni necessarie o autorizzazioni richieste',

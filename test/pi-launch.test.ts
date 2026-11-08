@@ -33,7 +33,7 @@ test('Pi documentation contract checks synthetic text in memory', () => {
 });
 
 test('start prompt contract detects missing read-only and authorization instructions in memory', () => {
-  const prompt = '---\ndescription: Sintetico\n---\nSTATUS.md BACKLOG.md AGENTS.md sola lettura branch working tree priorità dipendenze successiva richiesta esplicita Non leggere né mostrare segreti. Non modificare file, branch o stato del backlog e non avviare lavoro, test, commit, merge o push';
+  const prompt = '---\ndescription: Sintetico\n---\nbacklog.py status AGENTS.md sola lettura branch working tree priorità dipendenze successiva richiesta esplicita Non leggere né mostrare segreti. Non modificare file, branch o stato del backlog e non avviare lavoro, test, commit, merge o push';
   checkStartPrompt(prompt);
   assert.throws(() => checkStartPrompt(prompt.replace('sola lettura', '')));
   assert.throws(() => checkStartPrompt(prompt.replace('successiva richiesta esplicita', '')));
@@ -42,7 +42,7 @@ test('start prompt contract detects missing read-only and authorization instruct
 
 test('work-alone prompt contract rejects missing autonomy, ambiguity, verification and authorization safeguards', () => {
   const prompt = `---\ndescription: Sintetico\n---\nImplementa l'attività già avviata in autonomia. Fermati solo quando serve l'intervento dell'utente.
-branch corrente BACKLOG.md STATUS.md AGENTS.md docs/PROCESS.md In Progress
+branch corrente backlog.py AGENTS.md docs/PROCESS.md In Progress
 non è identificabile univocamente: chiedi chiarimenti, non scegliere né avviare un'altra attività
 criteri di accettazione verifiche richieste Definition of Done finish-task
 blocchi, decisioni necessarie o autorizzazioni richieste

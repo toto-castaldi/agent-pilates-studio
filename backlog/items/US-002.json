@@ -1,0 +1,38 @@
+{
+  "id": "US-002",
+  "title": "Registrare una regola di allenamento",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-002-registrare-regola-allenamento",
+  "dependencies": [
+    "TEC-010",
+    "TEC-011",
+    "TEC-012"
+  ],
+  "requirements": [
+    "REQ-STUDIO-001",
+    "REQ-STUDIO-002",
+    "REQ-STUDIO-003",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "§4",
+    "§5"
+  ],
+  "description": "Come titolare o collaboratore, voglio comunicare all'agente via WhatsApp l'abitudine settimanale di un cliente, così che venga registrata come regola con autore e data.",
+  "acceptance_criteria": [
+    "Un messaggio come \"Antonio Rossi si allena tutti i venerdì alle 9\" registra una regola attiva con testo pulito, venerdì alle 09:00, il cliente collegato, la data di inserimento e l'autore ricavato dal sistema; l'agente risponde con un riepilogo.",
+    "Una regola con più giorni e orari (\"Cristina Neri il lunedì alle 8 e il giovedì alle 15\") e una di gruppo (\"Marco Bianchi e Lucia Verdi insieme il martedì alle 18\") sono registrate con tutti gli slot e i clienti; la scomposizione è decisa dall'agente.",
+    "Un cliente nuovo viene creato con nome e cognome, chiedendo il cognome se manca; con il solo nome l'agente usa l'unico cliente corrispondente oppure chiede il cognome se ce ne sono più di uno.",
+    "L'agente chiede conferma solo in caso di ambiguità, ad esempio orario o giorno mancanti, e altrimenti registra senza conferma.",
+    "Test su PostgreSQL reale verificano il percorso di scrittura e che l'autore non possa essere indicato dal modello; gli scenari di questi casi sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato."
+  ],
+  "outcome": "Estesi catalogo e harness a registrazioni semplici, più orari e gruppi, chiarimenti e autore non dichiarabile, con verifica delle associazioni indipendente dalla scomposizione. Superati gate rapido, `test:local`, `test:db`, `test:author` e otto scenari OpenRouter con webhook sintetico e sostituto Meta; esiti preliminari e limiti lessicali documentati in `docs/operations/TEC-012-prove.md`. Durante queste prove l'avviso BUG-001 era filtrato dall'harness; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-06. Il filtro è stato successivamente rimosso da BUG-001.",
+  "closed_at": "2026-11-06"
+}

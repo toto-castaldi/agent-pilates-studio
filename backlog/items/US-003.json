@@ -1,0 +1,32 @@
+{
+  "id": "US-003",
+  "title": "Consultare la pianificazione settimanale",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-003-consultare-pianificazione-settimanale",
+  "dependencies": [
+    "US-002"
+  ],
+  "requirements": [
+    "REQ-STUDIO-004",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4"
+  ],
+  "description": "Come titolare o collaboratore, voglio chiedere all'agente via WhatsApp chi si allena e quando, così da conoscere la pianificazione delle lezioni.",
+  "acceptance_criteria": [
+    "\"Venerdì mattina mi dici nelle lezioni chi si allena?\" restituisce i clienti delle regole attive del venerdì nella fascia mattina, raggruppati per orario.",
+    "L'agente risponde anche a domande per giorno, per orario specifico, per cliente (\"quando si allena Cristina?\") e al riepilogo della settimana; l'assenza di risultati è indicata esplicitamente.",
+    "Le risposte usano i dati strutturati e ignorano le regole disattivate; su richiesta indicano autore e data di inserimento di una regola.",
+    "Gli scenari sono aggiunti al catalogo di TEC-012 con regole sintetiche, comprese regole disattivate e fasce al confine, ed eseguiti con il modello reale, con esito registrato."
+  ],
+  "outcome": "Consultazione verificata con `SOUL.md` esistente e scenario sintetico su gateway, PostgreSQL e OpenRouter reali: giorni, fasce, orari, cliente, settimana, dati strutturati, regola disattivata, autore/data e stato invariato. Superati gate rapido, `test:local` e scenario finale; il confronto delle risposte è lessicale. Una regressione conversazionale precedente è fallita una volta e passata al riesame, causa non determinata; evidenze e limiti in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

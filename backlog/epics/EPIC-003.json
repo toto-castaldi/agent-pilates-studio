@@ -1,0 +1,5 @@
+{
+  "id": "EPIC-003",
+  "title": "Dati e operatività",
+  "scope": "database, migrazioni, installazione, aggiornamento e continuità operativa."
+}

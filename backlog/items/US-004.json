@@ -1,0 +1,35 @@
+{
+  "id": "US-004",
+  "title": "Aggiornare e disattivare le regole",
+  "version": "v0.2.0",
+  "epic": "EPIC-004",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-004-aggiornare-disattivare-regole",
+  "dependencies": [
+    "US-002"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-005",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5"
+  ],
+  "description": "Come titolare o collaboratore, voglio comunicare all'agente i cambiamenti nelle abitudini dei clienti, così che la pianificazione resti aggiornata senza perdere lo storico.",
+  "acceptance_criteria": [
+    "Una comunicazione esplicita (\"Cristina Neri ha smesso\") disattiva le regole attive interessate registrando data, autore ricavato dal sistema e motivo; l'agente comunica cosa ha disattivato.",
+    "Una comunicazione implicita (\"Antonio Rossi da ora viene il giovedì alle 9 invece del venerdì\") registra la nuova regola e disattiva autonomamente quella superata con motivo; l'agente comunica entrambe le operazioni.",
+    "Nessuna regola viene cancellata o riscritta; una disattivazione già avvenuta non viene modificata. Una regola di gruppo che cambia per un solo cliente viene disattivata e sostituita da regole che descrivono la nuova situazione.",
+    "Su richiesta l'agente mostra lo storico delle regole di un cliente, comprese quelle disattivate, con date, autori e motivi.",
+    "Gli scenari, compresi i casi espliciti, impliciti e di gruppo, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-010 coprono il rifiuto di cancellazione e riscrittura."
+  ],
+  "outcome": "Verificato il comportamento già previsto da `SOUL.md` ed estesi catalogo e harness a disattivazioni, sostituzioni, gruppi, storico e conservazione tra turni. Superati gate rapido, `test:local`, `test:db`, `test:author` e due esecuzioni degli undici scenari OpenRouter con webhook sintetico e sostituto Meta; limiti lessicali e delle prove documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

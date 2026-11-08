@@ -1,0 +1,43 @@
+{
+  "id": "TEC-023",
+  "title": "Adozione del template v1.4.0",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-023-adozione-template-v1-4-0",
+  "dependencies": [
+    "TEC-022"
+  ],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-013",
+    "REQ-NFR-014"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§4",
+    "§6",
+    "§7",
+    "§8; TECHNICAL-DESIGN §3",
+    "§8",
+    "§10; `docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare il processo, le skill e il visualizzatore Pi dal template `agile-project-template` tag `v1.4.0`, commit `e16bbec69c067bc9432bc588acd0d232716f3dbf`, con un solo modulo architetturale Agente. TEC-022 ha preparato il confronto ma non ha adottato gli aggiornamenti. Se si intende scegliere un riferimento più recente, concordarlo prima con l'utente.",
+  "acceptance_criteria": [
+    "`docs/PROCESS.md` e le skill condivise sono confrontati e allineati al riferimento fissato, incluse le regole sui moduli; i requisiti, le protezioni e il gate rapido dello studio restano validi. Eventuali conflitti o deroghe sono sottoposti all'utente e registrati esplicitamente, senza sovrascrivere le personalizzazioni di progetto o modificarle silenziosamente.",
+    "`docs/TECHNICAL-DESIGN.md` §3 documenta il solo `MOD-001 — Agente`: soluzione dell'assistente dello studio, con componenti applicativi, dati e integrazioni nel repository corrente. `US-003`, `US-004` e `TEC-019` riportano tale modulo; `TEC-020`, `TEC-008` e `TEC-023` restano senza modulo in quanto trasversali. Gli item `Done` non sono riclassificati; `STATUS.md` riflette i moduli degli item visualizzati secondo il processo adottato.",
+    "L'estensione Pi del template è revisionata e disponibile in un progetto attendibile come `/backlog` e con la scorciatoia predefinita; permette di navigare gli item, anche non assegnati, scorrerne il contenuto e chiudere la vista. La scorciatoia può essere configurata o disattivata; la vista ricarica il backlog all'apertura e non modifica file. Casi di backlog assente o vuoto sono segnalati chiaramente.",
+    "`.gitignore` consente selettivamente il versionamento dell'estensione revisionata, senza includere indiscriminatamente altre estensioni, impostazioni personali, sessioni, autenticazione, log o segreti. Le personalizzazioni e le risorse Pi esistenti non sono sostituite o modificate senza accordo.",
+    "Test ripetibili con dati e configurazioni sintetici verificano struttura e navigazione del backlog, aggiornamento alla riapertura, errori, scorciatoia e sola lettura; una prova Pi 1.5.0 isolata verifica caricamento e uso dell'estensione in TUI, documentandone i limiti. Le prove con file, processi o Pi restano separate dal gate in memoria e non leggono né modificano impostazioni personali; sono aggiornati i controlli Git e CI pertinenti.",
+    "README e documentazione pertinente descrivono uso, fiducia nel progetto, ricaricamento, configurazione della scorciatoia e limiti. `docs/TEMPLATE-ORIGIN.md` registra per risorsa il riferimento effettivamente adottato e le eventuali divergenze o basi ignote, distinguendolo dai confronti; non si modificano né pubblicano il repository del template o dati personali."
+  ],
+  "remarks": [
+    "Decision: Su accordo dell'utente (2026-11-07), «unassigned» nella regola del modulo di PROCESS v1.4.0 significa privo di modulo, non privo di versione: TEC-019 può avere `MOD-001` senza essere assegnato a una versione. L'interpretazione è coerente con la skill `add-item` del template."
+  ],
+  "outcome": "Adottati processo e skill v1.4.0 senza divergenze, modulo Agente e visualizzatore Pi revisionato con adattamenti documentati. Superati confronto dei file, `test:local`, `test:pi` con TUI Pi 1.5.0 isolata e gate rapido; la prova TUI non copre ogni terminale o dimensione né un turno reale del modello. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

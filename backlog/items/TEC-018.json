@@ -1,0 +1,30 @@
+{
+  "id": "TEC-018",
+  "title": "Stato di attesa nei tool Pi di domanda",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-018-stato-attesa-tool-pi-domanda",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-011"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§6; AGENTS §6",
+    "§9; TECHNICAL-DESIGN §8"
+  ],
+  "description": "I tool `question` e `questionnaire` del pacchetto esterno `npm:pi-question-tool@0.1.1` aprono la propria interfaccia con `ctx.ui.custom()` senza l'opzione `blocked`. Pi 1.5.0 continua quindi a segnalare `working` tramite OSC 7501 mentre attende la risposta, e i terminali come Herdr mostrano l'agente al lavoro anziché in attesa. Si sostituisce il pacchetto con un fork adattato, con licenza MIT e attribuzione, nel pacchetto condiviso `git:github.com/toto-castaldi/agent-harness-stuff`.",
+  "acceptance_criteria": [
+    "Il pacchetto `agent-harness-stuff` fornisce i tool `question` e `questionnaire` con nomi, parametri, risultati e comportamento dell'interfaccia di `pi-question-tool@0.1.1`. Mentre attendono la risposta, l'interfaccia è aperta con `blocked: { kind: \"question\", message }`, dove il messaggio è la domanda o un titolo sintetico senza dati sensibili. Licenza e attribuzione del codice d'origine sono conservate.",
+    "`.pi/settings.json` rimuove `npm:pi-question-tool`, evitando tool duplicati, e referenzia `agent-harness-stuff` con un tag o commit fissato che contiene la modifica. Commit, tag e push sul repository `agent-harness-stuff` avvengono solo previa autorizzazione esplicita dell'utente.",
+    "Test ripetibili verificano che entrambi i tool richiedano lo stato `blocked`, tipo `question`, e che lo stato precedente sia ripristinato alla risposta e all'annullamento. Una prova con Pi 1.5.0, documentata con i suoi limiti, verifica il caricamento dei tool senza duplicati e, se possibile, la sequenza OSC 7501 `blocked` emessa durante l'attesa. Le prove con processi, Git o Pi restano separate dal gate rapido in memoria.",
+    "README e documentazione pertinente descrivono la provenienza dei tool, il riferimento fissato, il relativo aggiornamento e la visualizzazione dell'attesa nei terminali compatibili. Test e documentazione non leggono né modificano impostazioni personali e non espongono segreti."
+  ],
+  "outcome": "Fork MIT nel pacchetto condiviso al commit `44f36742d47a4e83504abb9bdc0427be5f09ed82`, pubblicato su branch dedicato; configurazione fissata senza tool duplicati e documentazione aggiornata. Superati gate rapido, `test:local`, `test:pi` e `test:pi-package`: confronti con l'originale, ripristino simulato e prova Pi 1.5.0 OSC con risposta e annullamento. La prova reale ripristina `idle` da comandi sintetici, non verifica un turno del modello né ogni terminale. Completato il 2026-11-06.",
+  "closed_at": "2026-11-06"
+}

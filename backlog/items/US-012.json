@@ -1,0 +1,21 @@
+{
+  "id": "US-012",
+  "title": "Pacchetti di lezioni e lezioni residue",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "US-007"
+  ],
+  "requirements": [
+    "REQ-STUDIO-007",
+    "REQ-NFR-005"
+  ],
+  "description": "Gestire i pacchetti di lezioni dei clienti (ad esempio 10 lezioni) e calcolare le lezioni usate e residue a partire da presenze e assenze, ad esempio contando come usate le assenze non giustificate. Prima della pianificazione servono i requisiti su pacchetti, scadenze, regole di conteggio ed eventuali pagamenti, oggi fuori scope, e l'aggiornamento di REQ-NFR-005.",
+  "acceptance_criteria": [],
+  "remarks": [
+    "Requirements: da definire (cambio di scope rispetto a REQ-STUDIO-007 e REQ-NFR-005)"
+  ]
+}

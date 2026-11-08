@@ -1,0 +1,27 @@
+{
+  "id": "TEC-001",
+  "title": "Kickoff",
+  "version": "v0.1.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Done",
+  "branch": "task/TEC-001-kickoff",
+  "dependencies": [],
+  "design_references": [
+    "PROCESS §3",
+    "§4",
+    "§5; AGENTS (all sections)"
+  ],
+  "description": "Inizializzare la documentazione del progetto attraverso l'intervista e la pianificazione concordata.",
+  "acceptance_criteria": [
+    "`AGENTS.md` definisce progetto, lingua, scope, stack, regole, quality gate e aggiunte alla DoD; l'avviso del template non inizializzato è rimosso.",
+    "`docs/REQUIREMENTS.md` contiene obiettivo, attori, glossario, scope, requisiti con ID stabili e accettazione della v0.1.0.",
+    "`docs/TECHNICAL-DESIGN.md` contiene scelte iniziali e decisioni aperte associate agli item.",
+    "`BACKLOG.md` contiene obiettivo, epic e item con dipendenze, riferimenti e criteri; le eventuali idee future sono nel backlog non assegnato.",
+    "`README.md` presenta il progetto; `CHANGELOG.md` e `.gitignore` sono adattati.",
+    "`STATUS.md` è coerente con `BACKLOG.md`."
+  ],
+  "outcome": "Baseline documentale, requisiti, design e backlog iniziale concordati e verificati; nessun codice applicativo. Completato il 2026-11-04.",
+  "closed_at": "2026-11-04"
+}

@@ -1,20 +1,39 @@
 /**
- * Backlog overlay — read-only browser for the items of BACKLOG.md.
+ * Backlog overlay — read-only browser for the items of backlog/.
  *
  * Open with ctrl+shift+b or /backlog. The shortcut can be changed in pi's
  * settings.json (global or project): `"backlogOverlay": { "shortcut": "alt+b" }`,
  * or disabled with `false`. One item per screen:
- *   ←/→ or ↑/↓  previous / next item (BACKLOG.md order, across epics and versions)
+ *   ←/→ or ↑/↓  previous / next item (by version, epic and ID)
+ *   Home/End    first / last item
+ *   t/T         next / previous Type filter     (all, User Story, Task, Spike, Bug)
+ *   p/P         next / previous Priority filter (all, P0, P1, P2)
+ *   s/S         next / previous Status filter   (all, Todo, In Progress, Blocked, Done, Dropped)
  *   PgUp/PgDn   scroll the current item
  *   Esc or q    close
  *
- * Project-agnostic: it relies only on the structural labels of BACKLOG.md
- * defined in docs/PROCESS.md §4 (`## Version vX.Y.Z`, `**State:**`,
- * `### EPIC-NNN — …`, `#### <ID> — <title>`, `- **Field:** value`).
+ * Navigation visits only the items that match all three filters. The filters
+ * start as `Type: all · Priority: all · Status: Todo`, are kept in memory for
+ * the rest of the pi session and reset when pi restarts or on /reload.
+ *
+ * Item branches: the backlog of the current directory is the base, read through
+ * .agents/tools/backlog.py. Each item is replaced by its file on its item branch
+ * (`us/`, `task/`, `spike/`, `fix/` + `<ID>-<slug>`, PROCESS §4.3 and §6.1), local or
+ * remote-tracking, when that branch is not merged into local `main` or into a
+ * remote's default branch. A local branch wins over the remote-tracking one
+ * with the same name. On an item branch, its item keeps the working-tree copy
+ * and the other branches of that ID are skipped. With several branches for
+ * one ID, the one with the most recent commit wins and the header warns
+ * `also in: …`. At every opening the overlay runs `git fetch --prune` (10 s
+ * timeout) in the background and updates when it completes. Only git refs are
+ * read and updated; files of the working tree are never written.
+ *
+ * Project-agnostic: it relies only on the JSON output of the backlog CLI and on
+ * the item files defined in docs/PROCESS.md §4.4.
  * It never writes any file.
  */
 
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -26,7 +45,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 
-const BACKLOG_FILE = "BACKLOG.md";
+const BACKLOG_TOOL = join(".agents", "tools", "backlog.py");
 const DEFAULT_SHORTCUT = "ctrl+shift+b";
 const FETCH_TIMEOUT_MS = 10_000;
 const GIT_TIMEOUT_MS = 5_000;
@@ -42,20 +61,37 @@ interface BacklogItem {
 	epic?: string;
 	/** Raw Markdown lines of the item body, in file order. */
 	body: string[];
-	/** Ref that supplied the item; absent for the working tree. */
+	/** Ref the item was read from, e.g. `origin/task/TEC-007-slug`; undefined for the current directory. */
 	source?: string;
+	/** Other unmerged branches that also carry the item. */
 	alsoIn?: string[];
 }
 
 type FetchState = "none" | "fetching" | "failed" | "done";
-type LoadResult = { items: BacklogItem[] } | { message: string };
+
+/** Fields of the JSON records of the backlog store. */
+type BacklogRecord = Record<string, unknown>;
+
+/** Versions and epics of the store, needed to describe items read from branches. */
+interface Lookup {
+	versions: Map<string, BacklogRecord>;
+	epics: Map<string, BacklogRecord>;
+}
+
+type LoadResult = { items: BacklogItem[]; lookup: Lookup } | { message: string };
+
+// ---------------------------------------------------------------------------
+// Filters (values and order from docs/PROCESS.md §4.3, §4.5, §4.6)
+// ---------------------------------------------------------------------------
 
 const ALL = "all";
+
 const FILTERS = [
 	{ key: "t", field: "Type", values: [ALL, "User Story", "Task", "Spike", "Bug"] },
 	{ key: "p", field: "Priority", values: [ALL, "P0", "P1", "P2"] },
-	{ key: "s", field: "Status", values: [ALL, "Todo", "In Progress", "Blocked", "Done"] },
+	{ key: "s", field: "Status", values: [ALL, "Todo", "In Progress", "Blocked", "Done", "Dropped"] },
 ] as const;
+
 type FilterField = (typeof FILTERS)[number]["field"];
 type Filters = Record<FilterField, string>;
 
@@ -63,6 +99,7 @@ function defaultFilters(): Filters {
 	return { Type: ALL, Priority: ALL, Status: "Todo" };
 }
 
+/** Value of the first top-level `**Field:** value` of the item, e.g. `Done (see Outcome)`. */
 function fieldValue(item: BacklogItem, field: string): string | undefined {
 	const wanted = field.toLowerCase();
 	for (const line of item.body) {
@@ -95,77 +132,85 @@ function describeFilters(filters: Filters): string {
 }
 
 // ---------------------------------------------------------------------------
-// Parsing
+// Reading the store
 // ---------------------------------------------------------------------------
 
-function parseBacklog(text: string): BacklogItem[] {
-	const items: BacklogItem[] = [];
-	let version: string | undefined;
-	let versionState: string | undefined;
-	let epic: string | undefined;
-	let current: BacklogItem | undefined;
-	let inFence = false;
-	let unassigned = false;
+const ITEM_LABELS: ReadonlyArray<readonly [string, string]> = [
+	["Epic", "epic"],
+	["Module", "module"],
+	["Type", "type"],
+	["Priority", "priority"],
+	["Status", "status"],
+	["Branch", "branch"],
+	["Dependencies", "dependencies"],
+	["Dependency override", "dependency_override"],
+	["Requirements", "requirements"],
+	["Design references", "design_references"],
+	["Description", "description"],
+	["Found in", "found_in"],
+	["Steps to reproduce", "steps_to_reproduce"],
+	["Expected", "expected"],
+	["Actual", "actual"],
+];
 
-	for (const rawLine of text.split(/\r?\n/)) {
-		const line = rawLine.replace(/\s+$/, "");
+function strings(value: unknown): string[] {
+	return Array.isArray(value) ? value.map(String) : [];
+}
 
-		if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
-		const heading = inFence ? null : /^(#{1,6})\s+(.*)$/.exec(line);
-
-		if (heading) {
-			const level = heading[1]!.length;
-			const title = heading[2]!.trim();
-			if (level <= 4) current = undefined;
-			if (level <= 2) {
-				unassigned = level === 2 && /^Unassigned backlog$/i.test(title);
-				const isVersion = /^Version\s+v?\d/i.test(title);
-				version = isVersion ? title : undefined;
-				versionState = undefined;
-				epic = undefined;
-			} else if (level === 3) {
-				epic = title;
-			} else if (level === 4) {
-				current = { heading: title, version, versionState, epic, body: [] };
-				items.push(current);
-			}
-			if (level <= 4) continue;
-		}
-
-		// Unassigned ideas may also be represented as a single top-level list line.
-		const shortItem = unassigned && !inFence ? /^-\s+((?:US|TEC|SPIKE|BUG)-\d+\s+—\s+.+)$/.exec(line) : null;
-		if (shortItem) {
-			current = undefined;
-			items.push({ heading: shortItem[1]!, body: [] });
-		} else if (current) {
-			const itemEpic = /^-\s+\*\*Epic:\*\*\s*(.+)$/.exec(line);
-			if (!current.epic && itemEpic) current.epic = itemEpic[1]!.trim();
-			current.body.push(line);
-		} else if (version && !inFence) {
-			const state = /^\*\*State:\*\*\s*(.*)$/.exec(line.trim());
-			if (state) versionState = state[1]!.trim();
-		}
+function toBacklogItem(record: BacklogRecord, lookup: Lookup): BacklogItem {
+	const body: string[] = [];
+	for (const [label, field] of ITEM_LABELS) {
+		const value = record[field];
+		const text = Array.isArray(value) ? value.join(", ") : value ? String(value) : "";
+		if (text) body.push(`- **${label}:** ${text}`);
+		else if (field === "dependencies") body.push("- **Dependencies:** none");
 	}
+	body.push("- **Acceptance criteria:**", ...strings(record.acceptance_criteria).map((c) => `  - ${c}`));
+	if (strings(record.remarks).length > 0) body.push("- **Remarks:**", ...strings(record.remarks).map((r) => `  - ${r}`));
+	if (record.blocked_by) body.push(`- **Blocked by:** ${String(record.blocked_by)}`);
+	if (record.outcome) body.push(`- **Outcome:** ${String(record.outcome)} (${String(record.closed_at)})`);
 
-	for (const item of items) {
-		while (item.body.length > 0 && item.body[0]!.trim() === "") item.body.shift();
-		while (item.body.length > 0 && item.body[item.body.length - 1]!.trim() === "") item.body.pop();
-	}
-	return items;
+	const versionId = record.version ? String(record.version) : undefined;
+	const epicId = record.epic ? String(record.epic) : undefined;
+	const epicTitle = epicId ? lookup.epics.get(epicId)?.title : undefined;
+	const versionState = versionId ? lookup.versions.get(versionId)?.state : undefined;
+	return {
+		heading: `${String(record.id)} — ${String(record.title)}`,
+		version: versionId ? `Version ${versionId}` : undefined,
+		versionState: versionState ? String(versionState) : undefined,
+		epic: epicId ? `${epicId}${epicTitle ? ` — ${String(epicTitle)}` : ""}` : undefined,
+		body,
+	};
+}
+
+function byId(records: BacklogRecord[]): Map<string, BacklogRecord> {
+	return new Map(records.map((record) => [String(record.id), record]));
 }
 
 function loadBacklog(cwd: string): LoadResult {
-	const path = join(cwd, BACKLOG_FILE);
-	if (!existsSync(path)) return { message: `${BACKLOG_FILE} not found in ${cwd}.` };
-	let text: string;
+	if (!existsSync(join(cwd, BACKLOG_TOOL))) return { message: `${BACKLOG_TOOL} not found in ${cwd}.` };
+	let store: { versions: BacklogRecord[]; epics: BacklogRecord[]; items: BacklogRecord[] };
 	try {
-		text = readFileSync(path, "utf8");
+		const output = execFileSync("python3", [join(cwd, BACKLOG_TOOL), "export", "--json"], {
+			encoding: "utf8",
+			timeout: GIT_TIMEOUT_MS,
+			maxBuffer: 32 * 1024 * 1024,
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		store = JSON.parse(output);
 	} catch (error) {
-		return { message: `Cannot read ${BACKLOG_FILE}: ${error instanceof Error ? error.message : String(error)}` };
+		const stderr = (error as { stderr?: unknown }).stderr;
+		const detail = stderr ? String(stderr).trim() : error instanceof Error ? error.message : String(error);
+		return { message: `Cannot read the backlog: ${detail}` };
 	}
-	const items = parseBacklog(text);
-	if (items.length === 0) return { message: `${BACKLOG_FILE} contains no items.` };
-	return { items };
+	const lookup = { versions: byId(store.versions), epics: byId(store.epics) };
+	const order = (a: string | undefined, b: string | undefined) =>
+		(a ?? "\uffff").localeCompare(b ?? "\uffff", undefined, { numeric: true });
+	const items = store.items
+		.map((record) => toBacklogItem(record, lookup))
+		.sort((a, b) => order(a.version, b.version) || order(a.epic, b.epic));
+	if (items.length === 0) return { message: "The backlog contains no items." };
+	return { items, lookup };
 }
 
 // ---------------------------------------------------------------------------
@@ -178,14 +223,21 @@ function itemId(item: BacklogItem): string | undefined {
 	return /^([A-Za-z]+-\d+)\b/.exec(item.heading)?.[1]?.toUpperCase();
 }
 
-/** Run git without prompts; null means failure, timeout, or missing git. */
+/** Run git without prompts; resolves with stdout, or null on any failure (no git, not a repo, timeout). */
 function git(cwd: string, args: string[], timeout = GIT_TIMEOUT_MS): Promise<string | null> {
 	return new Promise((resolve) => {
 		try {
-			execFile("git", args, {
-				cwd, timeout, maxBuffer: 32 * 1024 * 1024,
-				env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
-			}, (error, stdout) => resolve(error ? null : stdout));
+			execFile(
+				"git",
+				args,
+				{
+					cwd,
+					timeout,
+					maxBuffer: 32 * 1024 * 1024,
+					env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+				},
+				(error, stdout) => resolve(error ? null : stdout),
+			);
 		} catch {
 			resolve(null);
 		}
@@ -194,11 +246,13 @@ function git(cwd: string, args: string[], timeout = GIT_TIMEOUT_MS): Promise<str
 
 const splitLines = (out: string | null) => (out ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
 
+/** Remotes of the repository, or null outside a git repository (or without git). */
 async function gitRemotes(cwd: string): Promise<string[] | null> {
 	if ((await git(cwd, ["rev-parse", "--is-inside-work-tree"]))?.trim() !== "true") return null;
 	return splitLines(await git(cwd, ["remote"]));
 }
 
+/** Refs an item branch counts as merged into: local `main` and each remote's default branch. */
 async function mergeTargets(cwd: string, remotes: string[]): Promise<string[]> {
 	const targets: string[] = [];
 	const exists = async (ref: string) => (await git(cwd, ["rev-parse", "--verify", "--quiet", ref])) !== null;
@@ -211,15 +265,24 @@ async function mergeTargets(cwd: string, remotes: string[]): Promise<string[]> {
 	return targets;
 }
 
-interface Candidate { ref: string; time: number }
+interface Candidate {
+	/** Short ref name, e.g. `task/TEC-007-slug` or `origin/task/TEC-007-slug`. */
+	ref: string;
+	time: number;
+}
 
+/** Unmerged item branches grouped by item ID, most recent commit first. */
 async function itemBranches(cwd: string, remotes: string[]): Promise<Map<string, Candidate[]>> {
 	const roots = ["refs/heads", "refs/remotes"];
 	const current = (await git(cwd, ["symbolic-ref", "--quiet", "--short", "HEAD"]))?.trim();
 	const merged = new Set<string>();
 	for (const target of await mergeTargets(cwd, remotes)) {
-		for (const ref of splitLines(await git(cwd, ["for-each-ref", "--format=%(refname)", `--merged=${target}`, ...roots]))) merged.add(ref);
+		for (const ref of splitLines(await git(cwd, ["for-each-ref", "--format=%(refname)", `--merged=${target}`, ...roots]))) {
+			merged.add(ref);
+		}
 	}
+
+	// Branch name → chosen candidate (local wins over remote-tracking).
 	const byName = new Map<string, Candidate & { local: boolean }>();
 	const refs = splitLines(await git(cwd, ["for-each-ref", "--format=%(refname)%09%(committerdate:unix)", ...roots]));
 	for (const entry of refs) {
@@ -243,6 +306,8 @@ async function itemBranches(cwd: string, remotes: string[]): Promise<Map<string,
 		if (known && (known.local || !local)) continue;
 		byName.set(name, { ref, time: Number(time) || 0, local });
 	}
+
+	// On an item branch, the working tree is the freshest copy of that item: skip every branch of its ID.
 	const currentId = current ? ITEM_BRANCH.exec(current)?.[1]?.toUpperCase() : undefined;
 	const byId = new Map<string, Candidate[]>();
 	for (const [name, candidate] of byName) {
@@ -256,16 +321,28 @@ async function itemBranches(cwd: string, remotes: string[]): Promise<Map<string,
 	return byId;
 }
 
-async function resolveFromBranches(cwd: string, remotes: string[], base: BacklogItem[]): Promise<BacklogItem[]> {
+/** Base items with each one replaced by its copy from its unmerged item branch, when there is one. */
+async function resolveFromBranches(
+	cwd: string,
+	remotes: string[],
+	base: BacklogItem[],
+	lookup: Lookup,
+): Promise<BacklogItem[]> {
 	const ids = new Set(base.map(itemId).filter((id): id is string => id !== undefined));
 	const branches = await itemBranches(cwd, remotes);
 	const resolved = new Map<string, BacklogItem>();
 	for (const [id, candidates] of branches) {
 		if (!ids.has(id)) continue;
 		for (const candidate of candidates) {
-			const text = await git(cwd, ["show", `${candidate.ref}:./${BACKLOG_FILE}`]);
-			const item = text === null ? undefined : parseBacklog(text).find((i) => itemId(i) === id);
-			if (!item) continue;
+			// `<ref>:./backlog/…` is relative to the current directory, like loadBacklog.
+			const text = await git(cwd, ["show", `${candidate.ref}:./backlog/items/${id}.json`]);
+			if (text === null) continue;
+			let item: BacklogItem;
+			try {
+				item = toBacklogItem(JSON.parse(text) as BacklogRecord, lookup);
+			} catch {
+				continue;
+			}
 			const alsoIn = candidates.filter((c) => c !== candidate).map((c) => c.ref);
 			resolved.set(id, { ...item, source: candidate.ref, alsoIn: alsoIn.length > 0 ? alsoIn : undefined });
 			break;
@@ -348,25 +425,31 @@ function renderBodyLine(theme: Theme, line: string, width: number): string[] {
 // ---------------------------------------------------------------------------
 
 class BacklogOverlay {
+	/** Indices into the items of the ones that match the filters, in display order. */
 	private matching: number[] = [];
-	private fetchState: FetchState = "none";
+	/** Position inside `matching`. */
 	private index = 0;
 	private scroll = 0;
 	private bodyHeight = 10;
+	private fetchState: FetchState = "none";
 	private cachedWidth?: number;
 	private cachedLines?: string[];
 
 	constructor(
 		private load: LoadResult,
+		/** Shared with the extension, so changes survive closing and reopening the overlay. */
 		private readonly filters: Filters,
 		private readonly theme: Theme,
 		private readonly rows: () => number,
 		private readonly requestRender: () => void,
 		private readonly done: () => void,
-	) { this.applyFilters(); }
+	) {
+		this.applyFilters();
+	}
 
+	/** Replace the items (same base, states resolved from item branches), keeping the current item and filters. */
 	setItems(items: BacklogItem[]): void {
-		this.load = { items };
+		if ("items" in this.load) this.load = { ...this.load, items };
 		this.applyFilters(true);
 		this.invalidate();
 		this.requestRender();
@@ -378,17 +461,22 @@ class BacklogOverlay {
 		this.requestRender();
 	}
 
+	/** Recompute the matching items; stay on the current item if it still matches, else go to the first. */
 	private applyFilters(keepScroll = false): void {
 		if (!("items" in this.load)) return;
 		const current = this.matching[this.index];
 		this.matching = [];
-		this.load.items.forEach((item, i) => { if (matchesFilters(item, this.filters)) this.matching.push(i); });
+		this.load.items.forEach((item, i) => {
+			if (matchesFilters(item, this.filters)) this.matching.push(i);
+		});
 		const kept = current === undefined ? -1 : this.matching.indexOf(current);
 		this.index = kept >= 0 ? kept : 0;
 		if (!(keepScroll && kept >= 0)) this.scroll = 0;
 	}
 
+	/** Cycle a filter on t/T, p/P, s/S; returns true if the key was a filter key. */
 	private cycleFilter(data: string): boolean {
+		// matchesKey covers plain, Kitty CSI-u and modifyOtherKeys encodings of the key and of shift+key.
 		let step = 0;
 		const filter = FILTERS.find((f) => {
 			if (matchesKey(data, f.key)) step = 1;
@@ -478,10 +566,17 @@ class BacklogOverlay {
 		}
 
 		const items = this.load.items;
-		const fetchNotice = this.fetchState === "fetching" ? th.fg("dim", "fetching…")
-			: this.fetchState === "failed" ? th.fg("warning", "fetch failed: showing last known state") : "";
-		const filterLine = [th.fg("muted", describeFilters(this.filters)), fetchNotice].filter(Boolean).join(th.fg("dim", " · "));
+		const fetchNotice =
+			this.fetchState === "fetching"
+				? th.fg("dim", "fetching…")
+				: this.fetchState === "failed"
+					? th.fg("warning", "fetch failed: showing last known state")
+					: "";
+		const filterLine = [th.fg("muted", describeFilters(this.filters)), fetchNotice]
+			.filter(Boolean)
+			.join(th.fg("dim", " · "));
 		const help = th.fg("dim", "←/→ item · t/p/s filter · PgUp/PgDn scroll · Esc/q close");
+
 		if (this.matching.length === 0) {
 			lines.push(rule("╭", "╮", "Backlog"));
 			lines.push(row(` ${th.bold(`0 / 0 (${items.length} total)`)}`));
@@ -489,7 +584,8 @@ class BacklogOverlay {
 			lines.push(rule("├", "┤"));
 			lines.push(row(""));
 			lines.push(row(" No items match the filters"));
-			for (let i = 0; i < Math.max(0, totalHeight - 9); i++) lines.push(row(""));
+			const blank = Math.max(0, totalHeight - 9);
+			for (let i = 0; i < blank; i++) lines.push(row(""));
 			lines.push(rule("├", "┤"));
 			lines.push(row(` ${help}`));
 			lines.push(rule("╰", "╯"));
@@ -497,7 +593,10 @@ class BacklogOverlay {
 			this.cachedLines = lines;
 			return lines;
 		}
+
 		const item = items[this.matching[this.index]!]!;
+
+		// Header: position in the filtered list, version with state, epic; then the filters.
 		const position = th.bold(`${this.index + 1} / ${this.matching.length} (${items.length} total)`);
 		const version = item.version
 			? item.version + (item.versionState ? ` (${item.versionState})` : "")
@@ -584,29 +683,44 @@ function resolveShortcut(cwd: string): ShortcutSetting {
 	};
 }
 
-async function refreshFromBranches(cwd: string, base: BacklogItem[], overlay: BacklogOverlay, isClosed: () => boolean): Promise<void> {
+/**
+ * Background update of an open overlay: states from local item branches first,
+ * then again after `git fetch --prune`. Does nothing outside a git repository.
+ */
+async function refreshFromBranches(
+	cwd: string,
+	base: BacklogItem[],
+	lookup: Lookup,
+	overlay: BacklogOverlay,
+	isClosed: () => boolean,
+): Promise<void> {
 	try {
 		const remotes = await gitRemotes(cwd);
 		if (remotes === null || isClosed()) return;
 		const fetch = remotes.length > 0 ? git(cwd, ["fetch", "--prune", "--quiet"], FETCH_TIMEOUT_MS) : null;
 		if (fetch) overlay.setFetchState("fetching");
-		const local = await resolveFromBranches(cwd, remotes, base);
+		const local = await resolveFromBranches(cwd, remotes, base, lookup);
 		if (!isClosed()) overlay.setItems(local);
 		if (!fetch) return;
 		const fetched = (await fetch) !== null;
 		if (isClosed()) return;
-		if (!fetched) { overlay.setFetchState("failed"); return; }
-		const updated = await resolveFromBranches(cwd, remotes, base);
+		if (!fetched) {
+			overlay.setFetchState("failed");
+			return;
+		}
+		const updated = await resolveFromBranches(cwd, remotes, base, lookup);
 		if (isClosed()) return;
 		overlay.setItems(updated);
 		overlay.setFetchState("done");
 	} catch {
+		// Never break the overlay: it keeps showing what it has and reports the failure.
 		if (!isClosed()) overlay.setFetchState("failed");
 	}
 }
 
 export default function (pi: ExtensionAPI) {
 	let open = false;
+	// In memory only: kept across openings in this pi session, reset on restart or /reload.
 	const filters = defaultFilters();
 
 	const show = async (ctx: ExtensionContext) => {
@@ -618,7 +732,8 @@ export default function (pi: ExtensionAPI) {
 		open = true;
 		try {
 			// Read the file again at every opening, so the overlay always shows the current backlog.
-			const load = loadBacklog(ctx.cwd);
+			const cwd = ctx.cwd;
+			const load = loadBacklog(cwd);
 			let closed = false;
 			await ctx.ui.custom<void>(
 				(tui, theme, _keybindings, done) => {
@@ -628,9 +743,12 @@ export default function (pi: ExtensionAPI) {
 						theme,
 						() => tui.terminal.rows,
 						() => tui.requestRender(),
-						() => { closed = true; done(); },
+						() => {
+							closed = true;
+							done();
+						},
 					);
-					if ("items" in load) void refreshFromBranches(ctx.cwd, load.items, overlay, () => closed);
+					if ("items" in load) void refreshFromBranches(cwd, load.items, load.lookup, overlay, () => closed);
 					return overlay;
 				},
 				{
@@ -646,7 +764,7 @@ export default function (pi: ExtensionAPI) {
 	const { shortcut, warning } = resolveShortcut(process.cwd());
 	if (shortcut) {
 		pi.registerShortcut(shortcut, {
-			description: "Browse BACKLOG.md items (read-only)",
+			description: "Browse backlog items (read-only)",
 			handler: async (ctx) => show(ctx),
 		});
 	}
@@ -657,7 +775,7 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	pi.registerCommand("backlog", {
-		description: "Browse BACKLOG.md items (read-only overlay)",
+		description: "Browse backlog items (read-only overlay)",
 		handler: async (_args, ctx) => show(ctx),
 	});
 }

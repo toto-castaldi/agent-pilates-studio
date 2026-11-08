@@ -1,0 +1,37 @@
+{
+  "id": "US-006",
+  "title": "Registrare le presenze a una lezione",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-006-registrare-presenze-lezione",
+  "dependencies": [
+    "TEC-027"
+  ],
+  "requirements": [
+    "REQ-STUDIO-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-006",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5",
+    "§6"
+  ],
+  "description": "Come insegnante, voglio comunicare all'agente chi ha partecipato a una lezione, così che le presenze siano registrate senza passaggi aggiuntivi.",
+  "acceptance_criteria": [
+    "Un messaggio con i nomi dei presenti e un riferimento a data e orario (\"oggi alle 19 c'erano Mario Rossi e Lucia Bianchi\", \"sabato 7 novembre alle 18:30 c'era Anna Verdi\") registra una presenza per ciascun cliente con data e orario corretti nel fuso Europe/Rome e autore ricavato dal sistema; l'agente riepiloga quanto salvato.",
+    "Con \"c'erano tutti\" o \"tutti tranne <nome>\" l'agente registra le presenze dei clienti attesi in base alle regole valide per la lezione, anche per una data passata in cui le regole erano diverse da quelle attuali, senza chiedere conferma; se nessun cliente era atteso o la lezione non è identificabile, chiede chiarimenti e non registra.",
+    "Un cliente presente ma non atteso è registrato e segnalato nel riepilogo; un cliente nuovo è creato secondo REQ-STUDIO-002, chiedendo il cognome se manca; nessuna regola di allenamento viene creata o modificata.",
+    "Una lezione non ancora iniziata è rifiutata con un messaggio chiaro; una seconda comunicazione per un cliente già registrato alla stessa lezione non crea un duplicato e l'agente lo segnala.",
+    "Gli scenari, compresi nomi espliciti, \"c'erano tutti\", \"tutti tranne\", data passata con regole cambiate, cliente non atteso, cliente nuovo e lezione futura, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database."
+  ],
+  "outcome": "Contesto e scenari per presenze, attesi storici, clienti extra, duplicati e lezioni future; harness esteso al confronto delle registrazioni e corretto per l'avvio asincrono del relay. Superati gate, `test:local`, `test:db`, `test:author` e tre scenari US-006 con OpenRouter reale più una regressione; fallimenti precedenti, limiti lessicali e mancata ripetizione del catalogo completo sono documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

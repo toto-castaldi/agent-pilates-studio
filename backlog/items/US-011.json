@@ -1,0 +1,20 @@
+{
+  "id": "US-011",
+  "title": "Insegnante che ha tenuto la lezione",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "US-006"
+  ],
+  "requirements": [
+    "REQ-STUDIO-006"
+  ],
+  "description": "Registrare quale insegnante ha tenuto ogni lezione puntuale, distinto da chi ha registrato presenze e assenze. Prima della pianificazione servono i requisiti sull'anagrafica degli insegnanti, oggi fuori scope, sul loro rapporto con gli utilizzatori e sulle consultazioni per insegnante.",
+  "acceptance_criteria": [],
+  "remarks": [
+    "Requirements: da definire (cambio di scope rispetto a REQ-STUDIO-006)"
+  ]
+}

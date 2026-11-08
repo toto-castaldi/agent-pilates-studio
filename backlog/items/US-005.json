@@ -1,0 +1,38 @@
+{
+  "id": "US-005",
+  "title": "Nome dell'agente",
+  "version": "v0.2.0",
+  "epic": "EPIC-002",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-005-nome-agente",
+  "dependencies": [
+    "TEC-011",
+    "TEC-012"
+  ],
+  "requirements": [
+    "REQ-AGENT-005",
+    "REQ-STUDIO-003",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §6",
+    "§8"
+  ],
+  "description": "Come titolare o collaboratore, voglio che l'agente abbia un nome con cui si presenta e risponde, così da riconoscerlo e rivolgermi a lui in modo naturale. Oggi, alla domanda «come ti chiami tu?», l'agente risponde di essere l'assistente dello studio Pilates, di non avere un nome specifico e di poter essere chiamato come si preferisce.",
+  "acceptance_criteria": [
+    "All'avvio dell'item il nome è concordato con l'utente e registrato in REQ-AGENT-005. È definito solo in `hermes/SOUL.md`, senza duplicazioni nel codice né in altre configurazioni (AGENTS §5).",
+    "Alle domande sul nome o sull'identità, ad esempio «come ti chiami?» o «chi sei?», l'agente risponde con il proprio nome. Non dice di non averne uno e non invita a sceglierne un altro. Il nome è lo stesso per mittenti diversi e nei turni successivi.",
+    "Nella prima risposta di una conversazione senza turni precedenti l'agente si presenta brevemente con il nome e risponde comunque alla richiesta. Nei messaggi successivi della stessa conversazione non si ripresenta e non firma i messaggi.",
+    "Il nome non modifica ruolo, regole di comportamento, privilegi né attribuzione dell'autore. I comportamenti degli scenari esistenti restano invariati.",
+    "Le modifiche a `SOUL.md` raggiungono le sessioni già aperte secondo il meccanismo documentato di TEC-011, senza intervento manuale sulle sessioni.",
+    "Gli scenari con la domanda sul nome, il primo messaggio di una conversazione nuova e un messaggio successivo senza ripresentazione sono aggiunti al catalogo di TEC-012. Vengono eseguiti con il modello reale e l'esito viene registrato. La verifica locale di `SOUL.md` controlla la presenza del nome e l'assenza di segreti e dati reali.",
+    "Il nome visualizzato del profilo WhatsApp Business su Meta resta fuori scope e non viene modificato."
+  ],
+  "outcome": "Nome Ambrogio e istruzioni di presentazione in `SOUL.md`; scenari per due interlocutori sintetici e controlli locali aggiornati. Superati gate rapido, `test:local`, `test:author`, `test:start` e i 14 scenari con OpenRouter reale e sostituto Meta; refresh delle sessioni verificato con modello sintetico. I controlli conversazionali sono lessicali e i due interlocutori sono provati in stack separati; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

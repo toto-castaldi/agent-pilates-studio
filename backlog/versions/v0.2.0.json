@@ -1,0 +1,19 @@
+{
+  "id": "v0.2.0",
+  "goal": "Il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.",
+  "state": "Closed",
+  "closed_at": "2026-11-07",
+  "scope_changes": [
+    "2026-11-06: su accordo dell'utente, TEC-017 è aggiunto alla v0.2.0 per il template Pi `/work-alone`.",
+    "2026-11-06: su accordo dell'utente, BUG-001 è aggiunto alla v0.2.0 per configurare il canale home e non inviare agli utilizzatori l'avviso di Hermes.",
+    "2026-11-06: su accordo dell'utente, TEC-018 è aggiunto alla v0.2.0 per segnalare l'attesa dell'utente nei tool Pi di domanda.",
+    "2026-11-06: su accordo dell'utente, TEC-020 è aggiunto alla v0.2.0 per il dettato vocale Pi su server remoto.",
+    "2026-11-07: su accordo dell'utente, TEC-021 è aggiunto alla v0.2.0 per l'avvio locale con `.env` come collegamento simbolico privato.",
+    "2026-11-07: su accordo dell'utente, TEC-022 è aggiunto alla v0.2.0 per tracciare il template di origine e preparare futuri aggiornamenti, senza adottarli ora.",
+    "2026-11-07: su accordo dell'utente, TEC-023 è aggiunto alla v0.2.0 per adottare il template v1.4.0, il visualizzatore Pi del backlog e il modulo architetturale Agente.",
+    "2026-11-07: su accordo dell'utente, TEC-024 è aggiunto alla v0.2.0 per adottare il template v1.5.0 e attivare gli shared claims, consentendo i relativi push dei branch item anche con `/work-alone`.",
+    "2026-11-07: su accordo dell'utente, TEC-025 è aggiunto alla v0.2.0 per separare il contesto del modello per interlocutore e compattarlo automaticamente al 40% della finestra e dopo inattività.",
+    "2026-11-07: su accordo dell'utente, US-005 è aggiunto alla v0.2.0 per dare all'agente un nome, definito in `SOUL.md`, con cui si presenta e risponde.",
+    "2026-11-07: su accordo dell'utente, TEC-026 è aggiunto alla v0.2.0 per applicare all'avvio le modifiche di configurazione e credenziali esterne da `.env`, senza rotazione automatica delle password PostgreSQL."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "US-013",
+  "title": "Assenze annunciate in anticipo",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Done",
+  "branch": "us/US-013-assenze-annunciate-in-anticipo",
+  "dependencies": [
+    "US-007"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-006",
+    "REQ-STUDIO-007",
+    "REQ-STUDIO-008",
+    "REQ-STUDIO-010",
+    "REQ-DB-002",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "§5",
+    "§8"
+  ],
+  "description": "Come insegnante, voglio registrare subito l'assenza di un cliente che ha avvisato prima della lezione, così da non doverlo ricordare e riscrivere dopo l'inizio della lezione.",
+  "acceptance_criteria": [
+    "Un messaggio come \"lunedì prossimo Anna Rossi non potrà esserci\", inviato prima della lezione, registra un'assenza giustificata per la lezione futura. Data e orario si ricavano dalla lezione in cui il cliente è atteso secondo le regole attive, nel fuso Europe/Rome; l'autore è ricavato dal sistema. L'agente non chiede il tipo e riepiloga data e orario. Non c'è un limite di anticipo. Se nel giorno indicato il cliente è atteso a più lezioni o la lezione non è identificabile, l'agente chiede chiarimenti e non registra.",
+    "Se il cliente non è atteso alla lezione indicata, l'agente lo segnala e registra solo dopo la conferma dell'utilizzatore; senza conferma non registra. Una seconda comunicazione per la stessa lezione non crea duplicati e l'agente lo segnala.",
+    "Per un periodo o più lezioni (\"per le prossime due settimane\", \"tutti i lunedì di dicembre\") l'agente elenca le lezioni attese ricavate dalle regole attive e registra un'assenza giustificata per ciascuna solo dopo la conferma dell'elenco. Senza conferma non registra nulla; se nel periodo non ci sono lezioni attese lo dice esplicitamente.",
+    "Prima dell'inizio della lezione, una comunicazione come \"Anna alla fine lunedì viene\" annulla l'assenza anticipata con data, autore ricavato dal sistema e motivo, senza registrare una presenza futura. Presenze e assenze non giustificate per lezioni future restano rifiutate con un messaggio chiaro.",
+    "Dopo l'inizio della lezione, con \"c'erano tutti\", \"tutti tranne\" o citando un cliente che ha un'assenza anticipata valida, l'agente registra le altre presenze, segnala il conflitto e chiede se il cliente era presente. In caso di conferma annulla l'assenza con motivo e registra la presenza, comunicando entrambe le operazioni; altrimenti, anche senza risposta, mantiene l'assenza.",
+    "Una migrazione versionata consente nel database le registrazioni di lezioni non ancora iniziate solo con esito assenza giustificata e il loro annullamento, mantenendo il rifiuto di presenze e assenze non giustificate future, l'unicità, l'autore protetto, l'annullamento unico e il divieto di cancellazione, riscrittura e DDL. I test su PostgreSQL reale verificano anche i confini di oggi per ciascun esito e l'aggiornamento dallo schema di TEC-027 con dati, usando solo dati sintetici. Le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.",
+    "`SOUL.md` descrive il comportamento senza duplicarlo nel codice e il controllo di coerenza con le migrazioni resta superato. `docs/TECHNICAL-DESIGN.md` §4 e §5 descrivono il vincolo temporale aggiornato. Backup e ripristino restano verificati.",
+    "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica dello stato del database. Comprendono il caso \"lunedì prossimo <nome> non potrà esserci\", la lezione ambigua, il cliente non atteso con e senza conferma, il periodo con e senza conferma, l'annullamento anticipato, la presenza futura rifiutata, e \"c'erano tutti\" con un'assenza anticipata confermata come presenza e come assenza."
+  ],
+  "outcome": "Assenze giustificate anticipate, conferme, annullamenti e conflitti con presenze, con migrazione e autore protetto. Superati gate, PostgreSQL reale, autore, backup/ripristino, upgrade e scenari sintetici con OpenRouter reale; fallimenti e limiti lessicali sono documentati in `docs/operations/TEC-012-prove.md`. Nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-08.",
+  "closed_at": "2026-11-08"
+}

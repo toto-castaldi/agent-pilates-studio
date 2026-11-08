@@ -1,0 +1,43 @@
+{
+  "id": "TEC-024",
+  "title": "Adozione del template v1.5.0",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Done",
+  "branch": "task/TEC-024-adozione-template-v1-5-0",
+  "dependencies": [
+    "TEC-023"
+  ],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-010",
+    "REQ-NFR-013",
+    "REQ-NFR-014",
+    "REQ-NFR-015"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "§4",
+    "§6",
+    "§7",
+    "§8; TECHNICAL-DESIGN §3",
+    "§8",
+    "§10; `docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare processo, skill e visualizzatore Pi del template `agile-project-template` tag `v1.5.0`, commit `0cea2fd0ee138edbb845a01aa6bced2872145d2a`, a partire dalla base adottata con TEC-023. Attivare gli shared claims e mantenere le personalizzazioni e le protezioni dello studio; non aggiornare il template indiscriminatamente.",
+  "acceptance_criteria": [
+    "Processo e skill condivise sono confrontati e allineati al riferimento fissato; eventuali conflitti o deroghe sono concordati e registrati, senza sovrascrivere le personalizzazioni dello studio. `AGENTS.md` attiva gli shared claims secondo il processo adottato, mantenendo invariati sicurezza e gate rapido.",
+    "Prima di avviare un item `Todo` si controllano i branch locali e remoti dopo il fetch previsto; un branch corrispondente o un errore di fetch sono segnalati e gestiti secondo il processo. Il branch item è pubblicato ai cambi di stato previsti; un push fallito e l'assenza di `origin` sono gestiti e segnalati secondo il processo. I claim non costituiscono un blocco atomico tra avvii concorrenti. Merge e push su `main` non sono automatici.",
+    "`/work-alone` e la documentazione pertinente sono allineati a REQ-NFR-010: sono consentiti solo i push del branch item previsti dagli shared claims ai cambi di stato; gli altri push e i merge richiedono una richiesta esplicita. I template restano istruzioni, non garanzie tecniche.",
+    "Il visualizzatore Pi aggiornato mantiene gli item non assegnati, inclusi quelli su una riga, e i metadati epic già supportati; consente filtri per tipo, priorità e stato, navigazione tra risultati e consultazione degli stati dai branch locali e remote-tracking non integrati, con indicazione della provenienza e dei conflitti. All'apertura usa i riferimenti disponibili e aggiorna la vista dopo il fetch in background; errori e limiti sono visibili. Non modifica i file di lavoro; il fetch può aggiornare o rimuovere riferimenti remoti locali.",
+    "Test ripetibili con repository, branch e remoti sintetici verificano risoluzione degli stati, precedenza e branch multipli, filtri e navigazione, fetch riuscito o fallito e assenza di modifiche ai file di lavoro, oltre alle personalizzazioni già esistenti. Una prova Pi isolata verifica caricamento e uso dell'estensione e documenta i limiti. Le prove con Git, rete locale, processi o Pi restano separate dal gate in memoria e non leggono né modificano configurazioni personali.",
+    "Test o prove isolate con remoti sintetici verificano il flusso degli shared claims, inclusi branch esistente, fetch o push fallito e assenza di `origin`, senza pubblicare branch reali. README e documentazione pertinente descrivono filtri, fetch, gestione dei claim, effetti sui riferimenti Git e limiti; `docs/TEMPLATE-ORIGIN.md` distingue le risorse effettivamente adottate dalle divergenze e dai confronti. Non si modificano né pubblicano il repository del template o dati personali."
+  ],
+  "outcome": "Adottati processo e skill v1.5.0, shared claims e visualizzatore con filtri e stati dai branch, preservando gli adattamenti dello studio. Superati confronto del riferimento fissato, gate rapido, `test:local` con remoti sintetici e `test:pi` con TUI isolata; i claim non sono atomici e la prova Pi non copre tutti i terminali né un turno del modello. Completato il 2026-11-07.",
+  "closed_at": "2026-11-07"
+}

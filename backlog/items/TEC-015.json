@@ -1,0 +1,34 @@
+{
+  "id": "TEC-015",
+  "title": "Gate di chiusura con soli test di unità in memoria",
+  "version": "v0.2.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Done",
+  "branch": "task/TEC-015-gate-chiusura-test-unita-memoria",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-001",
+    "REQ-NFR-003",
+    "REQ-NFR-008"
+  ],
+  "design_references": [
+    "PROCESS §8",
+    "§9; AGENTS §6",
+    "§7; TECHNICAL-DESIGN §8"
+  ],
+  "description": "Rendere rapidi i gate di chiusura (`finish-task`, `merge-task` e push su `main`) limitandoli a test di unità in memoria, in ottica TDD. I test di integrazione ed end-to-end restano, ma si eseguono solo quando servono, item per item, nella chiusura di una versione e nella CI GitHub. Dopo questo item la stessa modifica va riportata, separatamente e senza altri allineamenti, nel template `agile-project-template`.",
+  "acceptance_criteria": [
+    "`docs/PROCESS.md` (Definition of Done e chiusura della versione), `AGENTS.md` §6–§7 e le skill `finish-task`, `merge-task` e `close-version` stabiliscono che i gate di chiusura eseguono solo lint, controllo dei tipi, build e test di unità in memoria; integrazione ed end-to-end si eseguono durante l'item quando servono come prova, mentre `close-version` esegue anche tutte le suite di integrazione.",
+    "`npm test` esegue solo test di unità in memoria, senza processi figli, file system, git, rete o Docker; i test attuali `pi-gitignore`, `pi-launch`, `secrets` e `start-local` sono riscritti in memoria senza perdere i comportamenti verificati, separando la logica dagli effetti sul sistema dove serve.",
+    "Le verifiche che non si possono riscrivere in memoria senza perdere ciò che provano sono spostate in una suite separata `npm run test:local`, esclusa dai gate di chiusura; la CI GitHub continua a eseguire tutte le suite, inclusa questa, e il test del contratto della CI è aggiornato.",
+    "`docs/TECHNICAL-DESIGN.md` §8 e README descrivono i livelli di test, i relativi comandi e quando eseguirli; gli script `npm test` e `build` mantengono il comportamento attuale.",
+    "Passano `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build`, e tutte le suite separate interessate dalle modifiche, inclusa `npm run test:local`."
+  ],
+  "remarks": [
+    "Nota successiva: TEC-022 ha verificato che `b4bc15f3a5944330826d9379fef6d60987ec1798` è pubblicato ed è antenato del tag `v1.4.0` del template; gli altri aggiornamenti non sono adottati."
+  ],
+  "outcome": "Gate rapido, unità in memoria e prove locali separate; CI e documentazione aggiornate. Superati `npm ci`, lint, typecheck, unità, build, `test:local`, `test:pi` e tutte le suite Docker (`test:db`, `test:hermes`, `test:author`, `test:upgrade`, `test:start`); workflow GitHub verificato come contratto ma non eseguito da remoto. Gate riportato separatamente nel template con commit locale `b4bc15f`, senza altri allineamenti né push. Completato il 2026-11-06.",
+  "closed_at": "2026-11-06"
+}
