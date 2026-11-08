@@ -2,6 +2,79 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "correzioni-presenze-storico",
+      "sender": "15555550102",
+      "profile": "Operatore Sintetico",
+      "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Mario", "lastName": "Rossi" }, { "firstName": "Lucia", "lastName": "Bianchi" }], "rules": [] },
+      "turns": [
+        {
+          "message": "Il 6 gennaio 2025 alle 19 c'erano Mario Rossi e Lucia Bianchi.",
+          "response": { "contains": ["Mario", "Lucia"] },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Togli una presenza del 6 gennaio 2025 alle 19, ma non so se quella di Mario o di Lucia.",
+          "response": { "contains": [], "anyOf": [["quale", "mario", "lucia", "presenza"]], "question": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Correggi: Mario Rossi il 6 gennaio 2025 alle 19 non c'era, era assente giustificato, avevo sbagliato.",
+          "response": { "contains": ["Mario"], "anyOf": [["annull", "cancell", "tolto", "rimoss"], ["assent", "giustificat"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Togli la presenza di Lucia Bianchi del 6 gennaio 2025 alle 19, era un errore; non aggiungere altro.",
+          "response": { "contains": ["Lucia"], "anyOf": [["annull", "cancell", "tolto", "rimoss"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Correggi ancora l'assenza di Mario Rossi del 6 gennaio 2025 alle 19: non aveva avvisato, era non giustificata.",
+          "response": { "contains": ["Mario"], "anyOf": [["annull", "cancell", "tolto", "rimoss"], ["non giustificat", "ingiustificat", "non aveva avvis", "non ha avvis", "senza avvis"]] },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Mostrami tutto lo storico delle presenze e assenze di Mario Rossi, incluse le annullate, con date, autori e motivi.",
+          "response": { "contains": ["Mario", "Operatore"], "anyOf": [["annull", "cancell"], ["presen"], ["giustificat"], ["motiv", "errore", "sbagli"]], "date": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        },
+        {
+          "message": "Mostrami tutto lo storico della lezione del 6 gennaio 2025 alle 19, incluse le registrazioni annullate, con date, autori e motivi.",
+          "response": { "contains": ["Mario", "Lucia", "Operatore"], "anyOf": [["annull", "cancell"], ["motiv", "errore", "sbagli"]], "date": true },
+          "attendanceExpected": { "addedClients": [], "attendance": [
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Lucia Bianchi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "excused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } },
+            { "client": "Mario Rossi", "lessonDate": "2025-01-06", "time": "19:00", "outcome": "unexcused_absence", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }
+          ] }
+        }
+      ]
+    },
+    {
       "id": "assenze-esplicite-chiarimento",
       "sender": "15555550102",
       "profile": "Operatore Sintetico",

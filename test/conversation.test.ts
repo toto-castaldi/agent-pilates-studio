@@ -40,6 +40,28 @@ test('attendance snapshots check exact rows, authenticated authors and unchanged
   assert.equal(historyPreserved(after, { ...after, attendance: [{ ...row, id: '5' }] }), false);
 });
 
+test('attendance cancellation keeps the original immutable and verifies attribution and history', () => {
+  const row = { id: '4', client: 'Antonio Rossi', lessonDate: '2025-01-06', time: '19:00', outcome: 'present', authorPhone: '15555550102', authorName: 'Sintetico', createdAt: '2026-01-01T09:00:00Z', cancelledAt: null, cancelledByPhone: null, cancelledByName: null, cancellationReason: null };
+  const cancelled = { ...row, cancelledAt: '2026-01-02T09:00:00Z', cancelledByPhone: '15555550103', cancelledByName: null, cancellationReason: 'Errore presenza' };
+  const before = { clients: [], rules: [], attendance: [row] };
+  const after = { ...before, attendance: [cancelled] };
+  const expectation = { addedClients: [], attendance: [{ ...row, cancellation: { authorPhone: '15555550103', authorName: null, reasonAnyOf: ['errore'] } }] };
+  assert.ok(historyPreserved(before, after));
+  assert.ok(historyPreserved(after, after));
+  assert.ok(attendanceScenarioMatches({ clients: [], rules: [], attendance: [] }, after, expectation));
+  for (const change of [{ cancelledAt: null }, { cancelledAt: 'invalid' }, { cancelledByPhone: '999' }, { cancelledByName: 'Falso' }, { cancellationReason: '  ' }, { cancellationReason: 'Altro' }]) {
+    assert.equal(attendanceScenarioMatches({ clients: [], rules: [], attendance: [] }, { ...after, attendance: [{ ...cancelled, ...change }] }, expectation), false);
+  }
+  for (const change of [{ id: '5' }, { outcome: 'excused_absence' }, { createdAt: '2025-01-01' }, { authorPhone: '999' }, { cancelledAt: null }, { cancellationReason: 'Altro' }]) {
+    assert.equal(historyPreserved(after, { ...after, attendance: [{ ...cancelled, ...change }] }), false);
+  }
+  for (const change of [{ outcome: 'excused_absence' }, { cancelledAt: 'invalid' }, { cancelledByPhone: '' }, { cancellationReason: '  ' }]) {
+    assert.equal(historyPreserved(before, { ...after, attendance: [{ ...cancelled, ...change }] }), false);
+  }
+  assert.equal(historyPreserved(before, { ...after, attendance: [cancelled, cancelled] }), false);
+  assert.equal(historyPreserved(before, { ...after, attendance: [] }), false);
+});
+
 test('relative day uses the Rome calendar across midnight and DST', () => {
   assert.equal(romeDate(new Date('2025-01-05T23:30:00Z')), '2025-01-06');
   assert.equal(romeDate(new Date('2025-07-05T22:30:00Z')), '2025-07-06');

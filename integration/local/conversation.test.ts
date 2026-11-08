@@ -31,6 +31,10 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
           assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);
           assert.equal(row.authorName, scenario.profile);
+          if (row.cancellation) {
+            assert.equal(row.cancellation.authorPhone, scenario.sender);
+            assert.equal(row.cancellation.authorName, scenario.profile);
+          }
         }
         for (const person of turn.attendanceExpected.addedClients) {
           assert.ok(person.firstName && person.lastName);
@@ -59,6 +63,12 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   for (const id of ['assenze-esplicite-chiarimento', 'assenze-attesi-presenze', 'presenze-data-odierna', 'presenze-nomi-duplicato-futuro', 'presenze-attesi-storici', 'consultazione-pianificazione', 'registrazione-consultazione', 'piu-orari-e-gruppo', 'cognome-mancante', 'nome-unico', 'nome-ambiguo', 'orario-mancante', 'giorno-mancante', 'autore-non-dichiarato', 'disattivazione-esplicita-storico', 'aggiornamento-implicito', 'cambio-cliente-gruppo']) {
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
+  const corrections = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'correzioni-presenze-storico');
+  assert.ok(corrections);
+  assert.equal(corrections.turns[1].response.question, true);
+  assert.deepEqual(corrections.turns[1].attendanceExpected, corrections.turns[0].attendanceExpected);
+  assert.deepEqual(corrections.turns.map((turn: { attendanceExpected: { attendance: { cancellation?: unknown }[] } }) => turn.attendanceExpected.attendance.filter((row) => row.cancellation).length), [0, 0, 1, 2, 3, 3, 3]);
+  assert.deepEqual(corrections.turns.slice(4).map((turn: { attendanceExpected: { attendance: { outcome: string }[] } }) => turn.attendanceExpected.attendance.map((row) => row.outcome)), Array(3).fill(['present', 'present', 'excused_absence', 'unexcused_absence']));
   const explicitAbsences = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenze-esplicite-chiarimento');
   assert.deepEqual(explicitAbsences.turns.map((turn: { attendanceExpected: { attendance: unknown[] } }) => turn.attendanceExpected.attendance.length), [1, 2, 2, 3, 3, 3]);
   assert.equal(explicitAbsences.turns[2].response.question, true);
