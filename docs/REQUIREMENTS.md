@@ -50,6 +50,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
+- Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -289,10 +290,6 @@ La documentazione e i test dello sviluppo devono descrivere e verificare la conf
 
 I gate di chiusura dello sviluppo (completamento di un item, merge e push su `main`) devono eseguire soltanto test di unità in memoria, veloci e privi di processi, file system, git, rete o Docker, oltre a lint, controllo dei tipi e build. I test di integrazione ed end-to-end restano disponibili come comandi separati: si eseguono durante il lavoro sull'item quando servono come prova dei criteri di accettazione o delle verifiche richieste da `AGENTS.md`, nella chiusura di una versione e nella CI GitHub, che continua a eseguire tutte le suite (REQ-NFR-003). La regola è documentata, senza controlli automatici dedicati.
 
-#### REQ-NFR-009 — Template Pi condiviso per lo stato del progetto
-
-Il repository deve includere il template Pi `/start`, utilizzabile per ottenere un riepilogo dello stato del progetto e delle prossime attività a partire dai documenti canonici. Il template deve richiedere un controllo del branch e del working tree in sola lettura e non deve avviare modifiche, test, commit, merge o push senza una successiva richiesta esplicita. Il suo contenuto deve essere privo di segreti e dati personali; gli altri dati locali Pi restano esclusi da Git secondo REQ-NFR-002 e REQ-NFR-007. Questo requisito non ripristina il template `/avvio` rimosso.
-
 #### REQ-NFR-010 — Template Pi per lavorare in autonomia
 
 Il repository deve includere il template Pi `/work-alone`, che istruisce l'assistente a implementare autonomamente l'attività già avviata e a fermarsi solo quando ha bisogno dell'intervento dell'utente. L'attività è identificata dal branch e dai documenti canonici; se non è identificabile univocamente o non è avviata, l'assistente chiede chiarimenti anziché sceglierne o avviarne un'altra.
@@ -398,4 +395,8 @@ Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e c
 
 ## 8. Withdrawn requirements
 
-None.
+#### REQ-NFR-009 — Template Pi condiviso per lo stato del progetto
+
+**Withdrawn (2026-11-08):** su decisione dell'utente il template `/start` è ritenuto inutile e viene rimosso dal repository insieme alla relativa voce dell'allowlist Pi; il riepilogo dello stato resta disponibile con `python3 .agents/tools/backlog.py status`, eseguito a inizio sessione secondo `AGENTS.md`. Il ritiro non ripristina il template `/avvio` e non modifica REQ-NFR-002 e REQ-NFR-007.
+
+Testo originale: il repository doveva includere il template Pi `/start`, utilizzabile per ottenere un riepilogo dello stato del progetto e delle prossime attività a partire dai documenti canonici, con un controllo in sola lettura del branch e del working tree e senza avviare modifiche, test, commit, merge o push senza una successiva richiesta esplicita.

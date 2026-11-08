@@ -7,6 +7,7 @@
     "2026-11-07: su accordo dell'utente, TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.",
     "2026-11-08: su accordo dell'utente, US-013 è aggiunto alla v0.3.0 per registrare le assenze giustificate annunciate prima della lezione (REQ-STUDIO-010).",
     "2026-11-08: su accordo dell'utente, TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare il comando dei futuri worker.",
-    "2026-11-08: su accordo dell'utente, TEC-031 è aggiunto alla v0.3.0 per adottare il template v2.0.0 e migrare il backlog in `backlog/`."
+    "2026-11-08: su accordo dell'utente, TEC-031 è aggiunto alla v0.3.0 per adottare il template v2.0.0 e migrare il backlog in `backlog/`.",
+    "2026-11-08: Aggiunto TEC-032 (P2): rimozione del template Pi /start e ritiro di REQ-NFR-009, su richiesta dell'utente."
   ]
 }
