@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-032-rimozione-template-pi-start",
   "dependencies": [
     "TEC-016"
@@ -23,5 +23,7 @@
     "`.pi/prompts/start.md` è eliminato e `.gitignore` non ne consente più il versionamento; l'allowlist Pi continua a escludere prompt, estensioni, sessioni, autenticazione, log, credenziali e dati locali non revisionati, e `/avvio` non viene ripristinato.",
     "Test di unità e suite `test:local` e `test:pi` sono aggiornati: le risorse Pi versionate attese non includono più `/start` e `/work-alone` resta verificato; le suite separate pertinenti sono eseguite con dati sintetici.",
     "README, `docs/TECHNICAL-DESIGN.md` e CHANGELOG non descrivono più `/start` come disponibile; REQ-NFR-009 è marcato Withdrawn con il motivo."
-  ]
+  ],
+  "outcome": "Rimosso il template Pi /start e la sua voce dall'allowlist di .gitignore; REQ-NFR-009 ritirato con motivo; README, TECHNICAL-DESIGN e CHANGELOG aggiornati, /avvio non ripristinato. Test di unità e suite aggiornati per escludere /start e mantenere /work-alone. Superati lint, typecheck, build, npm test (57), test:local (19) e test:pi (7) con dati sintetici.",
+  "closed_at": "2026-11-08"
 }
