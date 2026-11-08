@@ -12,12 +12,13 @@ Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in prod
 
 Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
-Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp, e le assenze giustificate annunciate prima della lezione; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche.
+Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp, e le assenze giustificate annunciate prima della lezione; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche. Con il cambio di scope del 2026-11-08 la v0.3.0 registra anche gli insegnanti dello studio, le loro regole settimanali e i cambi puntuali, come le sostituzioni, per ricavare chi ha tenuto ogni lezione e consultarlo per insegnante.
 
 ## 2. Actors
 
 - **Operatore:** ruolo generico che configura, installa, aggiorna e gestisce l'ambiente; l'identità concreta è da definire.
 - **Interlocutore autorizzato (utilizzatore):** il titolare dello studio o un suo collaboratore, associato a un numero configurato, che comunica con l'agente tramite WhatsApp. Chiunque possa conversare con l'agente è un utilizzatore e tutti hanno gli stessi permessi; non esiste un'anagrafica degli utilizzatori. Gli insegnanti che comunicano presenze e assenze sono utilizzatori. I clienti dello studio non usano l'agente.
+- **Insegnante:** persona che tiene le lezioni dello studio, registrata nell'anagrafica degli insegnanti (REQ-STUDIO-011). Non interagisce con l'agente in quanto insegnante: può farlo solo se è anche un utilizzatore, e in tal caso il suo numero può essere collegato all'insegnante nella configurazione. Il collegamento non concede permessi diversi.
 - **Cliente:** persona che si allena nello studio; non interagisce con l'agente.
 - **Agente:** Hermes, che elabora le richieste tramite il modello e accede ai dati con i privilegi assegnati.
 
@@ -39,6 +40,12 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - **Assenza:** registrazione che un cliente non ha partecipato a una lezione puntuale, di tipo giustificata o non giustificata.
 - **Registrazione valida:** presenza o assenza non annullata; solo le registrazioni valide contano nelle consultazioni.
 - **Assenza anticipata:** assenza giustificata registrata prima dell'inizio della lezione puntuale, perché il cliente ha avvisato (REQ-STUDIO-010).
+- **Lezione puntuale esistente:** lezione puntuale con almeno un cliente atteso, una registrazione valida di presenza o assenza o un'indicazione valida dell'insegnante.
+- **Regola dell'insegnante:** abitudine settimanale ricorrente di un insegnante, ad esempio "Antonio allena tutti i mercoledì pomeriggio e i venerdì pomeriggio", espressa in un testo in linguaggio naturale pulito, con l'insegnante e, per ogni giorno della settimana, un intervallo di orari d'inizio delle lezioni; una fascia oraria corrisponde ai limiti definiti in `SOUL.md`, un orario a un solo orario d'inizio.
+- **Regola dell'insegnante valida per una lezione:** regola dell'insegnante inserita prima dell'inizio della lezione puntuale, non disattivata entro quell'istante, con un intervallo nello stesso giorno della settimana che comprende l'orario d'inizio.
+- **Insegnante atteso:** insegnante della regola dell'insegnante valida per la lezione.
+- **Indicazione dell'insegnante:** registrazione puntuale dell'insegnante di una lezione, ad esempio una sostituzione futura o un'indicazione su una lezione passata; prevale sull'insegnante atteso.
+- **Insegnante della lezione:** l'insegnante dell'indicazione valida per la lezione, se presente, altrimenti l'insegnante atteso; una lezione senza entrambi è senza insegnante.
 
 ## 4. Scope
 
@@ -49,6 +56,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
+- Cambio di scope del 2026-11-08: anagrafica degli insegnanti con numero WhatsApp collegabile nella configurazione (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014).
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
@@ -58,7 +66,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
 - Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati (TEC-019 e item non assegnati).
-- Insegnante che ha tenuto la lezione, anagrafica degli istruttori, sale, attrezzature e capienza.
+- Disattivazione degli insegnanti, dati degli insegnanti oltre a nome, cognome, numero collegato, regole e indicazioni, compensi e ore lavorate, permessi diversi per gli insegnanti; sale, attrezzature e capienza.
 - Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
 - Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
 - Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
@@ -205,7 +213,7 @@ I clienti sono identificati da nome e cognome, univoci nello studio, senza ulter
 
 #### REQ-STUDIO-003 — Autore delle modifiche
 
-L'autore di ogni inserimento e disattivazione di clienti e regole, e di ogni registrazione e annullamento di presenze e assenze, è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
+L'autore di ogni inserimento e disattivazione di clienti, insegnanti, regole di allenamento e regole degli insegnanti, e di ogni registrazione e annullamento di presenze, assenze e indicazioni dell'insegnante, è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
 
 #### REQ-STUDIO-004 — Consultazione della pianificazione
 
@@ -252,6 +260,42 @@ La lezione si ricava dalle regole attive: se il cliente è atteso a una sola lez
 
 Prima dell'inizio della lezione, se il cliente alla fine partecipa, l'agente annulla l'assenza anticipata con data, autore e motivo, senza registrare una presenza futura. Dopo l'inizio della lezione, se l'utilizzatore comunica le presenze con "c'erano tutti", "tutti tranne" o citando un cliente che ha un'assenza anticipata valida, l'agente segnala il conflitto e chiede se il cliente era presente. In caso di conferma annulla l'assenza e registra la presenza secondo REQ-STUDIO-008; altrimenti, anche senza risposta, mantiene l'assenza. Le assenze anticipate valide sono registrazioni valide anche ai fini delle consultazioni di REQ-STUDIO-009.
 
+### Insegnanti delle lezioni
+
+**Decisione dell'utente (2026-11-08):** i requisiti REQ-STUDIO-011–014 sono aggiunti alla v0.3.0 come cambio di scope. Gli insegnanti seguono la struttura dei clienti: regole settimanali generali e cambi puntuali.
+
+#### REQ-STUDIO-011 — Anagrafica degli insegnanti
+
+Gli insegnanti sono identificati da nome e cognome, univoci tra gli insegnanti senza distinzione tra maiuscole e minuscole e distinti dai clienti, senza ulteriori dati nel database e senza stato di attivazione. L'agente crea un insegnante quando una regola dell'insegnante o un'indicazione ne cita uno non ancora registrato, chiedendo il cognome se manca. Il riconoscimento per solo nome segue REQ-STUDIO-002. Data e autore di creazione sono registrati secondo REQ-STUDIO-003.
+
+L'operatore può collegare in `.env` alcuni numeri dell'elenco autorizzato a nome e cognome di un insegnante. Quando il mittente ha un numero collegato e si riferisce a sé stesso (ad esempio "l'ho tenuta io" o "il lunedì alleno io"), l'insegnante è ricavato dal sistema dal mittente autenticato e non è dichiarato dal modello. Il modello non riceve il numero. Se il mittente non è collegato o l'insegnante collegato non esiste in anagrafica, l'agente chiede il nome. Un valore malformato, un numero non autorizzato o collegato a più insegnanti sono segnalati all'avvio senza esporre numeri o nomi. Il collegamento si applica secondo REQ-AGENT-006 e non cambia i permessi.
+
+#### REQ-STUDIO-012 — Regole degli insegnanti
+
+Un utilizzatore deve poter descrivere conversando via WhatsApp l'abitudine settimanale di un insegnante (ad esempio "Antonio allena tutti i mercoledì pomeriggio e i venerdì pomeriggio" o "Francesca tiene il lunedì alle 19"). L'agente la registra come regola dell'insegnante con testo pulito, data di inserimento, autore e dati strutturati derivati dal modello: insegnante e, per ogni giorno, l'intervallo degli orari d'inizio. Le fasce orarie si traducono nei limiti definiti in `SOUL.md`, senza duplicarli nel codice. Ogni regola riguarda un solo insegnante. L'agente chiede conferma solo in caso di ambiguità; altrimenti registra e riepiloga quanto salvato.
+
+Una lezione ha al più un insegnante atteso. Se una nuova regola si sovrappone a una regola attiva di un altro insegnante o dello stesso insegnante, l'agente segnala la sovrapposizione e chiede sempre conferma. Con la conferma disattiva le regole sovrapposte con data, autore e motivo, registra la nuova regola e, se le regole disattivate coprivano anche altri giorni o orari, le registra di nuovo per la sola parte non sovrapposta; comunica poi cosa ha disattivato e registrato. Senza conferma non registra nulla. Aggiornamento, disattivazione e storico seguono REQ-STUDIO-005, compreso il divieto di cancellazione e riscrittura imposto dal database. Le regole degli insegnanti non creano lezioni: determinano solo l'insegnante atteso delle lezioni esistenti.
+
+#### REQ-STUDIO-013 — Indicazioni e sostituzioni dell'insegnante
+
+Un utilizzatore deve poter indicare chi tiene o ha tenuto una lezione puntuale, per lezioni passate e future senza limiti di data (ad esempio "Antonio sostituisce Francesca il prossimo lunedì pomeriggio" o "ieri alle 19 l'ha tenuta Antonio"). L'agente registra un'indicazione dell'insegnante con data e orario d'inizio della lezione, data di registrazione e autore, e riepiloga quanto salvato. Date e orari seguono le regole di REQ-STUDIO-006 per il fuso. Per ogni lezione puntuale può esistere al più un'indicazione valida. Le indicazioni sono indipendenti da presenze e assenze: si possono registrare anche per lezioni senza registrazioni. Una lezione senza clienti attesi né registrazioni è ammessa e l'agente la segnala nel riepilogo. L'indicazione non crea, modifica né disattiva regole.
+
+Per una sostituzione l'agente ricava le lezioni dagli insegnanti attesi del giorno o della fascia indicati. Se è interessata una sola lezione la registra; se sono più lezioni, anche su un periodo (ad esempio "per le prossime due settimane"), le elenca e le registra solo dopo la conferma dell'elenco. Senza conferma non registra nulla. Se l'insegnante sostituito non è atteso alla lezione indicata o la lezione non è identificabile, l'agente lo segnala e chiede chiarimenti. Quando registra le presenze, se l'utilizzatore non nomina un insegnante l'agente non lo chiede.
+
+Le indicazioni non vengono mai cancellate né riscritte. Correzione, annullamento unico con data, autore e motivo, storico consultabile e divieto imposto dal database seguono REQ-STUDIO-008. Un'indicazione annullata non conta, quindi la lezione torna all'insegnante atteso.
+
+#### REQ-STUDIO-014 — Consultazioni per insegnante
+
+Un utilizzatore deve poter chiedere conversando:
+
+- chi ha tenuto o terrà una lezione puntuale, distinguendo l'insegnante atteso dall'indicazione o dalla sostituzione;
+- le lezioni di un insegnante in un periodo, con i conteggi delle lezioni tenute, sostituite da altri e tenute in sostituzione;
+- i clienti presenti alle lezioni di un insegnante in un periodo, con i conteggi;
+- le lezioni esistenti di un giorno o di un periodo passato senza insegnante;
+- le regole attive degli insegnanti e l'insegnante atteso in un giorno, una fascia o un orario.
+
+Le risposte si basano sulle sole indicazioni e registrazioni valide, sulle regole valide per ciascuna lezione e sui dati strutturati. I conteggi sono calcolati con interrogazioni al database e non stimati dal modello. I periodi relativi si interpretano nel fuso Europe/Rome e l'assenza di risultati è indicata esplicitamente. Su richiesta l'agente indica autore e data di inserimento, disattivazione, registrazione o annullamento e mostra lo storico.
+
 ## 6. Non-functional requirements
 
 #### REQ-NFR-001 — Quality gate riproducibile
@@ -274,7 +318,7 @@ Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudfla
 
 #### REQ-NFR-005 — Dati personali dello studio
 
-I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento, alle loro presenze e assenze con il tipo di assenza e il motivo di eventuali annullamenti, e agli autori delle modifiche (numero WhatsApp e nome del profilo). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
+I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento, alle loro presenze e assenze con il tipo di assenza e il motivo di eventuali annullamenti, a nome e cognome degli insegnanti, alle loro regole e indicazioni con i motivi di disattivazione e annullamento, e agli autori delle modifiche (numero WhatsApp e nome del profilo). Il collegamento tra numeri e insegnanti sta solo nella configurazione esterna privata (REQ-STUDIO-011). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
 
 **Decisione dell'utente (2026-11-05):** per la v0.2.0 l'uso di nomi e cognomi reali nelle prove è accettato rinviando l'audit privacy a TEC-008. La decisione non dichiara la conformità a REQ-NFR-002, non autorizza l'uso continuativo del gateway, che è fuori scope per la v0.2.0, e non modifica REQ-NFR-004.
 
@@ -362,7 +406,10 @@ Il progetto deve adottare il template `agile-project-template` v2.0.0: il backlo
 - Un utilizzatore annuncia un'assenza anticipata; l'agente registra l'assenza giustificata, chiede le conferme previste per lezioni non attese e periodi, consente l'annullamento anticipato e gestisce i conflitti con le presenze come in REQ-STUDIO-010.
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
-- Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
+- Su PostgreSQL reale insegnanti, regole degli insegnanti e indicazioni sono registrati con autore ricavato dal sistema; il database rifiuta indicazioni valide duplicate per lezione, cancellazioni e riscritture, e consente una sola disattivazione o un solo annullamento con data, autore e motivo.
+- Un utilizzatore registra le regole degli insegnanti per fascia o orario. L'agente chiede conferma per le sovrapposizioni e registra sostituzioni e indicazioni su lezioni passate e future, con le conferme previste per più lezioni. L'insegnante del mittente collegato è ricavato dal sistema.
+- Un utilizzatore chiede chi ha tenuto una lezione, le lezioni e i conteggi di un insegnante, i presenti alle sue lezioni e le lezioni senza insegnante, e riceve risposte coerenti con regole e indicazioni valide.
+- Gli scenari conversazionali delle presenze e degli insegnanti sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
 - Processo e skill del template v2.0.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 

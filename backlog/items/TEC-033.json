@@ -1,0 +1,38 @@
+{
+  "id": "TEC-033",
+  "title": "Schema degli insegnanti",
+  "version": "v0.3.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-027"
+  ],
+  "requirements": [
+    "REQ-DB-001",
+    "REQ-DB-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-012",
+    "REQ-STUDIO-013",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §10"
+  ],
+  "description": "Introdurre con una migrazione Prisma l'anagrafica degli insegnanti, le regole degli insegnanti con intervalli giornalieri e le indicazioni dell'insegnante per lezione puntuale. L'autore non deve essere falsificabile, secondo il meccanismo di TEC-010/TEC-027. Disattivazione e annullamento sono tracciati, senza cancellazione né riscrittura. Lo schema va descritto in SOUL.md.",
+  "acceptance_criteria": [
+    "Una migrazione versionata crea nello schema app: gli insegnanti (nome e cognome univoci senza distinzione tra maiuscole e minuscole, data e autore di creazione); le regole degli insegnanti (insegnante, testo pulito, inserimento, autore, data, autore e motivo di disattivazione); gli intervalli della regola (giorno ISO 1–7, orario d'inizio minimo e massimo al minuto, con minimo non superiore al massimo); le indicazioni (insegnante, data e orario d'inizio della lezione al minuto, registrazione, autore, data, autore e motivo di annullamento). Vincoli e controlli rifiutano valori e stati incoerenti.",
+    "Il database consente al più un'indicazione valida per lezione puntuale, accetta indicazioni per lezioni passate e future e rifiuta gli orari locali inesistenti nel fuso Europe/Rome. Per le regole attive sovrapposte la difesa nel database è decisa e documentata in TECHNICAL-DESIGN §5.",
+    "L'autore di inserimenti, disattivazioni e annullamenti è impostato dal sistema dal mittente autenticato. Un valore fornito dal modello non viene accettato e un turno senza prova attendibile è rifiutato.",
+    "Il ruolo dell'agente legge e inserisce insegnanti, regole, intervalli e indicazioni. Aggiorna solo i campi di disattivazione delle regole e di annullamento delle indicazioni, una sola volta, e non può modificare l'autore degli insegnanti. DELETE e TRUNCATE sono rifiutati anche al ruolo di migrazione e il DDL resta rifiutato.",
+    "I test su PostgreSQL reale usano solo dati sintetici. Verificano: migrazione da stato pulito e dallo schema precedente con dati; vincoli; unicità; indicazioni passate e future; autore non falsificabile; disattivazione e annullamento unici; rifiuto di cancellazione, riscrittura e DDL. Le suite test:db, test:author, test:upgrade e test:hermes (backup e ripristino) sono aggiornate.",
+    "SOUL.md descrive tabelle e colonne, insegnante atteso, insegnante della lezione e lezione puntuale esistente, senza duplicare nel codice le regole di comportamento. Il controllo di coerenza di test:local copre le nuove colonne.",
+    "TECHNICAL-DESIGN §4 e §5 descrivono modello dati e invarianti; la decisione aperta di §10 sullo schema è risolta."
+  ]
+}

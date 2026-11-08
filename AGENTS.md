@@ -20,7 +20,7 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
-- Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali); eccezioni della pianificazione, capienza, istruttori, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori sono fuori scope.
+- Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione e permessi degli insegnanti, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
 - Niente deploy automatico, monitoraggio avanzato o messa in esercizio continuativa nella v0.3.0.
 
@@ -39,6 +39,7 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 - I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
 - Le regole di allenamento non si cancellano né si riscrivono: si disattivano con data, autore e motivo; il divieto di cancellazione è imposto dal database.
 - Presenze e assenze non si cancellano né si riscrivono: si annullano una sola volta con data, autore e motivo; il divieto è imposto dal database.
+- Regole degli insegnanti e indicazioni dell'insegnante seguono gli stessi divieti: le regole si disattivano, le indicazioni si annullano, una sola volta con data, autore e motivo. L'insegnante del mittente collegato in configurazione è ricavato dal sistema, mai dichiarato dal modello.
 - L'autore di inserimenti, disattivazioni e annullamenti è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
 - Test, CI ed esempi usano solo nomi e numeri sintetici.
 - Le regole di comportamento dell'agente, come i limiti delle fasce orarie, stanno nel file `SOUL.md` versionato nel progetto e usato da Hermes, senza duplicarle nel codice.
