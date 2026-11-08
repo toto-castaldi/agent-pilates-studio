@@ -8,20 +8,22 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronto: Correggere presenze e assenze | 5/8 items done (62%) |
+| v0.3.0 | Open | In corso: Correggere presenze e assenze | 5/8 items done (62%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 3 |
-| In Progress | 0 |
+| Todo | 2 |
+| In Progress | 1 |
 | Blocked | 0 |
 | Done | 5 |
 
 ## In progress
 
-None.
+| Item | Epic | Module | Title | Branch |
+| ---- | ---- | ------ | ----- | ------ |
+| US-008 | EPIC-005 — Presenze alle lezioni | MOD-001 | Correggere presenze e assenze | `us/US-008-correggere-presenze-assenze` |
 
 ## Blocked
 
@@ -46,7 +48,6 @@ None.
 
 | Item | Epic | Module | Title | Priority |
 | ---- | ---- | ------ | ----- | -------- |
-| US-008 | EPIC-005 — Presenze alle lezioni | MOD-001 | Correggere presenze e assenze | P1 |
 | US-013 | EPIC-005 — Presenze alle lezioni | MOD-001 | Assenze annunciate in anticipo | P1 |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
