@@ -695,7 +695,7 @@
 
 - **Epic:** EPIC-005 — Presenze alle lezioni
 - **Module:** MOD-001 — Agente
-- **Type:** User Story · **Priority:** P1 · **Status:** In Progress
+- **Type:** User Story · **Priority:** P1 · **Status:** Done
 - **Branch:** `us/US-008-correggere-presenze-assenze`
 - **Dependencies:** US-007
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-008, REQ-NFR-002, REQ-NFR-005, REQ-NFR-006
@@ -707,6 +707,7 @@
   - Se la registrazione da correggere non è identificabile o la richiesta è ambigua, l'agente chiede chiarimenti e non annulla nulla.
   - Nessuna registrazione viene cancellata o riscritta e un annullamento non viene modificato; su richiesta l'agente mostra lo storico di una lezione o di un cliente, comprese le registrazioni annullate, con date, autori e motivi.
   - Gli scenari, compresi presenza trasformata in assenza, cambio del tipo di assenza, annullamento semplice, richiesta ambigua e consultazione dello storico, sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato; i test su PostgreSQL reale di TEC-027 coprono il rifiuto di cancellazione e riscrittura.
+- **Outcome:** Correzioni e storico tramite contesto dello studio e scenari sintetici; superati gate, `test:local`, `test:db` su PostgreSQL isolato e scenario US-008 con OpenRouter reale più tre regressioni. Controlli delle risposte lessicali e operazioni SQL non necessariamente atomiche, come documentato in `docs/operations/TEC-012-prove.md`; nessuna nuova prova Meta reale o accettazione privacy. Completato il 2026-11-08.
 
 #### US-009 — Consultare presenze, assenze e statistiche
 
