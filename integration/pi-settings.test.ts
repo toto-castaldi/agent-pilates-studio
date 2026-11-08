@@ -82,13 +82,13 @@ test('Pi discovers approved project templates only with project trust', { timeou
   try {
     mkdirSync(join(project, '.pi', 'prompts'), { recursive: true });
     mkdirSync(agent);
-    for (const name of ['start', 'work-alone']) {
+    for (const name of ['work-alone']) {
       copyFileSync(`.pi/prompts/${name}.md`, join(project, '.pi', 'prompts', `${name}.md`));
     }
     for (const approved of [true, false]) {
       const response = runPi(project, root, agent, approved).find((entry) => entry.id === 'commands');
       assert.equal(response?.success, true);
-      for (const name of ['start', 'work-alone']) {
+      for (const name of ['work-alone']) {
         assert.equal(response?.data?.commands?.some((command) => command.name === name), approved, name);
       }
     }

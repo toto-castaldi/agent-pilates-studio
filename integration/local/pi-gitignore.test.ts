@@ -20,7 +20,7 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       return result.status === 0;
     }
 
-    for (const path of ['.pi/settings.json', '.pi/prompts/start.md', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.agents/skills/start-task/SKILL.md']) {
+    for (const path of ['.pi/settings.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.agents/skills/start-task/SKILL.md']) {
       assert.equal(isIgnored(path), false, `${path} must be eligible for versioning`);
     }
     for (const path of [
@@ -38,6 +38,7 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       '.pi/npm/node_modules/example/index.js',
       '.pi/prompts/private.md',
       '.pi/prompts/avvio.md',
+      '.pi/prompts/start.md',
       '.pi/prompts/nested/start.md',
       '.pi/extensions/unreviewed.ts',
       '.pi/extensions/other/index.ts',

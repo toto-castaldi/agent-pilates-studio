@@ -4,7 +4,7 @@ import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkStartPrompt, checkWorkAlonePrompt } from '../../test/pi-contract.js';
+import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkWorkAlonePrompt } from '../../test/pi-contract.js';
 
 test('project Pi settings and skills are tracked without tracking private Pi state', () => {
   // Inspect paths only, never the operator's settings or their contents.
@@ -28,7 +28,7 @@ test('approved prompts and backlog extension are present in a clean clone of the
     execFileSync('git', ['clone', '--quiet', '--no-local', '--', process.cwd(), checkout]);
     const status = execFileSync('git', ['-C', checkout, 'status', '--porcelain'], { encoding: 'utf8' });
     assert.equal(status, '');
-    for (const [name, check] of [['start', checkStartPrompt], ['work-alone', checkWorkAlonePrompt]] as const) {
+    for (const [name, check] of [['work-alone', checkWorkAlonePrompt]] as const) {
       const promptPath = join(checkout, '.pi', 'prompts', `${name}.md`);
       assert.ok(lstatSync(promptPath).isFile());
       const prompt = readFileSync(promptPath, 'utf8');
@@ -39,6 +39,7 @@ test('approved prompts and backlog extension are present in a clean clone of the
     assert.ok(lstatSync(join(checkout, extension)).isFile());
     assert.equal(readFileSync(join(checkout, extension), 'utf8'), readFileSync(extension, 'utf8'));
     assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'avvio.md')), false);
+    assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'start.md')), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
