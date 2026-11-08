@@ -3,7 +3,6 @@
 !.pi/settings.json
 !.pi/prompts/
 .pi/prompts/*
-!.pi/prompts/start.md
 !.pi/prompts/work-alone.md
 !.pi/extensions/
 .pi/extensions/*

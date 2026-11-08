@@ -23,6 +23,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 - Processo e skill allineati al template v1.7.0: l'orchestratore segue i worker senza bloccarsi, consente attività di backlog su `main` e verifica che `main` sia pubblicato prima di avviare i worker (TEC-029).
 - Processo e skill allineati al template v1.6.1: date dall'orologio di sistema, conteggio meccanico degli stati, controlli dei record prima del merge e rigenerazione di `STATUS.md` nei conflitti (TEC-028).
 
+### Removed
+
+- Template Pi `/start`, ritenuto inutile: il riepilogo dello stato resta disponibile con `python3 .agents/tools/backlog.py status` (TEC-032).
+
 ## [0.2.0] - 2026-11-07
 
 ### Added
