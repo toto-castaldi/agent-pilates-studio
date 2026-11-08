@@ -487,14 +487,17 @@ test('project STATUS.md matches the mechanical count of BACKLOG.md', () => {
 
 test('parallel work settings and instructions keep the studio protections', () => {
   const agents = readFileSync('AGENTS.md', 'utf8');
-  for (const setting of ['- **Shared claims:** `on`', '- **Parallel work:** `on`', '- **Workspace root:** `../agent-pilates-studio-work`', '- **Worker agent command:** `pi`']) {
+  for (const setting of ['- **Shared claims:** `on`', '- **Parallel work:** `on`', '- **Workspace root:** `../agent-pilates-studio-work`', '- **Worker agent command:** `pi --approve`']) {
     assert.ok(agents.includes(setting), setting);
   }
   assert.match(agents, /non copiare `\.env`, `\.local\/`/);
+  assert.match(agents, /risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite/);
   assert.match(agents, /non avvia worker e non considera verificato `origin\/main`/);
   assert.match(agents, /non implementa e non cambia branch/);
   const skill = readFileSync('.agents/skills/orchestrate/SKILL.md', 'utf8');
   assert.match(skill, /^disable-model-invocation: true$/m);
+  assert.ok(skill.includes('`Worker agent command` [`pi --approve`]'));
+  assert.ok(readFileSync('.agents/skills/kickoff/SKILL.md', 'utf8').includes('`Worker agent command` (default `pi --approve`)'));
   for (const phrase of [
     'Run only because the user explicitly asked', 'never implement items yourself', 'Never give the go on your own',
     'Merge only on explicit user request, one item at a time', 'never overwrite it', 'do not remove the clone',
@@ -508,7 +511,7 @@ test('parallel work settings and instructions keep the studio protections', () =
     assert.ok(skill.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 1\.7\.0/);
+  assert.match(processDoc, /\*\*Process version:\*\* 1\.7\.1/);
   for (const phrase of ['the orchestrator does not block while workers run', 'before launching, `main` must not be ahead of `origin/main`', 'pushing `main` stays an explicit user request', 'read from the system clock (`date +%F`)', 'After every update of `STATUS.md`, count the item states mechanically', 'The merge commit contains only the merge and the resolution of its conflicts', 'regenerate `STATUS.md` from the merged `BACKLOG.md`']) {
     assert.ok(processDoc.includes(phrase), phrase);
   }
