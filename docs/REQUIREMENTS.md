@@ -49,7 +49,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018).
+- Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -317,7 +317,7 @@ Il progetto deve adottare il processo, le skill e il visualizzatore Pi del backl
 
 Il progetto deve definire un solo modulo architetturale, `MOD-001 — Agente`, per la soluzione dell'assistente dello studio nel repository corrente. Gli item aperti pertinenti possono riferirsi al modulo; il lavoro trasversale e lo storico completato non richiedono una classificazione retroattiva.
 
-In Pi l'operatore deve poter consultare gli item di `BACKLOG.md` senza modificarli, navigando tra gli item e scorrendone il contenuto; il visualizzatore si apre con `/backlog` e dispone di una scorciatoia configurabile o disattivabile. Gli strumenti rispettano REQ-NFR-002, REQ-NFR-007 e il gate di REQ-NFR-008; le prove non leggono né modificano impostazioni personali.
+In Pi l'operatore deve poter consultare gli item del backlog senza modificarli, navigando tra gli item e scorrendone il contenuto; il visualizzatore si apre con `/backlog` e dispone di una scorciatoia configurabile o disattivabile. Gli strumenti rispettano REQ-NFR-002, REQ-NFR-007 e il gate di REQ-NFR-008; le prove non leggono né modificano impostazioni personali.
 
 #### REQ-NFR-015 — Template v1.5.0 e coordinamento del lavoro parallelo
 
@@ -351,6 +351,10 @@ Per i futuri worker il comando configurato è `pi --approve`: accorda fiducia ai
 
 **Decisione dell'utente (2026-11-08):** TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare `pi --approve` per i futuri worker.
 
+#### REQ-NFR-019 — Template v2.0.0 e backlog su file
+
+Il progetto deve adottare il template `agile-project-template` v2.0.0: il backlog è conservato in `backlog/`, un file per record, e si legge e si modifica solo con la CLI `.agents/tools/backlog.py`, che richiede Python 3.10 o successivo con la sola libreria standard; `BACKLOG.md` e `STATUS.md` sono rimossi e lo stato del progetto è calcolato su richiesta. La migrazione deve conservare versioni, epic, item, stati, esiti, cambi di scope, note e item non assegnati, con conteggi verificati rispetto al file di origine. Il riferimento adottato e le divergenze sono registrati secondo REQ-NFR-013; restano validi REQ-NFR-002, REQ-NFR-007, REQ-NFR-008 e REQ-NFR-014–018, e il visualizzatore Pi resta di sola lettura. Le idee non assegnate su una riga e i metadati epic nel corpo degli item, previsti come personalizzazioni del visualizzatore, sono sostituiti dagli item senza versione dello store.
+
 ## 7. Release acceptance — v0.3.0
 
 **Allineamento concordato (2026-11-08):** il criterio database include l'eccezione per le assenze giustificate anticipate di REQ-STUDIO-010.
@@ -362,7 +366,7 @@ Per i futuri worker il comando configurato è `pi --approve`: accorda fiducia ai
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
 - Gli scenari conversazionali delle presenze sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
-- Processo e skill del template v1.7.1 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
+- Processo e skill del template v2.0.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
 - I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.

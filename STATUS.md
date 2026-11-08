@@ -8,13 +8,13 @@ Riepilogo derivato da `BACKLOG.md`, che resta la fonte canonica per stati e dipe
 
 | Version | State | Phase | Progress |
 | ------- | ----- | ----- | -------- |
-| v0.3.0 | Open | Pronto: Consultare presenze, assenze e statistiche | 8/9 items done (89%) |
+| v0.3.0 | Open | Pronto: Consultare presenze, assenze e statistiche | 8/10 items done (80%) |
 
 I conteggi riguardano la v0.3.0; gli item del backlog non assegnato non sono inclusi.
 
 | Item state | Count |
 | ---------- | ----: |
-| Todo | 1 |
+| Todo | 2 |
 | In Progress | 0 |
 | Blocked | 0 |
 | Done | 8 |
@@ -48,6 +48,7 @@ None.
 | ---- | ---- | ------ | ----- | -------- |
 | TEC-008 | EPIC-003 — Dati e operatività | — | Audit privacy dei log del proxy | P1 |
 | US-009 | EPIC-005 — Presenze alle lezioni | MOD-001 | Consultare presenze, assenze e statistiche | P2 |
+| TEC-031 | EPIC-001 — Fondamenta del progetto | — | Allineamento al template v2.0.0 | P2 |
 | TEC-019 | EPIC-002 — Agente e integrazioni | MOD-001 | Job cron e messaggi pianificati dell'agente | P2 |
 | US-011 | EPIC-005 — Presenze alle lezioni | MOD-001 | Insegnante che ha tenuto la lezione | P2 |
 | US-012 | EPIC-005 — Presenze alle lezioni | MOD-001 | Pacchetti di lezioni e lezioni residue | P2 |
@@ -67,4 +68,5 @@ TEC-008, TEC-019, US-011 e US-012 non sono assegnati a una versione: serve piani
 - 2026-11-07: su accordo dell'utente, TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.
 - 2026-11-08: su accordo dell'utente, US-013 è aggiunto alla v0.3.0 per registrare le assenze giustificate annunciate prima della lezione (REQ-STUDIO-010).
 - 2026-11-08: su accordo dell'utente, TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare il comando dei futuri worker.
+- 2026-11-08: su accordo dell'utente, TEC-031 è aggiunto alla v0.3.0 per adottare il template v2.0.0 e migrare il backlog in `backlog/`.
 - TEC-008 resta non assegnato: l’audit privacy completo del proxy e l’accettazione privacy non sono dimostrati; la prova temporanea non autorizza l’uso continuativo. Lo streaming remoto del tunnel condiviso resta vietato.

@@ -595,6 +595,8 @@
 
 **Scope change (2026-11-08):** su accordo dell'utente, TEC-030 è aggiunto alla v0.3.0 per adottare il template v1.7.1 e configurare il comando dei futuri worker.
 
+**Scope change (2026-11-08):** su accordo dell'utente, TEC-031 è aggiunto alla v0.3.0 per adottare il template v2.0.0 e migrare il backlog in `backlog/`.
+
 ### EPIC-001 — Fondamenta del progetto
 
 #### TEC-028 — Allineamento al template v1.6.1
@@ -649,6 +651,20 @@
   - Prove ripetibili isolate con repository, configurazioni e worker sintetici verificano il passaggio degli argomenti del comando, la conservazione delle protezioni e l'assenza di avvii o push non autorizzati; una prova Pi offline isolata verifica che `--approve` consenta il caricamento delle risorse senza dialogo iniziale, documentandone i limiti. Processi, Git e filesystem restano fuori dai test in memoria; nessuna prova legge o modifica dati personali.
   - La documentazione pertinente e i test sono aggiornati; passano il quality gate e le suite separate interessate. Non si modificano né pubblicano il repository del template o dati personali.
 - **Outcome:** Adottati processo e skill v1.7.1 senza divergenze dopo verifica del tag e confronto delle basi; configurato `pi --approve` preservando le protezioni dello studio. Superati quality gate, `test:local` con comandi e worker sintetici e `test:pi` offline in pseudoterminale, incluso il controllo della fiducia solo di sessione; una prima esecuzione di `test:local` è fallita perché il confronto col clone usava il documento non ancora committato, ed è passata dopo il commit. Herdr reale e osservanza del modello non sono provati. Completato il 2026-11-08.
+
+#### TEC-031 — Allineamento al template v2.0.0
+
+- **Epic:** EPIC-001 — Fondamenta del progetto
+- **Type:** Task · **Priority:** P2 · **Status:** Todo
+- **Dependencies:** TEC-030
+- **Requirements:** REQ-NFR-002, REQ-NFR-007, REQ-NFR-008, REQ-NFR-013, REQ-NFR-014, REQ-NFR-019
+- **Design references:** PROCESS §3, §4, §7; TECHNICAL-DESIGN §10; `docs/TEMPLATE-ORIGIN.md`
+- **Description:** Aggiornare il progetto dalla v1.7.1 adottata da TEC-030 al tag `v2.0.0` del template, commit `e4fb57679f8a523401245e4080bd6aca54f95552`, migrando il backlog in `backlog/` e rimuovendo `BACKLOG.md` e `STATUS.md`. Il riferimento è fissato; versioni successive richiedono una decisione separata.
+- **Acceptance criteria:**
+  - Il tag e il commit fissati sono verificati; `docs/PROCESS.md`, `docs/PROCESS-PARALLEL.md`, le skill, `.agents/tools/backlog.py` e `.gitattributes` sono adottati; il visualizzatore Pi adotta la v2.0.0 conservando la segnalazione degli errori imprevisti durante il refresh; `docs/TEMPLATE-ORIGIN.md` registra risorse adottate e divergenze.
+  - Il backlog è migrato con `import-md`: versioni, epic, item, stati, esiti, cambi di scope, note e item non assegnati sono conservati, i conteggi per versione coincidono con l'origine e `backlog check` passa. Le parti escluse sono registrate nelle note.
+  - `AGENTS.md`, prompt Pi, README e documentazione usano la CLI; le protezioni dello studio per i worker restano invariate.
+  - Le prove `test:local` e `test:pi` sono adattate allo store, senza perdere la copertura del lavoro parallelo; passano il quality gate e le suite separate interessate. Non si modificano stack operativo, segreti o configurazioni personali.
 
 ### EPIC-005 — Presenze alle lezioni
 
