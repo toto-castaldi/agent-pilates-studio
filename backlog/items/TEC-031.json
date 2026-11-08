@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-031-allineamento-template-v2-0-0",
   "dependencies": [
     "TEC-030"
@@ -29,5 +29,7 @@
     "Il backlog è migrato con `import-md`: versioni, epic, item, stati, esiti, cambi di scope, note e item non assegnati sono conservati, i conteggi per versione coincidono con l'origine e `backlog check` passa. Le parti escluse sono registrate nelle note.",
     "`AGENTS.md`, prompt Pi, README e documentazione usano la CLI; le protezioni dello studio per i worker restano invariate.",
     "Le prove `test:local` e `test:pi` sono adattate allo store, senza perdere la copertura del lavoro parallelo; passano il quality gate e le suite separate interessate. Non si modificano stack operativo, segreti o configurazioni personali."
-  ]
+  ],
+  "outcome": "Adottato il template v2.0.0 (tag e commit verificati) e migrato il backlog in backlog/ con import-md: 44 item, 5 epic, 16 cambi di scope e note conservati, conteggi per versione coincidenti con l'origine; escluse e riportate nelle note la sezione Items confluiti e una frase introduttiva. Il visualizzatore conserva la segnalazione degli errori di refresh. Superati quality gate (58 test), test:local (19) e test:pi (7) con Pi 1.5.0 offline; prompt, AGENTS e documentazione usano la CLI. Non verificati Herdr reale e una sessione con modello.",
+  "closed_at": "2026-11-08"
 }
