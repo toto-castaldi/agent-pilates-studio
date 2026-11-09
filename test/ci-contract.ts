@@ -26,7 +26,7 @@ export function checkCiWorkflow(source: string) {
     assert.equal(step.if, undefined);
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(job.steps.length, 19);
+  assert.equal(job.steps.length, 20);
   assert.match(job.steps[0].uses ?? '', /^actions\/checkout@[0-9a-f]{40}$/);
   assert.match(job.steps[1].uses ?? '', /^actions\/setup-node@[0-9a-f]{40}$/);
   assert.equal(job.steps[1].with?.['node-version-file'], '.nvmrc');
@@ -40,6 +40,8 @@ export function checkCiWorkflow(source: string) {
     'npm install --global @earendil-works/pi-coding-agent@1.5.0',
     'npm run test:pi',
     'npm run test:pi-package',
+    // Multiple image mounts need the Docker version used in production.
+    'bash scripts/ci-install-docker.sh',
     'docker compose build postgres hermes',
     'npm run test:db',
     'npm run test:hermes',
