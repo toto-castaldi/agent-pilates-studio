@@ -13,8 +13,9 @@ hermes_must_be_stopped
 postgres=$(compose ps -q --status running postgres)
 [[ -n "$postgres" && "$postgres" != *$'\n'* ]] || fail 'Exactly one running PostgreSQL container is required.'
 [[ $(docker inspect --format '{{.State.Health.Status}}' "$postgres") == healthy ]] || fail 'PostgreSQL is not healthy.'
-volume=$(docker volume ls -q --filter "label=com.docker.compose.project=$PROJECT" --filter 'label=com.docker.compose.volume=hermes_data')
-[[ -n "$volume" && "$volume" != *$'\n'* ]] || fail 'Exactly one Hermes volume for this project is required.'
+# After a rollback the active volumes were created by another Compose project.
+volume="${PILATES_VOLUME_PREFIX:-$PROJECT}_hermes_data"
+docker volume inspect "$volume" >/dev/null 2>&1 || fail 'The Hermes volume of this project is required.'
 
 umask 077
 mkdir -m 700 -- "$destination" || fail 'The backup directory must be new and its parent must exist.'

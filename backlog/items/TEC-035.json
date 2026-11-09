@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-035-procedura-produzione",
   "dependencies": [
     "TEC-034",
@@ -29,5 +29,7 @@
     "Dopo riavvio e aggiornamento i dati persistono, verificato su PostgreSQL reale; l'agente non ha DDL né credenziali di migrazione e il socket Docker è dato solo a ops.",
     "L'intero ciclo è provato su jarvis in un progetto usa e getta con dati sintetici; l'installazione reale di agent-pilates-prod è eseguita dall'operatore in TEC-036.",
     "La procedura è documentata, senza segreti, e ribadisce il divieto di REQ-NFR-004; nessun meccanismo la avvia automaticamente."
-  ]
+  ],
+  "outcome": "Immagine ops con prod.sh (init, install, update, rollback), commit esplicito uguale a quello dell'immagine, Docker 29 richiesto, procedura in docs/operations/TEC-035-produzione.md. Il 2026-11-09 il ciclo completo è passato su jarvis in un progetto temporaneo con dati sintetici e immagini GHCR del commit bde1e6c: installazione, aggiornamento con backup, persistenza, rollback su volumi nuovi, nuovo aggiornamento e backup dopo il rollback, rifiuto di DDL per l'agente, nessun socket o credenziale di migrazione nell'agente. Verificati gate, test:local e test:hermes. Non provati: Meta, OpenRouter con chiave reale, tunnel pubblico, guasto durante le migrazioni. La copia esterna dei backup resta da collegare; l'installazione reale è in TEC-036.",
+  "closed_at": "2026-11-09"
 }

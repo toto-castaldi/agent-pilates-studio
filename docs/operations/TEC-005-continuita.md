@@ -1,5 +1,7 @@
 # TEC-005 — Procedura operativa e recupero
 
+Per la produzione su `jarvis`, senza codice sul server, usare [TEC-035](TEC-035-produzione.md); questo documento resta il riferimento per backup, ripristino e sicurezza.
+
 **Stato:** procedura e prove operative documentate, con i limiti descritti in `TEC-005-prove-preliminari.md`. L'unica prova pubblica temporanea autorizzata è conclusa; l'audit completo del proxy resta nel debito TEC-008. Questo documento non dichiara l'accettazione privacy della release e non autorizza l'uso continuativo.
 
 ## Prerequisiti e sicurezza

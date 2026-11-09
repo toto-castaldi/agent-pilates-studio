@@ -15,3 +15,7 @@
 !scripts/compaction-policy.mjs
 !scripts/migrate.mjs
 !scripts/migrator.Dockerfile
+!scripts/prod.sh
+!scripts/backup.sh
+!scripts/restore.sh
+!scripts/operations-common.sh

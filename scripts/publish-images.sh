@@ -16,6 +16,7 @@ for name in "${!dockerfiles[@]}"; do
   docker build --quiet --file "${dockerfiles[$name]}" \
     --label "org.opencontainers.image.source=https://github.com/toto-castaldi/agent-pilates-studio" \
     --label "org.opencontainers.image.revision=$commit" \
+    --build-arg "PILATES_RELEASE=$commit" \
     --tag "$prefix/$name:$commit" . >/dev/null
   # Only the name of a forbidden path is checked: file contents are never read.
   container=$(docker create "$prefix/$name:$commit")
