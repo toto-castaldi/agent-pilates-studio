@@ -8,22 +8,25 @@
   "priority": "P1",
   "status": "Todo",
   "dependencies": [
-    "TEC-034"
+    "TEC-034",
+    "TEC-037"
   ],
   "requirements": [
     "REQ-OPS-001",
     "REQ-OPS-002",
-    "REQ-OPS-005"
+    "REQ-OPS-005",
+    "REQ-OPS-007"
   ],
   "design_references": [
     "TECHNICAL-DESIGN §9"
   ],
-  "description": "Procedura versionata, eseguita dall'operatore su jarvis, per installare da vuoto e aggiornare la produzione.",
+  "description": "Procedura versionata nell'immagine ops, lanciata a mano dall'operatore su jarvis, per installare da vuoto e aggiornare la produzione senza codice sul server.",
   "acceptance_criteria": [
-    "La procedura installa da vuoto il progetto agent-pilates-prod su jarvis da un commit o tag esplicito e ne verifica la salute; fallisce senza un riferimento esplicito.",
+    "Il comando ops installa da vuoto un progetto da immagini di un commit esplicito e ne verifica la salute; fallisce senza un riferimento esplicito e su jarvis non servono checkout né file di codice.",
     "L'aggiornamento esegue backup quiescente, migrazioni, ricreazione di gateway e broker e healthcheck; un errore non è dichiarato riuscito e non elimina volumi.",
-    "Il ritorno alla versione precedente da backup è documentato e provato su jarvis con dati sintetici.",
-    "Dopo riavvio e aggiornamento i dati persistono, verificato su PostgreSQL reale; l'agente non ha DDL né credenziali di migrazione.",
+    "Il ritorno alla versione precedente da backup, su volumi nuovi selezionati con PILATES_VOLUME_PREFIX, è documentato e provato su jarvis con dati sintetici; i backup successivi funzionano anche dopo il ritorno.",
+    "Dopo riavvio e aggiornamento i dati persistono, verificato su PostgreSQL reale; l'agente non ha DDL né credenziali di migrazione e il socket Docker è dato solo a ops.",
+    "L'intero ciclo è provato su jarvis in un progetto usa e getta con dati sintetici; l'installazione reale di agent-pilates-prod è eseguita dall'operatore in TEC-036.",
     "La procedura è documentata, senza segreti, e ribadisce il divieto di REQ-NFR-004; nessun meccanismo la avvia automaticamente."
   ]
 }

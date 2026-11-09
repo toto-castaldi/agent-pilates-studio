@@ -1,0 +1,31 @@
+{
+  "id": "TEC-037",
+  "title": "Immagini di produzione e pubblicazione da CI",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-034"
+  ],
+  "requirements": [
+    "REQ-OPS-007",
+    "REQ-NFR-002",
+    "REQ-NFR-003"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Rendere lo stack eseguibile dalle sole immagini e pubblicarle da GitHub Actions, senza avviare aggiornamenti.",
+  "acceptance_criteria": [
+    "compose.yaml non monta file del checkout: SOUL.md, configurazione Hermes, plugin, file e bootstrap PostgreSQL sono nelle immagini; lo stesso file è usato da sviluppo e produzione.",
+    "Lo stack si avvia dalle sole immagini, in una directory senza il repository, con un controllo ripetibile su Docker reale e dati sintetici.",
+    "A ogni avvio di Hermes i file di release in /opt/data sono aggiornati anche con un volume esistente, con prova su un volume creato da una versione precedente.",
+    "npm run start:local continua a funzionare costruendo le immagini in locale e applica le modifiche a SOUL.md al riavvio; npm run test:start passa.",
+    "Un workflow GitHub Actions pubblica hermes, postgres, migrator e ops su GHCR marcate con il commit, solo dopo la CI verde su main e mai da altri branch.",
+    "Un controllo nella pipeline verifica che le immagini non contengano .env, .local o segreti; il token di pubblicazione ha i soli permessi necessari.",
+    "La pubblicazione non contatta jarvis e non avvia aggiornamenti; README descrive pipeline e immagini."
+  ]
+}

@@ -59,7 +59,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Cambio di scope del 2026-11-08: anagrafica degli insegnanti con numero WhatsApp collegabile nella configurazione (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014).
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
-- Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005) e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
+- Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -204,7 +204,11 @@ Da qualsiasi clone del repository l'operatore deve poter lavorare su un ambiente
 
 #### REQ-OPS-005 — Aggiornamento manuale della produzione
 
-L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit o tag, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico.
+L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit delle immagini, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico. Su `jarvis` non è presente il codice del progetto: restano Docker, i volumi, le immagini e una directory privata con segreti e configurazione. La procedura è eseguita dall'immagine `ops`, l'unica a ricevere il socket Docker, solo per la durata del comando e mai in Hermes.
+
+#### REQ-OPS-007 — Immagini di produzione da pipeline
+
+Le immagini di produzione (`hermes`, `postgres`, `migrator`, `ops`) sono costruite da GitHub Actions e pubblicate su GHCR solo dopo il superamento della CI su `main`, marcate con il commit. Le immagini sono pubbliche e non contengono segreti. Contengono tutto il necessario all'esecuzione, inclusi `SOUL.md`, configurazione Hermes e plugin. Sviluppo e produzione usano lo stesso `compose.yaml`: lo sviluppo costruisce in locale, la produzione usa solo immagini pubblicate e non costruisce. La pubblicazione non avvia alcun aggiornamento.
 
 #### REQ-OPS-006 — WhatsApp per ambiente e callback stabile
 

@@ -24,6 +24,7 @@
   "description": "Creazione guidata con l'operatore della seconda app Meta e del numero WhatsApp reale, e collegamento stabile dei due ambienti al tunnel esistente.",
   "acceptance_criteria": [
     "Esiste un'app Meta di produzione distinta, con numero reale registrato e token permanente; i segreti sono solo nella configurazione privata di jarvis.",
+    "L'operatore ha installato agent-pilates-prod da vuoto con la procedura di TEC-035.",
     "agent-pilates-studio.toto-castaldi.com raggiunge l'hermes di produzione tramite il tunnel e il callback è verificato da Meta; /health non è pubblico.",
     "Il filtro locale del journal di cloudflared copre l'hostname di produzione, verificato con soli valori sintetici e senza streaming remoto del tunnel.",
     "Un numero autorizzato conversa con l'agente sul numero di produzione; numeri non autorizzati e webhook non firmati sono respinti.",
