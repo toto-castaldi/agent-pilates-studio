@@ -1,4 +1,7 @@
 **
+!compose.yaml
+!db/
+!db/**
 !hermes/
 !hermes/Dockerfile
 !hermes/gateway-launcher.sh

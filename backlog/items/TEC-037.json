@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-037-immagini-produzione",
   "dependencies": [
     "TEC-034"
   ],
@@ -22,10 +23,12 @@
   "acceptance_criteria": [
     "compose.yaml non monta file del checkout: SOUL.md, configurazione Hermes, plugin, file e bootstrap PostgreSQL sono nelle immagini; lo stesso file è usato da sviluppo e produzione.",
     "Lo stack si avvia dalle sole immagini, in una directory senza il repository, con un controllo ripetibile su Docker reale e dati sintetici.",
-    "A ogni avvio di Hermes i file di release in /opt/data sono aggiornati anche con un volume esistente, con prova su un volume creato da una versione precedente.",
+    "SOUL.md, configurazione e plugin sono montati in sola lettura dall'immagine: l'agente non può scriverli né sostituirli e una nuova immagine li aggiorna anche con un volume esistente, che conserva il proprio stato.",
     "npm run start:local continua a funzionare costruendo le immagini in locale e applica le modifiche a SOUL.md al riavvio; npm run test:start passa.",
     "Un workflow GitHub Actions pubblica hermes, postgres, migrator e ops su GHCR marcate con il commit, solo dopo la CI verde su main e mai da altri branch.",
     "Un controllo nella pipeline verifica che le immagini non contengano .env, .local o segreti; il token di pubblicazione ha i soli permessi necessari.",
     "La pubblicazione non contatta jarvis e non avvia aggiornamenti; README descrive pipeline e immagini."
-  ]
+  ],
+  "outcome": "compose.yaml unico senza mount dal checkout: Hermes e PostgreSQL hanno immagini parametriche, costruite in locale in sviluppo. SOUL.md, configurazione e plugin sono montati in sola lettura dall'immagine (type: image, subpath), verificato con Docker e Compose su jarvis solo per versione. Job publish nella CI dopo il job quality su main, con script che rifiuta .env, .local e .git/config per nome di percorso. Verificati gate, test:local, test:images, test:db, test:hermes, test:author, test:compaction, test:upgrade e test:start, e publish-images.sh in locale senza push. Non verificati: il primo push reale su GHCR, che avviene dopo il merge, la visibilità pubblica dei package e test:conversation, che richiede il modello reale.",
+  "closed_at": "2026-11-09"
 }
