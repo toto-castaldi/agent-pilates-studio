@@ -137,6 +137,8 @@ Ambienti (REQ-OPS-004): lo sviluppo mantiene il progetto Compose predefinito del
 
 Aggiornamento di produzione (REQ-OPS-005): procedura manuale su `jarvis` che estende `docs/operations/TEC-005-continuita.md`, distinta da `start:local`.
 
+WhatsApp per ambiente (REQ-OPS-006): si usano due app Meta anziché una con override del callback per numero, per non condividere l'app secret con i clone di sviluppo. Il tunnel esistente instrada l'hostname di produzione verso la porta loopback di produzione su `jarvis` e quello di sviluppo verso la porta a cui si collega il clone con `ssh -R`. Il filtro `LogFilterPatterns` di cloudflared copre entrambi gli hostname.
+
 ## 10. Open decisions
 
 - Insegnanti delle lezioni: cambio di scope del 2026-11-08 (REQ-STUDIO-011–014), da decidere in TEC-033 e US-011. Le tabelle da definire sono l'anagrafica degli insegnanti, le regole con intervalli giornalieri degli orari d'inizio e le indicazioni per lezione puntuale, con unicità parziale sulle righe non annullate. Vanno decisi anche l'attribuzione dell'autore tramite il meccanismo di TEC-010/TEC-027 e la difesa nel database contro regole attive sovrapposte, che l'agente evita con conferma. Restano da definire il formato in `.env` del collegamento tra numeri e insegnanti e il modo in cui il sistema fornisce al modello l'insegnante del mittente senza il numero (US-011). Infine va scelta la ricostruzione delle lezioni esistenti e dell'insegnante della lezione con SELECT, senza materializzarle.

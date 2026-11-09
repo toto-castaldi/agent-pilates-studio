@@ -206,6 +206,10 @@ Da qualsiasi clone del repository l'operatore deve poter lavorare su un ambiente
 
 L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit o tag, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico.
 
+#### REQ-OPS-006 — WhatsApp per ambiente e callback stabile
+
+Ogni ambiente ha una propria app Meta, un proprio numero WhatsApp Business e propri token, app secret, verify token e allowlist. La produzione usa un numero reale dedicato, da creare, e il callback HTTPS fisso su `agent-pilates-studio.toto-castaldi.com`. Lo sviluppo mantiene il callback attuale, che raggiunge il clone attivo tramite port forward verso `jarvis`: cambiare clone non richiede modifiche su Meta, e un solo clone alla volta riceve i messaggi. L'assenza di un clone collegato non influisce sulla produzione.
+
 #### REQ-OPS-003 — Osservabilità essenziale
 
 L'operatore deve poter verificare stato e disponibilità dei servizi e consultare i log nel rispetto di REQ-NFR-002.
@@ -422,7 +426,8 @@ Il progetto deve adottare il template `agile-project-template` v2.0.0: il backlo
 - Un utilizzatore chiede chi ha tenuto una lezione, le lezioni e i conteggi di un insegnante, i presenti alle sue lezioni e le lezioni senza insegnante, e riceve risposte coerenti con regole e indicazioni valide.
 - Gli scenari conversazionali delle presenze e degli insegnanti sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
 - Processo e skill del template v2.0.0 sono allineati e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, è verificata nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016, REQ-NFR-017, REQ-NFR-018).
-- I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
+- I log non contengono nomi, messaggi, numeri o credenziali.
+- La produzione su `jarvis` è installata e aggiornata con la procedura manuale, separata dallo sviluppo; un numero autorizzato conversa con l'agente tramite il numero WhatsApp di produzione e il callback stabile, nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
 

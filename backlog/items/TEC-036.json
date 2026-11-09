@@ -1,0 +1,33 @@
+{
+  "id": "TEC-036",
+  "title": "App Meta, numero reale e callback stabile di produzione",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-034",
+    "TEC-035"
+  ],
+  "requirements": [
+    "REQ-OPS-006",
+    "REQ-WA-002",
+    "REQ-NFR-002",
+    "REQ-NFR-004"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Creazione guidata con l'operatore della seconda app Meta e del numero WhatsApp reale, e collegamento stabile dei due ambienti al tunnel esistente.",
+  "acceptance_criteria": [
+    "Esiste un'app Meta di produzione distinta, con numero reale registrato e token permanente; i segreti sono solo nella configurazione privata di jarvis.",
+    "agent-pilates-studio.toto-castaldi.com raggiunge l'hermes di produzione tramite il tunnel e il callback è verificato da Meta; /health non è pubblico.",
+    "Il filtro locale del journal di cloudflared copre l'hostname di produzione, verificato con soli valori sintetici e senza streaming remoto del tunnel.",
+    "Un numero autorizzato conversa con l'agente sul numero di produzione; numeri non autorizzati e webhook non firmati sono respinti.",
+    "Da un clone diverso lo sviluppo riceve i messaggi con il port forward documentato, senza modificare Meta; a clone scollegato la produzione continua a rispondere.",
+    "README e procedure documentano la configurazione dei due ambienti senza segreti, hostname di sviluppo e numeri reali."
+  ]
+}
