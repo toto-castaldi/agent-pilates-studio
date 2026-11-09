@@ -148,6 +148,10 @@ secrets:
   whatsapp_phone_number_id:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-phone-number-id
 
+# One prefix names both volumes, so an environment cannot mix them. Unset, the
+# names match the default Compose naming and existing volumes are preserved.
 volumes:
   postgres_data:
+    name: ${PILATES_VOLUME_PREFIX:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}}_postgres_data
   hermes_data:
+    name: ${PILATES_VOLUME_PREFIX:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}}_hermes_data

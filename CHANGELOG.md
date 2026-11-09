@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Ambienti di sviluppo e produzione separati sullo stesso `compose.yaml`: volumi parametrici con `PILATES_VOLUME_PREFIX` e rifiuto del progetto di produzione in `start:local` (TEC-034).
 - Consultazione conversazionale di presenze, assenze, registrazioni mancanti e statistiche per periodo, con storico e attesi ricostruiti per la lezione (US-009).
 - Registrazione e annullamento delle assenze giustificate anticipate, con conferme per più lezioni e gestione dei conflitti con le presenze (US-013).
 - Correzione conversazionale di presenze e assenze tramite annullamento tracciato e consultazione dello storico (US-008).

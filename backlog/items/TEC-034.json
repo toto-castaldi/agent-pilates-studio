@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-034-separazione-ambienti",
   "dependencies": [],
   "requirements": [
@@ -22,5 +22,7 @@
     "Il volume della prova temporanea su jarvis non è riusato né rimosso implicitamente.",
     "Esempi di configurazione e README descrivono i due ambienti senza segreti.",
     "npm run test:start passa con la nuova configurazione."
-  ]
+  ],
+  "outcome": "Unico compose.yaml con PILATES_VOLUME_PREFIX per i nomi di entrambi i volumi; senza prefisso i nomi restano quelli del progetto, conservando i volumi esistenti. start:local rifiuta progetto e volumi risolti di agent-pilates-prod prima di toccare servizi o segreti; restore.sh ignora il prefisso ereditato. Verificati gate, test:local e test:start; risoluzione dei nomi con compose config. Non provati su stack reale il blocco anti-prod e il prefisso personalizzato (coperti da test di unità), né un ripristino eseguito dopo la modifica a restore.sh (solo controllo sintattico). La configurazione effettiva di produzione su jarvis è in TEC-035.",
+  "closed_at": "2026-11-09"
 }

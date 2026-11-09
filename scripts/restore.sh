@@ -47,6 +47,8 @@ fi
 
 # A new PostgreSQL listens on an ephemeral loopback port. Hermes is never started.
 export POSTGRES_PORT=0 WHATSAPP_WEBHOOK_PORT=0
+# An inherited prefix would point the restore at the volumes of another environment.
+unset PILATES_VOLUME_PREFIX
 started=1
 complete=0
 cleanup() {
