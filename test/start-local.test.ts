@@ -88,6 +88,39 @@ test('external configuration is replaced only after both services stop and both 
   assert.equal(system.content('.local/secrets/whatsapp-allowed-users'), '15555550103\n');
 });
 
+test('production project and volumes are refused before any service or secret changes', async () => {
+  const resolvedProjects = [
+    { name: 'agent-pilates-prod', volumes: { postgres_data: { name: 'synthetic_postgres_data' } } },
+    { name: 'synthetic-dev', volumes: { postgres_data: { name: 'agent-pilates-prod_postgres_data' } } },
+    { name: 'synthetic-dev', volumes: { postgres_data: { name: 'synthetic_postgres_data' }, hermes_data: { name: 'agent-pilates-prod_hermes_data' } } },
+  ];
+  for (const project of resolvedProjects) {
+    const system = memorySystem();
+    system.put('.env', configuration);
+    const spawn = system.spawnSync;
+    system.spawnSync = (command, args, options) => {
+      const result = spawn(command, args, options);
+      return args.includes('config') ? { ...result, stdout: JSON.stringify(project) } : result;
+    };
+    assert.equal(await startLocal(system), 1);
+    assert.match(system.errors.at(-1) ?? '', /produzione/);
+    assert.deepEqual(system.calls.filter((call) => !call.args.includes('config')), []);
+    assert.equal(system.content('.local/secrets/whatsapp-app-secret'), undefined);
+  }
+});
+
+test('volume prefix reaches Compose only when valid', async () => {
+  const system = memorySystem();
+  system.put('.env', `${configuration}PILATES_VOLUME_PREFIX=synthetic-dev\n`);
+  assert.equal(await startLocal(system), 0);
+  assert.ok(system.calls.every((call) => call.env.PILATES_VOLUME_PREFIX === 'synthetic-dev'));
+  for (const value of ['../escape', 'Upper', '-dash']) {
+    system.put('.env', `${configuration}PILATES_VOLUME_PREFIX=${value}\n`);
+    assert.equal(await startLocal(system), 1);
+    assert.equal(system.errors.at(-1), 'Avvio non riuscito: PILATES_VOLUME_PREFIX non valido.');
+  }
+});
+
 test('missing database credential with an existing volume is never reconstructed', async () => {
   const system = memorySystem();
   system.put('.env', configuration);

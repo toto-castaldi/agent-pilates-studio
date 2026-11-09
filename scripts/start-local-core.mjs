@@ -5,6 +5,9 @@ import { idleSeconds } from './compaction-policy.mjs';
 
 class SafeError extends Error {}
 
+const PRODUCTION_PROJECT = 'agent-pilates-prod';
+const isProduction = (name) => name === PRODUCTION_PROJECT || name.startsWith(`${PRODUCTION_PROJECT}_`);
+
 export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink, writeFile, randomBytes, spawnSync, processEnv, execPath, log, errorLog }) {
   let cleanupEnv;
   // Never print subprocess output: Compose, Prisma and npm may include sensitive data.
@@ -72,6 +75,10 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     if (!/^\/[A-Za-z0-9/_-]+$/.test(webhookPath) || webhookPath === '/health' || !/^[A-Za-z0-9._/-]+$/.test(model)) {
       throw new SafeError('Percorso webhook o modello non valido.');
     }
+    const volumePrefix = config.PILATES_VOLUME_PREFIX;
+    if (volumePrefix !== undefined && volumePrefix !== '' && !/^[a-z0-9][a-z0-9_.-]*$/.test(volumePrefix)) {
+      throw new SafeError('PILATES_VOLUME_PREFIX non valido.');
+    }
     let idle;
     try {
       idle = idleSeconds(config.PILATES_IDLE_COMPACT_SECONDS);
@@ -98,7 +105,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (databaseKeys.has(key)) missingDatabaseFile = true;
       }
     }
-    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle) };
+    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle), ...(volumePrefix ? { PILATES_VOLUME_PREFIX: volumePrefix } : {}) };
     for (const key of Object.keys(required)) delete env[key];
     const compose = (...args) => ['compose', '--env-file', '/dev/null', ...args];
     // Never reconstruct missing internal credentials over an existing volume.
@@ -111,8 +118,17 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     const resolved = spawnSync('docker', compose('config', '--format', 'json'), { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (resolved.error || resolved.status !== 0) throw new SafeError('Impossibile verificare il volume PostgreSQL.');
     let volume;
-    try { volume = JSON.parse(resolved.stdout).volumes.postgres_data.name; } catch { throw new SafeError('Impossibile verificare il volume PostgreSQL.'); }
+    let targets;
+    try {
+      const project = JSON.parse(resolved.stdout);
+      volume = project.volumes.postgres_data.name;
+      targets = [project.name, ...Object.values(project.volumes).map((entry) => entry.name)];
+    } catch { throw new SafeError('Impossibile verificare il volume PostgreSQL.'); }
     if (typeof volume !== 'string' || !volume) throw new SafeError('Impossibile verificare il volume PostgreSQL.');
+    // Check what Compose resolved, so inherited variables cannot reach production.
+    if (targets.some((name) => typeof name === 'string' && isProduction(name))) {
+      throw new SafeError('Il progetto o i volumi risolti appartengono alla produzione: start:local è solo per lo sviluppo.');
+    }
     const volumes = spawnSync('docker', ['volume', 'ls', '--quiet'], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (volumes.error || volumes.status !== 0 || typeof volumes.stdout !== 'string') throw new SafeError('Impossibile verificare il volume PostgreSQL.');
     const existingVolume = volumes.stdout.split(/\r?\n/).includes(volume);

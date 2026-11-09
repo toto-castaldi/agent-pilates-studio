@@ -141,6 +141,8 @@ docker compose --env-file /dev/null stop author-broker
 
 Questi comandi non caricano `.env`; usare lo stesso eventuale nome di progetto Compose impostato nell'ambiente per l'avvio. La salute locale non verifica Meta, OpenRouter o la raggiungibilità pubblica. Il port forwarding verso `jarvis` e il proxy HTTPS sono esterni al comando. Non pubblicare `/health`; la prova temporanea conclusa non autorizza l'uso pubblico continuativo. L'audit privacy del proxy resta aperto e **non** va avviato lo streaming remoto dei log del tunnel condiviso, nemmeno per diagnostica.
 
+Sviluppo e produzione usano lo stesso `compose.yaml` e non condividono progetto, volumi, segreti o porte. Lo sviluppo gira da qualsiasi clone con `npm run start:local`; la produzione gira su `jarvis` nel progetto `agent-pilates-prod`, con configurazione e segreti propri e porte loopback diverse. `PILATES_VOLUME_PREFIX` imposta il prefisso di entrambi i volumi (`<prefisso>_postgres_data`, `<prefisso>_hermes_data`); se non è impostato vale il nome del progetto Compose. `start:local` rifiuta il progetto e i volumi di produzione, anche se eseguito su `jarvis` o con variabili ereditate dalla shell.
+
 Per verificare il percorso con credenziali sintetiche e risorse Docker isolate: `npm run test:start`. Il test usa PostgreSQL reale, gateway e broker reali, webhook firmati e sostituti Meta e modello su rete interna; verifica aggiornamenti, mittenti aggiunti e rimossi, errori e recupero. Rimuove solo il proprio progetto e i propri volumi temporanei; non prova le integrazioni reali Meta/OpenRouter.
 
 ## Database locale — procedura manuale alternativa
