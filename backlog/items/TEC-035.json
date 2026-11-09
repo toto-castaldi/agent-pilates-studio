@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-035-procedura-produzione",
   "dependencies": [
     "TEC-034",
     "TEC-037"
