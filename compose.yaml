@@ -1,8 +1,17 @@
 name: agent-pilates-v010
 
+# Development builds these images locally. Production sets the published
+# references and never builds, so it needs no checkout.
+x-hermes-image: &hermes-image ${PILATES_HERMES_IMAGE:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes}
+x-postgres-image: &postgres-image ${PILATES_POSTGRES_IMAGE:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-postgres}
+x-postgres-build: &postgres-build
+  context: .
+  dockerfile: db/Dockerfile
+
 services:
   postgres:
-    image: postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285
+    image: *postgres-image
+    build: *postgres-build
     entrypoint: ["/bin/sh", "/etc/pilates/entrypoint.sh"]
     command: ["postgres", "-c", "hba_file=/etc/pilates/pg_hba.conf"]
     environment:
@@ -15,8 +24,6 @@ services:
       - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/pg_hba.conf:/etc/pilates/pg_hba.conf:ro
-      - ./db/entrypoint.sh:/etc/pilates/entrypoint.sh:ro
     logging:
       driver: local
       options:
@@ -30,14 +37,13 @@ services:
     restart: unless-stopped
 
   db-bootstrap:
-    image: postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285
+    image: *postgres-image
+    build: *postgres-build
     profiles: ["tools"]
     depends_on:
       postgres:
         condition: service_healthy
     entrypoint: ["/bin/sh", "/scripts/bootstrap.sh"]
-    volumes:
-      - ./db/bootstrap:/scripts:ro
     secrets:
       - db_admin
       - db_migrator
@@ -48,7 +54,7 @@ services:
     restart: "no"
 
   author-broker:
-    image: ${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes
+    image: *hermes-image
     build:
       context: .
       dockerfile: hermes/Dockerfile
@@ -74,7 +80,7 @@ services:
     restart: unless-stopped
 
   hermes:
-    image: ${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes
+    image: *hermes-image
     build:
       context: .
       dockerfile: hermes/Dockerfile
@@ -104,9 +110,23 @@ services:
       - "127.0.0.1:${WHATSAPP_WEBHOOK_PORT:-18090}:8090"
     volumes:
       - hermes_data:/opt/data
-      - ./hermes/SOUL.md:/opt/data/SOUL.md:ro
-      - ./hermes/config.yaml:/opt/data/config.yaml:ro
-      - ./hermes/plugins/pilates-postgres:/opt/data/plugins/pilates-postgres:ro
+      # Read-only from the image: the agent owns /opt/data but cannot replace
+      # these files, and a new image reaches an existing volume.
+      - type: image
+        source: *hermes-image
+        target: /opt/data/SOUL.md
+        image:
+          subpath: opt/pilates/release/SOUL.md
+      - type: image
+        source: *hermes-image
+        target: /opt/data/config.yaml
+        image:
+          subpath: opt/pilates/release/config.yaml
+      - type: image
+        source: *hermes-image
+        target: /opt/data/plugins/pilates-postgres
+        image:
+          subpath: opt/pilates/release/plugins/pilates-postgres
     tmpfs:
       - /run/pilates-agent:mode=0700
     logging:

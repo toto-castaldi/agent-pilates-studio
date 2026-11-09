@@ -40,8 +40,7 @@ jobs:
         run: npm run test:pi-package
       - name: Prepara immagini di integrazione
         run: |
-          docker compose pull postgres
-          docker compose build hermes
+          docker compose build postgres hermes
       - name: Test PostgreSQL reale e plugin SQL
         run: npm run test:db
       - name: Test gateway Hermes
@@ -54,3 +53,24 @@ jobs:
         run: npm run test:upgrade
       - name: Test avvio locale con un comando
         run: npm run test:start
+      - name: Test esecuzione dalle sole immagini
+        run: npm run test:images
+
+  publish:
+    name: Pubblicazione immagini
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Accesso a GHCR
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+      - name: Costruisci, controlla e pubblica
+        run: bash scripts/publish-images.sh ghcr.io/toto-castaldi/agent-pilates-studio "$GITHUB_SHA" --push

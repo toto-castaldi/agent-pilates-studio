@@ -129,6 +129,8 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     if (targets.some((name) => typeof name === 'string' && isProduction(name))) {
       throw new SafeError('Il progetto o i volumi risolti appartengono alla produzione: start:local è solo per lo sviluppo.');
     }
+    // Every later Compose step, including the credential probe, runs this image.
+    run('docker', compose('build', 'postgres'), env, 'Preparazione immagine PostgreSQL');
     const volumes = spawnSync('docker', ['volume', 'ls', '--quiet'], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (volumes.error || volumes.status !== 0 || typeof volumes.stdout !== 'string') throw new SafeError('Impossibile verificare il volume PostgreSQL.');
     const existingVolume = volumes.stdout.split(/\r?\n/).includes(volume);

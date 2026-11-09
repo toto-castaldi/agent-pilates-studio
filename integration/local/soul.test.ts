@@ -13,8 +13,9 @@ test('studio context is mounted read-only and matches the versioned schema witho
     'prisma/migrations/20261105000000_studio_planning/migration.sql',
     'prisma/migrations/20261107000000_attendance/migration.sql',
   ].map((file) => readFile(file, 'utf8')))).join('\n');
-  const compose = parse(await readFile('compose.yaml', 'utf8')) as { services: { hermes: { volumes: string[] } } };
-  assert.ok(compose.services.hermes.volumes.includes('./hermes/SOUL.md:/opt/data/SOUL.md:ro'));
+  const compose = parse(await readFile('compose.yaml', 'utf8')) as { services: { hermes: { volumes: (string | { type: string; target: string; image?: { subpath: string } })[] } } };
+  const soulMount = compose.services.hermes.volumes.find((entry) => typeof entry !== 'string' && entry.target === '/opt/data/SOUL.md');
+  assert.deepEqual(typeof soulMount === 'object' && [soulMount.type, soulMount.image?.subpath], ['image', 'opt/pilates/release/SOUL.md']);
   const expected: Record<string, string[]> = {
     clients: ['id', 'first_name', 'last_name', 'created_at', 'created_by_phone', 'created_by_name'],
     training_rules: ['id', 'rule_text', 'created_at', 'created_by_phone', 'created_by_name', 'deactivated_at', 'deactivated_by_phone', 'deactivated_by_name', 'deactivation_reason'],

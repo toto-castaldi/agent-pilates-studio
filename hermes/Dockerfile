@@ -8,5 +8,9 @@ COPY --chmod=0644 hermes/author_broker.py /opt/pilates/author_broker.py
 COPY --chmod=0644 hermes/pilates_trusted.py /opt/hermes/pilates_trusted.py
 COPY --chmod=0644 scripts/compaction-policy.mjs /opt/pilates/compaction-policy.mjs
 COPY --chmod=0644 hermes/compaction-settings.mjs /opt/pilates/compaction-settings.mjs
+# Created first: COPY --chmod would also apply to directories it creates.
+RUN mkdir -p /opt/pilates/release
+COPY --chmod=0644 hermes/SOUL.md hermes/config.yaml /opt/pilates/release/
+COPY hermes/plugins/pilates-postgres /opt/pilates/release/plugins/pilates-postgres
 ENTRYPOINT ["/opt/pilates/entrypoint.sh"]
 CMD ["gateway", "run"]
