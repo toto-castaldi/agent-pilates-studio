@@ -38,6 +38,8 @@ jobs:
         run: npm run test:pi
       - name: Test pacchetto Pi fissato
         run: npm run test:pi-package
+      - name: Allinea Docker alla versione di produzione
+        run: bash scripts/ci-install-docker.sh
       - name: Prepara immagini di integrazione
         run: |
           docker compose build postgres hermes

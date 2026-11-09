@@ -4,7 +4,7 @@ import { stringify } from 'yaml';
 import { checkCiWorkflow } from './ci-contract.js';
 
 test('CI contract validates synthetic workflows in memory', () => {
-  const commands = ['npm ci', 'npm run lint', 'npm run typecheck', 'npm test', 'npm run build', 'npm run test:local', 'npm install --global @earendil-works/pi-coding-agent@1.5.0', 'npm run test:pi', 'npm run test:pi-package', 'docker compose build postgres hermes', 'npm run test:db', 'npm run test:hermes', 'npm run test:author', 'npm run test:compaction', 'npm run test:upgrade', 'npm run test:start', 'npm run test:images'];
+  const commands = ['npm ci', 'npm run lint', 'npm run typecheck', 'npm test', 'npm run build', 'npm run test:local', 'npm install --global @earendil-works/pi-coding-agent@1.5.0', 'npm run test:pi', 'npm run test:pi-package', 'bash scripts/ci-install-docker.sh', 'docker compose build postgres hermes', 'npm run test:db', 'npm run test:hermes', 'npm run test:author', 'npm run test:compaction', 'npm run test:upgrade', 'npm run test:start', 'npm run test:images'];
   const workflow = {
     on: { push: null, pull_request: null, workflow_dispatch: null }, permissions: { contents: 'read' },
     jobs: { quality: { 'runs-on': 'ubuntu-24.04', steps: [
@@ -14,6 +14,9 @@ test('CI contract validates synthetic workflows in memory', () => {
     ] }, publish: { 'runs-on': 'ubuntu-24.04', needs: 'quality', if: "github.event_name == 'push' && github.ref == 'refs/heads/main'", permissions: { contents: 'read', packages: 'write' }, steps: [] } },
   };
   checkCiWorkflow(stringify(workflow));
+  const withoutDocker = structuredClone(workflow);
+  withoutDocker.jobs.quality.steps = withoutDocker.jobs.quality.steps.filter((step) => !('run' in step && step.run === 'bash scripts/ci-install-docker.sh'));
+  assert.throws(() => checkCiWorkflow(stringify(withoutDocker)));
   workflow.jobs.quality.steps.pop();
   assert.throws(() => checkCiWorkflow(stringify(workflow)));
 });
