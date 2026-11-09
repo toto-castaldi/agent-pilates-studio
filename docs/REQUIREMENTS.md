@@ -59,6 +59,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Cambio di scope del 2026-11-08: anagrafica degli insegnanti con numero WhatsApp collegabile nella configurazione (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014).
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
+- Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005) e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -71,7 +72,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
 - Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
 - Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
-- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, messa in esercizio continuativa del gateway pubblico, creazione del server, DNS, certificati, deploy automatico e monitoraggio avanzato.
+- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server, DNS, certificati, deploy automatico e monitoraggio avanzato.
 
 ### In scope for v0.2.0 (closed)
 
@@ -197,6 +198,10 @@ L'operatore deve poter installare e aggiornare intenzionalmente l'ambiente di pr
 
 I dati del database devono persistere tra riavvii e aggiornamenti; l'operatore deve poter eseguire e verificare un backup e un ripristino.
 
+#### REQ-OPS-004 — Ambienti di sviluppo e produzione separati
+
+Da qualsiasi clone del repository l'operatore deve poter lavorare su un ambiente di sviluppo; la produzione gira su `jarvis`. I due ambienti non condividono progetto Compose, volumi, database, segreti, configurazione o porte. L'avvio di sviluppo deve rifiutare il progetto di produzione, anche se eseguito su `jarvis`. La produzione parte da un progetto nuovo e vuoto, `agent-pilates-prod`; il volume della prova temporanea non è riusato né rimosso implicitamente.
+
 #### REQ-OPS-003 — Osservabilità essenziale
 
 L'operatore deve poter verificare stato e disponibilità dei servizi e consultare i log nel rispetto di REQ-NFR-002.
@@ -307,6 +312,8 @@ Il progetto deve offrire installazione delle dipendenze da lockfile e comandi pe
 Credenziali e segreti non devono essere inclusi nel repository; i log non devono contenere credenziali, messaggi o numeri di telefono. La configurazione di esempio non deve contenere segreti reali.
 
 Per la sola prova pubblica controllata di TEC-005, l'operatore ha autorizzato temporaneamente il rischio residuo dovuto all'audit incompleto dei log Cloudflare e di alcuni formati locali del proxy. Restano obbligatori il filtro locale verificato, la soppressione dell'output sensibile dei servizi, l'assenza di esportazioni Cloudflare e il divieto di streaming di REQ-NFR-004. Non registrare intenzionalmente dati sensibili; in caso di esposizione rilevata, interrompere la prova e coordinare la rotazione dei segreti coinvolti. L'autorizzazione non dimostra la conformità completa né autorizza un uso continuativo senza una decisione separata; l'approfondimento va tracciato come debito tecnico.
+
+**Decisione dell'utente (2026-11-09):** l'operatore accetta il rischio residuo dell'audit incompleto dei log del proxy (TEC-008) anche per l'uso continuativo del gateway di produzione, dichiarando che alla data della decisione non sono presenti dati sensibili. La decisione non dimostra la conformità; restano obbligatori il filtro locale verificato esteso all'hostname di produzione, la soppressione dell'output sensibile dei servizi, l'assenza di esportazioni Cloudflare e il divieto di REQ-NFR-004.
 
 #### REQ-NFR-003 — Integrazione continua
 

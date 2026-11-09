@@ -1,0 +1,25 @@
+{
+  "id": "TEC-034",
+  "title": "Separazione degli ambienti di sviluppo e produzione",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-OPS-004"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Rendere impossibile la sovrapposizione tra lo stack di sviluppo di un clone e quello di produzione su jarvis.",
+  "acceptance_criteria": [
+    "Sviluppo e produzione usano progetti Compose, volumi, configurazione, segreti e porte loopback distinti; la produzione usa il progetto agent-pilates-prod.",
+    "npm run start:local rifiuta con errore il progetto di produzione, anche se eseguito su jarvis, senza toccarne risorse; un test di unità copre il controllo.",
+    "Il volume della prova temporanea su jarvis non è riusato né rimosso implicitamente.",
+    "Esempi di configurazione e README descrivono i due ambienti senza segreti.",
+    "npm run test:start passa con la nuova configurazione."
+  ]
+}

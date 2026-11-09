@@ -22,7 +22,7 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 
 - Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione e permessi degli insegnanti, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico, monitoraggio avanzato o messa in esercizio continuativa nella v0.3.0.
+- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano (REQ-OPS-004–006), nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
 
 ## 4. Stack and architecture
 
@@ -75,7 +75,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
 - Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare l'elenco dei numeri consentiti.
-- Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). La prova pubblica temporanea non autorizza l'uso continuativo; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
+- Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). L'uso continuativo della sola produzione è regolato dalla decisione del 2026-11-09 in REQ-NFR-002; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
 
 ## 10. Parallel work
 
