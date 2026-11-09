@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Comando `ops` per installare, aggiornare e riportare alla versione precedente la produzione su `jarvis`, lanciato a mano e senza codice sul server (TEC-035).
 - Immagini di produzione pubblicate su GHCR dalla CI su `main`, marcate con il commit, e stack eseguibile senza codice sul server; `SOUL.md`, configurazione e plugin sono montati in sola lettura dall'immagine (TEC-037).
 - Ambienti di sviluppo e produzione separati sullo stesso `compose.yaml`: volumi parametrici con `PILATES_VOLUME_PREFIX` e rifiuto del progetto di produzione in `start:local` (TEC-034).
 - Consultazione conversazionale di presenze, assenze, registrazioni mancanti e statistiche per periodo, con storico e attesi ricostruiti per la lezione (US-009).
