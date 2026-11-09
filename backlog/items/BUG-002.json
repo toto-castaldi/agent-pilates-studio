@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "fix/BUG-002-docker-ci",
   "dependencies": [
     "TEC-037"
@@ -28,5 +28,7 @@
     "Tutte le suite della CI passano sul runner GitHub, verificato sul branch prima del merge.",
     "Dopo il merge il job publish riesce e le quattro immagini del commit sono su GHCR.",
     "README e design indicano la versione di Docker richiesta."
-  ]
+  ],
+  "outcome": "La CI installa Docker 29.9.2 e Compose 5.6.1, le versioni di jarvis, prima delle suite con immagini; il controllo del workflow rifiuta una CI senza questo passo. Run 42617500386 sul branch: job di verifica verde su GitHub con tutte le suite, incluse test:hermes e test:images. Il criterio sul job publish si può verificare solo dopo il merge su main.",
+  "closed_at": "2026-11-09"
 }
