@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "fix/BUG-002-docker-ci",
   "dependencies": [
     "TEC-037"
   ],
