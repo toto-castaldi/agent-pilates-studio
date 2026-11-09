@@ -1,0 +1,29 @@
+{
+  "id": "TEC-035",
+  "title": "Installazione e aggiornamento manuale della produzione",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-034"
+  ],
+  "requirements": [
+    "REQ-OPS-001",
+    "REQ-OPS-002",
+    "REQ-OPS-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Procedura versionata, eseguita dall'operatore su jarvis, per installare da vuoto e aggiornare la produzione.",
+  "acceptance_criteria": [
+    "La procedura installa da vuoto il progetto agent-pilates-prod su jarvis da un commit o tag esplicito e ne verifica la salute; fallisce senza un riferimento esplicito.",
+    "L'aggiornamento esegue backup quiescente, migrazioni, ricreazione di gateway e broker e healthcheck; un errore non è dichiarato riuscito e non elimina volumi.",
+    "Il ritorno alla versione precedente da backup è documentato e provato su jarvis con dati sintetici.",
+    "Dopo riavvio e aggiornamento i dati persistono, verificato su PostgreSQL reale; l'agente non ha DDL né credenziali di migrazione.",
+    "La procedura è documentata, senza segreti, e ribadisce il divieto di REQ-NFR-004; nessun meccanismo la avvia automaticamente."
+  ]
+}

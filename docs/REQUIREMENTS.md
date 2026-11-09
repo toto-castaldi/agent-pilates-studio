@@ -202,6 +202,10 @@ I dati del database devono persistere tra riavvii e aggiornamenti; l'operatore d
 
 Da qualsiasi clone del repository l'operatore deve poter lavorare su un ambiente di sviluppo; la produzione gira su `jarvis`. I due ambienti non condividono progetto Compose, volumi, database, segreti, configurazione o porte. L'avvio di sviluppo deve rifiutare il progetto di produzione, anche se eseguito su `jarvis`. La produzione parte da un progetto nuovo e vuoto, `agent-pilates-prod`; il volume della prova temporanea non è riusato né rimosso implicitamente.
 
+#### REQ-OPS-005 — Aggiornamento manuale della produzione
+
+L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit o tag, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico.
+
 #### REQ-OPS-003 — Osservabilità essenziale
 
 L'operatore deve poter verificare stato e disponibilità dei servizi e consultare i log nel rispetto di REQ-NFR-002.
