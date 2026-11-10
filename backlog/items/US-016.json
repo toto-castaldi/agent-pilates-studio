@@ -1,0 +1,31 @@
+{
+  "id": "US-016",
+  "title": "Nessuna proposta spontanea di profilo",
+  "version": "v0.3.0",
+  "epic": "EPIC-002",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-AGENT-007",
+    "REQ-AGENT-005",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "§6",
+    "§8"
+  ],
+  "description": "Come titolare o collaboratore, voglio che Ambrogio non mi proponga spontaneamente di creare un profilo, così da poter iniziare e proseguire la conversazione senza una profilazione non richiesta. È stata osservata una proposta nella prima risposta a un saluto; la sua origine non è ancora verificata. La profilazione degli utilizzatori resta fuori scope.",
+  "acceptance_criteria": [
+    "L'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Al primo turno continua a presentarsi con il proprio nome e a rispondere alla richiesta secondo REQ-AGENT-005.",
+    "Si indaga l'origine della proposta osservata distinguendo le istruzioni del progetto, l'eventuale contributo di Hermes e la risposta del modello; si documentano le evidenze e gli eventuali limiti senza esporre conversazioni, numeri o credenziali reali.",
+    "Le istruzioni di comportamento necessarie sono versionate in hermes/SOUL.md, senza duplicarle nel codice. Memoria, profilo integrato e provider di memoria restano disabilitati; non si introduce un'anagrafica o un servizio di profilazione. Cronologia e attribuzione tramite profilo WhatsApp restano invariati.",
+    "Il catalogo di TEC-012 include scenari di regressione con dati sintetici per un saluto come primo messaggio, una richiesta pertinente al primo turno e un turno successivo: verificano risposta pertinente, presentazione iniziale e assenza di proposte spontanee di profilo. Gli scenari sono eseguiti con il modello reale tramite OpenRouter e l'esito, inclusi i limiti delle verifiche lessicali e del comportamento probabilistico, è documentato.",
+    "La modifica preserva l'isolamento dei dati, i vincoli privacy e le verifiche di configurazione esistenti; non richiede dati personali reali negli scenari o nei log."
+  ]
+}

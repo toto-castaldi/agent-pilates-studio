@@ -12,6 +12,7 @@
     "2026-11-08: Aggiunti su decisione dell'utente gli insegnanti delle lezioni (REQ-STUDIO-011–014): TEC-033 schema, US-011 anagrafica e regole degli insegnanti, US-014 indicazioni e sostituzioni, US-015 consultazioni per insegnante.",
     "2026-11-09: Aggiunto l'ambiente di produzione su jarvis separato dallo sviluppo, con aggiornamento manuale, app Meta propria e callback stabile (REQ-OPS-004–006); l'utente accetta il rischio residuo dell'audit TEC-008 per l'uso continuativo, senza dati sensibili alla data della decisione.",
     "2026-11-09: Aggiunte le immagini di produzione pubblicate da GitHub Actions su GHCR: su jarvis non è presente il codice (REQ-OPS-007).",
-    "2026-11-09: Aggiunto il bug della CI su Docker 28.0.4 emerso dal primo run di TEC-037 su main."
+    "2026-11-09: Aggiunto il bug della CI su Docker 28.0.4 emerso dal primo run di TEC-037 su main.",
+    "2026-11-10: L'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007)."
   ]
 }

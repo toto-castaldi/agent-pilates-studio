@@ -60,6 +60,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019).
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
 - Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
+- Cambio di scope del 2026-11-10: l'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -173,6 +174,10 @@ L'agente ha un nome proprio, unico e stabile, definito nel file `SOUL.md` versio
 Per l'avvio locale, l'operatore modifica solo `.env` privato: il comando applica automaticamente le modifiche valide alla configurazione e alle credenziali esterne WhatsApp e OpenRouter, inclusi numeri autorizzati e canale home, senza richiedere modifiche manuali a copie o file intermedi. Gateway e broker devono usare coerentemente la configurazione applicata; un avvio fallito non deve lasciare servizi in esecuzione con configurazioni di autorizzazione discordanti. L'esito positivo non attesta la validità delle credenziali presso Meta o OpenRouter.
 
 Le password PostgreSQL già inizializzate e le credenziali interne generate non vengono ruotate automaticamente: una password PostgreSQL in `.env` discordante arresta l'avvio con un messaggio non sensibile. La configurazione collegata, la persistenza, l'autenticazione e l'isolamento delle credenziali restano protetti secondo REQ-AGENT-003, REQ-DB-002, REQ-WA-002 e REQ-NFR-002; l'applicazione non modifica le impostazioni sui servizi esterni.
+
+#### REQ-AGENT-007 — Nessuna proposta spontanea di profilo
+
+L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Alla prima risposta continua a presentarsi e a rispondere alla richiesta secondo REQ-AGENT-005. Questo requisito non introduce un'anagrafica o una funzionalità di profilazione degli utilizzatori, che restano fuori scope, e non modifica l'uso del nome del profilo WhatsApp per l'autore (REQ-STUDIO-003) o la cronologia delle conversazioni (REQ-AGENT-004).
 
 ### Comunicazione WhatsApp Business
 
