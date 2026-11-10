@@ -1,6 +1,6 @@
 {
   "id": "TEC-036",
-  "title": "App Meta, numero reale e callback stabile di produzione",
+  "title": "App Meta, numero di produzione e callback stabile",
   "version": "v0.3.0",
   "epic": "EPIC-003",
   "module": "MOD-001",
@@ -21,14 +21,19 @@
     "TECHNICAL-DESIGN §7",
     "TECHNICAL-DESIGN §9"
   ],
-  "description": "Creazione guidata con l'operatore della seconda app Meta e del numero WhatsApp reale, e collegamento stabile dei due ambienti al tunnel esistente.",
+  "description": "Creazione guidata con l'operatore della seconda app Meta, con il suo numero di test come numero iniziale di produzione, e collegamento stabile dei due ambienti al tunnel esistente.",
   "acceptance_criteria": [
-    "Esiste un'app Meta di produzione distinta, con numero reale registrato e token permanente; i segreti sono solo nella configurazione privata di jarvis.",
+    "Esiste un'app Meta di produzione distinta da quella di sviluppo, con un proprio numero di test, distinto da quello di sviluppo, e token permanente; i segreti sono solo nella configurazione privata di jarvis.",
+    "I destinatari del numero di test di produzione sono registrati su Meta e coincidono con l'allowlist di produzione; il limite di destinatari del numero di test è verificato nel pannello dell'app e registrato nella procedura senza numeri reali.",
     "L'operatore ha installato agent-pilates-prod da vuoto con la procedura di TEC-035.",
     "agent-pilates-studio.toto-castaldi.com raggiunge l'hermes di produzione tramite il tunnel e il callback è verificato da Meta; /health non è pubblico.",
     "Il filtro locale del journal di cloudflared copre l'hostname di produzione, verificato con soli valori sintetici e senza streaming remoto del tunnel.",
     "Un numero autorizzato conversa con l'agente sul numero di produzione; numeri non autorizzati e webhook non firmati sono respinti.",
     "Da un clone diverso lo sviluppo riceve i messaggi con il port forward documentato, senza modificare Meta; a clone scollegato la produzione continua a rispondere.",
+    "La procedura documenta il passaggio dal numero di test a un numero reale dedicato come sola sostituzione dei segreti whatsapp e dell'allowlist di produzione, senza cambiare codice, immagini o callback.",
     "README e procedure documentano la configurazione dei due ambienti senza segreti, hostname di sviluppo e numeri reali."
+  ],
+  "remarks": [
+    "2026-11-10: su decisione dell'utente la produzione parte con il numero di test Meta, perché gli utilizzatori sono quattro; il numero reale serve prima di superare cinque utilizzatori o di aprire l'uso ai clienti (REQ-OPS-006)."
   ]
 }
