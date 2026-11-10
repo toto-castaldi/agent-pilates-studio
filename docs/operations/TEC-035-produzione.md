@@ -80,4 +80,4 @@ Eseguita su `jarvis` con Docker 29.9.2, in un progetto temporaneo nella home, co
 - nuovo aggiornamento e nuovo backup dopo il ritorno;
 - nessun valore sintetico sensibile negli ultimi log del gateway.
 
-Limiti: non sono stati provati Meta, OpenRouter con chiave reale o il tunnel pubblico, né un guasto durante le migrazioni. L'installazione reale di `agent-pilates-prod` è parte di TEC-036.
+Limiti: non sono stati provati Meta, OpenRouter con chiave reale o il tunnel pubblico, né un guasto durante le migrazioni. L'installazione reale di `agent-pilates-prod`, con Meta e tunnel, è descritta in [TEC-036](TEC-036-whatsapp-ambienti.md).

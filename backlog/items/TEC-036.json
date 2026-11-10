@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-036-app-meta-produzione",
   "dependencies": [
     "TEC-034",
@@ -36,5 +36,7 @@
   ],
   "remarks": [
     "2026-11-10: su decisione dell'utente la produzione parte con il numero di test Meta, perché gli utilizzatori sono quattro; il numero reale serve prima di superare cinque utilizzatori o di aprire l'uso ai clienti (REQ-OPS-006)."
-  ]
+  ],
+  "outcome": "Produzione WhatsApp attiva su jarvis con il commit c755f2b. Meta: portfolio dedicato Agent Pilates Studio Prod, perché numero di test, account WhatsApp e destinatari sono per portfolio; app agent-pilates-studio-live pubblicata con l'URL privacy di sviluppo, solo campo messages, iscritta all'account WhatsApp; system user pilates-prod con token senza scadenza e soli permessi whatsapp_business_messaging e whatsapp_business_management. Limite di 5 destinatari letto nel pannello; 2 destinatari registrati, uguali all'allowlist. Segreti solo in /opt/agent-pilates-prod/secrets, verify token generato sul server. Tunnel: CNAME dedicato (il jolly è stato rimosso), regola solo per /whatsapp/webhook verso 18190 e 404 per il resto; filtro LogFilterPatterns di produzione provato con righe sintetiche su unità di sistema. Verificati: /health 404, token errato 403, POST non firmate 401, verifica Meta, conversazione reale da numero autorizzato, webhook firmato da mittente sintetico non autorizzato senza sessioni, sviluppo da un altro clone con port forward sulla porta della propria regola, produzione attiva con port forward aperto e chiuso. Non provati: numero non autorizzato reale via Meta, assenza di risposte in uscita, passaggio a numero reale. Procedura in docs/operations/TEC-036-whatsapp-ambienti.md.",
+  "closed_at": "2026-11-10"
 }
