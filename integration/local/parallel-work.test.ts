@@ -350,20 +350,17 @@ test('orchestrated parallel work on isolated synthetic repositories', () => {
     assert.equal(cleanup('US-001'), 'removed');
     assert.equal(cleanup('US-002'), 'removed');
 
-    // Backlog work while a worker runs: the orchestrator adds an item on main without switching branch.
-    // New workers would miss it until main is pushed, so the launch check stops; no automatic push.
+    // The orchestrator adds on main and publishes the documentation-only commit, so a new clone sees it.
     assert.equal(preLaunch(), 'ok');
     addItem(main, 'TEC', 'Attivita aggiunta');
     assert.deepEqual(checkProblems(main), []);
     ok(main, 'add', 'backlog');
     ok(main, 'commit', '-qm', 'docs(TEC-004): aggiunge item');
     assert.equal(ok(main, 'branch', '--show-current'), 'main');
-    const originMain = ok(main, 'rev-parse', 'origin/main');
-    assert.equal(preLaunch(), 'main ahead');
-    assert.equal(ok(main, 'rev-parse', 'origin/main'), originMain);
-    assert.equal(ok(root, '--git-dir', remote, 'rev-parse', 'refs/heads/main'), originMain);
-    ok(main, 'push', '-q', 'origin', 'main'); // explicit user request
+    assert.equal(preLaunch(), 'main ahead'); // until the addition's push succeeds
+    ok(main, 'push', '-q');
     assert.equal(preLaunch(), 'ok');
+    assert.equal(ok(root, '--git-dir', remote, 'rev-parse', 'refs/heads/main'), ok(main, 'rev-parse', 'main'));
 
     // Release: a claimed item without the go, with only its start commit, after the cleanup checks.
     assert.equal(releaseAllowed('TEC-003'), true);
@@ -413,12 +410,12 @@ test('parallel work settings and instructions keep the studio protections', () =
     assert.ok(skill.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 2\.0\.0/);
+  assert.match(processDoc, /\*\*Process version:\*\* 2\.1\.0/);
   for (const phrase of ['**only** through the CLI', 'read with `date +%F`', 'The merge commit contains only the merge and its conflict resolution']) {
     assert.ok(processDoc.includes(phrase), phrase);
   }
   const parallelDoc = readFileSync('docs/PROCESS-PARALLEL.md', 'utf8');
-  for (const phrase of ['the orchestrator does not block while workers run', 'before launching, `main` must not be ahead of `origin/main`', 'pushing `main` stays an explicit user request']) {
+  for (const phrase of ['the orchestrator does not block while workers run', 'before launching, `main` must not be ahead of `origin/main`', 'apart from adding items, pushing `main` stays an explicit user request']) {
     assert.ok(parallelDoc.includes(phrase), phrase);
   }
   const merge = readFileSync('.agents/skills/merge-task/SKILL.md', 'utf8');

@@ -22,6 +22,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Processo e skill allineati al template v2.1.0: le aggiunte documentali di item su `main` sono pubblicate automaticamente se esiste un upstream, con controlli e recupero degli errori (TEC-038).
 - Adozione del template v2.0.0: backlog in `backlog/` gestito con `.agents/tools/backlog.py`, stato calcolato su richiesta e processo ridotto; rimossi `BACKLOG.md` e `STATUS.md` (TEC-031).
 - Processo e skill allineati al template v1.7.1; i futuri worker usano `pi --approve` con fiducia al clone per la sola sessione (TEC-030).
 - Processo e skill allineati al template v1.7.0: l'orchestratore segue i worker senza bloccarsi, consente attività di backlog su `main` e verifica che `main` sia pubblicato prima di avviare i worker (TEC-029).

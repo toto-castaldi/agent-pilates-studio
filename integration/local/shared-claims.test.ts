@@ -66,7 +66,8 @@ test('shared claim commands on isolated synthetic repositories', () => {
     for (const phrase of ['Without one', 'If the fetch fails', 'If a push fails', 'not shared']) {
       assert.ok((processDoc + start + finish).includes(phrase), phrase);
     }
-    assert.match(processDoc, /`main` is never pushed automatically/);
+    assert.match(processDoc, /`main` is pushed automatically only after adding an item/);
+    assert.match(processDoc, /workers never merge, never push `main`/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
