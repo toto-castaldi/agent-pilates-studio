@@ -177,7 +177,9 @@ Le password PostgreSQL già inizializzate e le credenziali interne generate non 
 
 #### REQ-AGENT-007 — Nessuna proposta spontanea di profilo
 
-L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Alla prima risposta continua a presentarsi e a rispondere alla richiesta secondo REQ-AGENT-005. Questo requisito non introduce un'anagrafica o una funzionalità di profilazione degli utilizzatori, che restano fuori scope, e non modifica l'uso del nome del profilo WhatsApp per l'autore (REQ-STUDIO-003) o la cronologia delle conversazioni (REQ-AGENT-004).
+L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Alla prima risposta continua a presentarsi e a rispondere alla richiesta secondo REQ-AGENT-005. Il mittente è riconosciuto dal sistema tramite WhatsApp; l'agente può usare il nome visualizzato ricevuto nel contesto della conversazione, senza chiederne l'inserimento o la conferma per iniziare. Se il nome non è disponibile, prosegue senza nome e non lo inventa; se gli viene chiesto, spiega che non è stato fornito da WhatsApp. Il nome visualizzato non prova il ruolo nello studio e non conferisce privilegi. Questo requisito non introduce un'anagrafica, profili precompilati via CLI o una funzionalità di profilazione degli utilizzatori, che restano fuori scope, e non modifica l'uso del nome del profilo WhatsApp per l'autore (REQ-STUDIO-003) o la cronologia delle conversazioni (REQ-AGENT-004).
+
+**Precisazione dell'utente (2026-11-11):** solo riconoscimento automatico dai dati WhatsApp già disponibili; il censimento preventivo tramite CLI è prematuro e non viene introdotto.
 
 ### Comunicazione WhatsApp Business
 

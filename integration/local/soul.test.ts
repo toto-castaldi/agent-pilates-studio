@@ -9,6 +9,9 @@ test('studio context is mounted read-only and matches the versioned schema witho
   const name = requirements.match(/il nome dell'agente è ([\p{L}]+)\./u)?.[1];
   assert.ok(name, 'missing agreed agent name');
   assert.ok(soul.includes(name), 'SOUL must contain the agreed agent name');
+  const config = parse(await readFile('hermes/config.yaml', 'utf8'));
+  assert.equal(config.onboarding.profile_build, 'off', 'native profile onboarding must be disabled with a string');
+  assert.deepEqual(config.memory, { memory_enabled: false, user_profile_enabled: false, provider: '' });
   const migration = (await Promise.all([
     'prisma/migrations/20261105000000_studio_planning/migration.sql',
     'prisma/migrations/20261107000000_attendance/migration.sql',

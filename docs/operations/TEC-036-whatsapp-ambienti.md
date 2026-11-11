@@ -11,8 +11,8 @@ Configurazione di Meta, del tunnel e della produzione su `jarvis`, per avere due
 | Business portfolio Meta | quello originale | `Agent Pilates Studio Prod`, dedicato |
 | App Meta | `Agent Pilates Studio - Test` | `agent-pilates-studio-live` |
 | Numero | numero di test del portfolio originale | numero di test del portfolio di produzione |
-| Callback | hostname di sviluppo, già configurato | `https://agent-pilates-studio.toto-castaldi.com/whatsapp/webhook` |
-| Destinazione su `jarvis` | porta loopback della regola di sviluppo, raggiunta dal clone attivo con `ssh -R` | `127.0.0.1:18190`, stack `agent-pilates-prod` |
+| Callback | `https://pilates-dev.toto-castaldi.com/webhooks/whatsapp` | `https://agent-pilates-studio.toto-castaldi.com/whatsapp/webhook` |
+| Destinazione su `jarvis` | `127.0.0.1:8300`, raggiunta dal clone attivo con `ssh -R` | `127.0.0.1:18190`, stack `agent-pilates-prod` |
 | Segreti | `.env` o `SECRETS_DIR` del clone | `/opt/agent-pilates-prod/secrets/` |
 
 Il numero di test, il suo account WhatsApp Business e l'elenco dei destinatari appartengono al portfolio, non alla singola app: una seconda app nello stesso portfolio condivide numero, account e destinatari con lo sviluppo. Per questo la produzione ha un portfolio proprio. Un account WhatsApp non si può spostare tra portfolio ([Meta](https://developers.facebook.com/documentation/business-messaging/whatsapp/whatsapp-business-accounts/)) e un utente può creare personalmente al massimo 2 portfolio ([Centro assistenza](https://www.facebook.com/business/help/1710077379203657)): il limite è raggiunto.
@@ -95,12 +95,28 @@ Il tunnel è gestito localmente da `/etc/cloudflared/config.yml`, modificabile s
 
 ## Sviluppo da qualsiasi clone
 
-Il callback di sviluppo su Meta non cambia. La regola del tunnel di sviluppo punta a una porta loopback di `jarvis`, che deve coincidere con `WHATSAPP_WEBHOOK_PORT` nel `.env` del clone (predefinita 18090) e con il port forward; anche `WHATSAPP_WEBHOOK_PATH` deve coincidere con il percorso configurato su Meta. Il port forward va aperto dalla macchina su cui gira lo stack: da un'altra macchina `jarvis` inoltra verso una porta dove non ascolta nessuno (`connect_to 127.0.0.1 port …: failed`). Il clone attivo avvia lo stack con `npm run start:local` e apre il port forward, lasciandolo aperto:
+L'URL di sviluppo nella tabella è stato comunicato dall'operatore dal pannello Meta e registrato su sua richiesta esplicita. Per questo ambiente `WHATSAPP_WEBHOOK_PATH` deve essere `/webhooks/whatsapp`, diverso da `/whatsapp/webhook` di produzione.
+
+Per identificare la porta della regola di sviluppo, eseguire su `jarvis` questo controllo in sola lettura, senza riavviare il tunnel né avviare lo streaming dei log:
 
 ```bash
-PORT=<WHATSAPP_WEBHOOK_PORT del clone>
-ssh -N -o ExitOnForwardFailure=yes -R "$PORT:127.0.0.1:$PORT" jarvis
+sudo cloudflared tunnel --config /etc/cloudflared/config.yml \
+  ingress rule 'https://pilates-dev.toto-castaldi.com/webhooks/whatsapp'
 ```
+
+La regola selezionata deve indicare un servizio HTTP su loopback. Un risultato `http_status:404` non identifica la porta del gateway: verificare prima hostname e percorso esatti, senza caratteri aggiunti.
+
+Il controllo dell'operatore ha confermato la regola di sviluppo con percorso `^/webhooks/whatsapp$` e servizio `http://127.0.0.1:8300`. Il callback su Meta non cambia: la porta remota del forward deve essere **8300**, mentre la destinazione locale deve coincidere con la porta esposta da Docker, configurata con `WHATSAPP_WEBHOOK_PORT` nel `.env` del clone. Le due porte possono differire: il valore predefinito locale del progetto è 18090, ma lo stack verificato su `walle` usa 8300.
+
+Il port forward va aperto dalla macchina su cui gira lo stack: da un'altra macchina `jarvis` inoltra verso una porta dove non ascolta nessuno (`connect_to 127.0.0.1 port …: failed`). Il clone attivo avvia lo stack con `npm run start:local` e apre il port forward, lasciandolo aperto. Per lo stack su `walle` con porta locale 8300:
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+  -R 127.0.0.1:8300:127.0.0.1:8300 jarvis
+```
+
+Se il clone espone un'altra porta, cambiare solo l'ultimo `8300` nell'argomento `-R`, lasciando invariata la porta remota della regola. Chiudere il precedente forward prima di sostituirlo.
 
 Un solo clone alla volta può tenere la porta: se il comando termina con `remote port forwarding failed`, un altro clone è collegato. Non usare la porta di produzione (18190): è occupata dallo stack di produzione e il port forward fallirebbe. Chiudendo il port forward lo sviluppo smette di ricevere messaggi; la produzione non ne dipende.
 

@@ -115,6 +115,13 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Qual è il cognome?', { contains: [], anyOf: [['cognome']], question: true }));
   assert.equal(responseMatches('Il cognome è Rossi.', { contains: [], anyOf: [['cognome']], question: true }), false);
   assert.equal(responseMatches('Confermi Antonio?', { contains: ['Antonio'], excludes: ['confermi'] }), false);
+  const noProfile = { contains: ['Ambrogio'], excludes: ['profil', 'account', 'scheda personale', 'registrarti'] };
+  assert.ok(responseMatches('Ciao, sono Ambrogio!', noProfile));
+  for (const proposal of ['un PROFILO', 'un account', 'una scheda personale', 'registrarti']) {
+    assert.equal(responseMatches(`Ciao, sono Ambrogio! Vuoi creare ${proposal}?`, noProfile), false);
+  }
+  // Lexical exclusions also reject a denial; they are not a semantic classifier.
+  assert.equal(responseMatches('Sono Ambrogio, non creo profili.', noProfile), false);
   const grouped = { contains: [], groups: [{ time: '09:00', contains: ['Antonio', 'Lucia'] }, { time: '10:00', contains: ['Elisa'] }] };
   assert.ok(responseMatches('09:00 Antonio e Lucia\n10:00 Elisa', grouped));
   assert.equal(responseMatches('09:00 Antonio ed Elisa\n10:00 Lucia', grouped), false);
