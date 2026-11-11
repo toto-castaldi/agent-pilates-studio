@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Schema versionato degli insegnanti, con regole settimanali e intervalli, indicazioni per le lezioni passate e future, autore autenticato e storico protetto; il database impedisce sovrapposizioni attive anche concorrenti e indicazioni valide duplicate (TEC-033).
 - Produzione su `jarvis` collegata a WhatsApp con app Meta, numero e segreti propri e callback stabile `agent-pilates-studio.toto-castaldi.com`, indipendente dal clone di sviluppo collegato (TEC-036).
 - Comando `ops` per installare, aggiornare e riportare alla versione precedente la produzione su `jarvis`, lanciato a mano e senza codice sul server (TEC-035).
 - Immagini di produzione pubblicate su GHCR dalla CI su `main`, marcate con il commit, e stack eseguibile senza codice sul server; `SOUL.md`, configurazione e plugin sono montati in sola lettura dall'immagine (TEC-037).

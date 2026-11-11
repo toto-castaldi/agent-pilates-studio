@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { checkTeacherHistoryProtection, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
 
 // The old and new images are intentionally fixed. This exercises one supported
 // upgrade path, not compatibility with arbitrary releases or major upgrades.
@@ -96,8 +97,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.query("INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, 1, '09:00')", [oldRule]);
     await migrator.query('COMMIT');
     assert.equal((await migrator.query("SELECT to_regclass('app.attendance') AS name")).rows[0].name, null);
-    // Apply TEC-027 separately and preserve both valid and cancelled rows when
-    // upgrading from that exact schema to the new temporal rule.
+    // Apply TEC-027 and US-013 separately, then upgrade from the exact previous
+    // schema with training rules, valid/cancelled attendance and a future absence.
     await cp('prisma/migrations/20261107000000_attendance', join(legacyMigrations, '20261107000000_attendance'), { recursive: true });
     migrate(databaseHost, true);
     await migrator.query('BEGIN');
@@ -107,7 +108,18 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [oldAttendance]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [oldClient]);
     await migrator.query('COMMIT');
-    const attendanceBefore = (await migrator.query('SELECT * FROM app.attendance ORDER BY id')).rows;
+    await cp('prisma/migrations/20261108000000_future_excused_absences', join(legacyMigrations, '20261108000000_future_excused_absences'), { recursive: true });
+    migrate(databaseHost, true);
+    await migrator.query('BEGIN');
+    const futureBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [futureBinding.pid, futureBinding.txid]);
+    await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2098-01-01', '09:00', 'excused_absence')", [oldClient]);
+    await migrator.query('COMMIT');
+    const planningBefore: Record<string, unknown[]> = {};
+    for (const table of ['clients', 'training_rules', 'rule_slots', 'rule_clients', 'attendance']) {
+      planningBefore[table] = (await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows;
+    }
+    assert.equal((await migrator.query("SELECT to_regclass('app.teachers') AS name")).rows[0].name, null);
     compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
     compose(oldOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const oldGateway = compose(oldOverride, 'ps', '-q', 'hermes').trim();
@@ -142,15 +154,23 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.match((await migrator.query('SHOW server_version')).rows[0].server_version, /^17\.10/);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
     assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.clients c JOIN app.rule_clients rc ON rc.client_id = c.id JOIN app.training_rules r ON r.id = rc.rule_id JOIN app.rule_slots s ON s.rule_id = r.id WHERE c.first_name = 'Upgrade' AND r.rule_text = 'synthetic upgrade rule' AND s.weekday = 1")).rows[0].n, 1);
-    assert.deepEqual((await migrator.query('SELECT * FROM app.attendance ORDER BY id')).rows, attendanceBefore);
+    for (const [table, rows] of Object.entries(planningBefore)) {
+      assert.deepEqual((await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows, rows);
+    }
     await migrator.query('BEGIN');
     const newBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
     await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [newBinding.pid, newBinding.txid]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [oldClient]);
+    await seedTeacherHistory(migrator);
     await migrator.query('COMMIT');
+    const teachersBefore = await readTeacherState(migrator);
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
     agent = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await agent.connect();
     assert.equal((await agent.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
+    assert.deepEqual(await readTeacherState(agent), teachersBefore);
+    await checkTeacherHistoryProtection(agent, migrator);
+    assert.deepEqual(await readTeacherState(agent), teachersBefore);
     await assert.rejects(agent.query('CREATE TABLE app.upgrade_forbidden (id int)'), (error: unknown) => (error as { code?: string }).code === '42501');
     compose(newOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const newGateway = compose(newOverride, 'ps', '-q', 'hermes').trim();
@@ -159,6 +179,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     stateContains(newGateway, ['synthetic-before-upgrade']);
     await send(newGateway, 'synthetic-after-upgrade');
     stateContains(newGateway, ['synthetic-before-upgrade', 'synthetic-after-upgrade']);
+    assert.deepEqual(await readTeacherState(migrator), teachersBefore);
     assert.equal(execFileSync('docker', ['logs', newGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
     assert.equal(execFileSync('docker', ['logs', newDatabase], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'postgres_launch');
   } finally {

@@ -28,7 +28,30 @@ async def chat(request):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
-        if 'future-absence-insert' in last:
+        if 'teacher-create-' in last:
+            marker = 'alpha' if 'teacher-create-alpha' in last else 'beta'
+            weekday = 1 if marker == 'alpha' else 2
+            date = '2020-01-01' if marker == 'alpha' else '2099-01-01'
+            queries = [f"""WITH teacher AS (
+                INSERT INTO app.teachers (first_name, last_name, created_at, created_by_phone, created_by_name)
+                VALUES ('{marker}', 'SyntheticInstructor', '1900-01-01', '999', 'forged') RETURNING id
+              ), rule AS (
+                INSERT INTO app.teacher_rules (teacher_id, rule_text, created_at, created_by_phone, created_by_name)
+                SELECT id, '{marker} teacher rule', '1900-01-01', '999', 'forged' FROM teacher RETURNING id
+              ), intervals AS (
+                INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max, is_active)
+                SELECT id, {weekday}, time '09:00', time '10:00', false FROM rule RETURNING rule_id
+              ), assignment AS (
+                INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_phone, created_by_name)
+                SELECT id, date '{date}', time '09:00', '1900-01-01', '999', 'forged' FROM teacher RETURNING id
+              ) SELECT assignment.id FROM assignment CROSS JOIN intervals"""]
+        elif 'teacher-deactivate-alpha' in last:
+            queries = ["UPDATE app.teacher_rules SET deactivated_at = '1900-01-01', deactivated_by_phone = '999', deactivated_by_name = 'forged', deactivation_reason = 'synthetic teacher replacement' WHERE rule_text = 'alpha teacher rule' RETURNING id"]
+        elif 'teacher-cancel-alpha' in last:
+            queries = ["UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic teacher correction' WHERE lesson_date = '2020-01-01' RETURNING id"]
+        elif 'teacher-cancel-future' in last:
+            queries = ["UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic future teacher correction' WHERE lesson_date = '2099-01-01' RETURNING id"]
+        elif 'future-absence-insert' in last:
             queries = ["INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_phone, created_by_name) SELECT id, '2099-01-01', '09:00', 'excused_absence', '999', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
         elif 'future-absence-cancel' in last:
             queries = ["UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancelled_by_phone = '999', cancelled_by_name = 'forged', cancellation_reason = 'synthetic future cancellation' WHERE lesson_date = '2099-01-01' RETURNING id"]

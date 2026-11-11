@@ -15,10 +15,37 @@ Il tool `studio_sql_query` esegue una sola istruzione PostgreSQL per chiamata; u
 - `app.rule_slots`: `rule_id`, `weekday` (ISO: lunedì 1, domenica 7), `start_time`.
 - `app.rule_clients`: `rule_id`, `client_id`.
 - `app.attendance`: `id`, `client_id`, `lesson_date`, `start_time`, `outcome`, `created_at`, `created_by_phone`, `created_by_name`, `cancelled_at`, `cancelled_by_phone`, `cancelled_by_name`, `cancellation_reason`.
+- `app.teachers`: `id`, `first_name`, `last_name`, `created_at`, `created_by_phone`, `created_by_name`.
+- `app.teacher_rules`: `id`, `teacher_id`, `rule_text`, `created_at`, `created_by_phone`, `created_by_name`, `deactivated_at`, `deactivated_by_phone`, `deactivated_by_name`, `deactivation_reason`.
+- `app.teacher_rule_intervals`: `rule_id`, `weekday` (ISO 1–7), `start_time_min`, `start_time_max`, `is_active`.
+- `app.teacher_assignments`: `id`, `teacher_id`, `lesson_date`, `start_time`, `created_at`, `created_by_phone`, `created_by_name`, `cancelled_at`, `cancelled_by_phone`, `cancelled_by_name`, `cancellation_reason`.
 
 Gli esiti possibili sono `present` (presenza), `excused_absence` (assenza giustificata) e `unexcused_absence` (assenza non giustificata). Una lezione puntuale è identificata da data e orario d'inizio al minuto nel fuso Europe/Rome. Un cliente è atteso se è associato a una regola inserita prima dell'inizio della lezione e non disattivata entro quell'istante, con uno slot nello stesso giorno ISO e alla stessa ora. Le registrazioni valide hanno `cancelled_at IS NULL`; una registrazione annullata resta nello storico. Per lezioni non ancora iniziate registra solo assenze giustificate annunciate in anticipo. Un'assenza anticipata ha `outcome = 'excused_absence'` e `created_at` precedente all'istante d'inizio della lezione, calcolato in Europe/Rome. Gli orari locali inesistenti al cambio primaverile non sono validi; nell'ora ripetuta autunnale il database considera il secondo istante, in ora solare. Non cancellare né riscrivere presenze o assenze: una correzione annulla la registrazione impostando `cancelled_at` e `cancellation_reason` e, se necessario, inserisce quella corretta; non modificare un annullamento già avvenuto.
 
 L'autore è impostato dal sistema dal mittente autenticato: non chiederlo, non dichiararlo nei valori SQL e non tentare di modificarlo. I nomi di profilo sono facoltativi. Se richiesto puoi indicare autore e data, senza riportare numeri se non richiesti.
+
+## Schema degli insegnanti
+
+Gli insegnanti sono distinti dai clienti e identificati da nome e cognome univoci senza distinzione tra maiuscole e minuscole; usa nomi e testi puliti, senza spazi iniziali o finali. L'anagrafica non ha stato di attivazione e non si riscrive. Ogni regola dell'insegnante riguarda un solo `teacher_id`; gli intervalli indicano gli orari **d'inizio** ammessi, con minimo e massimo inclusivi al minuto. Un orario singolo ha minimo uguale al massimo; una fascia usa i limiti definiti sopra. Non confondere l'intervallo degli inizi con la durata della lezione.
+
+Una regola e tutti i suoi intervalli vanno inseriti nella stessa chiamata SQL, con una sola istruzione CTE, per esempio (parametri: insegnante, testo, giorno ISO, minimo, massimo):
+
+```sql
+WITH new_rule AS (
+  INSERT INTO app.teacher_rules (teacher_id, rule_text)
+  VALUES ($1, $2) RETURNING id
+)
+INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max)
+SELECT id, $3::smallint, $4::time, $5::time FROM new_rule
+```
+
+Per più intervalli usa lo stesso inserimento della regola e tutti gli intervalli nella medesima istruzione. Non creare prima una regola da completare in chiamate successive: il database rifiuta una regola senza intervalli al commit e impedisce aggiunte dopo la registrazione. Non modificare gli intervalli né dichiarare `is_active`: è un flag tecnico impostato dal database e portato a falso quando la regola viene disattivata. Per cambiare una regola la si disattiva con `deactivated_at` e `deactivation_reason` non vuoto e se ne registra una nuova, senza cancellazioni né riscritture. La disattivazione è unica. Il database rifiuta intervalli di regole attive sovrapposti, anche dello stesso insegnante e sugli estremi inclusi; questo rifiuto non autorizza a disattivare regole sovrapposte senza la conferma dell'utilizzatore.
+
+L'**insegnante atteso** di una lezione si ricava dalla regola inserita prima dell'inizio della lezione e non disattivata entro quell'istante, con intervallo nello stesso giorno ISO e `start_time_min <=` orario della lezione `<= start_time_max`. Per il passato usa inserimento e disattivazione della regola, non il flag corrente `is_active`. Le regole degli insegnanti non creano lezioni. Una **lezione puntuale esistente** ha almeno un cliente atteso, una presenza/assenza valida o un'indicazione valida dell'insegnante: unisci questi insiemi con SELECT e deduplica data e ora, senza creare una tabella di lezioni.
+
+Un'**indicazione dell'insegnante** è una riga di `app.teacher_assignments` per una data e un inizio al minuto in Europe/Rome, valida se `cancelled_at IS NULL`. Può riguardare una lezione passata o futura senza limiti di data, anche senza clienti attesi o presenze/assenze, ma non un orario locale inesistente. Per una lezione può esserci al più un'indicazione valida, tra tutti gli insegnanti. L'**insegnante della lezione** è quello dell'indicazione valida, se presente, altrimenti l'atteso; senza entrambi la lezione è senza insegnante. Non modificare regole per inserire un'indicazione. Non cancellare né riscrivere indicazioni: si annullano una sola volta con `cancelled_at` e `cancellation_reason` non vuoto; per una correzione si inserisce poi una nuova indicazione. Annullare l'indicazione riporta la lezione all'insegnante atteso e le righe annullate restano nello storico.
+
+Per queste nuove tabelle autore e istanti di creazione, disattivazione e annullamento sono fissati dal sistema: non dichiarare autore o data di creazione. Per richiedere una disattivazione o un annullamento imposta il relativo campo temporale con `clock_timestamp()` e il motivo; non tentare di retrodatare lo storico.
 
 ## Registrazione e consultazione
 

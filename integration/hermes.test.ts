@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { checkTeacherHistoryProtection, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
 
 test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { timeout: 360_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-stack-test-'));
@@ -231,7 +232,9 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [backupAttendance]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [backupClient]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [backupClient]);
+    const backupTeachers = await seedTeacherHistory(migrator);
     await migrator.query('COMMIT');
+    const teacherState = await readTeacherState(migrator);
     compose('stop', 'hermes');
     expectFailure(backup, /Stop author-broker before taking a backup/);
     compose('stop', 'author-broker');
@@ -252,6 +255,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     migrator = new Client({ host: address(newDatabaseId), port: 5432, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await migrator.connect();
     assert.equal((await migrator.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    assert.deepEqual(await readTeacherState(migrator), teacherState);
     backup();
     expectFailure(backup, /backup directory must be new/);
     expectFailure(() => restore(project, backupDirectory), /Target project has containers/);
@@ -291,6 +295,12 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await restoredAgent.connect();
     assert.equal((await restoredAgent.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
+    assert.deepEqual(await readTeacherState(restored), teacherState);
+    assert.deepEqual(await readTeacherState(restoredAgent), teacherState);
+    assert.equal((await restored.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
+    await checkTeacherHistoryProtection(restoredAgent, restored);
+    assert.deepEqual(await readTeacherState(restoredAgent), teacherState);
+    await assert.rejects(restored.query("UPDATE app.teachers SET created_by_phone = 'forged'"), { code: '42501' });
     await assert.rejects(restoredAgent.query('CREATE TABLE app.restore_forbidden (id int)'), (error: unknown) => {
       assert.equal((error as { code?: string }).code, '42501');
       return true;
@@ -298,6 +308,28 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     expectFailure(() => restore(recoveryProject, backupDirectory), /Target project has containers/);
     assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
     assert.equal(recoveryCompose('ps', '-q', '--status', 'running', 'hermes').trim(), '');
+
+    // Recovered triggers must still reject late interval appends and authorize
+    // legitimate transitions; comparing rows alone would not prove this.
+    await restoredAgent.query('BEGIN');
+    const restoredBinding = (await restoredAgent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await restored.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550103', 'Synthetic Recovery', clock_timestamp() + interval '1 minute')", [restoredBinding.pid, restoredBinding.txid]);
+    await restoredAgent.query('SAVEPOINT late_interval');
+    await assert.rejects(restoredAgent.query("INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, 6, '09:00', '10:00')", [backupTeachers.activeRuleId]), { code: '42501' });
+    await restoredAgent.query('ROLLBACK TO SAVEPOINT late_interval');
+    const recoveredRule = (await restoredAgent.query("UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic recovery replacement', deactivated_by_phone = 'forged' WHERE id = $1 RETURNING teacher_id, deactivated_by_phone", [backupTeachers.activeRuleId])).rows[0];
+    assert.equal(recoveredRule.deactivated_by_phone, '15555550103');
+    assert.equal((await restoredAgent.query('SELECT count(*)::int AS n FROM app.teacher_rule_intervals WHERE rule_id = $1 AND is_active', [backupTeachers.activeRuleId])).rows[0].n, 0);
+    await restoredAgent.query(`WITH rule AS (
+      INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, 'Synthetic recovered rule') RETURNING id
+    ) INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max)
+      SELECT rule.id, previous.weekday, previous.start_time_min, previous.start_time_max FROM rule
+      CROSS JOIN app.teacher_rule_intervals previous WHERE previous.rule_id = $2`, [recoveredRule.teacher_id, backupTeachers.activeRuleId]);
+    const recoveredAssignment = (await restoredAgent.query("UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic recovery correction', cancelled_by_phone = 'forged' WHERE id = $1 RETURNING cancelled_by_phone", [backupTeachers.validAssignmentId])).rows[0];
+    assert.equal(recoveredAssignment.cancelled_by_phone, '15555550103');
+    await restoredAgent.query("INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time) VALUES ($1, '2020-01-01', '09:00')", [recoveredRule.teacher_id]);
+    await restoredAgent.query('COMMIT');
+    assert.equal((await restored.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
 
     // Compare the real Hermes SQLite files, ownership and integrity after restoring.
     const checkState = (volume: string) => {

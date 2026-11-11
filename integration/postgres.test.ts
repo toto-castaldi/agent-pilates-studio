@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
 import { checkAttendance } from './attendance-checks.js';
+import { checkTeachers } from './teacher-checks.js';
 
 test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-db-test-'));
@@ -113,7 +114,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     assert.equal((await broker.query('SELECT current_user AS role')).rows[0].role, 'studio_broker');
     await broker.query('SELECT * FROM studio_private.author_context LIMIT 0');
     await broker.query('SELECT * FROM studio_private.consumed_messages LIMIT 0');
-    for (const sql of ['SELECT * FROM app.clients', 'CREATE TABLE app.broker_forbidden (id int)', 'SET ROLE studio_agent', 'SET ROLE studio_migrator']) {
+    for (const sql of ['SELECT * FROM app.clients', 'SELECT * FROM app.teachers', 'SELECT * FROM studio_private.teacher_rule_builds', 'SELECT studio_private.require_author_context()', 'CREATE TABLE app.broker_forbidden (id int)', 'SET ROLE studio_agent', 'SET ROLE studio_migrator']) {
       await assert.rejects(broker.query(sql), { code: '42501' });
     }
     await assert.rejects(agent.query('SELECT * FROM studio_private.consumed_messages'), { code: '42501' });
@@ -157,6 +158,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     } finally { await otherAgent.end(); }
     await agent.query('COMMIT');
     await checkAttendance(agent, migrator, client.rows[0].id as string);
+    await checkTeachers(agent, migrator, { ...connection, user: 'studio_agent', password: passwords.agent });
     await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'Stale')"), { code: '42501' });
     await assert.rejects(agent.query('DELETE FROM app.training_rules WHERE id = $1', [rule.rows[0].id]), { code: '42501' });
     await assert.rejects(agent.query("UPDATE app.clients SET created_by_phone = 'forged' WHERE id = $1", [client.rows[0].id]), { code: '42501' });
@@ -269,6 +271,10 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       { query: "INSERT INTO app.clients (first_name, last_name, created_by_phone) VALUES ('Synthetic', 'Plugin', 'forged')" },
       { query: "INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1" },
       { query: "UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged'" },
+      { query: "INSERT INTO app.teachers (first_name, last_name, created_by_phone) VALUES ('Synthetic', 'UntrustedPlugin', 'forged')" },
+      { query: "INSERT INTO app.teacher_rules (teacher_id, rule_text) SELECT id, 'Synthetic untrusted' FROM app.teachers LIMIT 1" },
+      { query: "INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) SELECT id, 6, '12:00', '13:00' FROM app.teacher_rules LIMIT 1" },
+      { query: "INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time) SELECT id, '2020-01-01', '12:00' FROM app.teachers LIMIT 1" },
     ];
     const toolOutput = execFileSync('docker', [
       'run', '--rm', '-i', '--init', '--network', `${project}_default`,
