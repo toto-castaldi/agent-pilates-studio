@@ -9,3 +9,4 @@ Use an ADR for a decision with relevant alternatives or long-term consequences t
 
 | ADR | Title | State | Item |
 | --- | ----- | ----- | ---- |
+| [ADR-001](ADR-001-teacher-rule-integrity.md) | Integrità delle regole degli insegnanti | Accepted | TEC-033 |

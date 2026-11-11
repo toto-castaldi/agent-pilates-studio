@@ -137,6 +137,56 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-future-cancel', 'future-absence-cancel'))).status, 200);
     await waitFor('SELECT count(*) FROM app.attendance WHERE cancelled_at IS NOT NULL', 2);
     assert.deepEqual((await migrator.query("SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance WHERE lesson_date = '2099-01-01'")).rows[0], { cancelled_by_phone: '15555550103', cancelled_by_name: 'Synthetic Beta', cancellation_reason: 'synthetic future cancellation' });
+    await waitObservation((entry) => entry.user.includes('future-absence-cancel') && entry.last_role === 'tool');
+    await delay(2000);
+    const teacherStart = (await migrator.query('SELECT clock_timestamp() AS now')).rows[0].now as Date;
+    assert.deepEqual((await Promise.all([
+      gatewayPost(body('15555550102', 'Synthetic Alpha', 'synthetic-teacher-alpha', 'teacher-create-alpha')),
+      gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-teacher-beta', 'teacher-create-beta')),
+    ])).map((response) => response.status), [200, 200]);
+    await waitFor('SELECT count(*) FROM app.teachers', 2);
+    await waitFor('SELECT count(*) FROM app.teacher_rules', 2);
+    await waitFor('SELECT count(*) FROM app.teacher_rule_intervals WHERE is_active', 2);
+    await waitFor('SELECT count(*) FROM app.teacher_assignments', 2);
+    const teacherAuthors = [
+      { first_name: 'alpha', created_by_phone: '15555550102', created_by_name: 'Synthetic Alpha' },
+      { first_name: 'beta', created_by_phone: '15555550103', created_by_name: 'Synthetic Beta' },
+    ];
+    assert.deepEqual((await migrator.query('SELECT first_name, created_by_phone, created_by_name FROM app.teachers ORDER BY first_name')).rows, teacherAuthors);
+    for (const table of ['teacher_rules', 'teacher_assignments']) {
+      assert.deepEqual((await migrator.query(`SELECT t.first_name, r.created_by_phone, r.created_by_name FROM app.${table} r JOIN app.teachers t ON t.id = r.teacher_id ORDER BY t.first_name`)).rows, teacherAuthors);
+    }
+    for (const table of ['teachers', 'teacher_rules', 'teacher_assignments']) {
+      assert.equal((await migrator.query(`SELECT count(*) FROM app.${table} WHERE created_at < $1`, [teacherStart])).rows[0].count, '0');
+    }
+    await waitFor('SELECT count(*) FROM studio_private.teacher_rule_builds', 0);
+    await waitObservation((entry) => entry.user.includes('teacher-create-alpha') && entry.last_role === 'tool');
+    await waitObservation((entry) => entry.user.includes('teacher-create-beta') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-teacher-deactivate', 'teacher-deactivate-alpha'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.teacher_rules WHERE deactivated_at IS NOT NULL', 1);
+    assert.deepEqual((await migrator.query("SELECT deactivated_by_phone, deactivated_by_name, deactivation_reason, deactivated_at >= created_at AS ordered FROM app.teacher_rules WHERE rule_text = 'alpha teacher rule'")).rows[0], {
+      deactivated_by_phone: '15555550103', deactivated_by_name: 'Synthetic Beta', deactivation_reason: 'synthetic teacher replacement', ordered: true,
+    });
+    assert.deepEqual((await migrator.query('SELECT t.first_name, i.is_active FROM app.teacher_rule_intervals i JOIN app.teacher_rules r ON r.id = i.rule_id JOIN app.teachers t ON t.id = r.teacher_id ORDER BY t.first_name')).rows, [
+      { first_name: 'alpha', is_active: false }, { first_name: 'beta', is_active: true },
+    ]);
+    await waitObservation((entry) => entry.user.includes('teacher-deactivate-alpha') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-teacher-cancel', 'teacher-cancel-alpha'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.teacher_assignments WHERE cancelled_at IS NOT NULL', 1);
+    assert.deepEqual((await migrator.query("SELECT created_by_phone, cancelled_by_phone, cancelled_by_name, cancellation_reason, cancelled_at >= created_at AS ordered FROM app.teacher_assignments WHERE lesson_date = '2020-01-01'")).rows[0], {
+      created_by_phone: '15555550102', cancelled_by_phone: '15555550103', cancelled_by_name: 'Synthetic Beta', cancellation_reason: 'synthetic teacher correction', ordered: true,
+    });
+    await waitObservation((entry) => entry.user.includes('teacher-cancel-alpha') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', 'synthetic-teacher-cancel-future', 'teacher-cancel-future'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.teacher_assignments WHERE cancelled_at IS NOT NULL', 2);
+    assert.deepEqual((await migrator.query("SELECT created_by_phone, cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.teacher_assignments WHERE lesson_date = '2099-01-01'")).rows[0], {
+      created_by_phone: '15555550103', cancelled_by_phone: '15555550102', cancelled_by_name: 'Synthetic Alpha', cancellation_reason: 'synthetic future teacher correction',
+    });
+    await waitObservation((entry) => entry.user.includes('teacher-cancel-future') && entry.last_role === 'tool');
+    await delay(2000);
     let gatewayId = compose('ps', '-q', 'hermes').trim();
     execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /tmp/pilates-injection-marker'], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
@@ -260,6 +310,15 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     await agent1.query('ROLLBACK');
     await assert.rejects(agent1.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1"), { code: '42501' });
     await assert.rejects(agent1.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged' WHERE id = (SELECT id FROM app.attendance LIMIT 1)"), { code: '42501' });
+    for (const sql of [
+      "INSERT INTO app.teachers (first_name, last_name) VALUES ('Untrusted', 'Synthetic')",
+      "INSERT INTO app.teacher_rules (teacher_id, rule_text) SELECT id, 'Synthetic untrusted' FROM app.teachers LIMIT 1",
+      "INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) SELECT id, 6, '12:00', '13:00' FROM app.teacher_rules WHERE deactivated_at IS NULL LIMIT 1",
+      "INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time) SELECT id, '2020-01-01', '12:00' FROM app.teachers LIMIT 1",
+      "UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'untrusted' WHERE deactivated_at IS NULL",
+      "UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'untrusted' WHERE id = (SELECT id FROM app.teacher_assignments LIMIT 1)",
+      'SELECT * FROM studio_private.teacher_rule_builds',
+    ]) await assert.rejects(agent1.query(sql), { code: '42501' });
 
     const noNamePayload = JSON.parse(body('15555550102', 'Synthetic Alpha', 'synthetic-no-name', 'x')) as { entry: Array<{ changes: Array<{ value: { contacts?: unknown } }> }> };
     delete noNamePayload.entry[0].changes[0].value.contacts;
@@ -268,6 +327,8 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     assert.equal((await claim({ ...noName, message_id: 'synthetic-no-name', sender: '15555550102', turn: randomBytes(32).toString('hex') })).status, 204);
     const missing = await agent1.query("INSERT INTO app.clients (first_name, last_name, created_by_name) VALUES ('missing', 'synthetic', 'forged') RETURNING created_by_phone, created_by_name");
     assert.deepEqual(missing.rows[0], { created_by_phone: '15555550102', created_by_name: null });
+    const missingTeacher = await agent1.query("INSERT INTO app.teachers (first_name, last_name, created_by_name) VALUES ('Missing', 'Synthetic', 'forged') RETURNING created_by_phone, created_by_name");
+    assert.deepEqual(missingTeacher.rows[0], { created_by_phone: '15555550102', created_by_name: null });
     await agent1.query('ROLLBACK');
     await fetch(`${broker}/v1/release`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': secrets['bridge-token'] }, body: JSON.stringify(noName) });
     assert.equal(Number((await migrator.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);

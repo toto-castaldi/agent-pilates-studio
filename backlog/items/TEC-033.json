@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-033-schema-degli-insegnanti",
   "dependencies": [
     "TEC-027"
@@ -24,7 +24,8 @@
     "TECHNICAL-DESIGN §4",
     "TECHNICAL-DESIGN §5",
     "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §10"
+    "TECHNICAL-DESIGN §10",
+    "ADR-001"
   ],
   "description": "Introdurre con una migrazione Prisma l'anagrafica degli insegnanti, le regole degli insegnanti con intervalli giornalieri e le indicazioni dell'insegnante per lezione puntuale. L'autore non deve essere falsificabile, secondo il meccanismo di TEC-010/TEC-027. Disattivazione e annullamento sono tracciati, senza cancellazione né riscrittura. Lo schema va descritto in SOUL.md.",
   "acceptance_criteria": [
@@ -35,5 +36,7 @@
     "I test su PostgreSQL reale usano solo dati sintetici. Verificano: migrazione da stato pulito e dallo schema precedente con dati; vincoli; unicità; indicazioni passate e future; autore non falsificabile; disattivazione e annullamento unici; rifiuto di cancellazione, riscrittura e DDL. Le suite test:db, test:author, test:upgrade e test:hermes (backup e ripristino) sono aggiornate.",
     "SOUL.md descrive tabelle e colonne, insegnante atteso, insegnante della lezione e lezione puntuale esistente, senza duplicare nel codice le regole di comportamento. Il controllo di coerenza di test:local copre le nuove colonne.",
     "TECHNICAL-DESIGN §4 e §5 descrivono modello dati e invarianti; la decisione aperta di §10 sullo schema è risolta."
-  ]
+  ],
+  "outcome": "Migrazione Prisma per insegnanti, regole con intervalli inclusivi e indicazioni per lezioni passate e future, con autore autenticato, storico immutabile e transizioni uniche. Difesa GiST dalle sovrapposizioni concorrenti e costruzione atomica delle regole documentate in ADR-001; SOUL, design e README aggiornati. Verificati gate rapido (59 test unitari), test:local (22), test:db, test:author, test:hermes e test:upgrade su dati sintetici: migrazione pulita e dallo schema precedente con dati, privilegi, autore non falsificabile, concorrenza e backup/ripristino. Evidenze in docs/operations/TEC-033-prove.md. Nessuna prova con modello reale né modifica allo stack operativo.",
+  "closed_at": "2026-11-11"
 }
