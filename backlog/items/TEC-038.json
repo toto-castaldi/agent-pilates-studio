@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-038-allineamento-template-v2-1-0",
   "dependencies": [
     "TEC-031"
@@ -38,5 +38,7 @@
     "AGENTS.md, README e documenti pertinenti riflettono la nuova eccezione e il gate; restano attivi shared claims, coordinamento non bloccante, controllo di main prima del primo clone, richiesta esplicita per orchestrazione, via ai worker e merge, e protezioni dei clone. La sola adozione non avvia worker né pubblica main; lo stack operativo, i segreti e la configurazione personale non sono modificati.",
     "Prove ripetibili isolate con repository e remoti sintetici verificano aggiunta e push, assenza di upstream, blocco per commit locali non pubblicati, upstream avanzato con rebase e controllo, conflitto e altri errori, senza pubblicare lavoro reale né avviare worker. La copertura esistente per lavoro parallelo e visualizzatore è preservata; i limiti delle prove e delle istruzioni al modello sono documentati.",
     "Documentazione e test pertinenti sono aggiornati; passano il quality gate e le suite separate interessate, incluse test:local e test:pi ove pertinenti, con soli dati sintetici. Nessuna prova legge o modifica dati personali."
-  ]
+  ],
+  "outcome": "Adottati senza divergenze processo, regole parallele e skill del template v2.1.0 (tag annotato e commit verificati); preservate le personalizzazioni dello studio e registrate provenienza e basi. Il solo commit documentale di aggiunta è pubblicato con upstream, dopo controllo dei commit locali; rebase e arresto sugli errori seguono il processo. Superati lint, typecheck, npm test (59), build, test:local (22) e test:pi (7) con Pi 1.5.0. Prove Git isolate coprono push, assenza di upstream, commit locali, rebase, conflitto, check fallito e altro rifiuto; non verificano l’osservanza del modello o Herdr reale. La prima test:local ha rilevato un’asserzione obsoleta, poi corretta; la prima test:pi ha usato Pi 1.5.2 ed è fallita sul vincolo 1.5.0, poi superata con la versione richiesta. Nessun worker avviato né push di main.",
+  "closed_at": "2026-11-11"
 }
