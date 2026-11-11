@@ -105,15 +105,24 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   assert.ok(greeting && firstRequest);
   assert.notEqual(greeting.sender, firstRequest.sender);
   for (const scenario of [greeting, firstRequest]) {
-    assert.equal(scenario.turns.length, 2);
+    assert.equal(scenario.turns.length, 3);
     assert.ok(scenario.turns[0].response.contains.includes('Ambrogio'));
     assert.ok(scenario.turns[1].response.excludes.includes('Ambrogio'));
-    for (const turn of scenario.turns) {
-      assert.ok(turn.response.excludes.includes('profil'));
+    for (const [index, turn] of scenario.turns.entries()) {
+      if (index < 2) assert.ok(turn.response.excludes.includes('profil'));
       assert.deepEqual(turn.expected, { clients: [], rules: [] });
       assert.equal(responseMatches('Vuoi creare un profilo?', turn.response), false);
     }
+    assert.deepEqual(scenario.turns[2].response.contains, [scenario.profile]);
+    assert.ok(responseMatches(`Su WhatsApp ti chiami ${scenario.profile}.`, scenario.turns[2].response));
+    assert.equal(responseMatches(`Su WhatsApp ti chiami ${scenario.profile}. Vuoi creare un profilo?`, scenario.turns[2].response), false);
   }
+  const noName = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nessun-profilo-nome-assente');
+  assert.ok(noName);
+  assert.equal(noName.profile, undefined, 'the webhook must omit the profile name');
+  assert.ok(responseMatches('WhatsApp non mi ha fornito il tuo nome.', noName.turns[1].response));
+  assert.equal(responseMatches('WhatsApp non mi ha fornito il tuo nome. Dimmi il tuo nome.', noName.turns[1].response), false);
+  assert.equal(responseMatches('Ti chiami Operatore Sintetico.', noName.turns[1].response), false);
   assert.ok(responseMatches('Ciao, sono Ambrogio!', greeting.turns[0].response));
   assert.equal(responseMatches('Ciao!', greeting.turns[0].response), false);
   for (const proposal of ['un profilo', 'un account', 'una scheda personale', 'registrarti']) {

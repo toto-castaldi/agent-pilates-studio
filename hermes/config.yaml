@@ -5,6 +5,9 @@ memory:
   memory_enabled: false
   user_profile_enabled: false
   provider: ""
+onboarding:
+  # Independent of memory flags; keep a string (YAML false is not accepted).
+  profile_build: "off"
 plugins:
   enabled:
     - pilates-postgres

@@ -6,7 +6,8 @@
       "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
       "turns": [
         { "message": "Ciao!", "response": { "contains": ["Ambrogio"], "anyOf": [["ciao", "salve", "buongiorno", "buonasera", "benvenut"]], "excludes": ["profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } },
-        { "message": "Chi si allena lunedì?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio", "profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } }
+        { "message": "Chi si allena lunedì?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio", "profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Come mi chiamo su WhatsApp?", "response": { "contains": ["Operatore Sintetico"], "excludes": ["Ambrogio", "Collaboratore Sintetico", "creare un profilo", "crearti un profilo", "compilare un profilo", "vuoi un profilo", "15555550102"] }, "expected": { "clients": [], "rules": [] } }
       ]
     },
     {
@@ -14,7 +15,16 @@
       "sender": "15555550103", "profile": "Collaboratore Sintetico", "initial": { "clients": [], "rules": [] },
       "turns": [
         { "message": "Chi si allena lunedì?", "response": { "contains": ["Ambrogio"], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } },
-        { "message": "E martedì chi si allena?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio", "profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } }
+        { "message": "E martedì chi si allena?", "response": { "contains": [], "anyOf": [["nessun", "non ci sono", "non risulta", "non è prevista", "non ho trovato"]], "excludes": ["Ambrogio", "profil", "account", "scheda personale", "registrarti", "registrazione personale"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Come mi chiamo su WhatsApp?", "response": { "contains": ["Collaboratore Sintetico"], "excludes": ["Ambrogio", "Operatore Sintetico", "creare un profilo", "crearti un profilo", "compilare un profilo", "vuoi un profilo", "15555550103"] }, "expected": { "clients": [], "rules": [] } }
+      ]
+    },
+    {
+      "id": "nessun-profilo-nome-assente",
+      "sender": "15555550104", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Ciao!", "response": { "contains": ["Ambrogio"], "anyOf": [["ciao", "salve", "buongiorno", "buonasera", "benvenut"]], "excludes": ["profil", "account", "come ti chiami", "il tuo nome", "15555550104"] }, "expected": { "clients": [], "rules": [] } },
+        { "message": "Come mi chiamo su WhatsApp?", "response": { "contains": ["WhatsApp"], "anyOf": [["non ho", "non ricevo", "non conosco", "non è disponibile", "non vedo", "non mi è stato", "non è stato", "non risulta", "non compare", "non mi comunica", "non viene", "non mi ha fornito", "non ha fornito", "non mi fornisce"]], "excludes": ["Ambrogio", "Operatore Sintetico", "Collaboratore Sintetico", "come ti chiami", "dimmi il tuo nome", "creare un profilo", "compilare un profilo", "15555550104"] }, "expected": { "clients": [], "rules": [] } }
       ]
     },
     {

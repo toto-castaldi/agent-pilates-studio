@@ -23,7 +23,9 @@ async def chat(request):
     messages = body.get('messages', [])
     last_user = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
     system = next((str(item.get('content', '')) for item in messages if item.get('role') == 'system'), '')
-    observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None})
+    has_studio_tool = any(tool.get('function', {}).get('name') == 'studio_sql_query' for tool in body.get('tools', []))
+    observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None,
+                         'has_studio_tool': has_studio_tool})
     if 'context-probe' in last_user or not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:

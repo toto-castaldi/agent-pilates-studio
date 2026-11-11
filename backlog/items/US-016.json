@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "us/US-016-nessuna-proposta-spontanea-profilo",
   "dependencies": [],
   "requirements": [
@@ -27,9 +27,13 @@
     "Si indaga l'origine della proposta osservata distinguendo le istruzioni del progetto, l'eventuale contributo di Hermes e la risposta del modello; si documentano le evidenze e gli eventuali limiti senza esporre conversazioni, numeri o credenziali reali.",
     "Le istruzioni di comportamento necessarie sono versionate in hermes/SOUL.md, senza duplicarle nel codice. Memoria, profilo integrato e provider di memoria restano disabilitati; non si introduce un'anagrafica o un servizio di profilazione. Cronologia e attribuzione tramite profilo WhatsApp restano invariati.",
     "Il catalogo di TEC-012 include scenari di regressione con dati sintetici per un saluto come primo messaggio, una richiesta pertinente al primo turno e un turno successivo: verificano risposta pertinente, presentazione iniziale e assenza di proposte spontanee di profilo. Gli scenari sono eseguiti con il modello reale tramite OpenRouter e l'esito, inclusi i limiti delle verifiche lessicali e del comportamento probabilistico, è documentato.",
-    "La modifica preserva l'isolamento dei dati, i vincoli privacy e le verifiche di configurazione esistenti; non richiede dati personali reali negli scenari o nei log."
+    "La modifica preserva l'isolamento dei dati, i vincoli privacy e le verifiche di configurazione esistenti; non richiede dati personali reali negli scenari o nei log.",
+    "Il nome visualizzato WhatsApp già fornito da Hermes è utilizzabile nella conversazione senza censimento o conferma iniziale; se assente non viene inventato né richiesto per iniziare. Le regressioni sintetiche verificano nome presente, nome assente e separazione tra interlocutori, senza dedurre ruoli o privilegi e senza introdurre profili via CLI."
   ],
   "remarks": [
-    "La prova reale dell'operatore dopo la prima chiusura mostra ancora una proposta di profilo. Individuata nell'immagine fissata la direttiva di primo contatto di Hermes, governata da onboarding.profile_build (predefinito ask), indipendente dai flag della memoria. Item riaperto per disabilitarla e verificarne la regressione; riconoscimento conversazionale tramite nome WhatsApp da chiarire separatamente."
-  ]
+    "La prova reale dell'operatore dopo la prima chiusura mostra ancora una proposta di profilo. Individuata nell'immagine fissata la direttiva di primo contatto di Hermes, governata da onboarding.profile_build (predefinito ask), indipendente dai flag della memoria. Item riaperto per disabilitarla e verificarne la regressione.",
+    "Precisazione dell'utente del 2026-11-11: solo dati WhatsApp già disponibili per il riconoscimento conversazionale; nessun censimento o profilo precompilato via CLI. Il nome è metadato visualizzato, non una fonte di ruolo o privilegi."
+  ],
+  "outcome": "Individuata e disabilitata la direttiva di primo contatto Hermes con onboarding.profile_build impostato alla stringa off, indipendente dalla memoria. SOUL usa il nome WhatsApp già nel contesto senza censimento o invenzioni; verificati nome presente, assente e isolamento dei mittenti. Superati gate rapido, test:local, test:author e tre scenari OpenRouter reali. Controprova iniziale, riapertura e limiti documentati in docs/operations/TEC-012-prove.md; nessun aggiornamento dello stack operativo eseguito dal worker.",
+  "closed_at": "2026-11-11"
 }

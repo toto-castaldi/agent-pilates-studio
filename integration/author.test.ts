@@ -60,7 +60,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'hermes');
     let gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observationsUrl = `http://${address('model-stub')}:8088/v1/observations`;
-    type Observation = { user: string; system: string; last_role: string };
+    type Observation = { user: string; system: string; last_role: string; has_studio_tool: boolean };
     const waitObservation = async (predicate: (entry: Observation) => boolean) => {
       for (let i = 0; i < 90; i++) {
         const entries = await (await fetch(observationsUrl)).json() as Observation[];
@@ -81,6 +81,18 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     const gatewayPost = (payload: string, signature = signed(payload)) => fetch(gateway, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': signature, Connection: 'close' } });
     const evidence = (payload: string, signature = signed(payload), token = secrets['bridge-token']) => fetch(`${broker}/v1/evidence`, { method: 'POST', body: payload, headers: { 'X-Pilates-Bridge': token, 'X-Hub-Signature-256': signature } });
     const claim = (data: object, token = secrets['bridge-token']) => fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': token }, body: JSON.stringify(data) });
+    // A fresh install must not inject Hermes' opt-in profile-build directive,
+    // regardless of the model following SOUL correctly in a particular run.
+    const firstContact = body('15555550102', 'Synthetic Alpha', 'synthetic-first-contact', 'context-probe-first-contact');
+    assert.equal((await gatewayPost(firstContact)).status, 200);
+    const firstContactRequest = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('context-probe-first-contact'));
+    const firstContactText = `${firstContactRequest.system}\n${firstContactRequest.user}`;
+    assert.ok(firstContactText.includes("This is the user's very first message ever."), 'missing native first-contact note');
+    assert.equal(firstContactText.includes('build a short profile'), false, 'native profile-build directive must be disabled');
+    assert.ok(firstContactRequest.system.includes('Synthetic Alpha'), 'WhatsApp display name must reach the model');
+    assert.equal(firstContactRequest.system.includes('Synthetic Beta'), false);
+    await delay(2000);
+    assert.equal(Number((await migrator.query('SELECT count(*) FROM app.clients')).rows[0].count), 0);
     const alpha = body('15555550102', 'Synthetic Alpha', 'synthetic-wamid-alpha', 'alpha');
     const beta = body('15555550103', 'Synthetic Beta', 'synthetic-wamid-beta', 'beta');
     assert.equal((await evidence(alpha, signed(alpha), 'wrong-token')).status, 403);
@@ -107,6 +119,11 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
       { rule_text: 'alpha rule', created_by_phone: '15555550102', created_by_name: 'Synthetic Alpha' },
       { rule_text: 'beta rule', created_by_phone: '15555550103', created_by_name: 'Synthetic Beta' },
     ]);
+    for (const [marker, ownName, otherName] of [['alpha', 'Synthetic Alpha', 'Synthetic Beta'], ['beta', 'Synthetic Beta', 'Synthetic Alpha']]) {
+      const request = await waitObservation((entry) => entry.has_studio_tool && entry.last_role === 'user' && entry.user.includes(marker));
+      assert.ok(request.system.includes(ownName), 'missing WhatsApp name in the native session context');
+      assert.equal(request.system.includes(otherName), false, 'another sender name reached the session context');
+    }
     // Wait for the previous turns to finish model processing before sending another
     // message to the same WhatsApp session.
     await waitObservation((entry) => entry.user.includes('alpha') && entry.last_role === 'tool');
@@ -165,10 +182,24 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     assert.ok(clock && Math.abs(Date.now() - Date.parse(clock)) < 120_000);
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{range .Mounts}}{{if eq .Destination "/opt/data/SOUL.md"}}{{.RW}}{{end}}{{end}}', gatewayId], { encoding: 'utf8' }).trim(), 'false');
     const memoryCheck = [
-      'import json',
+      'from pathlib import Path',
+      'from tempfile import TemporaryDirectory',
       'from hermes_cli.config import load_config',
-      "memory = load_config().get('memory', {})",
+      'from agent.onboarding import PLAIN_INTRO_NOTE, first_contact_turn_note, profile_build_directive, profile_build_mode',
+      'config = load_config()',
+      "memory = config.get('memory', {})",
       "assert memory.get('memory_enabled') is False and memory.get('user_profile_enabled') is False and not memory.get('provider')",
+      "assert profile_build_mode(config) == 'off'",
+      "assert first_contact_turn_note(config, Path('/opt/data/config.yaml'), session_history_empty=True, install_has_prior_sessions=False) == PLAIN_INTRO_NOTE",
+      "assert first_contact_turn_note(config, Path('/opt/data/config.yaml'), session_history_empty=False, install_has_prior_sessions=False) is None",
+      "assert first_contact_turn_note(config, Path('/opt/data/config.yaml'), session_history_empty=True, install_has_prior_sessions=True) is None",
+      // Memory flags alone do not disable onboarding, and a YAML boolean is
+      // not the string required by Hermes. These negative cases stay isolated.
+      'with TemporaryDirectory() as directory:',
+      "    for mode in [None, False, 'ask']:",
+      "        negative = {**config, 'onboarding': {} if mode is None else {'profile_build': mode}}",
+      "        assert profile_build_mode(negative) == 'ask'",
+      "        assert first_contact_turn_note(negative, Path(directory) / 'config.yaml', session_history_empty=True, install_has_prior_sessions=False) == profile_build_directive().strip()",
     ].join('\n');
     execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', memoryCheck], { stdio: 'pipe' });
     const clockCheck = [
