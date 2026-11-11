@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "us/US-016-nessuna-proposta-spontanea-profilo",
   "dependencies": [],
   "requirements": [
     "REQ-AGENT-007",
