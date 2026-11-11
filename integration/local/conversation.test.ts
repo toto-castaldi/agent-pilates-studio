@@ -100,6 +100,29 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   assert.deepEqual(historical.turns.slice(0, 2).map((turn: { attendanceExpected: { attendance: { client: string }[] } }) => turn.attendanceExpected.attendance.map((row) => row.client)), [['Ada Verdi', 'Bruno Neri'], ['Ada Verdi', 'Bruno Neri', 'Carla Rossi']]);
   const today = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'presenze-data-odierna');
   assert.ok(today.turns.every((turn: { attendanceExpected: { attendance: { lessonDate: string }[] } }) => turn.attendanceExpected.attendance[0].lessonDate === '$TODAY'));
+  const greeting = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nessun-profilo-saluto');
+  const firstRequest = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nessun-profilo-richiesta');
+  assert.ok(greeting && firstRequest);
+  assert.notEqual(greeting.sender, firstRequest.sender);
+  for (const scenario of [greeting, firstRequest]) {
+    assert.equal(scenario.turns.length, 2);
+    assert.ok(scenario.turns[0].response.contains.includes('Ambrogio'));
+    assert.ok(scenario.turns[1].response.excludes.includes('Ambrogio'));
+    for (const turn of scenario.turns) {
+      assert.ok(turn.response.excludes.includes('profil'));
+      assert.deepEqual(turn.expected, { clients: [], rules: [] });
+      assert.equal(responseMatches('Vuoi creare un profilo?', turn.response), false);
+    }
+  }
+  assert.ok(responseMatches('Ciao, sono Ambrogio!', greeting.turns[0].response));
+  assert.equal(responseMatches('Ciao!', greeting.turns[0].response), false);
+  for (const proposal of ['un profilo', 'un account', 'una scheda personale', 'registrarti']) {
+    assert.equal(responseMatches(`Ciao, sono Ambrogio! Vuoi creare ${proposal}?`, greeting.turns[0].response), false);
+  }
+  assert.ok(responseMatches('Sono Ambrogio, non ci sono lezioni.', firstRequest.turns[0].response));
+  assert.equal(responseMatches('Sono Ambrogio.', firstRequest.turns[0].response), false);
+  assert.ok(responseMatches('Non ci sono lezioni.', firstRequest.turns[1].response));
+  assert.equal(responseMatches('Non ci sono lezioni. Vuoi un profilo?', firstRequest.turns[1].response), false);
   const naming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-prima-conversazione');
   const otherNaming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-altro-interlocutore');
   assert.ok(naming && otherNaming);
