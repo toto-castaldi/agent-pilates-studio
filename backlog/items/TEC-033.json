@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-033-schema-degli-insegnanti",
   "dependencies": [
     "TEC-027"
   ],
