@@ -35,6 +35,26 @@ def idle_seconds():
     return int(value)
 
 
+def redact_phones(value, allowed):
+    # Redact only a wire copy, not the authenticated identity or persisted
+    # history. Also cover common separators in a known configured number.
+    patterns = [re.compile(r'[ .()+\-\u00a0]*'.join(re.escape(digit) for digit in phone))
+                for phone in allowed if re.fullmatch(r'[0-9]+', phone)]
+
+    def redact(item):
+        if isinstance(item, str):
+            for pattern in patterns:
+                item = pattern.sub('[numero riservato]', item)
+            return item
+        if isinstance(item, list):
+            return [redact(entry) for entry in item]
+        if isinstance(item, dict):
+            return {redact(key): redact(entry) for key, entry in item.items()}
+        return item
+
+    return redact(value)
+
+
 def transcript_epoch(value):
     # Persisted rows normally carry time.time(); tolerate numeric strings and ISO
     # values, and treat anything else as unknown (no resume compaction).
@@ -76,13 +96,21 @@ def install():
     from gateway.config import Platform
     from gateway.run_turn_runner import TurnRunner
     from gateway.session_api_turn import api_execution
+    import agent.side_question as side_question
     import agent.tool_executor as executor
+    import agent.turn_context as turn_context
     import agent.turn_context_compaction as turn_compaction
     import agent.turn_request_assembly as assembly
     from agent.conversation_compression import conversation_history_after_compression
+    from agent.context_compressor import ContextCompressor
     import cron.scheduler_provider as scheduler_provider
     import gateway.run as gateway_run
+    import gateway.session as gateway_session
     from gateway.slash_commands import GatewaySlashCommandsMixin
+
+    # Hermes marks WhatsApp Cloud as a plugin but does not mark it PII-safe.
+    # It has no raw-ID mention requirement, so enable its native ID hashing.
+    gateway_session._PII_SAFE_PLATFORMS = gateway_session._PII_SAFE_PLATFORMS | {Platform.WHATSAPP_CLOUD}
 
     # Until scheduled delivery has its own authorization design, never start a
     # scheduler or dispatch missed jobs, even if a persistent store contains jobs.
@@ -113,6 +141,11 @@ def install():
         api_messages, system = original_build_messages(agent, messages, **kwargs)
         now = datetime.now(ZoneInfo('Europe/Rome')).isoformat(timespec='seconds')
         system = (system + '\n\nData e ora correnti (Europe/Rome): ' + now).strip()
+        # Native prompt redaction does not cover historic tool output, names or
+        # user text. Remove known authorized phones from the wire copy too.
+        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        api_messages = redact_phones(api_messages, allowed)
+        system = redact_phones(system, allowed)
         if api_messages and api_messages[0].get('role') == 'system':
             api_messages[0] = {**api_messages[0], 'content': system}
         else:
@@ -120,6 +153,35 @@ def install():
         return api_messages, system
 
     assembly.build_api_messages = build_messages
+
+    # Hermes sends compaction prompts through a separate auxiliary-model path,
+    # before build_api_messages. Redact that wire copy too; the original
+    # transcript stays intact for the gateway and the authenticated broker.
+    original_summary_call = ContextCompressor._call_summary_llm
+
+    def summary_call(compressor, prompt, prompt_started_at):
+        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        return original_summary_call(compressor, redact_phones(prompt, allowed), prompt_started_at)
+
+    ContextCompressor._call_summary_llm = summary_call
+
+    # Title generation and /btw have their own auxiliary requests, which can
+    # read the unsanitized transcript before the ordinary message assembly.
+    # Keep their input copies private without changing the stored transcript.
+    original_title = turn_context._maybe_title_session_at_turn_start
+
+    def title(agent, messages, title_user_message=None):
+        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        return original_title(agent, redact_phones(messages, allowed), redact_phones(title_user_message, allowed))
+
+    turn_context._maybe_title_session_at_turn_start = title
+    original_side_question = side_question.answer_side_question
+
+    def answer_side_question(question, history=None, *args, **kwargs):
+        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        return original_side_question(redact_phones(question, allowed), redact_phones(history, allowed), *args, **kwargs)
+
+    side_question.answer_side_question = answer_side_question
 
     # Enforce the allowlist at both execution paths, including model-emitted
     # tool names that were not advertised in the tool schema.
@@ -161,7 +223,6 @@ def install():
             return None
         if getattr(compressor, 'get_active_compression_failure_cooldown', lambda: None)():
             return None
-        from agent import turn_context
         messages = out.messages
         tokens = turn_context._preflight_request_tokens(agent, messages, out.active_system_prompt or '')
         out.messages, out.active_system_prompt = agent._compress_context(

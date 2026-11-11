@@ -159,6 +159,32 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     await agent.query('COMMIT');
     await checkAttendance(agent, migrator, client.rows[0].id as string);
     await checkTeachers(agent, migrator, { ...connection, user: 'studio_agent', password: passwords.agent });
+    // The lookup is available only to the broker; the agent receives an ID
+    // solely through its authenticated, transaction-bound author context.
+    await assert.rejects(agent.query('SELECT app.current_sender_teacher_id()'), { code: '42501' });
+    await assert.rejects(agent.query("SELECT studio_private.configured_teacher_id('Synthetic', 'InstructorOne')"), { code: '42501' });
+    const linkedTeacher = (await broker.query("SELECT studio_private.configured_teacher_id('synthetic', 'instructorone') AS id")).rows[0].id as string;
+    assert.ok(linkedTeacher);
+    assert.equal((await broker.query("SELECT studio_private.configured_teacher_id('Missing', 'Synthetic') AS id")).rows[0].id, null);
+    await agent.query('BEGIN');
+    const teacherBinding = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await broker.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, expires_at, sender_teacher_id) VALUES ($1, $2, '15555550102', clock_timestamp() + interval '1 minute', $3)", [teacherBinding.pid, teacherBinding.txid, linkedTeacher]);
+    await agent.query("SELECT set_config('studio.sender_teacher_id', '999', true)");
+    assert.equal((await agent.query('SELECT app.current_sender_teacher_id() AS id')).rows[0].id, linkedTeacher);
+    await agent.query('ROLLBACK');
+    await broker.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [teacherBinding.pid, teacherBinding.txid]);
+    await agent.query('BEGIN');
+    const unlinked = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await broker.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, expires_at) VALUES ($1, $2, '15555550103', clock_timestamp() + interval '1 minute')", [unlinked.pid, unlinked.txid]);
+    assert.equal((await agent.query('SELECT app.current_sender_teacher_id() AS id')).rows[0].id, null);
+    await agent.query('ROLLBACK');
+    await broker.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [unlinked.pid, unlinked.txid]);
+    await agent.query('BEGIN');
+    const expiredTeacher = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await broker.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, expires_at, sender_teacher_id) VALUES ($1, $2, '15555550102', clock_timestamp() - interval '1 second', $3)", [expiredTeacher.pid, expiredTeacher.txid, linkedTeacher]);
+    await assert.rejects(agent.query('SELECT app.current_sender_teacher_id()'), { code: '42501' });
+    await agent.query('ROLLBACK');
+    await broker.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [expiredTeacher.pid, expiredTeacher.txid]);
     await assert.rejects(agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'Stale')"), { code: '42501' });
     await assert.rejects(agent.query('DELETE FROM app.training_rules WHERE id = $1', [rule.rows[0].id]), { code: '42501' });
     await assert.rejects(agent.query("UPDATE app.clients SET created_by_phone = 'forged' WHERE id = $1", [client.rows[0].id]), { code: '42501' });

@@ -11,6 +11,7 @@ import { Client } from 'pg';
 type ModelObservation = {
   kind: 'turn' | 'summary' | 'aux'; model: string; chars: number; last_role: string;
   verbatim: string[]; all: string[]; current: string[]; summary_in_context: boolean; soul: boolean; clock: boolean;
+  private_phone: boolean;
 };
 type MetaObservation = { to: string; text: string };
 
@@ -34,6 +35,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     'whatsapp-access-token': 'synthetic-access-token', 'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-allowed-users': `${ALPHA},${BETA}`,
     'whatsapp-home-channel': ALPHA, 'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': '[]',
   };
   const override = join(directory, 'override.yaml');
   const env = {
@@ -148,7 +150,9 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     const trace: string[] = [];
     let crossing: { index: number; estimate: number; previous: number; observations: ModelObservation[] } | undefined;
     for (let index = 1; index <= 14 && !crossing; index++) {
-      const text = message(`MARK-A-${index}`, 10_000);
+      // Put a configured number in the middle of persisted history too, so
+      // the summary route is exercised independently of the native prompt.
+      const text = message(`MARK-A-${index}${index === 3 ? ` ${ALPHA}` : ''}`, 10_000);
       const observations = await turn(ALPHA, text);
       trace.push(observations.map((item) => `${item.kind}:${Math.round(item.chars / 4)}:${item.verbatim.length}`).join(','));
       if (kinds(observations, 'summary').length > 0) {
@@ -174,7 +178,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     // 2. Inactivity: beta stays far below the threshold; only a resumed turn compacts.
     let betaChars = 0;
     for (let index = 1; index <= 6; index++) {
-      observations = await turn(BETA, message(`MARK-B-${index}`, 5_000));
+      observations = await turn(BETA, message(`MARK-B-${index}${index === 3 ? ' +1 (555) 555-0103' : ''}`, 5_000));
       assert.equal(kinds(observations, 'summary').length, 0);
       betaChars = lastTurn(observations).chars;
     }
@@ -237,11 +241,12 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     const all = await modelObservations();
     for (const item of all) {
       assert.equal(item.model, 'synthetic/compaction-model');
+      assert.equal(item.private_phone, false, 'an authorized sender number reached a model request');
       const senders = new Set(item.all.map((marker) => marker.split('-')[1]));
       assert.ok(senders.size <= 1, 'a model request mixed two senders');
     }
-    assert.ok(kinds(all, 'summary').some((item) => item.all.some((marker) => marker.startsWith('MARK-A-'))));
-    assert.ok(kinds(all, 'summary').some((item) => item.all.some((marker) => marker.startsWith('MARK-B-'))));
+    assert.ok(kinds(all, 'summary').some((item) => item.all.includes('MARK-A-3')));
+    assert.ok(kinds(all, 'summary').some((item) => item.all.includes('MARK-B-3')));
     const delivered = await metaObservations();
     assert.ok(delivered.length > 0);
     for (const item of delivered) {

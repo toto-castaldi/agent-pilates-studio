@@ -29,6 +29,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     'whatsapp-allowed-users': '15555550102',
     'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': '[]',
   };
   const oldOverride = join(directory, 'old.yaml');
   const newOverride = join(directory, 'new.yaml');
@@ -139,6 +140,16 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     stateContains(oldGateway, ['synthetic-before-upgrade']);
     assert.equal(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
     compose(oldOverride, 'stop', 'hermes');
+    // Apply TEC-033 independently on the old database, populate its history,
+    // and only then apply the new sender-identity migration during the upgrade.
+    await cp('prisma/migrations/20261111000000_teachers', join(legacyMigrations, '20261111000000_teachers'), { recursive: true });
+    migrate(databaseHost, true);
+    await migrator.query('BEGIN');
+    const teacherBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [teacherBinding.pid, teacherBinding.txid]);
+    await seedTeacherHistory(migrator);
+    await migrator.query('COMMIT');
+    const teachersBefore = await readTeacherState(migrator);
     await migrator.end();
     migrator = undefined;
 
@@ -160,10 +171,9 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.query('BEGIN');
     const newBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
     await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [newBinding.pid, newBinding.txid]);
+    assert.deepEqual(await readTeacherState(migrator), teachersBefore);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [oldClient]);
-    await seedTeacherHistory(migrator);
     await migrator.query('COMMIT');
-    const teachersBefore = await readTeacherState(migrator);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
     agent = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await agent.connect();

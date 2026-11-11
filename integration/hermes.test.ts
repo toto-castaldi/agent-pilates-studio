@@ -28,6 +28,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     'whatsapp-allowed-users': '15555550102',
     'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': '[]',
   };
   const override = join(directory, 'compose.override.yaml');
   const env = {
@@ -109,6 +110,23 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     } finally {
       await writeFile(homeFile, secrets['whatsapp-home-channel']);
     }
+    // The broker independently rejects malformed, unauthorized and duplicate
+    // mappings, even outside start:local, without emitting their contents.
+    const linksFile = join(directory, 'whatsapp-teacher-links');
+    try {
+      const link = { phone: '15555550102', firstName: 'Synthetic', lastName: 'Instructor' };
+      for (const value of ['invalid-json', JSON.stringify([{ ...link, phone: '15555550103' }]),
+        JSON.stringify([link, { ...link, firstName: 'OtherSynthetic' }])]) {
+        await writeFile(linksFile, value);
+        assert.throws(() => compose('run', '--rm', '--no-deps', 'author-broker'), (error: unknown) => {
+          const output = error as { stdout?: string; stderr?: string };
+          assert.doesNotMatch(`${output.stdout ?? ''}${output.stderr ?? ''}`, /1555555010[23]|Synthetic|Instructor|invalid-json/);
+          return true;
+        });
+      }
+    } finally {
+      await writeFile(linksFile, secrets['whatsapp-teacher-links']);
+    }
     compose('up', '-d', '--wait', '--wait-timeout', '120', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     const gatewayHost = address(gatewayId);
@@ -122,7 +140,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     } }] }] });
     const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(proof).digest('hex')}`;
     assert.equal((await fetch(`http://${brokerHost}:8091/v1/evidence`, { method: 'POST', body: proof, headers: { 'X-Pilates-Bridge': secrets['bridge-token'], 'X-Hub-Signature-256': signature } })).status, 204);
-    execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_broker'], { stdio: 'pipe' });
+    execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_broker && test ! -e /run/secrets/whatsapp_teacher_links'], { stdio: 'pipe' });
     execFileSync('docker', ['exec', brokerId, 'sh', '-c', 'test ! -e /run/secrets/db_agent && test ! -e /run/secrets/db_migrator && test ! -e /run/secrets/db_admin'], { stdio: 'pipe' });
 
     const python = [

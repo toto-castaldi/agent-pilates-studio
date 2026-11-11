@@ -27,7 +27,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\nWHATSAPP_TEACHER_LINKS='[{"phone":"15555550102","firstName":"Antonio","lastName":"Neri"}]'\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   // start:local starts services with --no-deps; the synthetic model catalog read by
@@ -57,6 +57,17 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     start(); // No node_modules or volumes: also exercises dependency preparation.
     assert.equal(await readlink(join(dir, '.env')), 'private.env');
     assert.equal(await readFile(join(dir, 'private.env'), 'utf8'), config);
+    const linksPath = join(dir, '.local/secrets/whatsapp-teacher-links');
+    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }]);
+    const originalGateway = compose('ps', '-q', 'hermes').trim();
+    await writeFile(join(dir, 'private.env'), config.replace('"phone":"15555550102"', '"phone":"15555550109"'));
+    const invalidLinks = startResult();
+    assert.notEqual(invalidLinks.status, 0);
+    assert.match(invalidLinks.stderr, /Collegamenti degli insegnanti non validi/);
+    assert.doesNotMatch(invalidLinks.stdout + invalidLinks.stderr, /1555555010[29]|Antonio|Neri/);
+    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }]);
+    assert.equal(compose('ps', '--status', 'running', '-q', 'hermes').trim(), originalGateway);
+    await writeFile(join(dir, 'private.env'), config);
     const db = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
     await db.connect();
     try {
@@ -114,6 +125,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     await writeFile(join(dir, 'replacement.env'), changed, { mode: 0o600 });
     await rename(join(dir, 'replacement.env'), join(dir, 'private.env'));
     start();
+    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550103', firstName: 'Antonio', lastName: 'Neri' }]);
     const address = (service: string) => {
       const id = compose('ps', '-q', service).trim();
       return execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', id], { encoding: 'utf8' }).trim();

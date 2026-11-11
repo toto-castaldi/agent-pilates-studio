@@ -2,6 +2,7 @@ import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
 import { idleSeconds } from './compaction-policy.mjs';
+import { parseTeacherLinks } from './teacher-links.mjs';
 
 class SafeError extends Error {}
 
@@ -35,6 +36,8 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       await file.close();
     }
     const config = parseEnv(contents);
+    // An omitted mapping means no linked senders; an explicit invalid value fails.
+    if (config.WHATSAPP_TEACHER_LINKS === undefined) config.WHATSAPP_TEACHER_LINKS = '[]';
     const required = {
       DB_ADMIN_PASSWORD: 'db-admin',
       DB_MIGRATOR_PASSWORD: 'db-migrator',
@@ -46,6 +49,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       WHATSAPP_ALLOWED_USERS: 'whatsapp-allowed-users',
       WHATSAPP_HOME_CHANNEL: 'whatsapp-home-channel',
       WHATSAPP_PHONE_NUMBER_ID: 'whatsapp-phone-number-id',
+      WHATSAPP_TEACHER_LINKS: 'whatsapp-teacher-links',
     };
     for (const key of Object.keys(required)) {
       const value = config[key];
@@ -62,6 +66,11 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     }
     if (!/^\d+$/.test(config.WHATSAPP_HOME_CHANNEL) || !config.WHATSAPP_ALLOWED_USERS.split(',').includes(config.WHATSAPP_HOME_CHANNEL)) {
       throw new SafeError('Canale home WhatsApp mancante o non autorizzato.');
+    }
+    try {
+      config.WHATSAPP_TEACHER_LINKS = JSON.stringify(parseTeacherLinks(config.WHATSAPP_TEACHER_LINKS, config.WHATSAPP_ALLOWED_USERS));
+    } catch {
+      throw new SafeError('Collegamenti degli insegnanti non validi.');
     }
     const port = (name, fallback) => {
       const value = config[name] || fallback;

@@ -61,6 +61,47 @@ test('local start validates configuration, preserves secrets and suppresses chil
   assert.equal(await startLocal(system), 1);
 });
 
+test('teacher links are private, validated before effects and replaced on restart', async () => {
+  const linked = [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }];
+  const withLinks = `${configuration}WHATSAPP_TEACHER_LINKS='${JSON.stringify(linked)}'\n`;
+  const system = memorySystem();
+  system.put('.env', withLinks);
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/whatsapp-teacher-links'), `${JSON.stringify(linked)}\n`);
+  assert.ok(system.calls.every((call) => call.env.WHATSAPP_TEACHER_LINKS === undefined));
+  system.put('.env', configuration);
+  const before = system.calls.length;
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/whatsapp-teacher-links'), '[]\n');
+  assert.ok(system.calls.slice(before).some((call) => call.args.includes('--force-recreate') && call.args.includes('author-broker')));
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /15555550102|Antonio|Neri/);
+  const shared = [...linked, { ...linked[0], phone: '15555550103' }];
+  const twoSenders = memorySystem();
+  twoSenders.put('.env', `${configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS=15555550102,15555550103')}WHATSAPP_TEACHER_LINKS='${JSON.stringify(shared)}'\n`);
+  assert.equal(await startLocal(twoSenders), 0, 'different authorized senders may refer to the same teacher');
+  assert.deepEqual(JSON.parse(twoSenders.content('.local/secrets/whatsapp-teacher-links') ?? ''), shared);
+
+  const invalid = [
+    'not-json', '{}', 'null', '[1]',
+    JSON.stringify([{ ...linked[0], phone: '15555550103' }]),
+    JSON.stringify([{ ...linked[0], phone: '+15555550102' }]),
+    JSON.stringify([linked[0], { ...linked[0], firstName: 'Francesca' }]),
+    JSON.stringify([{ ...linked[0], lastName: '' }]),
+    JSON.stringify([{ ...linked[0], firstName: ' Antonio' }]),
+    JSON.stringify([{ ...linked[0], firstName: 'Antonio\nNeri' }]),
+    JSON.stringify([{ ...linked[0], lastName: 'a'.repeat(201) }]),
+    JSON.stringify([{ ...linked[0], extra: 'synthetic' }]),
+  ];
+  for (const value of invalid) {
+    const failed = memorySystem();
+    failed.put('.env', `${configuration}WHATSAPP_TEACHER_LINKS='${value}'\n`);
+    assert.equal(await startLocal(failed), 1, 'invalid mapping must fail');
+    assert.equal(failed.calls.length, 0, 'validation must precede service changes');
+    assert.equal(failed.content('.local/secrets/whatsapp-teacher-links'), undefined);
+    assert.doesNotMatch([...failed.logs, ...failed.errors].join(' '), /1555555010[23]|Antonio|Neri|Francesca/);
+  }
+});
+
 test('external configuration is replaced only after both services stop and both are recreated', async () => {
   const system = memorySystem();
   system.put('.env', configuration);

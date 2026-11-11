@@ -1,6 +1,9 @@
 model:
   default: "${PILATES_MODEL}"
   provider: openrouter
+privacy:
+  # Keep phone-based session and home-channel identifiers out of model prompts.
+  redact_pii: true
 memory:
   memory_enabled: false
   user_profile_enabled: false

@@ -35,8 +35,35 @@ def clean_name(value):
     return name[:200] or None
 
 
+def parse_teacher_links(value, allowed):
+    # Independently validate the broker-only file, including when production is
+    # configured without start:local. Never include values in an exception.
+    if not isinstance(value, str) or value != value.strip() or len(value) > 200_000:
+        raise ValueError('Invalid teacher links')
+    try:
+        links = json.loads(value)
+    except (TypeError, ValueError):
+        raise ValueError('Invalid teacher links') from None
+    if not isinstance(links, list):
+        raise ValueError('Invalid teacher links')
+    result = {}
+    for link in links:
+        if not isinstance(link, dict) or set(link) != {'phone', 'firstName', 'lastName'}:
+            raise ValueError('Invalid teacher links')
+        phone, first, last = link['phone'], link['firstName'], link['lastName']
+        if (not isinstance(phone, str) or not re.fullmatch(r'[0-9]+', phone)
+                or phone not in allowed or phone in result):
+            raise ValueError('Invalid teacher links')
+        for name in (first, last):
+            if (not isinstance(name, str) or not name or name != name.strip() or len(name) > 200
+                    or any(unicodedata.category(ch).startswith('C') for ch in name)):
+                raise ValueError('Invalid teacher links')
+        result[phone] = (first, last)
+    return result
+
+
 class Broker:
-    def __init__(self, password, token, app_secret, allowlist, phone_id):
+    def __init__(self, password, token, app_secret, allowlist, phone_id, teacher_links='[]'):
         if (not re.fullmatch(r'[a-f0-9]{64}', password) or not re.fullmatch(r'[a-f0-9]{64}', token)
                 or password == token or not re.fullmatch(r'[0-9]+(?:,[0-9]+)*', allowlist)
                 or not re.fullmatch(r'[0-9]+', phone_id)):
@@ -46,6 +73,7 @@ class Broker:
         self.app_secret = app_secret.encode()
         self.allowlist = frozenset(allowlist.split(','))
         self.phone_id = phone_id
+        self.teacher_links = parse_teacher_links(teacher_links, self.allowlist)
         self.receipts = {}
         self.pool = None
         self.cleanup_task = None
@@ -141,10 +169,18 @@ class Broker:
                         if not inserted:
                             return web.Response(status=403)
                         receipt['turn'] = turn
+                    # Resolve the configured name only from the signed receipt,
+                    # never from the model or the /context request. The broker
+                    # cannot read the teacher table directly.
+                    teacher = self.teacher_links.get(receipt['sender'])
+                    teacher_id = (await connection.fetchval(
+                        'SELECT studio_private.configured_teacher_id($1, $2)', *teacher, timeout=5,
+                    )) if teacher else None
                     await connection.execute(
-                        "INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) "
-                        "VALUES ($1, $2, $3, $4, clock_timestamp() + interval '60 seconds')",
-                        pid, int(txid), receipt['sender'], receipt['name'], timeout=5,
+                        "INSERT INTO studio_private.author_context "
+                        "(backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id) "
+                        "VALUES ($1, $2, $3, $4, clock_timestamp() + interval '60 seconds', $5)",
+                        pid, int(txid), receipt['sender'], receipt['name'], teacher_id, timeout=5,
                     )
             return web.Response(status=204)
         except (ValueError, TypeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
@@ -206,7 +242,8 @@ class Broker:
 
 def main():
     broker = Broker(read_secret('db_broker'), read_secret('bridge_token'), read_secret('whatsapp_app_secret'),
-                    read_secret('whatsapp_allowed_users'), read_secret('whatsapp_phone_number_id'))
+                    read_secret('whatsapp_allowed_users'), read_secret('whatsapp_phone_number_id'),
+                    read_secret('whatsapp_teacher_links'))
     app = web.Application(client_max_size=MAX_BODY)
     app.router.add_post('/v1/evidence', broker.evidence)
     app.router.add_post('/v1/context', broker.context)

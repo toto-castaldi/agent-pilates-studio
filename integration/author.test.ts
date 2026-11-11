@@ -21,9 +21,14 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
-    'whatsapp-allowed-users': '15555550102,15555550103',
+    'whatsapp-allowed-users': '15555550102,15555550103,15555550104,15555550105',
     'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': JSON.stringify([
+      { phone: '15555550102', firstName: 'alpha', lastName: 'SyntheticInstructor' },
+      { phone: '15555550103', firstName: 'beta', lastName: 'SyntheticInstructor' },
+      { phone: '15555550105', firstName: 'Missing', lastName: 'SyntheticInstructor' },
+    ]),
   };
   const override = join(directory, 'override.yaml');
   const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', PILATES_MODEL: 'synthetic/test-model' };
@@ -60,7 +65,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'hermes');
     let gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observationsUrl = `http://${address('model-stub')}:8088/v1/observations`;
-    type Observation = { user: string; system: string; last_role: string; has_studio_tool: boolean };
+    type Observation = { user: string; system: string; last_role: string; has_studio_tool: boolean; has_sender_number: boolean; tool_contents: string[] };
     const waitObservation = async (predicate: (entry: Observation) => boolean) => {
       for (let i = 0; i < 90; i++) {
         const entries = await (await fetch(observationsUrl)).json() as Observation[];
@@ -83,7 +88,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     const claim = (data: object, token = secrets['bridge-token']) => fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': token }, body: JSON.stringify(data) });
     // A fresh install must not inject Hermes' opt-in profile-build directive,
     // regardless of the model following SOUL correctly in a particular run.
-    const firstContact = body('15555550102', 'Synthetic Alpha', 'synthetic-first-contact', 'context-probe-first-contact');
+    const firstContact = body('15555550102', 'Synthetic Alpha', 'synthetic-first-contact', 'context-probe-first-contact +1 (555) 555-0102');
     assert.equal((await gatewayPost(firstContact)).status, 200);
     const firstContactRequest = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('context-probe-first-contact'));
     const firstContactText = `${firstContactRequest.system}\n${firstContactRequest.user}`;
@@ -92,7 +97,18 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     assert.ok(firstContactRequest.system.includes('Synthetic Alpha'), 'WhatsApp display name must reach the model');
     assert.equal(firstContactRequest.system.includes('Synthetic Beta'), false);
     await delay(2000);
+    const initialRequests = await (await fetch(observationsUrl)).json() as Observation[];
+    assert.ok(initialRequests.length > 0);
+    assert.ok(initialRequests.every((entry) => !entry.has_sender_number), 'a sender number reached the main or an auxiliary model');
     assert.equal(Number((await migrator.query('SELECT count(*) FROM app.clients')).rows[0].count), 0);
+    const sideProbe = async (label: string) => {
+      const marker = `side-probe-${label}`;
+      assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', `synthetic-${marker}`, `/btw ${marker} +1 (555) 555-0103`))).status, 200);
+      const observation = await waitObservation((entry) => entry.user.includes(marker));
+      assert.equal(observation.has_sender_number, false, 'a sender number reached the side-question model');
+      await delay(2000);
+    };
+    await sideProbe('warm');
     const alpha = body('15555550102', 'Synthetic Alpha', 'synthetic-wamid-alpha', 'alpha');
     const beta = body('15555550103', 'Synthetic Beta', 'synthetic-wamid-beta', 'beta');
     assert.equal((await evidence(alpha, signed(alpha), 'wrong-token')).status, 403);
@@ -180,6 +196,28 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     await waitObservation((entry) => entry.user.includes('teacher-create-alpha') && entry.last_role === 'tool');
     await waitObservation((entry) => entry.user.includes('teacher-create-beta') && entry.last_role === 'tool');
     await delay(2000);
+    // The model forges sender and teacher fields and sets a GUC. Only the
+    // signed sender's configured teacher may be returned; missing and unlinked
+    // mappings yield no row. The model never receives the sender's number.
+    for (const [phone, name, marker, expected] of [
+      ['15555550102', 'Synthetic Alpha', 'sender-probe-spoof-beta', 'alpha'],
+      ['15555550103', 'Synthetic Beta', 'sender-probe-spoof-alpha', 'beta'],
+      ['15555550104', 'Synthetic Gamma', 'sender-probe-unlinked', null],
+      ['15555550105', 'Synthetic Delta', 'sender-probe-missing', null],
+    ] as const) {
+      const text = marker === 'sender-probe-spoof-beta' ? `${marker} 15555550102` : marker;
+      assert.equal((await gatewayPost(body(phone, name, `synthetic-${marker}`, text))).status, 200);
+      const observation = await waitObservation((entry) => entry.user.includes(marker) && entry.last_role === 'tool');
+      assert.equal(observation.has_sender_number, false, 'a sender number reached the synthetic model');
+      const results = observation.tool_contents.map((content) => {
+        try { return JSON.parse(content) as { rows?: { first_name: string; created_by_phone: string }[] }; } catch { return {}; }
+      });
+      const rows = results.reverse().find((result) => Array.isArray(result.rows))?.rows;
+      assert.ok(rows, 'missing SQL result');
+      assert.deepEqual(rows.map((row) => row.first_name), expected ? [expected] : []);
+      if (expected) assert.equal(rows[0].created_by_phone, '[numero riservato]', 'SQL tool output must redact the sender number');
+      await delay(2000);
+    }
     assert.equal((await gatewayPost(body('15555550103', 'Synthetic Beta', 'synthetic-teacher-deactivate', 'teacher-deactivate-alpha'))).status, 200);
     await waitFor('SELECT count(*) FROM app.teacher_rules WHERE deactivated_at IS NOT NULL', 1);
     assert.deepEqual((await migrator.query("SELECT deactivated_by_phone, deactivated_by_name, deactivation_reason, deactivated_at >= created_at AS ordered FROM app.teacher_rules WHERE rule_text = 'alpha teacher rule'")).rows[0], {
@@ -210,7 +248,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     const logCheck = [
       'from pathlib import Path',
       "logs = b''.join(p.read_bytes() for p in Path('/opt/data/logs').rglob('*') if p.is_file())",
-      "assert not any(x in logs for x in [b'15555550102', b'15555550103', b'Synthetic Alpha', b'Synthetic Beta', b'synthetic-app-secret'])",
+      "assert not any(x in logs for x in [b'15555550102', b'15555550103', b'15555550104', b'15555550105', b'Synthetic Alpha', b'Synthetic Beta', b'SyntheticInstructor', b'synthetic-app-secret'])",
     ].join('\n');
     execFileSync('docker', ['exec', gatewayId, '/opt/hermes/.venv/bin/python', '-c', logCheck], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{.HostConfig.LogConfig.Type}}', compose('ps', '-q', 'author-broker').trim()], { encoding: 'utf8' }).trim(), 'none');
@@ -271,6 +309,14 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
       "    assert history == [{'role': 'user', 'content': 'synthetic'}]",
     ].join('\n');
     execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', clockCheck], { stdio: 'pipe', timeout: 60_000 });
+    const redactionCheck = [
+      'from pilates_trusted import redact_phones',
+      "original = [{'content': '15555550102 and +1 (555) 555-0102', 'nested': ['15555550103', 'unrelated']}]",
+      "result = redact_phones(original, ['15555550102', '15555550103'])",
+      "assert result == [{'content': '[numero riservato] and +[numero riservato]', 'nested': ['[numero riservato]', 'unrelated']}]",
+      "assert original[0]['content'].startswith('15555550102')",
+    ].join('\n');
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', redactionCheck], { stdio: 'pipe', timeout: 60_000 });
     // An unusable session store must prevent this separate launcher from starting.
     assert.throws(() => execFileSync('docker', ['exec', '--user', '10000', '-e', 'HERMES_HOME=/dev/null', gatewayId, '/opt/hermes/libexec/hermes', 'gateway', 'run'], { stdio: 'pipe', timeout: 60_000 }));
     await writeFile(soulPath, `${soul}\nCONTEXT_VERSION_B\n`);
@@ -283,6 +329,8 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     compose('up', '-d', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '150', 'hermes');
     gatewayId = compose('ps', '-q', 'hermes').trim();
     gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
+    // With no cached agent /btw takes the separate one-shot summary route.
+    await sideProbe('cold');
     const afterRestart = await probe(4);
     assert.ok(afterRestart.includes('CONTEXT_VERSION_C'));
     assert.ok(!afterRestart.includes('CONTEXT_VERSION_B'));
@@ -312,6 +360,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     const base = { message_id: 'synthetic-wamid-alpha', sender: '15555550102', turn: randomBytes(32).toString('hex'), ...first };
     assert.equal((await claim(base)).status, 403);
     assert.equal((await claim({ ...base, author: 'forged' })).status, 400);
+    assert.equal((await claim({ ...base, teacher: 'forged' })).status, 400);
     assert.equal((await claim(base, 'wrong-token')).status, 403);
     await agent1.query('ROLLBACK');
 
@@ -363,6 +412,10 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     await agent1.query('ROLLBACK');
     await fetch(`${broker}/v1/release`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': secrets['bridge-token'] }, body: JSON.stringify(noName) });
     assert.equal(Number((await migrator.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
+    const allRequests = await (await fetch(observationsUrl)).json() as Observation[];
+    assert.ok(allRequests.every((entry) => !entry.has_sender_number), 'a sender number reached a model request');
+    execFileSync('docker', ['exec', gatewayId, '/opt/hermes/.venv/bin/python', '-c', logCheck], { stdio: 'pipe' });
+    assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
   } finally {
     for (const client of clients) await client.end().catch(() => {});
     try { compose('down', '-v', '--remove-orphans'); } catch { /* best effort */ }

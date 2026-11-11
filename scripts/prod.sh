@@ -11,7 +11,7 @@ SCRIPTS=$(dirname -- "${BASH_SOURCE[0]}")
 validate_project "$PROJECT"
 
 readonly INTERNAL_SECRETS=(db-admin db-migrator db-agent db-broker bridge-token)
-readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-secret whatsapp-verify-token whatsapp-allowed-users whatsapp-home-channel whatsapp-phone-number-id)
+readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-secret whatsapp-verify-token whatsapp-allowed-users whatsapp-home-channel whatsapp-phone-number-id whatsapp-teacher-links)
 
 usage() { fail 'Usage: prod.sh init | install <commit> | update <commit> | rollback <backup-directory> <commit>'; }
 step() { printf '%s\n' "$*"; }
@@ -59,6 +59,14 @@ load_settings() {
 use_release() {
   export PILATES_HERMES_IMAGE="$REGISTRY/hermes:$1" PILATES_POSTGRES_IMAGE="$REGISTRY/postgres:$1"
   MIGRATOR_IMAGE="$REGISTRY/migrator:$1"
+}
+
+# Upgrades from earlier releases have no mapping file. Create only the empty
+# default, without replacing an existing file or following a dangling symlink.
+ensure_teacher_links() {
+  local file="$SECRETS_DIR/whatsapp-teacher-links"
+  [[ -e $file || -L $file ]] && return 0
+  (umask 077; set -o noclobber; printf '[]\n' > "$file") || fail 'Could not prepare teacher links.'
 }
 
 check_secrets() {
@@ -141,12 +149,14 @@ case $command in
     for name in "${INTERNAL_SECRETS[@]}"; do
       [[ -e $ROOT_DIR/secrets/$name ]] || openssl rand -hex 32 > "$ROOT_DIR/secrets/$name"
     done
+    SECRETS_DIR="$ROOT_DIR/secrets"
+    ensure_teacher_links
     for name in "${EXTERNAL_SECRETS[@]}"; do
       [[ -s $ROOT_DIR/secrets/$name ]] || printf 'To provide: secrets/%s\n' "$name"
     done
     ;;
   install)
-    load_settings; use_release "$2"; check_secrets
+    load_settings; use_release "$2"; ensure_teacher_links; check_secrets
     [[ -z $(docker volume ls -q --filter "label=com.docker.compose.project=$PROJECT") ]] || fail 'The project already has volumes: use update.'
     pull_images
     active=1
@@ -156,7 +166,7 @@ case $command in
     step 'Installed and healthy. Public reachability is not verified.'
     ;;
   update)
-    load_settings; use_release "$2"; check_secrets
+    load_settings; use_release "$2"; ensure_teacher_links; check_secrets
     [[ -f $ROOT_DIR/state/release ]] || fail 'No installed release: use install.'
     previous=$(<"$ROOT_DIR/state/release")
     pull_images
@@ -172,7 +182,7 @@ case $command in
     step "Updated and healthy. Backup of the previous release: $backup"
     ;;
   rollback)
-    load_settings; use_release "$3"; check_secrets
+    load_settings; use_release "$3"; ensure_teacher_links; check_secrets
     [[ $2 == /* && -d $2 ]] || fail 'An absolute backup directory is required.'
     pull_images
     target="${PROJECT}-r$(date -u +%Y%m%d%H%M%S)"

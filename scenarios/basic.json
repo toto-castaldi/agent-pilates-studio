@@ -2,6 +2,82 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "insegnanti-fasce-e-orari",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Antonio Neri allena tutti i mercoledì pomeriggio e i venerdì pomeriggio.", "response": { "contains": ["Antonio"], "anyOf": [["mercoled"], ["venerd"]] },
+          "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Francesca Blu tiene il lunedì alle 19.", "response": { "contains": ["Francesca"], "times": ["19:00"] },
+          "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Francesca", "lastName": "Blu" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }, { "teacher": "Francesca Blu", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "19:00", "max": "19:00" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-cognome-e-riconoscimento",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "L'insegnante Sara allena il lunedì alle 19.", "response": { "contains": [], "anyOf": [["cognome", "nome completo"]], "question": true }, "teacherExpected": { "teachers": [], "rules": [] } },
+        { "message": "Il cognome di Sara è Verdi.", "response": { "contains": ["Sara"], "times": ["19:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Sara", "lastName": "Verdi" }], "rules": [{ "teacher": "Sara Verdi", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "19:00", "max": "19:00" }] }] } },
+        { "message": "sara allena anche il martedì alle 19.", "response": { "contains": ["Sara"], "times": ["19:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Sara", "lastName": "Verdi" }], "rules": [{ "teacher": "Sara Verdi", "ruleCount": 2, "intervals": [{ "weekday": 1, "min": "19:00", "max": "19:00" }, { "weekday": 2, "min": "19:00", "max": "19:00" }] }] } },
+        { "message": "Sara Blu tiene il mercoledì alle 19.", "response": { "contains": ["Sara"], "times": ["19:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Sara", "lastName": "Verdi" }, { "firstName": "Sara", "lastName": "Blu" }], "rules": [{ "teacher": "Sara Verdi", "ruleCount": 2, "intervals": [{ "weekday": 1, "min": "19:00", "max": "19:00" }, { "weekday": 2, "min": "19:00", "max": "19:00" }] }, { "teacher": "Sara Blu", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "19:00", "max": "19:00" }] }] } },
+        { "message": "Sara tiene anche il giovedì alle 19.", "response": { "contains": [], "anyOf": [["cognome", "quale", "quali"]], "question": true }, "teacherExpected": { "teachers": [{ "firstName": "Sara", "lastName": "Verdi" }, { "firstName": "Sara", "lastName": "Blu" }], "rules": [{ "teacher": "Sara Verdi", "ruleCount": 2, "intervals": [{ "weekday": 1, "min": "19:00", "max": "19:00" }, { "weekday": 2, "min": "19:00", "max": "19:00" }] }, { "teacher": "Sara Blu", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "19:00", "max": "19:00" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-sovrapposizione-conferma",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Antonio Neri allena tutti i lunedì pomeriggio e i venerdì pomeriggio.", "response": { "contains": ["Antonio"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Francesca Blu terrà il lunedì alle 15.", "response": { "contains": [], "anyOf": [["Antonio", "sovrapp", "conflitt", "già"]], "question": true }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "No, non confermo: lascia tutto com'è.", "response": { "contains": [], "anyOf": [["ok", "lasci", "rimane", "invar", "nessun", "capito", "d'accordo"]] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Francesca Blu terrà il lunedì alle 15.", "response": { "contains": [], "anyOf": [["Antonio", "sovrapp", "conflitt", "già"]], "question": true }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Sì, confermo la sostituzione alle 15.", "response": { "contains": ["Francesca"], "anyOf": [["Antonio", "disattiv", "sostituit", "registrat", "salvat"]] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Francesca", "lastName": "Blu" }], "rules": [{ "teacher": "Antonio Neri", "inactive": true, "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }, { "teacher": "Antonio Neri", "intervals": [{ "weekday": 1, "min": "13:00", "max": "14:59" }, { "weekday": 1, "min": "15:01", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }, { "teacher": "Francesca Blu", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "15:00", "max": "15:00" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-sovrapposizione-stesso",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Antonio Neri allena tutti i lunedì pomeriggio.", "response": { "contains": ["Antonio"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Antonio Neri allena il lunedì alle 15.", "response": { "contains": [], "anyOf": [["Antonio", "sovrapp", "conflitt", "già"]], "question": true }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "No, non confermo: lascia tutto com'è.", "response": { "contains": [], "anyOf": [["ok", "lasci", "rimane", "invar", "nessun", "capito", "d'accordo"]] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-disattivazione-parziale",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Antonio Neri allena tutti i mercoledì pomeriggio e i venerdì pomeriggio.", "response": { "contains": ["Antonio"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }] } },
+        { "message": "Antonio non allena più il venerdì.", "response": { "contains": ["Antonio"], "anyOf": [["venerd", "disattiv", "registr", "aggiornat"]] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "inactive": true, "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "13:00", "max": "17:59" }, { "weekday": 5, "min": "13:00", "max": "17:59" }] }, { "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 3, "min": "13:00", "max": "17:59" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-mittente-collegato",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "teacherLinks": [{ "phone": "15555550102", "firstName": "Antonio", "lastName": "Neri" }],
+      "turns": [
+        { "message": "Antonio Neri insegna il martedì alle 10.", "response": { "contains": ["Antonio"], "times": ["10:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 1, "intervals": [{ "weekday": 2, "min": "10:00", "max": "10:00" }] }] } },
+        { "message": "Il lunedì alle 18 alleno io.", "response": { "contains": [], "anyOf": [["Antonio", "luned", "registr", "salvat"]], "times": ["18:00"], "excludes": ["15555550102"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 2, "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }, { "weekday": 2, "min": "10:00", "max": "10:00" }] }] } },
+        { "message": "Mi chiamo Francesca Blu; il giovedì alle 18 alleno io.", "response": { "contains": [], "anyOf": [["Antonio", "gioved", "registr", "salvat"]], "excludes": ["15555550102"] }, "teacherExpected": { "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }], "rules": [{ "teacher": "Antonio Neri", "ruleCount": 3, "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }, { "weekday": 2, "min": "10:00", "max": "10:00" }, { "weekday": 4, "min": "18:00", "max": "18:00" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-mittente-non-collegato",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Il lunedì alle 18 alleno io.", "response": { "contains": [], "anyOf": [["nome", "chiam", "insegnant"]], "question": true, "excludes": ["15555550102"] }, "teacherExpected": { "teachers": [], "rules": [] } },
+        { "message": "Mi chiamo Luisa Rossi.", "response": { "contains": ["Luisa"], "times": ["18:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Luisa", "lastName": "Rossi" }], "rules": [{ "teacher": "Luisa Rossi", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }] }] } }
+      ]
+    },
+    {
+      "id": "insegnanti-mittente-collegato-inesistente",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "teacherLinks": [{ "phone": "15555550102", "firstName": "Maria", "lastName": "Verdi" }],
+      "turns": [
+        { "message": "Il lunedì alle 18 alleno io.", "response": { "contains": [], "anyOf": [["nome", "chiam", "insegnant"]], "question": true, "excludes": ["15555550102"] }, "teacherExpected": { "teachers": [], "rules": [] } },
+        { "message": "Mi chiamo Maria Verdi.", "response": { "contains": ["Maria"], "times": ["18:00"] }, "teacherExpected": { "teachers": [{ "firstName": "Maria", "lastName": "Verdi" }], "rules": [{ "teacher": "Maria Verdi", "ruleCount": 1, "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }] }] } }
+      ]
+    },
+    {
       "id": "nessun-profilo-saluto",
       "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
       "turns": [

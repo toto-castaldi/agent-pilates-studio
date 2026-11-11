@@ -15,6 +15,10 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.match(scenario.sender, /^1555555\d{4}$/);
     assert.ok(stateMatches({ clients: [], rules: [] }, scenario.initial));
     assert.ok(scenario.turns.length >= 2);
+    for (const link of scenario.teacherLinks ?? []) {
+      assert.equal(link.phone, scenario.sender);
+      assert.ok(link.firstName && link.lastName);
+    }
     for (const row of scenario.setup?.attendance ?? []) {
       assert.match(row.createdAt, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)T\d\d:\d\d:\d\dZ$/);
       assert.match(row.lessonDate, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)$/);
@@ -28,6 +32,21 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
       assert.ok(turn.response.contains.length || turn.response.anyOf?.length || turn.response.counts?.length);
+      if (turn.teacherExpected) {
+        assert.ok(!turn.expected && !turn.unchanged && !turn.attendanceExpected);
+        assert.ok(Array.isArray(turn.teacherExpected.teachers) && Array.isArray(turn.teacherExpected.rules));
+        for (const rule of turn.teacherExpected.rules) {
+          assert.ok(turn.teacherExpected.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === rule.teacher));
+          assert.ok(rule.intervals.length > 0);
+          for (const interval of rule.intervals) {
+            assert.ok(Number.isInteger(interval.weekday) && interval.weekday >= 1 && interval.weekday <= 7);
+            assert.match(interval.min, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+            assert.match(interval.max, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+            assert.ok(interval.min <= interval.max);
+          }
+        }
+        continue;
+      }
       if (turn.unchanged) {
         assert.ok(scenario.setup && !turn.expected);
         continue;
@@ -74,6 +93,19 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
   for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-tutti-tranne', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  for (const id of ['insegnanti-fasce-e-orari', 'insegnanti-cognome-e-riconoscimento', 'insegnanti-sovrapposizione-conferma', 'insegnanti-sovrapposizione-stesso', 'insegnanti-disattivazione-parziale', 'insegnanti-mittente-collegato', 'insegnanti-mittente-non-collegato', 'insegnanti-mittente-collegato-inesistente']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  const teacherOverlap = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'insegnanti-sovrapposizione-conferma');
+  assert.ok(teacherOverlap.turns[1].response.question && teacherOverlap.turns[3].response.question);
+  for (const turn of teacherOverlap.turns.slice(1, 4)) assert.deepEqual(turn.teacherExpected, teacherOverlap.turns[0].teacherExpected);
+  assert.ok(teacherOverlap.turns[4].teacherExpected.rules.some((rule: { inactive?: boolean }) => rule.inactive));
+  const selfOverlap = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'insegnanti-sovrapposizione-stesso');
+  assert.equal(selfOverlap.turns[1].response.question, true);
+  for (const turn of selfOverlap.turns.slice(1)) assert.deepEqual(turn.teacherExpected, selfOverlap.turns[0].teacherExpected);
+  for (const id of ['insegnanti-mittente-non-collegato', 'insegnanti-mittente-collegato-inesistente']) {
+    const scenario = catalog.scenarios.find((entry: { id: string }) => entry.id === id);
+    assert.equal(scenario.turns[0].response.question, true);
+    assert.deepEqual(scenario.turns[0].teacherExpected, { teachers: [], rules: [] });
+  }
   const future = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-singola-annullamento');
   assert.ok(future.turns[2].attendanceExpected.attendance[0].cancellation);
   const conflict = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-conflitto-presenza');

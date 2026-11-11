@@ -24,4 +24,18 @@ export async function initSecrets({ directory: configuredDirectory, lstat, mkdir
       log(`Kept existing ${name}.`);
     }
   }
+  // Optional sender links default to an empty private JSON array, never
+  // overwrite a mapping deliberately provided by the operator.
+  const links = resolve(directory, 'whatsapp-teacher-links');
+  try {
+    await writeFile(links, '[]\n', { flag: 'wx', mode: 0o600 });
+    log('Created whatsapp-teacher-links.');
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const existing = await lstat(links);
+    if (!existing.isFile() || (existing.mode & 0o077) !== 0) {
+      throw new Error('whatsapp-teacher-links must be a private regular file.');
+    }
+    log('Kept existing whatsapp-teacher-links.');
+  }
 }
