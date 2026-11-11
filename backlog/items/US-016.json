@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Done",
+  "status": "In Progress",
   "branch": "us/US-016-nessuna-proposta-spontanea-profilo",
   "dependencies": [],
   "requirements": [
@@ -29,6 +29,7 @@
     "Il catalogo di TEC-012 include scenari di regressione con dati sintetici per un saluto come primo messaggio, una richiesta pertinente al primo turno e un turno successivo: verificano risposta pertinente, presentazione iniziale e assenza di proposte spontanee di profilo. Gli scenari sono eseguiti con il modello reale tramite OpenRouter e l'esito, inclusi i limiti delle verifiche lessicali e del comportamento probabilistico, è documentato.",
     "La modifica preserva l'isolamento dei dati, i vincoli privacy e le verifiche di configurazione esistenti; non richiede dati personali reali negli scenari o nei log."
   ],
-  "outcome": "Divieto di proposta spontanea in SOUL.md e scenari sintetici per saluto, richiesta iniziale e turno successivo, passati con OpenRouter reale; indagine su progetto e Hermes documentata senza stabilire la causa, con limiti lessicali e probabilistici. Superati test:local, test:author e gate rapido; configurazione, cronologia e attribuzione preservate.",
-  "closed_at": "2026-11-11"
+  "remarks": [
+    "La prova reale dell'operatore dopo la prima chiusura mostra ancora una proposta di profilo. Individuata nell'immagine fissata la direttiva di primo contatto di Hermes, governata da onboarding.profile_build (predefinito ask), indipendente dai flag della memoria. Item riaperto per disabilitarla e verificarne la regressione; riconoscimento conversazionale tramite nome WhatsApp da chiarire separatamente."
+  ]
 }
