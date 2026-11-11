@@ -11,7 +11,7 @@ Configurazione di Meta, del tunnel e della produzione su `jarvis`, per avere due
 | Business portfolio Meta | quello originale | `Agent Pilates Studio Prod`, dedicato |
 | App Meta | `Agent Pilates Studio - Test` | `agent-pilates-studio-live` |
 | Numero | numero di test del portfolio originale | numero di test del portfolio di produzione |
-| Callback | hostname di sviluppo, già configurato | `https://agent-pilates-studio.toto-castaldi.com/whatsapp/webhook` |
+| Callback | `https://pilates-dev.toto-castaldi.com/webhooks/whatsapp` | `https://agent-pilates-studio.toto-castaldi.com/whatsapp/webhook` |
 | Destinazione su `jarvis` | porta loopback della regola di sviluppo, raggiunta dal clone attivo con `ssh -R` | `127.0.0.1:18190`, stack `agent-pilates-prod` |
 | Segreti | `.env` o `SECRETS_DIR` del clone | `/opt/agent-pilates-prod/secrets/` |
 
@@ -94,6 +94,17 @@ Il tunnel è gestito localmente da `/etc/cloudflared/config.yml`, modificabile s
    ```
 
 ## Sviluppo da qualsiasi clone
+
+L'URL di sviluppo nella tabella è stato comunicato dall'operatore dal pannello Meta e registrato su sua richiesta esplicita. Per questo ambiente `WHATSAPP_WEBHOOK_PATH` deve essere `/webhooks/whatsapp`, diverso da `/whatsapp/webhook` di produzione.
+
+Per identificare la porta della regola di sviluppo, eseguire su `jarvis` questo controllo in sola lettura, senza riavviare il tunnel né avviare lo streaming dei log:
+
+```bash
+sudo cloudflared tunnel --config /etc/cloudflared/config.yml \
+  ingress rule 'https://pilates-dev.toto-castaldi.com/webhooks/whatsapp'
+```
+
+La regola selezionata deve indicare un servizio HTTP su loopback. Un risultato `http_status:404` non identifica la porta del gateway: verificare prima hostname e percorso esatti, senza caratteri aggiunti.
 
 Il callback di sviluppo su Meta non cambia. La regola del tunnel di sviluppo punta a una porta loopback di `jarvis`, che deve coincidere con `WHATSAPP_WEBHOOK_PORT` nel `.env` del clone (predefinita 18090) e con il port forward; anche `WHATSAPP_WEBHOOK_PATH` deve coincidere con il percorso configurato su Meta. Il port forward va aperto dalla macchina su cui gira lo stack: da un'altra macchina `jarvis` inoltra verso una porta dove non ascolta nessuno (`connect_to 127.0.0.1 port …: failed`). Il clone attivo avvia lo stack con `npm run start:local` e apre il port forward, lasciandolo aperto:
 
