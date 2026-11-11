@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "us/US-011-anagrafica-e-regole-degli-insegnanti",
   "dependencies": [
     "TEC-033"
   ],
