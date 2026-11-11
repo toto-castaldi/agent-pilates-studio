@@ -1,0 +1,41 @@
+{
+  "id": "TEC-038",
+  "title": "Allineamento al template v2.1.0",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-031"
+  ],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-013",
+    "REQ-NFR-015",
+    "REQ-NFR-016",
+    "REQ-NFR-017",
+    "REQ-NFR-018",
+    "REQ-NFR-019",
+    "REQ-NFR-020"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "PROCESS §6",
+    "PROCESS-PARALLEL §1",
+    "PROCESS-PARALLEL §2",
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §10",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Aggiornare dalla v2.0.0 adottata con TEC-031 al tag v2.1.0 del template agile-project-template, commit e8f7f86db40977e45f2a0546d9256fe12e20a193. Adottare la pubblicazione automatica delle sole aggiunte di item, preservando le personalizzazioni e le protezioni dello studio; eventuali versioni successive richiedono una decisione separata.",
+  "acceptance_criteria": [
+    "Il tag v2.1.0 e il commit fissato sono verificati e confrontati con le basi adottate delle risorse pertinenti; processo, regole parallele e skill condivise sono allineati. docs/TEMPLATE-ORIGIN.md distingue confronto, risorse adottate, divergenze e basi ignote; conflitti o deroghe non già concordati richiedono accordo esplicito. I file generici personalizzati non sono sovrascritti indiscriminatamente.",
+    "Il flusso di aggiunta richiede main pulito e aggiornato, senza altri commit locali non pubblicati quando esiste un upstream, e produce un solo commit documentale pubblicato subito senza quality gate; senza upstream salta il push. In caso di upstream avanzato sono previsti rebase, backlog check e nuovo push; conflitti, controllo fallito e altri errori sono segnalati senza perdere il lavoro. Il push automatico non si estende a merge o altri cambi di main.",
+    "AGENTS.md, README e documenti pertinenti riflettono la nuova eccezione e il gate; restano attivi shared claims, coordinamento non bloccante, controllo di main prima del primo clone, richiesta esplicita per orchestrazione, via ai worker e merge, e protezioni dei clone. La sola adozione non avvia worker né pubblica main; lo stack operativo, i segreti e la configurazione personale non sono modificati.",
+    "Prove ripetibili isolate con repository e remoti sintetici verificano aggiunta e push, assenza di upstream, blocco per commit locali non pubblicati, upstream avanzato con rebase e controllo, conflitto e altri errori, senza pubblicare lavoro reale né avviare worker. La copertura esistente per lavoro parallelo e visualizzatore è preservata; i limiti delle prove e delle istruzioni al modello sono documentati.",
+    "Documentazione e test pertinenti sono aggiornati; passano il quality gate e le suite separate interessate, incluse test:local e test:pi ove pertinenti, con soli dati sintetici. Nessuna prova legge o modifica dati personali."
+  ]
+}
