@@ -96,7 +96,7 @@ test('teacher scenarios compare inclusive coverage, author, transitions and immu
     { ...rule, intervals: [interval, interval] },
   ]) assert.equal(teacherScenarioMatches({ ...before, teacherRules: [changed] }, expectation, author.authorPhone, author.authorName), false);
   assert.equal(teacherScenarioMatches({ ...before, teachers: [{ ...teacher, authorName: 'Falso' }] }, expectation, author.authorPhone, author.authorName), false);
-  assert.equal(teacherScenarioMatches({ ...before, teacherAssignments: [{}] }, expectation, author.authorPhone, author.authorName), false);
+  assert.equal(teacherScenarioMatches({ ...before, teacherAssignments: [{ teacher: 'Antonio Neri', teacherId: '1', lessonDate: '2025-01-06', time: '19:00', ...author }] }, expectation, author.authorPhone, author.authorName), false);
   const stopped = { ...rule, deactivatedAt: '2026-01-02T09:00:00Z', deactivatedByPhone: author.authorPhone,
     deactivatedByName: author.authorName, deactivationReason: 'Sostituzione', intervals: [{ ...interval, isActive: false }] };
   const left = { ...rule, id: '3', intervals: [{ ...interval, max: '14:59' }] };

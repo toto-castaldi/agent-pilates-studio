@@ -93,13 +93,27 @@ export interface TeacherExpectation {
   rules: { teacher: string; intervals: TeacherInterval[]; inactive?: boolean; ruleCount?: number }[];
 }
 
+export interface TeacherAssignmentState extends Omit<AttendanceState, 'client' | 'outcome'> {
+  teacher: string;
+  teacherId: string;
+}
+
+export interface ExpectedTeacherAssignment extends Omit<TeacherAssignmentState, 'teacherId'> {
+  cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
+}
+
+export interface AssignmentExpectation {
+  assignments: ExpectedTeacherAssignment[];
+  addedTeachers: ClientState[];
+}
+
 export interface ActualState {
   clients: ClientState[];
   rules: ActualRule[];
   attendance?: AttendanceState[];
   teachers?: ClientState[];
   teacherRules?: TeacherRuleState[];
-  teacherAssignments?: unknown[];
+  teacherAssignments?: TeacherAssignmentState[];
 }
 
 export interface ExpectedResponse {
@@ -285,6 +299,51 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
   return true;
 }
 
+// Assignment scenarios preserve all unrelated tables and compare the complete
+// assignment history, including cancellations and the teacher foreign key.
+export function assignmentScenarioMatches(before: ActualState, actual: ActualState, expected: AssignmentExpectation): boolean {
+  if (JSON.stringify(before.clients) !== JSON.stringify(actual.clients)
+    || JSON.stringify(before.rules) !== JSON.stringify(actual.rules)
+    || JSON.stringify(before.attendance ?? []) !== JSON.stringify(actual.attendance ?? [])
+    || JSON.stringify(before.teacherRules ?? []) !== JSON.stringify(actual.teacherRules ?? [])) return false;
+  const teachers = actual.teachers ?? [];
+  const originalTeachers = before.teachers ?? [];
+  if (JSON.stringify(originalTeachers) !== JSON.stringify(teachers.slice(0, originalTeachers.length))
+    || new Set(teachers.map((row) => row.id)).size !== teachers.length) return false;
+  const added = teachers.slice(originalTeachers.length);
+  if (added.length !== expected.addedTeachers.length) return false;
+  const remainingTeachers = [...added];
+  for (const person of expected.addedTeachers) {
+    const index = remainingTeachers.findIndex((row) => normalized(row.firstName) === normalized(person.firstName)
+      && normalized(row.lastName) === normalized(person.lastName) && row.authorPhone === person.authorPhone
+      && row.authorName === person.authorName && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt)));
+    if (index < 0) return false;
+    remainingTeachers.splice(index, 1);
+  }
+  const rows = [...(actual.teacherAssignments ?? [])];
+  if (rows.length !== expected.assignments.length || new Set(rows.map((row) => row.id)).size !== rows.length) return false;
+  const validLessons = rows.filter((row) => !row.cancelledAt).map((row) => JSON.stringify([row.lessonDate, row.time]));
+  if (new Set(validLessons).size !== validLessons.length) return false;
+  for (const item of expected.assignments) {
+    const index = rows.findIndex((row) => normalized(row.teacher) === normalized(item.teacher)
+      && !!row.teacherId && teachers.some((teacher) => teacher.id === row.teacherId
+        && normalized(`${teacher.firstName} ${teacher.lastName}`) === normalized(row.teacher))
+      && row.lessonDate === item.lessonDate && row.time === item.time
+      && /^\d{4}-\d{2}-\d{2}$/.test(row.lessonDate) && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)
+      && row.authorPhone === item.authorPhone && row.authorName === item.authorName
+      && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt))
+      && (item.cancellation
+        ? !!row.cancelledAt && !Number.isNaN(Date.parse(row.cancelledAt)) && Date.parse(row.cancelledAt) >= Date.parse(row.createdAt)
+          && row.cancelledByPhone === item.cancellation.authorPhone && row.cancelledByName === item.cancellation.authorName
+          && !!row.cancellationReason?.trim() && (!item.cancellation.reasonAnyOf
+            || item.cancellation.reasonAnyOf.some((word) => normalized(row.cancellationReason ?? '').includes(normalized(word))))
+        : !row.cancelledAt && !row.cancelledByPhone && !row.cancelledByName && !row.cancellationReason));
+    if (index < 0) return false;
+    rows.splice(index, 1);
+  }
+  return true;
+}
+
 // Compare teacher coverage minute by minute, permitting equivalent splits but
 // rejecting duplicates, missing endpoints, wrong authors and extra records.
 export function teacherScenarioMatches(actual: ActualState, expected: TeacherExpectation, authorPhone: string, authorName: string | null): boolean {
@@ -346,7 +405,18 @@ export function historyPreserved(previous: ActualState, current: ActualState): b
     const matches = (current.teachers ?? []).filter((next) => next.id === row.id);
     return !!row.id && matches.length === 1 && JSON.stringify(matches[0]) === JSON.stringify(row);
   })) return false;
-  if (JSON.stringify(previous.teacherAssignments ?? []) !== JSON.stringify(current.teacherAssignments ?? [])) return false;
+  if (!(previous.teacherAssignments ?? []).every((row) => {
+    if (!row.id || !row.createdAt || Number.isNaN(Date.parse(row.createdAt))) return false;
+    const matches = (current.teacherAssignments ?? []).filter((next) => next.id === row.id);
+    if (matches.length !== 1) return false;
+    const next = matches[0];
+    if (JSON.stringify(row) === JSON.stringify(next)) return true;
+    if (row.cancelledAt || row.cancelledByPhone || row.cancelledByName || row.cancellationReason
+      || !next.cancelledAt || Number.isNaN(Date.parse(next.cancelledAt)) || Date.parse(next.cancelledAt) < Date.parse(row.createdAt)
+      || !next.cancelledByPhone || !next.cancellationReason?.trim()) return false;
+    return JSON.stringify({ ...next, cancelledAt: row.cancelledAt, cancelledByPhone: row.cancelledByPhone,
+      cancelledByName: row.cancelledByName, cancellationReason: row.cancellationReason }) === JSON.stringify(row);
+  })) return false;
   if (!(previous.teacherRules ?? []).every((row) => {
     const matches = (current.teacherRules ?? []).filter((next) => next.id === row.id);
     if (matches.length !== 1) return false;

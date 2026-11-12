@@ -2,6 +2,198 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "indicazione-passata-senza-presenze",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì martedì mercoledì giovedì venerdì sabato domenica alle 19:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }, { "weekday": 2, "time": "19:00" }, { "weekday": 3, "time": "19:00" }, { "weekday": 4, "time": "19:00" }, { "weekday": 5, "time": "19:00" }, { "weekday": 6, "time": "19:00" }, { "weekday": 7, "time": "19:00" }] }],
+        "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }]
+      },
+      "turns": [
+        { "message": "Ieri alle 19 l'ha tenuta Antonio Neri.", "response": { "contains": ["Antonio"], "times": ["19:00"], "dates": ["$YESTERDAY"], "excludes": ["confermi", "vuoi che registr"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Ieri alle 19 l'ha tenuta Antonio Neri.", "response": { "contains": ["Antonio"], "anyOf": [["già", "gia", "esiste", "registrat", "duplicat"]] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "indicazione-lezione-extra",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Ieri alle 19 l'ha tenuta Antonio Neri.", "response": { "contains": ["Antonio"], "times": ["19:00"], "dates": ["$YESTERDAY"], "anyOf": [["nessun cliente", "senza clienti", "non ci sono clienti", "non risultano clienti", "non ha clienti"], ["registraz", "presenz", "assenz"]], "excludes": ["confermi", "vuoi che registr"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Antonio", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Il 6 gennaio 2099 alle 19:30 la terrà antonio.", "response": { "contains": ["Antonio"], "times": ["19:30"], "dates": ["2099-01-06"], "anyOf": [["nessun cliente", "senza clienti", "non ci sono clienti", "non risultano clienti", "non ha clienti"]], "excludes": ["confermi", "vuoi che registr"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Antonio", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "teacher": "Antonio Neri", "lessonDate": "2099-01-06", "time": "19:30", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "sostituzione-singola",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Rossi" }],
+        "rules": [{ "text": "Ada Verdi e Bruno Rossi lunedì alle 15:00 e alle 19:00", "clients": ["Ada Verdi", "Bruno Rossi"], "slots": [{ "weekday": 1, "time": "15:00" }, { "weekday": 1, "time": "19:00" }] }],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Antonio", "lastName": "Neri" }],
+        "teacherRules": [{ "teacher": "Francesca Blu", "text": "Francesca Blu lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì pomeriggio.", "response": { "contains": ["Antonio", "Francesca"], "times": ["15:00"], "dates": ["$NEXT_MONDAY"], "excludes": ["confermi", "vuoi che registr"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì alle 15.", "response": { "contains": ["Antonio"], "anyOf": [["già", "gia", "esiste", "registrat", "duplicat"]] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "sostituzione-piu-lezioni",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì alle 13:00, 17:59 e 19:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "13:00" }, { "weekday": 1, "time": "17:59" }, { "weekday": 1, "time": "19:00" }] }],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }],
+        "teacherRules": [{ "teacher": "Francesca Blu", "text": "Francesca Blu lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì pomeriggio.", "response": { "contains": ["Antonio", "Francesca"], "times": ["13:00", "17:59"], "dates": ["$NEXT_MONDAY"], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "No, non confermo: non registrare nulla.", "response": { "contains": [], "anyOf": [["non", "nessun", "invariat", "lasci", "ok", "capito"]] }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì pomeriggio.", "response": { "contains": ["Antonio", "Francesca"], "times": ["13:00", "17:59"], "dates": ["$NEXT_MONDAY"], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Sì, confermo entrambe le lezioni dell'elenco.", "response": { "contains": ["Antonio"], "times": ["13:00", "17:59"], "dates": ["$NEXT_MONDAY"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Antonio", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "13:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "17:59", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "sostituzione-periodo",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì alle 15:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "15:00" }] }],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Antonio", "lastName": "Neri" }],
+        "teacherRules": [{ "teacher": "Francesca Blu", "text": "Francesca Blu lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Antonio Neri sostituisce Francesca Blu nei prossimi due lunedì pomeriggio.", "response": { "contains": ["Antonio", "Francesca"], "times": ["15:00"], "dates": ["$NEXT_MONDAY", "$NEXT_MONDAY+7"], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Sì, confermo tutte e due le lezioni dell'elenco.", "response": { "contains": ["Antonio"], "times": ["15:00"], "dates": ["$NEXT_MONDAY", "$NEXT_MONDAY+7"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY+7", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "sostituzione-non-attesa-ambigua",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì alle 15:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "15:00" }] }],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Anna", "lastName": "Gialli" }],
+        "teacherRules": [{ "teacher": "Anna Gialli", "text": "Anna Gialli lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì alle 15.", "response": { "contains": ["Francesca", "Anna"], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Lascia perdere quella sostituzione. Antonio Neri ha tenuto una lezione ieri.", "response": { "contains": [], "anyOf": [["orario", "ora", "ore"]], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Non so l'orario: non registrare nulla.", "response": { "contains": [], "anyOf": [["non", "nessun", "ok", "capito", "invariat"]] }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } }
+      ]
+    },
+    {
+      "id": "sostituzione-senza-lezioni",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }],
+        "teacherRules": [{ "teacher": "Francesca Blu", "text": "Francesca Blu lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Antonio Neri sostituisce Francesca Blu il prossimo lunedì pomeriggio.", "response": { "contains": [], "anyOf": [["nessun", "non risult", "non ci sono", "non ho trovato", "senza lezioni"], ["orario", "ora", "ore", "lezione"]], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Non so l'orario: non registrare nulla.", "response": { "contains": [], "anyOf": [["non", "nessun", "ok", "capito", "invariat"]] }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } }
+      ]
+    },
+    {
+      "id": "indicazione-mittente-collegato",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "teacherLinks": [{ "phone": "15555550102", "firstName": "Antonio", "lastName": "Neri" }],
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [], "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Francesca", "lastName": "Blu" }] },
+      "turns": [
+        { "message": "Ieri alle 19 l'ho tenuta io.", "response": { "contains": ["Antonio"], "times": ["19:00"], "dates": ["$YESTERDAY"], "excludes": ["15555550102"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Mi chiamo Francesca Blu; ieri alle 20 l'ho tenuta io.", "response": { "contains": ["Antonio"], "times": ["20:00"], "dates": ["$YESTERDAY"], "excludes": ["15555550102"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "20:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "indicazione-mittente-non-collegato",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Ieri alle 19 l'ho tenuta io.", "response": { "contains": [], "anyOf": [["nome", "chiam", "insegnant"]], "question": true, "excludes": ["15555550102"] }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Mi chiamo Luisa Rossi.", "response": { "contains": ["Luisa"], "times": ["19:00"], "dates": ["$YESTERDAY"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Luisa", "lastName": "Rossi", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }], "assignments": [{ "teacher": "Luisa Rossi", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "indicazione-mittente-collegato-inesistente",
+      "sender": "15555550104", "initial": { "clients": [], "rules": [] },
+      "teacherLinks": [{ "phone": "15555550104", "firstName": "Maria", "lastName": "Verdi" }],
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [] },
+      "turns": [
+        { "message": "Ieri alle 19 l'ho tenuta io.", "response": { "contains": [], "anyOf": [["nome", "chiam", "insegnant"]], "question": true, "excludes": ["15555550104"] }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Mi chiamo Maria Verdi.", "response": { "contains": ["Maria"], "times": ["19:00"], "dates": ["$YESTERDAY"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Maria", "lastName": "Verdi", "authorPhone": "15555550104", "authorName": null }], "assignments": [{ "teacher": "Maria Verdi", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550104", "authorName": null }] } }
+      ]
+    },
+    {
+      "id": "indicazione-nome-chiarimento",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": { "createdAt": "2024-01-01T09:00:00Z", "clients": [], "rules": [], "teachers": [{ "firstName": "Sara", "lastName": "Verdi" }, { "firstName": "Sara", "lastName": "Blu" }] },
+      "turns": [
+        { "message": "Ieri alle 19 l'ha tenuta Sara.", "response": { "contains": [], "anyOf": [["cognome", "quale", "quali"]], "question": true }, "assignmentExpected": { "addedTeachers": [], "assignments": [] } },
+        { "message": "Sara Blu.", "response": { "contains": ["Sara", "Blu"], "times": ["19:00"], "dates": ["$YESTERDAY"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Sara Blu", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Ieri alle 20 l'ha tenuta Elena.", "response": { "contains": [], "anyOf": [["cognome", "nome completo"]], "question": true },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Sara Blu", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Elena Neri.", "response": { "contains": ["Elena"], "times": ["20:00"], "dates": ["$YESTERDAY"] },
+          "assignmentExpected": { "addedTeachers": [{ "firstName": "Elena", "lastName": "Neri", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }], "assignments": [{ "teacher": "Sara Blu", "lessonDate": "$YESTERDAY", "time": "19:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }, { "teacher": "Elena Neri", "lessonDate": "$YESTERDAY", "time": "20:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "presenze-senza-indicazione",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "teacherLinks": [{ "phone": "15555550102", "firstName": "Antonio", "lastName": "Neri" }],
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì martedì mercoledì giovedì venerdì sabato domenica alle 19:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }, { "weekday": 2, "time": "19:00" }, { "weekday": 3, "time": "19:00" }, { "weekday": 4, "time": "19:00" }, { "weekday": 5, "time": "19:00" }, { "weekday": 6, "time": "19:00" }, { "weekday": 7, "time": "19:00" }] }],
+        "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }]
+      },
+      "turns": [
+        { "message": "Ieri alle 19 c'era Ada Verdi.", "response": { "contains": ["Ada"], "times": ["19:00"], "excludes": ["insegnant", "chi ha tenuto", "chi l'ha tenuta", "chi teneva"] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "$YESTERDAY", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Ieri alle 19 c'era Ada Verdi.", "response": { "contains": ["Ada"], "anyOf": [["già", "gia", "esiste", "registrat", "duplicat"]], "excludes": ["insegnant", "chi ha tenuto", "chi l'ha tenuta", "chi teneva"] },
+          "attendanceExpected": { "addedClients": [], "attendance": [{ "client": "Ada Verdi", "lessonDate": "$YESTERDAY", "time": "19:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } }
+      ]
+    },
+    {
+      "id": "indicazione-correzione-annullamento",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z", "clients": [{ "firstName": "Ada", "lastName": "Verdi" }],
+        "rules": [{ "text": "Ada Verdi lunedì alle 15:00", "clients": ["Ada Verdi"], "slots": [{ "weekday": 1, "time": "15:00" }] }],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Antonio", "lastName": "Neri" }],
+        "teacherRules": [{ "teacher": "Francesca Blu", "text": "Francesca Blu lunedì pomeriggio", "intervals": [{ "weekday": 1, "min": "13:00", "max": "17:59" }] }]
+      },
+      "turns": [
+        { "message": "Lunedì prossimo alle 15 la lezione la tiene Antonio Neri.", "response": { "contains": ["Antonio"], "times": ["15:00"], "dates": ["$NEXT_MONDAY"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Lunedì prossimo alle 15 la lezione la tiene Francesca Blu.", "response": { "contains": ["Antonio", "Francesca"], "anyOf": [["correg", "correz", "annull", "sostitu"]], "question": true },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Sì, correggi: avevo sbagliato insegnante, per quella lezione è Francesca Blu.", "response": { "contains": ["Antonio", "Francesca"], "anyOf": [["annull", "corrett", "correz", "sostituit"]] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Francesca Blu", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Correggi ancora l'indicazione di lunedì prossimo alle 15: mi ero sbagliato, l'insegnante giusto è Antonio Neri, non Francesca Blu.", "response": { "contains": ["Antonio", "Francesca"], "anyOf": [["annull", "corrett", "correz", "sostituit"]], "excludes": ["confermi"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Francesca Blu", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico" }] } },
+        { "message": "Annulla soltanto l'indicazione di lunedì prossimo alle 15, per errore di comunicazione: lasciamo l'insegnante atteso.", "response": { "contains": ["Francesca"], "anyOf": [["annull"], ["attes", "regola", "previst"]] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Francesca Blu", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }] } },
+        { "message": "Annulla di nuovo l'indicazione di lunedì prossimo alle 15.", "response": { "contains": [], "anyOf": [["già", "gia", "nessun", "non ci sono", "non risult", "non c'è"]] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Francesca Blu", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }] } },
+        { "message": "Mostra lo storico completo delle indicazioni di lunedì prossimo alle 15, incluse le annullate, con date, autori e motivi.", "response": { "contains": ["Antonio", "Francesca", "Operatore"], "anyOf": [["annull"], ["errore", "sbagli", "correz", "motiv", "comunicazione"]], "date": true, "excludes": ["15555550102"] },
+          "assignmentExpected": { "addedTeachers": [], "assignments": [{ "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Francesca Blu", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }, { "teacher": "Antonio Neri", "lessonDate": "$NEXT_MONDAY", "time": "15:00", "authorPhone": "15555550102", "authorName": "Operatore Sintetico", "cancellation": { "authorPhone": "15555550102", "authorName": "Operatore Sintetico" } }] } }
+      ]
+    },
+    {
       "id": "insegnanti-fasce-e-orari",
       "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
       "turns": [
