@@ -1,0 +1,33 @@
+{
+  "id": "BUG-003",
+  "title": "Ripristino del backup a caldo intermittente in CI",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Bug",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-039"
+  ],
+  "requirements": [
+    "REQ-OPS-008",
+    "REQ-NFR-003",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "La CI del merge di TEC-039 fallisce in test:images durante pg_restore nel PostgreSQL vuoto; lo stesso test era passato sul branch. Indagare la causa e correggere test e procedura operativa se coinvolta, mantenendo le verifiche del dump e la protezione degli output.",
+  "found_in": "v0.3.0",
+  "steps_to_reproduce": "Eseguire npm run test:images sul runner GitHub; run 43210853015, commit 70abba8a9996f7414c85334de9f813fbdb556519: hot-backup.test fallisce al ripristino nel container PostgreSQL appena inizializzato.",
+  "expected": "Il test ripristina la copia coerente in PostgreSQL vuoto senza ruoli originali e tutte le suite della CI passano senza saltare controlli.",
+  "actual": "pg_restore restituisce 1; il test segnala pg_restore into the empty database failed, quality fallisce e la pubblicazione delle immagini è saltata.",
+  "acceptance_criteria": [
+    "La causa del fallimento è riprodotta e corretta; l'avvio del PostgreSQL di ripristino non è dichiarato pronto prematuramente e gli errori reali del ripristino restano errori.",
+    "Un test di regressione deterministico esercita la condizione che causava il fallimento; test:images su PostgreSQL reale mantiene i controlli di snapshot, assenza dei ruoli originali, esclusioni, checksum e servizi sani.",
+    "La procedura di consultazione locale è allineata alla correzione se coinvolta, senza esporre dati, segreti o output grezzo e senza toccare lo stack operativo.",
+    "Il quality gate e tutte le suite della CI passano sul branch del bug, verificati con un run GitHub completato."
+  ]
+}
