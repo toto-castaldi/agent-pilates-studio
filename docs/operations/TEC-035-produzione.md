@@ -102,7 +102,7 @@ DEST="$HOME/consultazione-pilates"
 )
 ```
 
-Se la copia, il marcatore o il checksum falliscono, fermarsi: non ripristinare. Non riutilizzare directory esistenti o incomplete. La procedura seguente crea un PostgreSQL **nuovo e isolato**, senza rete e senza porte; la fiducia locale è accettabile solo dentro questo container temporaneo. Scegliere un nome di container nuovo: se esiste già, la creazione fallisce e la procedura non prosegue. Il comando usa l'immagine PostgreSQL 17.10 fissata; non monta segreti e disabilita il log Docker del container. I messaggi grezzi di `pg_restore` sono soppressi perché possono contenere dati.
+Se la copia, il marcatore o il checksum falliscono, fermarsi: non ripristinare. Non riutilizzare directory esistenti o incomplete. La procedura seguente crea un PostgreSQL **nuovo e isolato**, senza rete e senza porte; la fiducia locale è accettabile solo dentro questo container temporaneo. Scegliere un nome di container nuovo: se esiste già, la creazione fallisce e la procedura non prosegue. Il comando usa l'immagine PostgreSQL 17.10 fissata; non monta segreti e disabilita il log Docker del container. La disponibilità va verificata via TCP su `127.0.0.1`, dentro il container: durante l'inizializzazione l'immagine avvia un server temporaneo che accetta solo socket Unix e poi si spegne. Un controllo senza `-h` può accettare quel server e far fallire il ripristino al riavvio (BUG-003). La rete resta disabilitata verso l'esterno. I messaggi grezzi di `pg_restore` sono soppressi perché possono contenere dati.
 
 ```bash
 PG_CONTAINER=pilates-consultazione
@@ -120,10 +120,10 @@ PG_IMAGE='postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e3
     echo 'Creazione del database isolato fallita.' >&2; exit 1
   fi
   for i in {1..60}; do
-    docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1 && break
+    docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1 && break
     sleep 1
   done
-  if ! docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+  if ! docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1; then
     echo 'Database isolato non disponibile.' >&2; exit 1
   fi
   if ! docker exec -i "$PG_CONTAINER" pg_restore --exit-on-error --no-owner --no-privileges \
