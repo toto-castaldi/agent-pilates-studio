@@ -13,7 +13,7 @@ validate_project "$PROJECT"
 readonly INTERNAL_SECRETS=(db-admin db-migrator db-agent db-broker bridge-token)
 readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-secret whatsapp-verify-token whatsapp-allowed-users whatsapp-home-channel whatsapp-phone-number-id whatsapp-teacher-links)
 
-usage() { fail 'Usage: prod.sh init | install <commit> | update <commit> | rollback <backup-directory> <commit>'; }
+usage() { fail 'Usage: prod.sh init | install <commit> | update <commit> | backup-hot <commit> | rollback <backup-directory> <commit>'; }
 step() { printf '%s\n' "$*"; }
 quiet() { "$@" >/dev/null 2>&1; }
 # The backup and restore scripts report failures with fixed "Error:" messages;
@@ -117,24 +117,42 @@ restore_ownership() {
 }
 
 active=0
+hot_backup=''
 on_exit() {
-  local rc=$?
+  local rc=$? owner
   if (( rc != 0 && active )); then
     stop_writers
     printf 'Operation failed: gateway and broker are stopped and no volume was removed.\n' >&2
   fi
-  restore_ownership
+  if [[ $command == backup-hot ]]; then
+    if [[ -n $hot_backup && -d $hot_backup && ! -L $hot_backup ]]; then
+      # Only the newly created directory is changed; never touch the running stack.
+      if (( rc != 0 )); then
+        if [[ -f $hot_backup/COMPLETE && ! -L $hot_backup/COMPLETE ]]; then
+          quiet mv -- "$hot_backup/COMPLETE" "$hot_backup/INCOMPLETE" || quiet rm -f -- "$hot_backup/COMPLETE" || true
+        fi
+        printf 'Backup incomplete; do not use the new hot backup directory.\n' >&2
+      fi
+      owner=$(stat -c %u:%g "$ROOT_DIR" 2>/dev/null) && quiet chown -R "$owner" "$hot_backup" || true
+    fi
+  else
+    restore_ownership
+  fi
   exit "$rc"
 }
 
 command=${1:-}
 case $command in
   init) [[ $# -eq 1 ]] || usage ;;
-  install|update) [[ $# -eq 2 ]] || usage; require_release "$2" ;;
+  install|update|backup-hot) [[ $# -eq 2 ]] || usage; require_release "$2" ;;
   rollback) [[ $# -eq 3 ]] || usage; require_release "$3" ;;
   *) usage ;;
 esac
 [[ -d $ROOT_DIR ]] || fail 'The production directory must exist and be mounted at the same path.'
+if [[ $command == rollback ]]; then
+  [[ $2 == /* && -d $2 ]] || fail 'An absolute backup directory is required.'
+  validate_quiescent_backup "$2"
+fi
 trap on_exit EXIT
 require_docker
 
@@ -181,9 +199,34 @@ case $command in
     active=0
     step "Updated and healthy. Backup of the previous release: $backup"
     ;;
+  backup-hot)
+    load_settings; use_release "$2"
+    backup_parent="$ROOT_DIR/backups"
+    [[ $ROOT_DIR == /* && ! -L $ROOT_DIR && -d $backup_parent && ! -L $backup_parent ]] || fail 'A private backup directory is required: run init.'
+    for directory in "$ROOT_DIR" "$backup_parent"; do
+      insecure=$(find "$directory" -maxdepth 0 -perm /077 -print 2>/dev/null) || fail 'Could not check backup directory permissions.'
+      [[ -z $insecure ]] || fail 'Backup directory has insecure permissions.'
+    done
+    umask 077
+    timestamp=$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null) || fail 'Could not determine the backup timestamp.'
+    hot_backup=$(mktemp -d -- "$backup_parent/hot-$timestamp-${2:0:12}-XXXXXXXX" 2>/dev/null) || fail 'Could not create a new backup directory.'
+    # The marker is renamed only after the dump, checksum and ownership succeed.
+    printf 'hot-postgres-v1\n' 2>/dev/null > "$hot_backup/INCOMPLETE" || fail 'Could not mark the backup incomplete.'
+    postgres=$(compose ps -q --status running postgres 2>/dev/null) || fail 'Could not inspect PostgreSQL.'
+    [[ -n $postgres && $postgres != *$'\n'* ]] || fail 'Exactly one running PostgreSQL container is required.'
+    health=$(docker inspect --format '{{.State.Health.Status}}' "$postgres" 2>/dev/null) || fail 'Could not inspect PostgreSQL health.'
+    [[ $health == healthy ]] || fail 'PostgreSQL is not healthy.'
+    if ! compose exec -T --interactive=false postgres pg_dump --no-password -U studio_admin -d studio -Fc --exclude-table-data=studio_private.author_context 2>/dev/null > "$hot_backup/postgres.dump"; then
+      fail 'PostgreSQL backup failed.'
+    fi
+    (cd -- "$hot_backup" && sha256sum postgres.dump > SHA256SUMS) >/dev/null 2>&1 || fail 'Could not checksum the backup.'
+    owner=$(stat -c %u:%g "$ROOT_DIR" 2>/dev/null) || fail 'Could not determine backup ownership.'
+    quiet chown -R "$owner" "$hot_backup" || fail 'Could not set backup ownership.'
+    quiet mv -- "$hot_backup/INCOMPLETE" "$hot_backup/COMPLETE" || fail 'Could not complete the backup.'
+    step "Hot PostgreSQL backup completed: $hot_backup" 2>/dev/null
+    ;;
   rollback)
     load_settings; use_release "$3"; ensure_teacher_links; check_secrets
-    [[ $2 == /* && -d $2 ]] || fail 'An absolute backup directory is required.'
     pull_images
     target="${PROJECT}-r$(date -u +%Y%m%d%H%M%S)"
     active=1

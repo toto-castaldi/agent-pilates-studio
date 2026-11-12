@@ -24,7 +24,7 @@
     "test:pi-package": "npm run build --silent && node --test dist/integration/pi-package.test.js",
     "start:local": "node scripts/start-local.mjs",
     "test:start": "npm run build --silent && node --test dist/integration/start-local.test.js",
-    "test:images": "npm run build --silent && node --test dist/integration/images-only.test.js",
+    "test:images": "npm run build --silent && node --test --test-concurrency=1 dist/integration/images-only.test.js dist/integration/hot-backup.test.js",
     "db:init-secrets": "node scripts/init-secrets.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "voice:diagnose": "node scripts/voice-diagnose.mjs",

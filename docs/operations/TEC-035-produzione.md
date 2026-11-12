@@ -64,7 +64,77 @@ Il backup viene ripristinato in volumi nuovi, registrati in `state/volume-prefix
 
 ## Backup
 
-I backup contengono dati sensibili. Il filesystem di `jarvis` è cifrato con LUKS, ma è lo stesso disco della produzione: serve una copia indipendente su destinazione cifrata esterna, verificata periodicamente con un ripristino.
+I backup contengono dati sensibili. Il filesystem di `jarvis` è cifrato con LUKS, ma è lo stesso disco della produzione: serve una copia indipendente su destinazione cifrata esterna, verificata periodicamente con un ripristino. Il backup quiescente dell'aggiornamento contiene PostgreSQL **e** tutto il volume Hermes e resta quello da usare per il rollback; la copia a caldo qui sotto non lo sostituisce.
+
+### Copia a caldo del solo database
+
+Dopo che la CI ha pubblicato un commit che include TEC-039, scegliere il suo SHA completo e usare la funzione `ops` definita sopra:
+
+```bash
+COMMIT=<sha-completo-pubblicato>
+OPS_COMMIT=$COMMIT
+ops backup-hot "$COMMIT"
+```
+
+Il commit indicato deve coincidere con l'immagine `ops` scelta, non necessariamente con la release già in esecuzione: la nuova immagine può ottenere la copia senza aggiornare o ricreare la produzione. Se non è già presente, `docker run` può prima scaricare l'immagine `ops` scelta; l'operazione non scarica le immagini dei servizi. Il comando legge la configurazione non segreta e usa `pg_dump -Fc` nel PostgreSQL sano del progetto, senza fermare o ricreare gateway e broker né avviare servizi. Il dump usa una singola snapshot coerente dei dati transazionali; le sequenze PostgreSQL non sono transazionali e possono avanzare durante la copia. Come nel backup quiescente, i dati effimeri di `studio_private.author_context` sono esclusi e le impronte anti-replay sono incluse. Il volume e la cronologia Hermes, i segreti e la configurazione non sono inclusi. Una modifica concorrente dello schema può fare attendere o fallire il dump: usare un solo operatore ed evitare operazioni DDL durante la copia.
+
+La directory nuova indicata nell'output è `/opt/agent-pilates-prod/backups/hot-<data-UTC>-<commit-ops>-<suffisso>/`, con permessi `0700` e file `0600`: `postgres.dump`, `SHA256SUMS` e `COMPLETE` contenente `hot-postgres-v1`. Il suffisso evita collisioni, anche tra copie nello stesso secondo. Un errore non è un successo: se la directory è già stata creata resta incompleta, con `INCOMPLETE` se è stato possibile crearlo e senza `COMPLETE`; anche una directory priva di entrambi i marcatori è incompleta. Può contenere dati parziali sensibili: non usarla e rimuoverla solo intenzionalmente. Un errore prima della creazione non lascia alcuna directory. Gli output grezzi di Docker, PostgreSQL e checksum sono soppressi.
+
+La copia a caldo è riconoscibile e non viene accettata come backup quiescente da `ops rollback` o `restore.sh`: mancano l'archivio Hermes e il relativo checksum e il marcatore ha un valore diverso. Un `ops` che include TEC-039 esegue il controllo **prima** di fermare la produzione. Le immagini `ops` precedenti possono invece fermare i servizi prima di rifiutare un backup non valido: non indicare mai una copia a caldo al rollback, anche quando si usa l'immagine della release precedente.
+
+### Copia sul PC e ripristino per consultazione
+
+Usare solo un backup completo e fidato. I checksum rilevano corruzione, **non** autenticità; un dump può contenere SQL eseguibile. SSH protegge il trasferimento, non i dati a riposo. Il PC deve essere controllato e cifrato, inclusi sia la directory di destinazione sia lo storage dei volumi Docker; limitare l'accesso e non caricare il dump su servizi terzi. Sul PC, con Bash, SSH, `sha256sum` e Docker, sostituire il nome con quello ricevuto dal comando; creare una destinazione nuova:
+
+```bash
+BACKUP=<nome-hot-dall-output>
+DEST="$HOME/consultazione-pilates"
+(
+  set -e
+  umask 077
+  mkdir -m 700 "$DEST"
+  scp -r "jarvis:/opt/agent-pilates-prod/backups/$BACKUP" "$DEST/"
+  cd "$DEST/$BACKUP"
+  test "$(cat COMPLETE)" = hot-postgres-v1
+  test "$(wc -l < SHA256SUMS)" -eq 1
+  LC_ALL=C grep -Eq '^[0-9a-f]{64}  postgres[.]dump$' SHA256SUMS
+  sha256sum --check SHA256SUMS
+)
+```
+
+Se la copia, il marcatore o il checksum falliscono, fermarsi: non ripristinare. Non riutilizzare directory esistenti o incomplete. La procedura seguente crea un PostgreSQL **nuovo e isolato**, senza rete e senza porte; la fiducia locale è accettabile solo dentro questo container temporaneo. Scegliere un nome di container nuovo: se esiste già, la creazione fallisce e la procedura non prosegue. Il comando usa l'immagine PostgreSQL 17.10 fissata; non monta segreti e disabilita il log Docker del container. I messaggi grezzi di `pg_restore` sono soppressi perché possono contenere dati.
+
+```bash
+PG_CONTAINER=pilates-consultazione
+PG_IMAGE='postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285'
+(
+  set -e
+  if ! (cd "$DEST/$BACKUP" && test "$(cat COMPLETE)" = hot-postgres-v1 &&
+    test "$(wc -l < SHA256SUMS)" -eq 1 &&
+    LC_ALL=C grep -Eq '^[0-9a-f]{64}  postgres[.]dump$' SHA256SUMS &&
+    sha256sum --check --status SHA256SUMS) >/dev/null 2>&1; then
+    echo 'Backup non verificato.' >&2; exit 1
+  fi
+  if ! docker run -d --name "$PG_CONTAINER" --network none --log-driver none \
+    -e POSTGRES_HOST_AUTH_METHOD=trust "$PG_IMAGE" >/dev/null 2>&1; then
+    echo 'Creazione del database isolato fallita.' >&2; exit 1
+  fi
+  for i in {1..60}; do
+    docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1 && break
+    sleep 1
+  done
+  if ! docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+    echo 'Database isolato non disponibile.' >&2; exit 1
+  fi
+  if ! docker exec -i "$PG_CONTAINER" pg_restore --exit-on-error --no-owner --no-privileges \
+    --no-password -U postgres -d postgres < "$DEST/$BACKUP/postgres.dump" >/dev/null 2>&1; then
+    echo 'Ripristino fallito: il database parziale non va usato.' >&2; exit 1
+  fi
+  docker exec -it "$PG_CONTAINER" psql -X -U postgres -d postgres
+)
+```
+
+La consultazione in `psql` può mostrare dati sensibili nel terminale e nella sua cronologia: proteggerli ed evitare copie, log e condivisioni. `--no-owner --no-privileges` non ricrea ruoli, proprietari e permessi di produzione: il risultato è per consultazione isolata, **non** un ambiente sicuro da esporre o collegare al gateway. Se il ripristino fallisce, il container parziale resta per ispezione e non va usato. Alla fine, verificato che il nome indichi proprio il container temporaneo creato sopra, eliminarlo con `docker rm -fv "$PG_CONTAINER"`; il comando elimina anche il suo volume anonimo, non quello di produzione. Gestire e rimuovere intenzionalmente anche la copia locale secondo le esigenze di conservazione; la cancellazione non garantisce la distruzione sicura su ogni supporto.
 
 ## Stato e diagnostica
 
@@ -87,3 +157,9 @@ Eseguita su `jarvis` con Docker 29.9.2, in un progetto temporaneo nella home, co
 - nessun valore sintetico sensibile negli ultimi log del gateway.
 
 Limiti: non sono stati provati Meta, OpenRouter con chiave reale o il tunnel pubblico, né un guasto durante le migrazioni. L'installazione reale di `agent-pilates-prod`, con Meta e tunnel, è descritta in [TEC-036](TEC-036-whatsapp-ambienti.md).
+
+## Prova del backup a caldo — 2026-11-12
+
+`npm run test:images` è passato su Docker 29.9.3 in un progetto Compose temporaneo, con PostgreSQL 17.10, gateway e broker reali, modello sostitutivo su rete interna e soli dati sintetici. L'immagine `ops` è stata costruita e lanciata con commit sintetico esplicito. Il test ha trattenuto un lock su una tabella finché `pg_dump` era in attesa, ha campionato per oltre 12 secondi salute, identità e riavvii dei due servizi durante la copia, poi ha confermato una modifica concorrente. Nel ripristino PostgreSQL isolato e inizialmente vuoto, con `pg_restore --no-owner --no-privileges`, compare il valore precedente della snapshot; sono presenti i dati applicativi e l'impronta anti-replay, ma non il contesto autore. Sono stati verificati formato custom, permessi, proprietà, checksum, assenza dell'archivio Hermes e rifiuto del rollback prima degli arresti; i due servizi sono risultati sani anche dopo.
+
+`npm run test:local` inietta errori sintetici nei passaggi del comando e verifica marcatori, soppressione dell'output, commit e rifiuti; `npm run test:hermes` ha riprovato il backup e il ripristino quiescenti esistenti su PostgreSQL reale. La prova a caldo non ha usato `jarvis`, dati di produzione, Meta, OpenRouter o il tunnel; il campionamento degli healthcheck non dimostra la continuità di ogni richiesta esterna né l'assenza di tutti i guasti possibili.
