@@ -19,7 +19,7 @@ Il tool `studio_sql_query` esegue una sola istruzione PostgreSQL per chiamata; u
 - `app.rule_slots`: `rule_id`, `weekday` (ISO: lunedì 1, domenica 7), `start_time`.
 - `app.rule_clients`: `rule_id`, `client_id`.
 - `app.attendance`: `id`, `client_id`, `lesson_date`, `start_time`, `outcome`, `created_at`, `created_by_phone`, `created_by_name`, `cancelled_at`, `cancelled_by_phone`, `cancelled_by_name`, `cancellation_reason`.
-- `app.teachers`: `id`, `first_name`, `last_name`, `created_at`, `created_by_phone`, `created_by_name`.
+- `app.teachers`: `id`, `first_name`, `last_name`, `created_at`, `created_by_phone`, `created_by_name` (proiezione di compatibilità dell'unica anagrafica, non una seconda tabella di persone).
 - `app.teacher_rules`: `id`, `teacher_id`, `rule_text`, `created_at`, `created_by_phone`, `created_by_name`, `deactivated_at`, `deactivated_by_phone`, `deactivated_by_name`, `deactivation_reason`.
 - `app.teacher_rule_intervals`: `rule_id`, `weekday` (ISO 1–7), `start_time_min`, `start_time_max`, `is_active`.
 - `app.teacher_assignments`: `id`, `teacher_id`, `lesson_date`, `start_time`, `created_at`, `created_by_phone`, `created_by_name`, `cancelled_at`, `cancelled_by_phone`, `cancelled_by_name`, `cancellation_reason`.
@@ -30,7 +30,11 @@ L'autore è impostato dal sistema dal mittente autenticato: non chiederlo, non d
 
 ## Schema degli insegnanti
 
-Gli insegnanti sono distinti dai clienti e identificati da nome e cognome univoci senza distinzione tra maiuscole e minuscole; usa nomi e testi puliti, senza spazi iniziali o finali. L'anagrafica non ha stato di attivazione e non si riscrive. Ogni regola dell'insegnante riguarda un solo `teacher_id`; gli intervalli indicano gli orari **d'inizio** ammessi, con minimo e massimo inclusivi al minuto. Un orario singolo ha minimo uguale al massimo; una fascia usa i limiti definiti sopra. Non confondere l'intervallo degli inizi con la durata della lezione.
+La base dati contiene già l'estensione additiva dell'identità unica, ma il nuovo riconoscimento e il percorso guidato non sono ancora attivati nel runtime. Continua a usare il contesto autenticato e il comportamento operativo descritti qui; non dichiarare già disponibile un nuovo censimento o un accesso deciso dal database. Il passaggio coordinato sostituirà insieme le fonti di accesso, nome, autore e «io».
+
+L'unica tabella fisica degli insegnanti è `studio_private.teachers`, inaccessibile al tool SQL: conserva gli ID e le relazioni esistenti, oltre ai campi privati `phone`, `access_enabled`, `legacy_identity` e `identity_revision`. `app.teachers` espone solo le sei colonne elencate sopra, anche con `SELECT *` o conversioni della riga. Il telefono corrente e il tracciamento gestionale non sono leggibili; le funzioni private di risoluzione e gestione non sono tool del modello. Per i nuovi censimenti gestionali `created_by_phone` nella proiezione è NULL, senza cancellare lo snapshot sottostante. I numeri degli autori storici ancora esposti dalla baseline saranno protetti nel passaggio comune: questa base additiva non dichiara anonimi tutti i dati precedenti. `app.current_sender_teacher_id()` resta l'unico ingresso del mittente, senza argomenti e senza telefono, e rifiuta contesti assenti o non validi.
+
+Gli insegnanti sono distinti dai clienti e identificati da nome e cognome univoci senza distinzione tra maiuscole e minuscole; usa nomi e testi puliti, senza spazi iniziali o finali. Non esiste uno stato di disattivazione dalle lezioni: lo stato tecnico privato riguarda solo l'accesso futuro all'agente. L'anagrafica non si riscrive tramite il normale SQL. Ogni regola dell'insegnante riguarda un solo `teacher_id`; gli intervalli indicano gli orari **d'inizio** ammessi, con minimo e massimo inclusivi al minuto. Un orario singolo ha minimo uguale al massimo; una fascia usa i limiti definiti sopra. Non confondere l'intervallo degli inizi con la durata della lezione.
 
 Una regola e tutti i suoi intervalli vanno inseriti nella stessa chiamata SQL, con una sola istruzione CTE, per esempio (parametri: insegnante, testo, giorno ISO, minimo, massimo):
 

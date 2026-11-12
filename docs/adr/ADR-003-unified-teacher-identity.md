@@ -1,6 +1,6 @@
 # ADR-003 — Identità unica degli insegnanti e accesso dal database
 
-- **State:** Accepted — modello target pianificato, non ancora implementato
+- **State:** Accepted — base dati additiva TEC-041 implementata; riconoscimento target non ancora attivato
 - **Date:** 2026-11-12
 - **Items:** TEC-041 (base dati), US-017 (gestione guidata), TEC-042 (attivazione), TEC-043 (transizione e prove operative)
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-011, REQ-STUDIO-015, REQ-STUDIO-016, REQ-STUDIO-017, REQ-WA-002, REQ-WA-003, REQ-AGENT-006, REQ-AGENT-007, REQ-NFR-005
@@ -59,6 +59,16 @@ Si sceglie la terza opzione, nello stesso modulo `MOD-001`.
 - Soltanto gli insegnanti preesistenti possono restare temporaneamente senza telefono: restano nelle lezioni, ma non accedono all'agente. Non è un modo ordinario per creare nuovi insegnanti incompleti.
 - Non creare più un insegnante perché un utilizzatore lo nomina in una regola o indicazione: serve il censimento del gestore. Il riconoscimento per nome di insegnanti già presenti e la creazione automatica dei clienti restano invariati.
 - Il censimento nel database non registra automaticamente destinatari sul numero di test Meta e non ne supera il limite esterno.
+
+## Additive database contract — TEC-041
+
+Il [contratto SQL](../data/TEC-041-identity-contract.md) concretizza la prima consegna. Per non aggiungere telefoni a un tipo di riga già leggibile dal modello, la tabella esistente si sposta in `studio_private.teachers` senza cambiarne OID, ID, sequenza, chiavi esterne o snapshot. `app.teachers` resta il nome pubblico con le sei colonne precedenti, tramite vista di compatibilità e trigger di inserimento; SELECT, conversioni della riga e INSERT/RETURNING della baseline sono verificati. Il telefono dell'autore delle nuove persone gestionali è mascherato nella proiezione, non cancellato nello storage. Non si crea una seconda tabella di utenti o identità. Si preferisce questa facciata ai soli privilegi di colonna sulla tabella pubblica, che farebbero fallire anche i precedenti SELECT/RETURNING `*`, e a un'estensione anagrafica separata da ricongiungere. La vista non offre indici propri, TRUNCATE o INSERT con ON CONFLICT; il contratto conserva il percorso SQL dello studio verificato, non SQL amministrativo arbitrario.
+
+La stessa riga privata contiene telefono canonico, accesso, origine legacy e revisione. Solo il broker può eseguire risoluzione, installazione del contesto, gestione e consultazione gestionale; non ha DML sulla riga, sull'audit o sulla guardia. Le operazioni verificano il mittente autenticato contro l'unico numero gestore fornito dal componente fidato e ricontrollano accesso e identità corrente al salvataggio. Il modello non può dichiarare una prova, assumere il ruolo, impostare un GUC o leggere dati gestionali tramite SQL. Nome e cognome nuovi sono validati; il formato internazionale è normalizzato senza assumere un paese, con vincolo univoco PostgreSQL anche per conflitti concorrenti.
+
+Il nuovo contesto è vincolato a backend, transazione, scadenza e revisione della persona; la verifica si ripete per ogni operazione e prende un lock condiviso fino al termine della transazione. Le modifiche gestionali mantengono ID e creazione originaria, incrementano la revisione e scrivono l'audit append-only con autore e data del database. La guardia di scrittura privata non può sopravvivere al commit. Revoca di sé e cambio numero del gestore sono rifiutati, così come il bootstrap di un gestore già censito ma revocato.
+
+Questa consegna conserva esplicitamente i contesti e gli inserimenti incompleti del runtime precedente. Non cambia gateway, configurazione privata, allowlist, mapping o nome nella conversazione. US-017 precede il passaggio comune di TEC-042, che rimuove il percorso legacy, toglie l'inserimento degli insegnanti al modello e protegge anche tutti i numeri degli autori storici nelle proiezioni e nei risultati/errori SQL. Non si dichiara anonima la cronologia precedente. Le prove di TEC-041 usano soltanto dati sintetici e includono PostgreSQL reale, upgrade e backup/ripristino isolati; esiti in [TEC-041-prove](../operations/TEC-041-prove.md).
 
 ## Delivery and verification
 

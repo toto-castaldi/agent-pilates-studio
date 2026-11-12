@@ -190,6 +190,14 @@ npm run test:db
 
 Il test crea un progetto Compose e un volume temporanei dedicati, applica anche una migrazione di prova su uno schema esistente, verifica DML e rifiuto di DDL e infine rimuove soltanto le proprie risorse. Scarica anche l'immagine ufficiale Hermes fissata dal progetto e verifica il plugin SQL tramite il registro reale dei suoi tool. Non effettua chiamate a OpenRouter o Meta.
 
+### Base dati dell'identità — riconoscimento non ancora attivo
+
+Le migrazioni includono la base additiva dell'identità unica di [ADR-003](docs/adr/ADR-003-unified-teacher-identity.md). La tabella degli insegnanti conserva ID, relazioni e autori e passa nello schema privato; `app.teachers` rimane una vista con le colonne precedenti per le operazioni dello studio. I nuovi telefoni correnti, gli accessi e il tracciamento gestionale non sono estraibili dal normale ruolo SQL, anche con conversioni della riga. Le funzioni fidate richiedono numeri internazionali, normalizzano i separatori e conservano lo storico; il [contratto SQL](docs/data/TEC-041-identity-contract.md) descrive formati, operazioni, privilegi e limiti della vista.
+
+**Questo non cambia ancora l'accesso a WhatsApp:** allowlist, collegamento privato, nome del profilo e configurazione descritti sotto restano la baseline operativa. Non viene importato alcun numero e non si attiva un nuovo percorso di censimento; non usare queste funzioni come CLI ordinaria. Il percorso guidato precederà il cambio coordinato di gateway e broker, che proteggerà anche tutti i numeri degli autori storici e rimuoverà la creazione libera degli insegnanti. I dati vecchi non sono dichiarati anonimi. Non aggiungere ora configurazioni alternative per attivare soltanto un consumatore.
+
+`test:db` verifica gestione protetta, bootstrap, unicità concorrente, contesti e tentativi di estrazione su PostgreSQL reale; `test:upgrade` conserva lo schema precedente con dati e `test:hermes` verifica anche identità, audit e privilegi dopo riavvio, ricreazione e backup/ripristino. Usano soltanto risorse isolate e dati sintetici; [prove e limiti](docs/operations/TEC-041-prove.md).
+
 ## Hermes e WhatsApp Cloud
 
 Per completare l'avvio servono un account OpenRouter e un'app Meta con WhatsApp Business configurata. Dopo `npm run db:init-secrets`, completare nella stessa directory privata i file seguenti, ciascuno contenente solo il valore indicato, con permessi `0600`. Il verify token è già generato dal comando. Usare un editor locale: non inserire i valori nel repository, nella cronologia della shell o in chat.

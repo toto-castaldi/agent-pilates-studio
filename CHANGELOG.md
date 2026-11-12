@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Base dati additiva dell'identità unica degli insegnanti, con telefoni privati, funzioni fidate di censimento e gestione, accesso revocabile e audit protetto; conserva la compatibilità del runtime precedente senza attivare ancora il nuovo riconoscimento (TEC-041).
 - Launcher manuale `update-agent-pilates.sh <commit>` senza versione cablata, con validazione dello SHA e istruzioni per scegliere l'ultimo commit con immagini pubblicate (TEC-040).
 - Comando manuale `ops backup-hot` per copiare il solo PostgreSQL di produzione senza fermare gateway e broker, con verifica e ripristino isolato per consultazione (TEC-039).
 - Indicazioni e sostituzioni conversazionali degli insegnanti per lezioni passate e future, con conferma per più lezioni, identità del mittente collegato, correzioni tramite annullamento e storico verificati con scenari sintetici (US-014).
