@@ -1,6 +1,6 @@
 {
   "id": "v0.3.0",
-  "goal": "Il titolare e i collaboratori registrano via WhatsApp presenze e assenze dei clienti alle singole lezioni, con correzioni tracciate, storico e consultazione.",
+  "goal": "Gli insegnanti registrano e consultano via WhatsApp presenze, assenze e insegnanti delle lezioni, con correzioni e storico; l'identità unica nel database determina accesso e autore e un solo gestore mantiene l'anagrafica tramite una procedura guidata.",
   "state": "Open",
   "scope_changes": [
     "2026-11-07: su accordo dell'utente, TEC-028 è aggiunto alla v0.3.0 per allineare il progetto al template v1.6.1 e attivare l'orchestrazione del lavoro parallelo.",
@@ -17,6 +17,7 @@
     "2026-11-11: Aggiunto TEC-038: aggiornamento al template v2.1.0 e push automatico limitato ai commit documentali di aggiunta di item dopo l’adozione (REQ-NFR-020).",
     "2026-11-12: Aggiunto TEC-039: backup a caldo del solo database di produzione con un comando ops (REQ-OPS-008), concordato con l'utente.",
     "2026-11-12: Concordato con l'utente: correggere il fallimento intermittente del ripristino del backup a caldo nella CI successiva al merge di TEC-039, senza introdurre nuove funzionalità.",
-    "2026-11-12: Concordato con l'utente: versionare e installare nella home di jarvis il launcher manuale parametrico di aggiornamento, con istruzioni per ottenere l'ultimo commit pubblicato; nessuna esecuzione dell'aggiornamento di produzione durante l'item."
+    "2026-11-12: Concordato con l'utente: versionare e installare nella home di jarvis il launcher manuale parametrico di aggiornamento, con istruzioni per ottenere l'ultimo commit pubblicato; nessuna esecuzione dell'aggiornamento di produzione durante l'item.",
+    "2026-11-12: Concordata l'aggiunta di quattro item per identità unica degli insegnanti nel database e gestione guidata: base dati e funzioni protette, percorso del gestore, attivazione coordinata di accesso/nome/io/autore e transizione con prove complete. Un solo telefono corrente per insegnante, nome e cognome univoci, revoca/riabilitazione, nessun numero al modello, completamento manuale degli insegnanti preesistenti senza importazione dei vecchi mapping. Unico numero personale in configurazione: gestore e canale home derivato. REQ-STUDIO-015–017; nessuna implementazione o modifica operativa durante la pianificazione."
   ]
 }

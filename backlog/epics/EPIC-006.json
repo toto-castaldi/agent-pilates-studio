@@ -1,0 +1,5 @@
+{
+  "id": "EPIC-006",
+  "title": "Identità e accesso degli insegnanti",
+  "scope": "Anagrafica unica degli insegnanti e utilizzatori con telefono, nome e cognome; riconoscimento fidato del mittente, accesso e autore dal database; gestione guidata riservata all'unico gestore, protezione dei numeri e transizione dai collegamenti in configurazione. Esclusi ruoli configurabili, più gestori e categorie di utilizzatori diverse dagli insegnanti."
+}

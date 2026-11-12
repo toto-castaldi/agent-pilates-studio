@@ -4,6 +4,9 @@
 - **Date:** 2026-11-11
 - **Item:** US-011
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-011, REQ-STUDIO-012, REQ-AGENT-006, REQ-NFR-002, REQ-NFR-005
+- **Supersession planned:** [ADR-003](ADR-003-unified-teacher-identity.md), decisione del 2026-11-12; efficace al completamento del passaggio coordinato
+
+Questa ADR conserva la decisione della baseline US-011. I riferimenti al divieto di telefoni nel database e ai permessi uguali anche sull'anagrafica descrivono i requisiti dell'epoca, modificati dal cambio di scope di REQ-STUDIO-015–017. La sola pianificazione di ADR-003 non modifica il runtime esistente.
 
 ## Context
 

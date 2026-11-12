@@ -20,7 +20,7 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
-- Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione e permessi degli insegnanti, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori.
+- Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Il cambio di scope del 2026-11-12 include l'anagrafica unica insegnanti/utilizzatori con telefono, nome e cognome, accesso revocabile e gestione guidata riservata all'unico gestore configurato (REQ-STUDIO-015–017). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione degli insegnanti dalle lezioni, permessi diversi sulle operazioni dello studio, più gestori, anagrafiche separate degli utilizzatori, pacchetti, pagamenti e richiesta automatica delle presenze. Il nuovo modello è pianificato, non ancora attivo: la transizione dalla baseline precedente segue ADR-003.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
 - Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
 
@@ -35,12 +35,13 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 ## 5. Domain rules
 
 - L'agente può eseguire DML ma non DDL sugli schemi; usare credenziali distinte per le migrazioni, non disponibili all'agente. È accettata l'eccezione PostgreSQL che permette al ruolo di cambiare la propria password. Verificare i privilegi su PostgreSQL reale.
-- Solo i numeri autorizzati in configurazione possono interagire; i webhook non autenticati devono essere rifiutati.
+- Nel modello target solo i numeri censiti con accesso abilitato nel database possono usare l'agente; l'unico gestore configurato ha la sola eccezione iniziale per censire sé stesso. I webhook non autenticati devono essere rifiutati. Non mantenere allowlist o mapping numero–insegnante in parallelo dopo il passaggio coordinato di ADR-003.
 - I dati devono persistere tra riavvii e aggiornamenti; backup e ripristino devono essere verificabili.
 - Le regole di allenamento non si cancellano né si riscrivono: si disattivano con data, autore e motivo; il divieto di cancellazione è imposto dal database.
 - Presenze e assenze non si cancellano né si riscrivono: si annullano una sola volta con data, autore e motivo; il divieto è imposto dal database.
-- Regole degli insegnanti e indicazioni dell'insegnante seguono gli stessi divieti: le regole si disattivano, le indicazioni si annullano, una sola volta con data, autore e motivo. L'insegnante del mittente collegato in configurazione è ricavato dal sistema, mai dichiarato dal modello.
-- L'autore di inserimenti, disattivazioni e annullamenti è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello.
+- Regole degli insegnanti e indicazioni dell'insegnante seguono gli stessi divieti: le regole si disattivano, le indicazioni si annullano, una sola volta con data, autore e motivo. Nel modello target l'insegnante del mittente, il suo nome e l'accesso derivano dall'unica identità nel database, ricavata dal numero WhatsApp autenticato, mai dichiarata dal modello o dal nome del profilo WhatsApp.
+- L'autore di inserimenti, disattivazioni e annullamenti è ricavato dal sistema dal mittente WhatsApp, mai dichiarato dal modello. Le nuove operazioni usano nome e cognome censiti; gli snapshot degli autori precedenti non si riscrivono.
+- Solo il gestore mantiene l'anagrafica tramite percorso guidato, con controlli nel sistema e nel database. I telefoni, inclusi quelli degli autori e dei messaggi gestionali, non vanno al modello né alla sua cronologia; il normale accesso SQL non deve aggirare la protezione. Correzioni, revoca e cambio numero non cancellano lo storico né disattivano regole; il nuovo numero riparte con chat vuota.
 - Test, CI ed esempi usano solo nomi e numeri sintetici.
 - Le regole di comportamento dell'agente, come i limiti delle fasce orarie, stanno nel file `SOUL.md` versionato nel progetto e usato da Hermes, senza duplicarle nel codice.
 
@@ -70,11 +71,13 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 - Per SPIKE-001, su richiesta dell'utente, lo spike comprende anche l'implementazione dello stack locale e i criteri originariamente assegnati a TEC-003, TEC-004 e US-001, confluiti nello spike. In deroga a `docs/PROCESS.md` §§1, 4.3 e 4.4, l'item può comprendere il lavoro originariamente suddiviso in più item e il suo codice implementativo può essere committato e, previa richiesta esplicita, integrato dal branch dello spike; non è limitato alla sola ricerca. Restano obbligatori il rapporto, tutti i criteri di accettazione, la Definition of Done e le altre regole di sicurezza e di merge.
 
+- Per la sola aggiunta documentale dei quattro item di identità concordati il 2026-11-12, l'utente ha autorizzato una deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dai commit. La deroga non autorizza altre modifiche estranee, avvii o implementazioni e non si estende alle operazioni successive.
+
 ## 9. Security and configuration
 
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
-- Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare l'elenco dei numeri consentiti.
+- Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare il controllo di accesso. Il modello target usa il censimento nel database e il solo numero gestore in configurazione, non un elenco parallelo di numeri; il canale home deriva dal gestore. Non modificare lo stack operativo per attivare il piano durante la sola aggiunta degli item.
 - Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). L'uso continuativo della sola produzione è regolato dalla decisione del 2026-11-09 in REQ-NFR-002; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
 
 ## 10. Parallel work

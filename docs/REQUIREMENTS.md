@@ -6,19 +6,22 @@
 
 Questo documento definisce il comportamento richiesto; le scelte tecniche sono in `docs/TECHNICAL-DESIGN.md`.
 
+**Pianificazione del 2026-11-12:** il modello di identità unica di REQ-STUDIO-015–017 è concordato per la v0.3.0, ma non è ancora implementato. Sostituisce, al completamento degli item dedicati, il riconoscimento tramite nome WhatsApp e il collegamento numero–insegnante in configurazione; gli esiti degli item già completati restano lo storico della baseline precedente.
+
 ## 1. Goal
 
 Rendere riproducibili l'installazione, la prova locale e l'aggiornamento in produzione di un ambiente agentico Hermes, con database relazionale, modello tramite OpenRouter e comunicazione WhatsApp Business. Il successo della v0.1.0 è dimostrato dagli scenari di accettazione della release.
 
 Con la v0.2.0 l'agente diventa l'assistente dello studio Pilates: il titolare e i collaboratori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico.
 
-Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp, e le assenze giustificate annunciate prima della lezione; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche. Con il cambio di scope del 2026-11-08 la v0.3.0 registra anche gli insegnanti dello studio, le loro regole settimanali e i cambi puntuali, come le sostituzioni, per ricavare chi ha tenuto ogni lezione e consultarlo per insegnante.
+Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti alle singole lezioni, in una data e un orario precisi, quando un utilizzatore le comunica via WhatsApp, e le assenze giustificate annunciate prima della lezione; le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche. Con il cambio di scope del 2026-11-08 la v0.3.0 registra anche gli insegnanti dello studio, le loro regole settimanali e i cambi puntuali, come le sostituzioni, per ricavare chi ha tenuto ogni lezione e consultarlo per insegnante. Con il cambio di scope del 2026-11-12 l'anagrafica degli insegnanti diventa anche l'unica fonte dell'identità degli utilizzatori: telefono, nome e cognome nel database, gestione guidata riservata a un solo gestore e accesso revocabile senza modificare lo storico.
 
 ## 2. Actors
 
 - **Operatore:** ruolo generico che configura, installa, aggiorna e gestisce l'ambiente; l'identità concreta è da definire.
-- **Interlocutore autorizzato (utilizzatore):** il titolare dello studio o un suo collaboratore, associato a un numero configurato, che comunica con l'agente tramite WhatsApp. Chiunque possa conversare con l'agente è un utilizzatore e tutti hanno gli stessi permessi; non esiste un'anagrafica degli utilizzatori. Gli insegnanti che comunicano presenze e assenze sono utilizzatori. I clienti dello studio non usano l'agente.
-- **Insegnante:** persona che tiene le lezioni dello studio, registrata nell'anagrafica degli insegnanti (REQ-STUDIO-011). Non interagisce con l'agente in quanto insegnante: può farlo solo se è anche un utilizzatore, e in tal caso il suo numero può essere collegato all'insegnante nella configurazione. Il collegamento non concede permessi diversi.
+- **Interlocutore autorizzato (utilizzatore):** insegnante censito nel database con un numero WhatsApp univoco e accesso abilitato, che comunica con l'agente. Gli utilizzatori hanno gli stessi permessi sulle normali operazioni dello studio, anche relative agli altri insegnanti; solo il gestore mantiene l'anagrafica. Non esiste un'anagrafica separata degli utilizzatori e i clienti non usano l'agente.
+- **Gestore:** unico utilizzatore il cui numero è indicato nella configurazione privata. Può censire e mantenere gli insegnanti tramite un percorso guidato nella chat. Se non ancora censito, accede soltanto al percorso iniziale per completare la propria identità, prima di usare i dati dello studio.
+- **Insegnante:** persona che tiene le lezioni dello studio, registrata nell'anagrafica unica (REQ-STUDIO-011 e REQ-STUDIO-015). Ogni nuovo insegnante ha un numero di telefono; quelli preesistenti senza numero restano nelle lezioni come eccezione transitoria, senza accesso all'agente. Revocare l'accesso non disattiva l'insegnante dalle lezioni.
 - **Cliente:** persona che si allena nello studio; non interagisce con l'agente.
 - **Agente:** Hermes, che elabora le richieste tramite il modello e accede ai dati con i privilegi assegnati.
 
@@ -28,7 +31,9 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - **DML:** operazioni di lettura e modifica dei dati, incluse selezione, inserimento, aggiornamento ed eliminazione.
 - **DDL:** operazioni di definizione o modifica degli oggetti dello schema, inclusi creazione, alterazione ed eliminazione.
 - **Migrazione:** modifica versionata e riproducibile dello schema, eseguita con credenziali diverse da quelle dell'agente.
-- **Numero autorizzato:** numero presente nella configurazione di accesso a WhatsApp.
+- **Numero autorizzato:** numero associato nel database a un insegnante con accesso abilitato. Il solo numero del gestore in configurazione consente l'eccezione iniziale per il proprio censimento, non l'uso anonimo dei dati dello studio.
+- **Identità censita:** insegnante con nome, cognome e un solo telefono corrente in formato internazionale normalizzato; il telefono identifica il mittente, mentre l'identità dell'insegnante resta stabile se il numero cambia.
+- **Accesso revocato:** stato che impedisce di usare l'agente senza cancellare l'insegnante o alterare regole, lezioni e storico.
 - **Lezione:** lezione di Pilates di un'ora, individuale o di gruppo, tenuta in qualsiasi giorno della settimana.
 - **Regola di allenamento:** abitudine settimanale ricorrente di uno o più clienti, ad esempio "Antonio Rossi si allena tutti i venerdì alle 9", espressa in un testo in linguaggio naturale pulito e comprensibile, con i giorni, gli orari e i clienti derivati dal testo.
 - **Regola attiva:** regola non disattivata; solo le regole attive determinano la pianificazione.
@@ -56,7 +61,8 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
 - Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
 - Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Cambio di scope del 2026-11-08: anagrafica degli insegnanti con numero WhatsApp collegabile nella configurazione (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014).
+- Cambio di scope del 2026-11-08: anagrafica degli insegnanti (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014). Il collegamento del numero in configurazione introdotto allora è sostituito dal cambio di scope del 2026-11-12.
+- Cambio di scope del 2026-11-12: identità unica degli insegnanti nel database con telefono, nome e cognome; accesso deciso dal censimento, gestione guidata riservata all'unico gestore configurato, correzioni, cambio numero, revoca e riabilitazione, transizione manuale e numeri esclusi dal modello (REQ-STUDIO-015–017). Nessuna anagrafica separata degli utilizzatori.
 - Allineamento al template v1.6.1 e orchestrazione opzionale del lavoro parallelo, attivata per il progetto (REQ-NFR-016); aggiornamento alla v1.7.0 per il coordinamento non bloccante (REQ-NFR-017) e alla v1.7.1 per il comando dei worker (REQ-NFR-018); aggiornamento alla v2.0.0 per il backlog su file e il processo ridotto (REQ-NFR-019). Cambio di scope del 2026-11-11: aggiornamento alla v2.1.0 e pubblicazione automatica delle aggiunte di item (REQ-NFR-020).
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
 - Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
@@ -70,10 +76,10 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
 - Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati (TEC-019 e item non assegnati).
-- Disattivazione degli insegnanti, dati degli insegnanti oltre a nome, cognome, numero collegato, regole e indicazioni, compensi e ore lavorate, permessi diversi per gli insegnanti; sale, attrezzature e capienza.
+- Disattivazione degli insegnanti dalla pianificazione, dati di profilo oltre a nome, cognome e telefono, compensi e ore lavorate, permessi differenziati sulle operazioni dello studio; sale, attrezzature e capienza. La sola revoca dell'accesso e la gestione dell'anagrafica riservata al gestore sono invece in scope.
 - Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
 - Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
-- Anagrafica, ruoli e permessi differenziati degli utilizzatori; uso dell'agente da parte dei clienti.
+- Anagrafica degli utilizzatori separata dagli insegnanti, più gestori, ruoli configurabili e uso dell'agente da parte di clienti o altre categorie di persone.
 - Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
 - Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server, DNS, certificati, deploy automatico e monitoraggio avanzato.
 
@@ -129,7 +135,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 | AGENT | Ambiente agente e modello |
 | WA | Comunicazione WhatsApp Business |
 | OPS | Operatività e continuità |
-| STUDIO | Pianificazione delle lezioni e presenze dello studio |
+| STUDIO | Pianificazione, presenze e identità degli insegnanti dello studio |
 
 ### Database e migrazioni
 
@@ -173,15 +179,17 @@ L'agente ha un nome proprio, unico e stabile, definito nel file `SOUL.md` versio
 
 #### REQ-AGENT-006 — Configurazione locale da un'unica fonte
 
-Per l'avvio locale, l'operatore modifica solo `.env` privato: il comando applica automaticamente le modifiche valide alla configurazione e alle credenziali esterne WhatsApp e OpenRouter, inclusi numeri autorizzati e canale home, senza richiedere modifiche manuali a copie o file intermedi. Gateway e broker devono usare coerentemente la configurazione applicata; un avvio fallito non deve lasciare servizi in esecuzione con configurazioni di autorizzazione discordanti. L'esito positivo non attesta la validità delle credenziali presso Meta o OpenRouter.
+Per l'avvio locale, l'operatore modifica solo `.env` privato per configurazione tecnica e credenziali esterne WhatsApp e OpenRouter, incluso l'unico numero del gestore; il comando applica automaticamente le modifiche valide senza richiedere modifiche manuali a copie o file intermedi. Il canale home deriva dal numero del gestore (REQ-WA-003); telefoni e identità degli altri insegnanti stanno soltanto nel database e si mantengono via chat (REQ-STUDIO-015–017), senza sincronizzazione con `.env`. Gateway e broker devono usare coerentemente la configurazione applicata; un avvio fallito non deve lasciare servizi in esecuzione con configurazioni di autorizzazione discordanti. L'esito positivo non attesta la validità delle credenziali presso Meta o OpenRouter.
 
 Le password PostgreSQL già inizializzate e le credenziali interne generate non vengono ruotate automaticamente: una password PostgreSQL in `.env` discordante arresta l'avvio con un messaggio non sensibile. La configurazione collegata, la persistenza, l'autenticazione e l'isolamento delle credenziali restano protetti secondo REQ-AGENT-003, REQ-DB-002, REQ-WA-002 e REQ-NFR-002; l'applicazione non modifica le impostazioni sui servizi esterni.
 
 #### REQ-AGENT-007 — Nessuna proposta spontanea di profilo
 
-L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Alla prima risposta continua a presentarsi e a rispondere alla richiesta secondo REQ-AGENT-005. Il mittente è riconosciuto dal sistema tramite WhatsApp; l'agente può usare il nome visualizzato ricevuto nel contesto della conversazione, senza chiederne l'inserimento o la conferma per iniziare. Se il nome non è disponibile, prosegue senza nome e non lo inventa; se gli viene chiesto, spiega che non è stato fornito da WhatsApp. Il nome visualizzato non prova il ruolo nello studio e non conferisce privilegi. Questo requisito non introduce un'anagrafica, profili precompilati via CLI o una funzionalità di profilazione degli utilizzatori, che restano fuori scope, e non modifica l'uso del nome del profilo WhatsApp per l'autore (REQ-STUDIO-003) o la cronologia delle conversazioni (REQ-AGENT-004).
+L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né nella prima risposta né nei turni successivi. Alla prima risposta continua a presentarsi e a rispondere alla richiesta secondo REQ-AGENT-005. Il sistema riconosce il mittente dal numero WhatsApp autenticato e usa nome e cognome dell'anagrafica unica (REQ-STUDIO-015), senza chiedere ai censiti di presentarsi o confermare la propria identità. Il nome del profilo WhatsApp non è usato come identità, fallback, fonte dell'autore o dei permessi. Non si riabilitano memoria, profilazione o onboarding libero di Hermes.
 
-**Precisazione dell'utente (2026-11-11):** solo riconoscimento automatico dai dati WhatsApp già disponibili; il censimento preventivo tramite CLI è prematuro e non viene introdotto.
+Il solo gestore non ancora censito segue il percorso iniziale obbligatorio di REQ-STUDIO-016: non è una proposta spontanea di profilazione. Un numero non abilitato riceve soltanto il rifiuto fisso di REQ-WA-002, senza invito all'autoiscrizione. La gestione ordinaria avviene via chat, non tramite profili precompilati via CLI.
+
+**Evoluzione delle decisioni:** la precisazione del 2026-11-11 prevedeva solo i dati WhatsApp già disponibili, senza censimento. La decisione del 2026-11-12 la sostituisce per identità e anagrafica, mantenendo il divieto di proposte spontanee di profilo e le protezioni della cronologia.
 
 ### Comunicazione WhatsApp Business
 
@@ -191,11 +199,13 @@ Un interlocutore autorizzato deve poter inviare un messaggio tramite WhatsApp Bu
 
 #### REQ-WA-002 — Accesso e webhook
 
-Solo i numeri presenti nella configurazione di autorizzazione possono interagire con l'agente. Le richieste del webhook devono essere autenticate e quelle non valide rifiutate.
+Solo i numeri censiti con accesso abilitato nel database possono interagire con l'agente per le operazioni dello studio (REQ-STUDIO-015). Il solo gestore configurato ha l'eccezione per completare il proprio censimento iniziale. Non esistono allowlist o collegamenti numero–insegnante mantenuti in parallelo nella configurazione. Le richieste del webhook devono essere autenticate e quelle non valide rifiutate; conoscere un nome, dichiarare un ruolo o scrivere un numero nel testo non autentica il mittente.
+
+A un messaggio autentico da un numero non censito, incompleto o revocato il sistema risponde con un testo fisso che indica accesso non abilitato e invita a rivolgersi al gestore, senza divulgarne il numero, chiamare il modello o accedere ai dati dello studio. L'eccezione di censimento iniziale del gestore resta separata. Restano indipendenti i vincoli esterni di Meta.
 
 #### REQ-WA-003 — Canale home configurato e nessun avviso di sistema
 
-Gli utilizzatori ricevono via WhatsApp solo le risposte dell'agente e, quando previsti, i messaggi inviati sul canale home. Avvisi e suggerimenti interni di Hermes non pertinenti allo studio, come la richiesta di impostare un canale home con `/sethome`, non devono essere inviati. Il canale home, destinazione dei risultati dei job cron e dei messaggi da altre piattaforme, è un numero dell'elenco autorizzato fissato dall'operatore nella configurazione esterna; gli utilizzatori non possono impostarlo o cambiarlo tramite la conversazione. Un valore mancante o non autorizzato è segnalato all'avvio senza esporre il numero.
+Gli utilizzatori ricevono via WhatsApp solo le risposte dell'agente e, quando previsti, i messaggi inviati sul canale home. Avvisi e suggerimenti interni di Hermes non pertinenti allo studio, come la richiesta di impostare un canale home con `/sethome`, non devono essere inviati. Il canale home, destinazione dei risultati dei job cron e dei messaggi da altre piattaforme, coincide automaticamente con l'unico numero del gestore configurato; non richiede un secondo numero in `.env` e gli utilizzatori non possono impostarlo o cambiarlo tramite la conversazione. Un numero del gestore mancante o malformato arresta l'avvio senza esporne il valore. Questa derivazione non abilita cron, messaggi pianificati o nuove notifiche.
 
 ### Operatività
 
@@ -221,7 +231,7 @@ Le immagini di produzione (`hermes`, `postgres`, `migrator`, `ops`) sono costrui
 
 #### REQ-OPS-006 — WhatsApp per ambiente e callback stabile
 
-Ogni ambiente ha una propria app Meta, un proprio numero WhatsApp Business e propri token, app secret, verify token e allowlist. La produzione usa il callback HTTPS fisso su `agent-pilates-studio.toto-castaldi.com` e, finché gli utilizzatori sono al massimo cinque, può usare il numero di test fornito da Meta per la propria app, distinto da quello di sviluppo (decisione del 2026-11-10: oggi gli utilizzatori sono quattro e i clienti restano fuori scope). Il numero di test raggiunge solo destinatari preregistrati su Meta, oltre all'allowlist del progetto. Il passaggio a un numero reale dedicato sostituisce solo token, Phone Number ID e allowlist nella configurazione privata di produzione, senza cambiare codice, immagini o callback, ed è necessario prima di superare cinque utilizzatori o di aprire l'uso ai clienti. Lo sviluppo mantiene il callback attuale, che raggiunge il clone attivo tramite port forward verso `jarvis`: cambiare clone non richiede modifiche su Meta, e un solo clone alla volta riceve i messaggi. L'assenza di un clone collegato non influisce sulla produzione.
+Ogni ambiente ha una propria app Meta, un proprio numero WhatsApp Business, token, app secret, verify token, configurazione del gestore e database delle identità separati. La produzione usa il callback HTTPS fisso su `agent-pilates-studio.toto-castaldi.com` e, finché gli utilizzatori sono al massimo cinque, può usare il numero di test fornito da Meta per la propria app, distinto da quello di sviluppo (decisione del 2026-11-10: allora gli utilizzatori erano quattro e i clienti restano fuori scope). Il numero di test raggiunge solo destinatari preregistrati su Meta, oltre al censimento applicativo nel database: censire una persona non la registra automaticamente su Meta. Il passaggio a un numero reale dedicato sostituisce solo token e Phone Number ID nella configurazione privata di produzione, senza cambiare codice, immagini, callback o anagrafica, ed è necessario prima di superare cinque utilizzatori o di aprire l'uso ai clienti. Lo sviluppo mantiene il callback attuale, che raggiunge il clone attivo tramite port forward verso `jarvis`: cambiare clone non richiede modifiche su Meta, e un solo clone alla volta riceve i messaggi. L'assenza di un clone collegato non influisce sulla produzione.
 
 #### REQ-OPS-008 — Backup a caldo del database di produzione
 
@@ -249,7 +259,9 @@ I clienti sono identificati da nome e cognome, univoci nello studio, senza ulter
 
 #### REQ-STUDIO-003 — Autore delle modifiche
 
-L'autore di ogni inserimento e disattivazione di clienti, insegnanti, regole di allenamento e regole degli insegnanti, e di ogni registrazione e annullamento di presenze, assenze e indicazioni dell'insegnante, è l'utilizzatore che ha inviato il messaggio, registrato con il numero WhatsApp del mittente e, se disponibile, il nome del profilo WhatsApp. L'identità è ricavata dal sistema a partire dal messaggio autenticato e non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione.
+L'autore di ogni inserimento e disattivazione di clienti, insegnanti, regole di allenamento e regole degli insegnanti, e di ogni registrazione e annullamento di presenze, assenze e indicazioni dell'insegnante, è l'utilizzatore che ha inviato il messaggio. Per le nuove operazioni il sistema registra il numero WhatsApp autenticato e nome e cognome dall'anagrafica unica valida al momento dell'operazione (REQ-STUDIO-015), non il nome del profilo WhatsApp. Anche le operazioni di gestione dell'anagrafica hanno data e autore di sistema.
+
+L'identità non deve poter essere dichiarata o alterata dal modello o dal testo della conversazione. Correggere un nome o cambiare un numero non riscrive gli autori storici. I dati già registrati prima del refactoring, inclusi i nomi di profilo WhatsApp, si conservano come snapshot originali; non si ricollegano per somiglianza del nome o solo perché un numero è stato successivamente assegnato a un'altra persona. I numeri degli autori restano protetti dall'accesso del modello (REQ-NFR-005).
 
 #### REQ-STUDIO-004 — Consultazione della pianificazione
 
@@ -302,9 +314,11 @@ Prima dell'inizio della lezione, se il cliente alla fine partecipa, l'agente ann
 
 #### REQ-STUDIO-011 — Anagrafica degli insegnanti
 
-Gli insegnanti sono identificati da nome e cognome, univoci tra gli insegnanti senza distinzione tra maiuscole e minuscole e distinti dai clienti, senza ulteriori dati nel database e senza stato di attivazione. L'agente crea un insegnante quando una regola dell'insegnante o un'indicazione ne cita uno non ancora registrato, chiedendo il cognome se manca. Il riconoscimento per solo nome segue REQ-STUDIO-002. Data e autore di creazione sono registrati secondo REQ-STUDIO-003.
+Gli insegnanti hanno nome e cognome, univoci tra gli insegnanti senza distinzione tra maiuscole e minuscole e distinti dai clienti. Il riconoscimento di un insegnante nominato per solo nome segue REQ-STUDIO-002. L'anagrafica unica contiene anche il numero di telefono per l'accesso, secondo REQ-STUDIO-015; non esiste uno stato di disattivazione dalle lezioni. Data e autore di creazione sono registrati secondo REQ-STUDIO-003.
 
-L'operatore può collegare in `.env` alcuni numeri dell'elenco autorizzato a nome e cognome di un insegnante. Quando il mittente ha un numero collegato e si riferisce a sé stesso (ad esempio "l'ho tenuta io" o "il lunedì alleno io"), l'insegnante è ricavato dal sistema dal mittente autenticato e non è dichiarato dal modello. Il modello non riceve il numero. Se il mittente non è collegato o l'insegnante collegato non esiste in anagrafica, l'agente chiede il nome. Un valore malformato, un numero non autorizzato o collegato a più insegnanti sono segnalati all'avvio senza esporre numeri o nomi. Il collegamento si applica secondo REQ-AGENT-006 e non cambia i permessi.
+Solo il gestore può censire un nuovo insegnante o correggerne i dati tramite il percorso guidato di REQ-STUDIO-016. Citare un insegnante sconosciuto in una regola o indicazione non lo crea automaticamente: l'agente segnala che serve il censimento del gestore e non registra la regola o indicazione finché manca l'insegnante. Il gestore deve fornire anche il telefono, salvo il completamento delle anagrafiche preesistenti previsto da REQ-STUDIO-017. La creazione automatica dei clienti non cambia.
+
+Quando il mittente si riferisce a sé stesso (ad esempio "l'ho tenuta io" o "il lunedì alleno io"), l'insegnante è ricavato dal sistema dal numero autenticato e dalla stessa identità nel database usata per accesso e autore. Il modello non dichiara l'identità e non riceve il numero. Non esiste un fallback che chieda il nome del mittente per usarlo al posto della sua identità: un'identità incompleta segue soltanto i percorsi di censimento o rifiuto previsti. Le richieste esplicite su altri insegnanti censiti restano ammesse.
 
 #### REQ-STUDIO-012 — Regole degli insegnanti
 
@@ -332,6 +346,38 @@ Un utilizzatore deve poter chiedere conversando:
 
 Le risposte si basano sulle sole indicazioni e registrazioni valide, sulle regole valide per ciascuna lezione e sui dati strutturati. I conteggi sono calcolati con interrogazioni al database e non stimati dal modello. I periodi relativi si interpretano nel fuso Europe/Rome e l'assenza di risultati è indicata esplicitamente. Su richiesta l'agente indica autore e data di inserimento, disattivazione, registrazione o annullamento e mostra lo storico.
 
+### Identità e gestione dell'anagrafica
+
+**Decisione dell'utente (2026-11-12):** REQ-STUDIO-015–017 sono aggiunti alla v0.3.0. Il cambiamento sostituisce l'identità basata sul nome del profilo WhatsApp e il collegamento in configurazione di REQ-STUDIO-011; non introduce un'anagrafica degli utilizzatori separata dagli insegnanti.
+
+#### REQ-STUDIO-015 — Identità unica e accesso degli insegnanti
+
+Il sistema riconosce chi scrive tramite il numero del mittente del webhook WhatsApp autenticato e lo risolve nell'unica anagrafica degli insegnanti nel database. Ogni nuovo insegnante ha nome, cognome e un solo numero corrente, univoco tra gli insegnanti; nome e cognome restano univoci senza distinzione di maiuscole. Il numero è la chiave di riconoscimento del mittente, ma cambiarlo non crea una nuova persona e non spezza i collegamenti con regole, lezioni e storico. Non si ricava l'identità da nomi WhatsApp, dichiarazioni nel messaggio, argomenti del modello o mapping in configurazione.
+
+Il censimento con accesso abilitato è l'unica fonte applicativa dell'autorizzazione ordinaria; non richiede una seconda allowlist, modifiche a `.env` o riavvii. Tutti gli utilizzatori possono eseguire le stesse operazioni dello studio, anche per altri insegnanti, ma solo il gestore mantiene l'anagrafica. L'unico numero personale in configurazione è quello del gestore, da cui deriva anche il canale home. Il gestore non censito può solo completare sé stesso prima di lavorare sui dati dello studio. Non sono previsti più gestori o ruoli configurabili.
+
+I numeri forniti per il censimento richiedono il prefisso internazionale; spazi e separatori comuni sono accettati e normalizzati prima di confronti e salvataggi. Non si assume un paese per i numeri senza prefisso e formati equivalenti non producono duplicati. Accesso, nome nella conversazione, riconoscimento di «io» e autore delle nuove operazioni derivano dalla stessa identità fidata. I numeri non sono esposti al modello, neppure tramite letture SQL, metadati o dati dell'autore.
+
+#### REQ-STUDIO-016 — Gestione guidata riservata al gestore
+
+Il solo mittente autenticato corrispondente al numero del gestore configurato può, tramite una procedura guidata nella chat WhatsApp, censire sé stesso e gli altri insegnanti, consultarne i dati di gestione, correggere nome e cognome, cambiare il numero degli altri, revocarne o riabilitarne l'accesso. Gli altri utilizzatori non possono fare queste operazioni, neppure indirettamente tramite SQL, richieste libere o la citazione di nuovi insegnanti. Il controllo è imposto dal sistema e dai privilegi del database, non soltanto dalle istruzioni al modello. Gli utilizzatori ordinari possono continuare a consultare i nomi necessari alle operazioni dello studio, ma non i telefoni.
+
+La procedura raccoglie e valida i dati in passaggi dedicati, riepiloga e richiede conferma prima del salvataggio. Il gestore può annullarla senza scritture parziali; richieste incomplete, dati non validi, duplicati e conferme scadute non modificano l'anagrafica. I permessi sono verificati nuovamente al salvataggio. Le risposte in questi passaggi sono dati gestionali, non istruzioni libere per il modello.
+
+I messaggi di gestione che contengono numeri sono elaborati prima di qualsiasi invio al modello; i numeri non entrano nemmeno nella cronologia, nei riassunti, nei titoli o in altre richieste che il modello riceverà in seguito. Eventuali riepiloghi con telefoni sono prodotti dal sistema solo per il gestore e non vengono reinseriti nel contesto del modello. Non si promette un anonimizzatore universale di dati arbitrari scritti fuori dal percorso guidato; restano protetti i numeri di identità e gestione secondo REQ-NFR-005.
+
+Il gestore può correggere il proprio nome e cognome, ma non revocare sé stesso né cambiare il proprio numero dalla chat. Queste ultime operazioni richiedono una procedura dell'operatore che mantenga coerenti configurazione, anagrafica e accessi. Non si aggiunge un comando di censimento ordinario esterno all'agente.
+
+#### REQ-STUDIO-017 — Ciclo di vita, storico e transizione delle identità
+
+Una correzione di nome o cognome o un cambio di numero conserva la stessa identità interna. Ogni modifica gestionale registra data e autore ricavati dal sistema. Gli autori delle operazioni già registrate restano snapshot del momento dell'operazione, senza riscrivere dati preesistenti o nomi WhatsApp storici (REQ-STUDIO-003).
+
+La revoca impedisce l'accesso, ma non cancella l'insegnante, non modifica le sue regole, non annulla indicazioni e non altera lezioni o storico. La riabilitazione consente di nuovo l'accesso. Censimento, modifiche e revoche diventano efficaci senza riavvio; nuove richieste e nuove operazioni sui dati dopo la conferma di una revoca o sostituzione del numero non possono riusare un'autorizzazione precedente. Non si annullano retroattivamente operazioni già completate.
+
+Dal nuovo numero la chat riparte senza la conversazione precedente, pur mantenendo i dati dello studio. Un numero riutilizzato per un'altra persona non eredita contesto o cronologia della persona precedente. La revoca impedisce di continuare a usare la chat come canale autorizzato; non elimina le copie storiche conservate per persistenza e backup.
+
+L'aggiornamento conserva ID degli insegnanti, clienti, regole, presenze, indicazioni e autori esistenti. Non importa automaticamente vecchie allowlist, mapping o nomi di profilo WhatsApp. Il gestore completa manualmente i telefoni degli insegnanti preesistenti, incluso il proprio censimento se necessario, senza duplicare le persone. Solo le anagrafiche preesistenti possono restare temporaneamente senza telefono: restano utilizzabili nelle lezioni, ma non possono accedere finché non sono completate. I nuovi censimenti richiedono tutti i dati. Questa eccezione non è una funzionalità ordinaria per creare nuovi insegnanti senza telefono.
+
 ## 6. Non-functional requirements
 
 #### REQ-NFR-001 — Quality gate riproducibile
@@ -356,7 +402,9 @@ Gli operatori non devono avviare lo streaming remoto dei log del tunnel Cloudfla
 
 #### REQ-NFR-005 — Dati personali dello studio
 
-I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento, alle loro presenze e assenze con il tipo di assenza e il motivo di eventuali annullamenti, a nome e cognome degli insegnanti, alle loro regole e indicazioni con i motivi di disattivazione e annullamento, e agli autori delle modifiche (numero WhatsApp e nome del profilo). Il collegamento tra numeri e insegnanti sta solo nella configurazione esterna privata (REQ-STUDIO-011). Questi dati possono stare nel database e transitare verso OpenRouter e WhatsApp per le conversazioni, ma non devono comparire nei log (REQ-NFR-002). Test automatici, CI ed esempi usano solo dati sintetici.
+I dati di dominio sono limitati a nome e cognome dei clienti, alle loro regole di allenamento, alle loro presenze e assenze con il tipo di assenza e il motivo di eventuali annullamenti, a nome, cognome e telefono degli insegnanti, al loro stato tecnico di accesso e alle loro regole e indicazioni con i motivi di disattivazione e annullamento, e agli autori e alle date delle modifiche. Gli autori nuovi contengono numero autenticato e nome e cognome dall'anagrafica; gli snapshot storici possono conservare il nome del profilo WhatsApp (REQ-STUDIO-003). Non si raccolgono ulteriori dati di profilo o ruoli configurabili.
+
+Le identità e i telefoni stanno nel database e nei relativi backup privati, non in un mapping esterno. I nomi e gli altri dati necessari alle conversazioni possono transitare verso OpenRouter e WhatsApp; i numeri di identità, censimento e autore non devono essere inviati al modello, tramite messaggi gestionali, risultati SQL, contesto nativo, riassunti, titoli o richieste ausiliarie. Il sistema può usare il numero per il trasporto WhatsApp e mostrarlo al solo gestore nel percorso dedicato, senza reinserirlo nel contesto del modello. I dati non devono comparire nei log (REQ-NFR-002). Cronologia e backup precedenti non vengono dichiarati anonimi dal refactoring. Test automatici, CI ed esempi usano solo dati sintetici.
 
 **Decisione dell'utente (2026-11-05):** per la v0.2.0 l'uso di nomi e cognomi reali nelle prove è accettato rinviando l'audit privacy a TEC-008. La decisione non dichiara la conformità a REQ-NFR-002, non autorizza l'uso continuativo del gateway, che è fuori scope per la v0.2.0, e non modifica REQ-NFR-004.
 
@@ -452,8 +500,11 @@ Dopo l'adozione, l'aggiunta di un item sul `main` pulito e aggiornato produce un
 - Un utilizzatore annuncia un'assenza anticipata; l'agente registra l'assenza giustificata, chiede le conferme previste per lezioni non attese e periodi, consente l'annullamento anticipato e gestisce i conflitti con le presenze come in REQ-STUDIO-010.
 - Un utilizzatore corregge una registrazione; l'agente annulla quella errata con motivo, registra quella corretta e mantiene lo storico.
 - Un utilizzatore chiede chi era presente o assente a una lezione o in una data, lo storico e i conteggi di un cliente in un periodo, le registrazioni mancanti e statistiche per periodo, e riceve risposte coerenti con le sole registrazioni valide.
-- Su PostgreSQL reale insegnanti, regole degli insegnanti e indicazioni sono registrati con autore ricavato dal sistema; il database rifiuta indicazioni valide duplicate per lezione, cancellazioni e riscritture, e consente una sola disattivazione o un solo annullamento con data, autore e motivo.
-- Un utilizzatore registra le regole degli insegnanti per fascia o orario. L'agente chiede conferma per le sovrapposizioni e registra sostituzioni e indicazioni su lezioni passate e future, con le conferme previste per più lezioni. L'insegnante del mittente collegato è ricavato dal sistema.
+- Su PostgreSQL reale insegnanti, regole degli insegnanti e indicazioni sono registrati con autore ricavato dal sistema; il database rifiuta indicazioni valide duplicate per lezione, cancellazioni e riscritture non autorizzate. Solo il gestore corregge i dati anagrafici attraverso le funzioni protette; regole e indicazioni conservano il divieto di riscrittura e una sola disattivazione o un solo annullamento con data, autore e motivo.
+- Un utilizzatore registra le regole degli insegnanti censiti per fascia o orario. L'agente chiede conferma per le sovrapposizioni e registra sostituzioni e indicazioni su lezioni passate e future, con le conferme previste per più lezioni. L'insegnante del mittente è ricavato dal sistema dall'unica identità nel database, anche per «io» e per l'autore.
+- Su un'installazione nuova il solo gestore configurato censisce sé stesso e poi gli altri con la procedura guidata WhatsApp; conferma, annullamento, correzioni, cambio numero, revoca e riabilitazione sono verificati. Un utilizzatore ordinario non può mantenere l'anagrafica, neppure tramite SQL o la citazione di un insegnante sconosciuto. Censimento e revoca hanno effetto senza riavvio; un numero non abilitato riceve solo il rifiuto fisso senza chiamata al modello.
+- Le prove deterministiche con webhook firmati e PostgreSQL reale verificano unicità, formato internazionale, autore non falsificabile, protezione del gestore e assenza dei telefoni nelle richieste principali e ausiliarie, nei risultati SQL per il modello e nella cronologia che gli viene inviata. Le regressioni conversazionali reali verificano uso del nome censito, «io», assenza di fallback al profilo WhatsApp e mantenimento dei casi d'uso dello studio.
+- L'aggiornamento da database con dati conserva persone, ID, regole, presenze, indicazioni e snapshot degli autori; non importa i vecchi mapping e consente al gestore di completare le anagrafiche preesistenti. Cambio numero e riassegnazione non trasferiscono la chat precedente. Backup e ripristino conservano il nuovo modello e i suoi privilegi; canale home e recupero del gestore sono verificati senza abilitare cron.
 - Un utilizzatore chiede chi ha tenuto una lezione, le lezioni e i conteggi di un insegnante, i presenti alle sue lezioni e le lezioni senza insegnante, e riceve risposte coerenti con regole e indicazioni valide.
 - Gli scenari conversazionali delle presenze e degli insegnanti sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
 - Processo e skill del template v2.1.0 sono allineati, la pubblicazione delle aggiunte al backlog e l'orchestrazione parallela attiva, incluso il coordinamento non bloccante e il comando dei worker, sono verificate nei limiti documentati, preservando le protezioni dello studio (REQ-NFR-016–020).

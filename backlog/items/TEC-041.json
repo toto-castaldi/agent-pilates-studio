@@ -1,0 +1,47 @@
+{
+  "id": "TEC-041",
+  "title": "Anagrafica unica e funzioni protette nel database",
+  "version": "v0.3.0",
+  "epic": "EPIC-006",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-033",
+    "US-011"
+  ],
+  "requirements": [
+    "REQ-DB-001",
+    "REQ-DB-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-015",
+    "REQ-STUDIO-016",
+    "REQ-STUDIO-017",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §8",
+    "ADR-003"
+  ],
+  "description": "Introdurre la base dati additiva dell'identità unica nell'anagrafica esistente degli insegnanti e le interfacce fidate di risoluzione e gestione, senza creare utenti separati o attivare a metà il nuovo controllo di accesso. Il telefono è la chiave di riconoscimento, mentre l'ID interno resta stabile. Il passaggio dei consumatori avverrà solo dopo la disponibilità del percorso guidato del gestore.",
+  "acceptance_criteria": [
+    "Una migrazione versionata estende gli insegnanti mantenendo ID, nomi/cognomi, relazioni e autori preesistenti, con un solo telefono corrente canonico univoco e stato tecnico dell'accesso. Nome e cognome restano univoci senza distinzione di maiuscole. Gli insegnanti preesistenti incompleti sono distinguibili e non vengono duplicati; non si importano mapping, allowlist o nomi WhatsApp.",
+    "Le interfacce di nuovo censimento richiedono nome, cognome e telefono internazionale valido. Normalizzazione di spazi/separatori e vincoli impediscono duplicati equivalenti e conflitti concorrenti, senza presumere un paese. Correzione e cambio numero conservano l'ID; nel modello attivato soltanto le anagrafiche preesistenti possono restare senza telefono.",
+    "Una risoluzione privata riservata ai componenti fidati ricava dal numero autenticato ID, nome/cognome e accesso dalla stessa riga. Il modello non può chiamarla con un numero, dichiarare il mittente o alterare il contesto; la funzione del mittente senza argomenti mantiene una provenienza di sistema e rifiuta contesti non validi.",
+    "Le funzioni gestionali verificano la prova fidata del gestore e salvano ogni modifica atomicamente, con autore e data di sistema. Sono coperti autocensimento limitato al numero gestore, completamento di una persona preesistente, correzione, sostituzione del telefono, revoca e riabilitazione. Un chiamante ordinario non può usare funzioni, flag, GUC o DML per ottenere privilegi gestionali; revoca di sé e cambio numero del gestore via chat sono rifiutati.",
+    "I nuovi telefoni e i dati gestionali sensibili non sono estraibili dal ruolo del modello, neppure tramite SQL esplicito, e non sono esposti dalla funzione del mittente. Le proiezioni necessarie allo studio espongono i nomi senza telefoni. Il contratto documenta anche la protezione finale dei numeri degli autori storici, da applicare insieme al passaggio del runtime, e non indebolisce i vincoli esistenti su regole, presenze e indicazioni.",
+    "Le operazioni gestionali non riscrivono l'autore originario dell'insegnante o gli snapshot storici, non cancellano persone e non alterano regole, lezioni, presenze o indicazioni. Le nuove modifiche hanno tracciamento protetto; gli errori non lasciano dati parziali o contesti fidati persistenti.",
+    "La consegna resta additiva e compatibile con il runtime precedente fino all'attivazione coordinata prevista da ADR-003. Non si introduce una sincronizzazione permanente con la vecchia configurazione; il contratto rende esplicito quali restrizioni definitive si attivano con il passaggio comune dei consumatori.",
+    "Test su PostgreSQL reale verificano migrazione da vuoto e da schema precedente con dati, snapshot invariati, normalizzazione, vincoli e concorrenza, privilegi minimi, SQL di estrazione dei telefoni, funzioni del mittente e gestionali, falsificazione dell'autore/gestore, bootstrap e casi negativi. Sono eseguite le suite test:db e test:upgrade pertinenti; unit test in memoria coprono le politiche pure senza sostituire la prova dei privilegi.",
+    "TECHNICAL-DESIGN, ADR-003 e la descrizione dello schema in SOUL.md distinguono base additiva e modello attivato, indicano funzioni e colonne accessibili e non dichiarano il nuovo riconoscimento già operativo. Nessuna modifica dello stack dello studio o uso di dati reali nelle prove."
+  ],
+  "remarks": [
+    "Primo dei quattro item concordati per la v0.3.0 il 2026-11-12. Gli item successivi completano gestione guidata, passaggio comune di gateway/broker/autore e verifiche operative. La sola aggiunta documentale usa la deroga esplicita al working tree pulito limitata a .pi/settings.json, lasciato locale e intatto; nessuna deroga per implementazione o avvio."
+  ]
+}
