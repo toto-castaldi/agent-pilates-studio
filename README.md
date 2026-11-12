@@ -149,6 +149,18 @@ Sviluppo e produzione usano lo stesso `compose.yaml` e non condividono progetto,
 
 Le immagini `hermes`, `postgres`, `migrator` e `ops` sono pubblicate su GHCR come `ghcr.io/toto-castaldi/agent-pilates-studio/<nome>:<commit>` dal job `publish` della CI, solo dopo l'esito positivo delle verifiche su `main`; la pubblicazione non contatta `jarvis` e non avvia aggiornamenti. Installazione, aggiornamento, ritorno alla versione precedente e backup a caldo del solo PostgreSQL su `jarvis` sono descritti in [`docs/operations/TEC-035-produzione.md`](docs/operations/TEC-035-produzione.md). La copia a caldo è manuale, non ferma gateway e broker e non sostituisce il backup quiescente con il volume Hermes, necessario per il rollback. Sviluppo e produzione hanno app Meta, numero e segreti separati e callback fissi: la configurazione di Meta e del tunnel e il port forward con cui un clone qualsiasi riceve i messaggi di sviluppo sono in [`docs/operations/TEC-036-whatsapp-ambienti.md`](docs/operations/TEC-036-whatsapp-ambienti.md). `SOUL.md`, configurazione Hermes e plugin stanno nell'immagine: in sviluppo le modifiche si applicano rilanciando `npm run start:local`. `npm run test:images` avvia lo stack dalle sole immagini, in una directory senza repository, e prova il backup a caldo con PostgreSQL e servizi reali isolati e dati sintetici. Lo stack monta più file dalla stessa immagine: Docker 28.0.4 lo rifiuta con `mount already exists with name`, mentre la versione verificata, usata anche da `jarvis` e dalla CI, è la 29.9.2.
 
+Per aggiornare a mano da `jarvis`, il launcher versionato `scripts/update-agent-pilates.sh` si installa nella home come `~/update-agent-pilates.sh`, con permessi `0700` e copia di sicurezza del precedente; la [procedura](docs/operations/TEC-035-produzione.md#installazione-del-launcher) descrive copia e verifica senza avviare servizi. Si usa `~/update-agent-pilates.sh <sha-completo-pubblicato>`: lo SHA completo è obbligatorio, non c'è una versione cablata e l'aggiornamento interrompe i turni. Backup quiescente, migrazioni e healthcheck restano nell'immagine `ops`.
+
+Il tip di `main` si legge con `gh api repos/toto-castaldi/agent-pilates-studio/commits/main --jq .sha`, ma può non avere ancora immagini disponibili. Per leggere invece l'ultimo SHA con CI e pubblicazione completate, con GitHub CLI configurata sul PC oppure su `jarvis`:
+
+```bash
+gh run list --repo toto-castaldi/agent-pilates-studio \
+  --workflow ci.yml --branch main --event push --status success --limit 1 \
+  --json headSha --jq '.[0].headSha // empty'
+```
+
+Se il comando fallisce o non restituisce uno SHA, fermarsi. Controllare l'esito dei job e passare intenzionalmente lo SHA al launcher, senza assumere che l'ultimo commit di `main` sia già installabile; [dettagli sulla selezione](docs/operations/TEC-035-produzione.md#scelta-del-commit-da-github). GitHub CLI non è richiesta per eseguire il launcher e copiare lo script non aggiorna la produzione.
+
 Per verificare il percorso con credenziali sintetiche e risorse Docker isolate: `npm run test:start`. Il test usa PostgreSQL reale, gateway e broker reali, webhook firmati e sostituti Meta e modello su rete interna; verifica aggiornamenti, mittenti aggiunti e rimossi, errori e recupero. Rimuove solo il proprio progetto e i propri volumi temporanei; non prova le integrazioni reali Meta/OpenRouter.
 
 ## Database locale — procedura manuale alternativa

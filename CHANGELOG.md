@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Launcher manuale `update-agent-pilates.sh <commit>` senza versione cablata, con validazione dello SHA e istruzioni per scegliere l'ultimo commit con immagini pubblicate (TEC-040).
 - Comando manuale `ops backup-hot` per copiare il solo PostgreSQL di produzione senza fermare gateway e broker, con verifica e ripristino isolato per consultazione (TEC-039).
 - Indicazioni e sostituzioni conversazionali degli insegnanti per lezioni passate e future, con conferma per più lezioni, identità del mittente collegato, correzioni tramite annullamento e storico verificati con scenari sintetici (US-014).
 - Registrazione conversazionale degli insegnanti e delle regole settimanali, con conferma delle sovrapposizioni, conservazione delle parti residue e collegamento privato degli utilizzatori autorizzati (US-011).
