@@ -1,0 +1,50 @@
+{
+  "id": "US-017",
+  "title": "Gestione guidata dell'anagrafica via WhatsApp",
+  "version": "v0.3.0",
+  "epic": "EPIC-006",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-041"
+  ],
+  "requirements": [
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-015",
+    "REQ-STUDIO-016",
+    "REQ-STUDIO-017",
+    "REQ-WA-001",
+    "REQ-WA-002",
+    "REQ-AGENT-007",
+    "REQ-NFR-002",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §6",
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §9",
+    "ADR-003"
+  ],
+  "description": "Come unico gestore riconosciuto dal numero configurato, voglio mantenere l'anagrafica degli insegnanti attraverso una procedura guidata nella chat WhatsApp, senza trasmettere telefoni al modello, così da censire e aggiornare gli utilizzatori senza modificare altri elenchi o concedere agli insegnanti ordinari permessi gestionali. Il flusso usa le interfacce protette di TEC-041; l'attivazione dell'accesso ordinario nuovo è coordinata nell'item successivo.",
+  "acceptance_criteria": [
+    "Il solo numero gestore autenticato può iniziare la gestione. Se non ancora censito, il percorso richiede prima il suo nome e cognome e usa il suo numero autenticato, senza permettere operazioni sui dati dello studio prima del completamento. Se corrisponde a un insegnante preesistente, lo completa dopo conferma senza duplicarlo. Un mittente diverso non può autoiscriversi o completare al suo posto l'identità del gestore.",
+    "Un ingresso esplicito nella chat avvia una procedura guidata deterministica per censire nuovi insegnanti e completare quelli preesistenti. Nome, cognome e telefono sono richiesti e validati; il prefisso internazionale è obbligatorio e i separatori comuni non aggirano l'unicità. La citazione libera di un insegnante sconosciuto non sostituisce il censimento.",
+    "Il gestore può consultare i dati di gestione, correggere nome/cognome, sostituire il numero degli altri, revocare e riabilitare l'accesso, mantenendo l'ID. Può correggere il proprio nome/cognome, ma la propria revoca e il proprio cambio numero sono rifiutati. Revoca e modifiche non cancellano persone né cambiano regole, presenze, indicazioni o snapshot degli autori.",
+    "Prima di ciascun salvataggio il sistema riepiloga l'operazione e richiede conferma vincolata a mittente e dati validati; verifica di nuovo i permessi. Annullamento, input incompleto o non valido, omonimia/telefono duplicato, conferma scaduta, messaggio ripetuto o flusso interrotto non producono scritture parziali, duplicati o un salvataggio successivo inatteso. Ingresso, scadenza e comportamento dopo riavvio sono documentati.",
+    "I messaggi e le risposte con telefoni del percorso guidato sono elaborati dal sistema prima del modello e non entrano nella cronologia che esso riceve, né in riassunti, titoli o richieste ausiliarie successive. I dati del gestore non contaminano la sessione di un altro mittente. Le schermate con telefoni sono disponibili soltanto al gestore e non allargano i privilegi SQL del modello.",
+    "Un utilizzatore ordinario che entra nel percorso gestionale riceve un rifiuto deterministico senza modello o modifiche ai dati. Tentativi di continuare o confermare il flusso altrui, dichiararsi gestore o usare direttamente le funzioni riservate sono rifiutati dai confini fidati e dal database, non dal solo SOUL.md.",
+    "Il flusso è integrato e verificato con webhook firmati e PostgreSQL reale, inclusi bootstrap da database vuoto, completamento da dati preesistenti, tutte le operazioni ammesse, conferma/annullamento, errori, duplicati, cambio di autorizzazione prima del salvataggio e casi negativi concorrenti. Le politiche e transizioni pure hanno unit test in memoria; le verifiche pertinenti di test:author, test:db e test:local sono eseguite durante l'item.",
+    "I test osservano zero richieste al modello per i passaggi gestionali con numeri e i rifiuti espliciti e verificano anche un successivo turno normale e una compattazione: nessun telefono gestionale ricompare. Non si registrano telefoni, nomi, messaggi o credenziali nei log e si usano soltanto dati sintetici.",
+    "README, SOUL.md, design, esempi e istruzioni descrivono il percorso e i suoi limiti senza segreti, distinguendo capacità pronta e passaggio definitivo dell'accesso ordinario. Il flusso non abilita profilazione libera, cron o un comando esterno di censimento ordinario; non aggiorna lo stack operativo dello studio."
+  ],
+  "remarks": [
+    "Secondo dei quattro item concordati il 2026-11-12 per la v0.3.0. Il riconoscimento ordinario di mittente, nome, io e autore passerà insieme al database nell'item di attivazione, senza lasciare fonti discordanti. La deroga alla pulizia del working tree riguarda soltanto questa aggiunta documentale con .pi/settings.json preesistente lasciato intatto e fuori dai commit."
+  ]
+}
