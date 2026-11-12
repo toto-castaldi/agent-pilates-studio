@@ -1,0 +1,28 @@
+{
+  "id": "TEC-039",
+  "title": "Backup a caldo del database di produzione",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-035"
+  ],
+  "requirements": [
+    "REQ-OPS-002",
+    "REQ-OPS-008"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Comando ops lanciato a mano su jarvis che salva una copia coerente del solo PostgreSQL di produzione senza fermare gateway e broker, per consultare i dati in locale.",
+  "acceptance_criteria": [
+    "Un comando ops con commit esplicito salva un dump PostgreSQL in formato custom in una nuova directory privata (permessi 0700/0600) sotto /opt/agent-pilates-prod, con SHA256SUMS e marcatore di completamento, senza fermare né ricreare gateway e broker.",
+    "Il dump esclude i dati che esclude il backup quiescente (studio_private.author_context) e non include il volume Hermes; un errore non è dichiarato riuscito, lascia la directory segnata come incompleta e non riporta output grezzo o valori sensibili.",
+    "Il dump si distingue dai backup quiescenti e non è accettato da ops rollback.",
+    "Provato su PostgreSQL reale con dati sintetici mentre gateway e broker sono attivi: la copia si ripristina in un database vuoto con pg_restore --no-owner --no-privileges e contiene i dati attesi; i servizi restano sani durante e dopo il comando.",
+    "La procedura in docs/operations/TEC-035-produzione.md descrive comando, copia sul PC dell'operatore, ripristino locale, protezione dei dati sensibili e differenza dal backup quiescente; nessun meccanismo avvia il comando automaticamente."
+  ]
+}

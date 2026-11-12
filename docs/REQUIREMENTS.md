@@ -61,6 +61,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Rimozione del template Pi `/start`, ritenuto inutile (ritiro di REQ-NFR-009).
 - Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
 - Cambio di scope del 2026-11-10: l'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007).
+- Cambio di scope del 2026-11-12: backup a caldo del solo database di produzione con un comando `ops`, senza fermare gateway e broker, per consultare i dati (REQ-OPS-008).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -220,6 +221,10 @@ Le immagini di produzione (`hermes`, `postgres`, `migrator`, `ops`) sono costrui
 #### REQ-OPS-006 — WhatsApp per ambiente e callback stabile
 
 Ogni ambiente ha una propria app Meta, un proprio numero WhatsApp Business e propri token, app secret, verify token e allowlist. La produzione usa il callback HTTPS fisso su `agent-pilates-studio.toto-castaldi.com` e, finché gli utilizzatori sono al massimo cinque, può usare il numero di test fornito da Meta per la propria app, distinto da quello di sviluppo (decisione del 2026-11-10: oggi gli utilizzatori sono quattro e i clienti restano fuori scope). Il numero di test raggiunge solo destinatari preregistrati su Meta, oltre all'allowlist del progetto. Il passaggio a un numero reale dedicato sostituisce solo token, Phone Number ID e allowlist nella configurazione privata di produzione, senza cambiare codice, immagini o callback, ed è necessario prima di superare cinque utilizzatori o di aprire l'uso ai clienti. Lo sviluppo mantiene il callback attuale, che raggiunge il clone attivo tramite port forward verso `jarvis`: cambiare clone non richiede modifiche su Meta, e un solo clone alla volta riceve i messaggi. L'assenza di un clone collegato non influisce sulla produzione.
+
+#### REQ-OPS-008 — Backup a caldo del database di produzione
+
+L'operatore deve poter ottenere a mano, con un comando dell'immagine `ops`, una copia del database PostgreSQL di produzione senza fermare gateway e broker, per consultarla o ripristinarla altrove. La copia è coerente, esclude i dati che il backup quiescente esclude, è privata e verificabile con checksum e non contiene la cronologia di Hermes. Non sostituisce il backup quiescente di aggiornamento e ritorno (REQ-OPS-005) e non è usata dal ritorno alla versione precedente. Nessun meccanismo la avvia automaticamente.
 
 #### REQ-OPS-003 — Osservabilità essenziale
 
