@@ -5,7 +5,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Dropped",
   "dependencies": [
     "US-007"
   ],
@@ -17,5 +17,7 @@
   "acceptance_criteria": [],
   "remarks": [
     "Requirements: da definire (cambio di scope rispetto a REQ-STUDIO-007 e REQ-NFR-005)"
-  ]
+  ],
+  "outcome": "Annullata su richiesta dell'utente; pacchetti di lezioni e lezioni residue da ridiscutere più avanti con calma, senza pianificazione né implementazione.",
+  "closed_at": "2026-11-12"
 }
