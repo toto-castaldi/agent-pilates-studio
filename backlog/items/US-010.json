@@ -5,7 +5,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Dropped",
   "dependencies": [
     "TEC-019",
     "US-007"
@@ -20,5 +20,7 @@
   "acceptance_criteria": [],
   "remarks": [
     "Requirements: REQ-STUDIO-006, REQ-STUDIO-007, REQ-WA-003, REQ-STUDIO-003 (da integrare con i requisiti del caso d'uso)"
-  ]
+  ],
+  "outcome": "Annullata su richiesta dell'utente; richiesta automatica delle presenze da ridiscutere più avanti con calma, senza pianificazione né implementazione.",
+  "closed_at": "2026-11-12"
 }
