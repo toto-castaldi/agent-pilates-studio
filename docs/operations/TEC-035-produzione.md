@@ -102,7 +102,7 @@ DEST="$HOME/consultazione-pilates"
 )
 ```
 
-Se la copia, il marcatore o il checksum falliscono, fermarsi: non ripristinare. Non riutilizzare directory esistenti o incomplete. La procedura seguente crea un PostgreSQL **nuovo e isolato**, senza rete e senza porte; la fiducia locale è accettabile solo dentro questo container temporaneo. Scegliere un nome di container nuovo: se esiste già, la creazione fallisce e la procedura non prosegue. Il comando usa l'immagine PostgreSQL 17.10 fissata; non monta segreti e disabilita il log Docker del container. I messaggi grezzi di `pg_restore` sono soppressi perché possono contenere dati.
+Se la copia, il marcatore o il checksum falliscono, fermarsi: non ripristinare. Non riutilizzare directory esistenti o incomplete. La procedura seguente crea un PostgreSQL **nuovo e isolato**, senza rete e senza porte; la fiducia locale è accettabile solo dentro questo container temporaneo. Scegliere un nome di container nuovo: se esiste già, la creazione fallisce e la procedura non prosegue. Il comando usa l'immagine PostgreSQL 17.10 fissata; non monta segreti e disabilita il log Docker del container. La disponibilità va verificata via TCP su `127.0.0.1`, dentro il container: durante l'inizializzazione l'immagine avvia un server temporaneo che accetta solo socket Unix e poi si spegne. Un controllo senza `-h` può accettare quel server e far fallire il ripristino al riavvio (BUG-003). La rete resta disabilitata verso l'esterno. I messaggi grezzi di `pg_restore` sono soppressi perché possono contenere dati.
 
 ```bash
 PG_CONTAINER=pilates-consultazione
@@ -120,10 +120,10 @@ PG_IMAGE='postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e3
     echo 'Creazione del database isolato fallita.' >&2; exit 1
   fi
   for i in {1..60}; do
-    docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1 && break
+    docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1 && break
     sleep 1
   done
-  if ! docker exec "$PG_CONTAINER" pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+  if ! docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -d postgres >/dev/null 2>&1; then
     echo 'Database isolato non disponibile.' >&2; exit 1
   fi
   if ! docker exec -i "$PG_CONTAINER" pg_restore --exit-on-error --no-owner --no-privileges \
@@ -163,3 +163,9 @@ Limiti: non sono stati provati Meta, OpenRouter con chiave reale o il tunnel pub
 `npm run test:images` è passato su Docker 29.9.3 in un progetto Compose temporaneo, con PostgreSQL 17.10, gateway e broker reali, modello sostitutivo su rete interna e soli dati sintetici. L'immagine `ops` è stata costruita e lanciata con commit sintetico esplicito. Il test ha trattenuto un lock su una tabella finché `pg_dump` era in attesa, ha campionato per oltre 12 secondi salute, identità e riavvii dei due servizi durante la copia, poi ha confermato una modifica concorrente. Nel ripristino PostgreSQL isolato e inizialmente vuoto, con `pg_restore --no-owner --no-privileges`, compare il valore precedente della snapshot; sono presenti i dati applicativi e l'impronta anti-replay, ma non il contesto autore. Sono stati verificati formato custom, permessi, proprietà, checksum, assenza dell'archivio Hermes e rifiuto del rollback prima degli arresti; i due servizi sono risultati sani anche dopo.
 
 `npm run test:local` inietta errori sintetici nei passaggi del comando e verifica marcatori, soppressione dell'output, commit e rifiuti; `npm run test:hermes` ha riprovato il backup e il ripristino quiescenti esistenti su PostgreSQL reale. La prova a caldo non ha usato `jarvis`, dati di produzione, Meta, OpenRouter o il tunnel; il campionamento degli healthcheck non dimostra la continuità di ogni richiesta esterna né l'assenza di tutti i guasti possibili.
+
+## Correzione della disponibilità del ripristino — 2026-11-12
+
+La [CI del merge di TEC-039](https://github.com/toto-castaldi/agent-pilates-studio/actions/runs/43210853015) è fallita durante `pg_restore`: il controllo via socket poteva accettare il server temporaneo dell'inizializzazione, poi arrestato dall'entrypoint. BUG-003 ha riprodotto in un container PostgreSQL isolato sia il falso positivo di `pg_isready` sia l'interruzione di un ripristino avviato contro quel server. Il nuovo controllo TCP rifiuta il server temporaneo e attende quello definitivo; il ripristino resta singolo e un suo errore continua a far fallire il test.
+
+La regressione deterministica in `test:images` trattiene l'inizializzazione con uno script sintetico: fallisce sul controllo precedente, passa con `-h 127.0.0.1` e completa poi tutti i controlli del backup e dei servizi. Sono passati in locale il gate completo, `test:local` e `test:images`; la [CI del commit 8ca38e4](https://github.com/toto-castaldi/agent-pilates-studio/actions/runs/43218671914) ha completato con successo tutte le suite, incluse quelle PostgreSQL, Hermes, Pi, autore, compattazione, aggiornamento e avvio. La pubblicazione delle immagini è correttamente esclusa sul branch del bug. Le prove applicative non hanno usato produzione, dati reali, Meta, OpenRouter o il tunnel.

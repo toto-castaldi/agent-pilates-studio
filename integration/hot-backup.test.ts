@@ -175,11 +175,25 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     assert.match(rejected.stderr, /Backup is incomplete/);
     inspectServices();
 
+    // Hold initdb at its socket-only temporary server to expose premature readiness.
+    const initGate = join(directory, 'restore-init.sh');
+    await writeFile(initGate, 'touch /tmp/pilates-init-waiting\nwhile [ ! -f /tmp/pilates-init-release ]; do sleep 0.1; done\n', { mode: 0o644 });
     // No network or application roles: restore into a genuinely empty cluster.
-    docker('run', '-d', '--name', restoreContainer, '--network', 'none', '--log-driver', 'none', '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', postgresBase);
+    docker('run', '-d', '--name', restoreContainer, '--network', 'none', '--log-driver', 'none', '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
+      '--mount', `type=bind,src=${initGate},dst=/docker-entrypoint-initdb.d/00-gate.sh,readonly`, postgresBase);
+    const restoreReady = () => spawnSync('docker', ['exec', restoreContainer, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-d', 'postgres'], { stdio: 'ignore', timeout: 5_000 }).status === 0;
+    let initializing = false;
+    for (let i = 0; i < 120 && !initializing; i++) {
+      initializing = spawnSync('docker', ['exec', restoreContainer, 'test', '-f', '/tmp/pilates-init-waiting'], { stdio: 'ignore', timeout: 5_000 }).status === 0;
+      if (!initializing) await delay(500);
+    }
+    assert.equal(initializing, true, 'isolated PostgreSQL did not reach the initdb gate');
+    assert.equal(spawnSync('docker', ['exec', restoreContainer, 'pg_isready', '-U', 'postgres', '-d', 'postgres'], { stdio: 'ignore', timeout: 5_000 }).status, 0, 'temporary PostgreSQL should accept socket connections');
+    assert.equal(restoreReady(), false, 'temporary initdb server must not be considered ready for restore');
+    docker('exec', restoreContainer, 'touch', '/tmp/pilates-init-release');
     let ready = false;
     for (let i = 0; i < 120 && !ready; i++) {
-      ready = spawnSync('docker', ['exec', restoreContainer, 'pg_isready', '-U', 'postgres', '-d', 'postgres'], { stdio: 'ignore' }).status === 0;
+      ready = restoreReady();
       if (!ready) await delay(500);
     }
     assert.equal(ready, true, 'isolated PostgreSQL did not start');
