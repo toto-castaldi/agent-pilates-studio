@@ -17,6 +17,6 @@
     "openrouter/z-ai/glm-5.3": "high",
     "openrouter/moonshotai/kimi-k3.1-pro": "high"
   },
-  "defaultModel": "gpt-6.1-terra",
+  "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "max"
 }
