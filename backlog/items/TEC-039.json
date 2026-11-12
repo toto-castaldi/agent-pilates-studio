@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-039-backup-caldo-produzione",
   "dependencies": [
     "TEC-035"
@@ -25,5 +25,7 @@
     "Il dump si distingue dai backup quiescenti e non è accettato da ops rollback.",
     "Provato su PostgreSQL reale con dati sintetici mentre gateway e broker sono attivi: la copia si ripristina in un database vuoto con pg_restore --no-owner --no-privileges e contiene i dati attesi; i servizi restano sani durante e dopo il comando.",
     "La procedura in docs/operations/TEC-035-produzione.md descrive comando, copia sul PC dell'operatore, ripristino locale, protezione dei dati sensibili e differenza dal backup quiescente; nessun meccanismo avvia il comando automaticamente."
-  ]
+  ],
+  "outcome": "Aggiunto ops backup-hot con commit esplicito, dump PostgreSQL custom privato, checksum, marcatore distinto e rifiuto anticipato del rollback; esclusi contesto autore e volume Hermes. Documentati copia e ripristino locale sicuro. Verificati test:local, test:images su PostgreSQL 17.10 reale con servizi sintetici sani e modifica concorrente, test:hermes per il ripristino quiescente e gate lint, typecheck, test e build. Nessuna prova sui dati di produzione o su jarvis.",
+  "closed_at": "2026-11-12"
 }

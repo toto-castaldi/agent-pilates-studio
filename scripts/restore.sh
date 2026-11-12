@@ -7,16 +7,8 @@ source "$(dirname -- "$0")/operations-common.sh"
 PROJECT=$1
 validate_project "$PROJECT"
 backup=$2
-[[ -d "$backup" && ! -L "$backup" ]] || fail 'Backup directory is missing or a symlink.'
+validate_quiescent_backup "$backup"
 backup=$(cd -- "$backup" && pwd -P)
-for file in COMPLETE SHA256SUMS postgres.dump hermes.tar; do
-  [[ -f "$backup/$file" && ! -L "$backup/$file" ]] || fail 'Backup is incomplete or contains symlinks.'
-done
-[[ $(<"$backup/COMPLETE") == 1 ]] || fail 'Backup completion marker is invalid.'
-[[ $(wc -l < "$backup/SHA256SUMS") -eq 2 ]] || fail 'Backup manifest is invalid.'
-LC_ALL=C grep -Eq '^[0-9a-f]{64}  postgres[.]dump$' "$backup/SHA256SUMS" || fail 'Backup manifest is invalid.'
-LC_ALL=C grep -Eq '^[0-9a-f]{64}  hermes[.]tar$' "$backup/SHA256SUMS" || fail 'Backup manifest is invalid.'
-(cd -- "$backup" && sha256sum --check --status SHA256SUMS) || fail 'Backup checksum verification failed.'
 
 case "${SECRETS_DIR:-}" in /*) ;; *) fail 'Set SECRETS_DIR to an absolute private directory.' ;; esac
 [[ -d "$SECRETS_DIR" && ! -L "$SECRETS_DIR" ]] || fail 'Secrets directory is invalid.'

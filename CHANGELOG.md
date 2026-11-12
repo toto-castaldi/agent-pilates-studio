@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Comando manuale `ops backup-hot` per copiare il solo PostgreSQL di produzione senza fermare gateway e broker, con verifica e ripristino isolato per consultazione (TEC-039).
 - Registrazione conversazionale degli insegnanti e delle regole settimanali, con conferma delle sovrapposizioni, conservazione delle parti residue e collegamento privato degli utilizzatori autorizzati (US-011).
 - Schema versionato degli insegnanti, con regole settimanali e intervalli, indicazioni per le lezioni passate e future, autore autenticato e storico protetto; il database impedisce sovrapposizioni attive anche concorrenti e indicazioni valide duplicate (TEC-033).
 - Produzione su `jarvis` collegata a WhatsApp con app Meta, numero e segreti propri e callback stabile `agent-pilates-studio.toto-castaldi.com`, indipendente dal clone di sviluppo collegato (TEC-036).

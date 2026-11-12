@@ -8,4 +8,6 @@ test('actual CI runs all suites on push, pull requests and manual dispatch witho
   const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as { scripts: Record<string, string> };
   assert.match(packageJson.scripts['test:pi'], /dist\/integration\/pi-backlog\.test\.js/);
   assert.match(packageJson.scripts['test:pi'], /dist\/integration\/pi-settings\.test\.js/);
+  assert.match(packageJson.scripts['test:images'], /dist\/integration\/images-only\.test\.js/);
+  assert.match(packageJson.scripts['test:images'], /dist\/integration\/hot-backup\.test\.js/);
 });
