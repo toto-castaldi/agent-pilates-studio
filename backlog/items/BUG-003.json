@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "fix/BUG-003-ripristino-backup-caldo-ci",
   "dependencies": [
     "TEC-039"
@@ -30,5 +30,7 @@
     "Un test di regressione deterministico esercita la condizione che causava il fallimento; test:images su PostgreSQL reale mantiene i controlli di snapshot, assenza dei ruoli originali, esclusioni, checksum e servizi sani.",
     "La procedura di consultazione locale è allineata alla correzione se coinvolta, senza esporre dati, segreti o output grezzo e senza toccare lo stack operativo.",
     "Il quality gate e tutte le suite della CI passano sul branch del bug, verificati con un run GitHub completato."
-  ]
+  ],
+  "outcome": "Corretto il controllo di disponibilità del PostgreSQL di consultazione in test e procedura: pg_isready via TCP attende il server definitivo, non quello temporaneo poi arrestato dall'entrypoint. Riprodotti falso positivo e interruzione di pg_restore; regressione deterministica rossa senza la correzione e verde con essa. Gate lint, typecheck, test e build, test:local e test:images passati in locale; CI 43218671914 sul commit 8ca38e4 verde con tutte le suite. Nessun retry del ripristino, modifica ai privilegi o accesso alla produzione; pubblicazione immagini esclusa sul branch come previsto.",
+  "closed_at": "2026-11-12"
 }
