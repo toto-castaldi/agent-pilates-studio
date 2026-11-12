@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-039-backup-caldo-produzione",
   "dependencies": [
     "TEC-035"
   ],
