@@ -2,7 +2,7 @@
 
 - **State:** Accepted — modello target pianificato, non ancora implementato
 - **Date:** 2026-11-12
-- **Items:** TEC-041 (base dati), US-017 (gestione guidata); gli item successivi completano attivazione e transizione
+- **Items:** TEC-041 (base dati), US-017 (gestione guidata), TEC-042 (attivazione); l'item finale completa le prove di transizione
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-011, REQ-STUDIO-015, REQ-STUDIO-016, REQ-STUDIO-017, REQ-WA-002, REQ-WA-003, REQ-AGENT-006, REQ-AGENT-007, REQ-NFR-005
 - **Supersedes:** ADR-002 al completamento del passaggio coordinato
 
@@ -62,7 +62,7 @@ Si sceglie la terza opzione, nello stesso modulo `MOD-001`.
 
 ## Delivery and verification
 
-La consegna è suddivisa in base dati additiva e funzioni protette (TEC-041), gestione guidata (US-017), attivazione comune dei consumatori dell'identità e prove operative di transizione. La base additiva non interrompe il runtime precedente; il passaggio finale non lascia gateway e broker con fonti diverse né richiede sincronizzazioni permanenti. Ogni item verifica la propria parte e documenta quando il nuovo comportamento diventa attivo.
+La consegna è suddivisa in base dati additiva e funzioni protette (TEC-041), gestione guidata (US-017), attivazione comune dei consumatori dell'identità (TEC-042) e prove operative di transizione. La base additiva non interrompe il runtime precedente; il passaggio finale non lascia gateway e broker con fonti diverse né richiede sincronizzazioni permanenti. Ogni item verifica la propria parte e documenta quando il nuovo comportamento diventa attivo.
 
 Sono obbligatori PostgreSQL reale per migrazioni e privilegi, webhook firmati per i confini, casi negativi di SQL e falsificazione, revoche e cambi di numero senza riavvio, osservazione delle richieste principali e ausiliarie e della cronologia, prove da database nuovo e con dati, backup/ripristino e isolamento delle chat al riuso del numero. I casi negativi di accesso non devono chiamare il modello. Le regressioni con OpenRouter reale e dati sintetici restano separate dal gate e dalla CI.
 
