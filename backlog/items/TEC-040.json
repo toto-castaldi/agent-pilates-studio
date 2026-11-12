@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-040-launcher-aggiornamento-produzione",
   "dependencies": [
     "TEC-035",
@@ -28,5 +28,7 @@
     "Test locali con Docker sostitutivo verificano esattamente argomenti, rifiuti, aiuto e propagazione degli errori senza accedere allo stack operativo.",
     "La procedura e il README descrivono installazione, SHA obbligatorio e comandi GitHub per tip di main e ultimo run push riuscito con pubblicazione, con scelta esplicita e avvertenza sull'interruzione dei turni.",
     "Il launcher è copiato in ~/update-agent-pilates.sh su jarvis, con copia di sicurezza del precedente, permessi privati eseguibili e verifica di sintassi e aiuto; non viene eseguito alcun aggiornamento di produzione."
-  ]
+  ],
+  "outcome": "Versionato scripts/update-agent-pilates.sh con un solo SHA completo obbligatorio, validazione prima di Docker, aiuto senza effetti, immagine ops e argomento update sullo stesso commit e propagazione degli errori. README e procedura distinguono tip di main e ultimo run push riuscito con pubblicazione; query GitHub verificata in sola lettura. Passati gate lint, typecheck, 61 test unitari e build, bash -n e 27 test:local, inclusi tre nuovi test con Docker sostitutivo. Installato il solo launcher in ~/update-agent-pilates.sh su jarvis con permessi 0700, checksum e aiuto verificati; originale conservato in ~/update-agent-pilates.sh.bak.QVjECoJj privato 0600. Nessun Docker o aggiornamento di produzione eseguito durante l'installazione; nessuna modifica a migrazioni, privilegi o segreti.",
+  "closed_at": "2026-11-12"
 }

@@ -1,6 +1,6 @@
 # TEC-035 — Installazione e aggiornamento della produzione
 
-Procedura manuale per `jarvis`. Sul server non c'è il codice del progetto: restano Docker 29 o successivo, i volumi, le immagini e la directory privata `/opt/agent-pilates-prod`. Ogni comando viene dall'immagine `ops` del commit scelto e parte solo se lanciato dall'operatore. La CI pubblica le immagini ma non contatta il server.
+Procedura manuale per `jarvis`. Sul server non c'è un checkout applicativo: restano Docker 29 o successivo, i volumi, le immagini e la directory privata `/opt/agent-pilates-prod`; è ammesso il solo launcher shell minimale descritto sotto. Ogni comando viene dall'immagine `ops` del commit scelto e parte solo se lanciato dall'operatore. La CI pubblica le immagini ma non contatta il server.
 
 **REQ-NFR-004:** non avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né con `cloudflared tail` o strumenti equivalenti. Non usare `docker compose down --volumes` sul progetto di produzione.
 
@@ -44,12 +44,69 @@ Per applicare una modifica usare `ops update "$COMMIT"`: il comando interrompe i
 
 ## Aggiornamento
 
+### Scelta del commit da GitHub
+
+Con GitHub CLI già configurata, sul PC dell'operatore oppure su `jarvis`, il tip corrente di `main` si legge così:
+
+```bash
+gh api repos/toto-castaldi/agent-pilates-studio/commits/main --jq .sha
+```
+
+**Non è necessariamente installabile:** la CI o la pubblicazione delle immagini possono essere ancora in corso o fallite. Per ottenere invece l'ultimo commit con CI e pubblicazione riuscite, senza assumere che coincidano con il tip:
+
+```bash
+COMMIT=$(gh run list \
+  --repo toto-castaldi/agent-pilates-studio \
+  --workflow ci.yml --branch main --event push \
+  --status success --limit 1 \
+  --json headSha --jq '.[0].headSha // empty') &&
+[[ $COMMIT =~ ^[0-9a-f]{40}$ ]] && printf '%s\n' "$COMMIT"
+```
+
+Se il comando fallisce o non stampa uno SHA, fermarsi: non scegliere un ripiego automatico. Il filtro `push` è necessario: il workflow eseguito manualmente o su pull request non pubblica le immagini. Nel workflow del progetto un run riuscito su push di `main` comprende entrambi i job `quality` e `publish`; verificarne l'esito su GitHub prima di usare lo SHA. La scelta resta esplicita e separata dal launcher: non viene fatta una ricerca durante l'aggiornamento. GitHub CLI serve solo per questa consultazione, non al launcher; non copiare credenziali GitHub o `.env` sul server.
+
+### Installazione del launcher
+
+Il file versionato `scripts/update-agent-pilates.sh` si copia come `~/update-agent-pilates.sh` su `jarvis`. Dal clone verificato sul PC, questa sequenza conserva una copia privata del precedente e sostituisce il file solo dopo il controllo di sintassi:
+
+```bash
+REMOTE_SCRIPT=$(ssh jarvis 'umask 077; mktemp "$HOME/.update-agent-pilates.XXXXXXXX"') &&
+scp scripts/update-agent-pilates.sh "jarvis:$REMOTE_SCRIPT" &&
+ssh jarvis bash -s -- "$REMOTE_SCRIPT" <<'REMOTE'
+set -euo pipefail
+candidate=$1
+target="$HOME/update-agent-pilates.sh"
+bash -n "$candidate"
+if [[ -e $target ]]; then
+  backup=$(mktemp "$HOME/update-agent-pilates.sh.bak.XXXXXXXX")
+  cp -- "$target" "$backup"
+fi
+chmod 0700 "$candidate"
+mv -T -- "$candidate" "$target"
+"$target" --help
+REMOTE
+```
+
+La copia di sicurezza non viene eliminata. Copiare solo questo launcher, non il repository, i segreti o la configurazione locale. L'installazione e `--help` non invocano Docker e non aggiornano i servizi.
+
+### Esecuzione manuale
+
+Dopo aver scelto e controllato lo SHA pubblicato, su `jarvis`:
+
+```bash
+~/update-agent-pilates.sh <sha-completo-pubblicato>
+```
+
+Se la selezione di `COMMIT` è stata fatta nella stessa shell di `jarvis`, si può passare `"$COMMIT"` al posto del segnaposto. È obbligatorio un solo SHA completo di 40 caratteri esadecimali minuscoli: argomenti mancanti, abbreviazioni, branch, `latest` e argomenti aggiuntivi sono rifiutati prima di Docker. Non c'è un commit predefinito e il launcher non controlla autonomamente GitHub: richiamarlo significa confermare l'aggiornamento, che **interrompe i turni in corso**. L'immagine `ops` e il suo argomento `update` usano sempre lo stesso SHA. Il launcher propaga il codice di uscita e monta solo socket Docker e directory di produzione con bind mount che richiedono sorgenti esistenti.
+
+Resta equivalente la forma esplicita con la funzione `ops`:
+
 ```bash
 OPS_COMMIT=$COMMIT
 ops update "$COMMIT"
 ```
 
-Il comando scarica prima le immagini: se mancano, si ferma senza toccare il servizio. Poi arresta gateway e broker, esegue il backup quiescente in `backups/`, applica le migrazioni, ricrea i servizi e attende gli healthcheck. Se un passaggio fallisce, riporta l'errore, lascia gateway e broker fermi e non elimina volumi. I turni in corso sono interrotti.
+In entrambe le forme il comando scarica prima le immagini: se mancano, si ferma senza toccare il servizio. Poi arresta gateway e broker, esegue il backup quiescente in `backups/`, applica le migrazioni, ricrea i servizi e attende gli healthcheck. Se un passaggio fallisce, riporta l'errore, lascia gateway e broker fermi e non elimina volumi. I turni in corso sono interrotti.
 
 ## Ritorno alla versione precedente
 
@@ -169,3 +226,9 @@ Limiti: non sono stati provati Meta, OpenRouter con chiave reale o il tunnel pub
 La [CI del merge di TEC-039](https://github.com/toto-castaldi/agent-pilates-studio/actions/runs/43210853015) è fallita durante `pg_restore`: il controllo via socket poteva accettare il server temporaneo dell'inizializzazione, poi arrestato dall'entrypoint. BUG-003 ha riprodotto in un container PostgreSQL isolato sia il falso positivo di `pg_isready` sia l'interruzione di un ripristino avviato contro quel server. Il nuovo controllo TCP rifiuta il server temporaneo e attende quello definitivo; il ripristino resta singolo e un suo errore continua a far fallire il test.
 
 La regressione deterministica in `test:images` trattiene l'inizializzazione con uno script sintetico: fallisce sul controllo precedente, passa con `-h 127.0.0.1` e completa poi tutti i controlli del backup e dei servizi. Sono passati in locale il gate completo, `test:local` e `test:images`; la [CI del commit 8ca38e4](https://github.com/toto-castaldi/agent-pilates-studio/actions/runs/43218671914) ha completato con successo tutte le suite, incluse quelle PostgreSQL, Hermes, Pi, autore, compattazione, aggiornamento e avvio. La pubblicazione delle immagini è correttamente esclusa sul branch del bug. Le prove applicative non hanno usato produzione, dati reali, Meta, OpenRouter o il tunnel.
+
+## Verifica del launcher parametrico — 2026-11-12
+
+TEC-040 ha sostituito il launcher con commit cablato nella home di `jarvis`, conservando il precedente in `~/update-agent-pilates.sh.bak.QVjECoJj` con permessi `0600`. Il nuovo `~/update-agent-pilates.sh` ha permessi `0700`; checksum della copia uguale al file versionato, sintassi Bash e `--help` verificati. Non è stato invocato Docker né aggiornato alcun servizio.
+
+I tre test del launcher in `test:local` usano solo un Docker sostitutivo: verificano argomenti mancanti, aggiuntivi e malformati, aiuto senza effetti, due SHA sintetici distinti, esatti argomenti e mount e propagazione di un codice di errore. Sono passati tutti i 27 test locali e il gate con 61 test unitari, lint, typecheck e build. La query GitHub della procedura è stata verificata separatamente in sola lettura; non è una prova di aggiornamento reale o di compatibilità delle future immagini.
