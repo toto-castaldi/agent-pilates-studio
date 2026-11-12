@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-041-anagrafica-unica-e-funzioni-protette-nel-database",
   "dependencies": [
     "TEC-033",
@@ -44,5 +44,7 @@
   ],
   "remarks": [
     "Primo dei quattro item concordati per la v0.3.0 il 2026-11-12. Gli item successivi completano gestione guidata, passaggio comune di gateway/broker/autore e verifiche operative. La sola aggiunta documentale usa la deroga esplicita al working tree pulito limitata a .pi/settings.json, lasciato locale e intatto; nessuna deroga per implementazione o avvio."
-  ]
+  ],
+  "outcome": "Introdotta la base additiva dell'identità unica: stessa tabella e ID degli insegnanti in storage privato, vista compatibile con la baseline, telefono canonico univoco, accesso tecnico e revisione; funzioni fidate di risoluzione, contesto e gestione atomica con audit append-only. Bootstrap nuovo e preesistente, completamento, correzione, cambio numero, revoca e riabilitazione verificati su PostgreSQL reale, con privilegi minimi, SQL di estrazione, falsificazione, concorrenza e snapshot invariati. Contratto e limiti di attivazione in docs/data/TEC-041-identity-contract.md; evidenze per i criteri in docs/operations/TEC-041-prove.md. Passati gate rapido (67 unit test), test:local (28), test:db, test:upgrade, test:hermes, test:author, test:compaction, test:start e test:images con soli dati sintetici. Il runtime precedente e lo stack operativo restano invariati: nessuna attivazione target, importazione del mapping o prova con servizi reali; protezione definitiva degli autori e rimozione del percorso legacy restano al passaggio coordinato TEC-042 dopo US-017.",
+  "closed_at": "2026-11-13"
 }
