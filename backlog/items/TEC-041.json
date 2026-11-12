@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-041-anagrafica-unica-e-funzioni-protette-nel-database",
   "dependencies": [
     "TEC-033",
     "US-011"
