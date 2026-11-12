@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "us/US-014-indicazioni-e-sostituzioni-dell-insegnante",
   "dependencies": [
     "US-011"
@@ -32,5 +32,7 @@
     "\"L'ho tenuta io\" da un mittente collegato registra l'insegnante collegato ricavato dal sistema. Da un mittente non collegato l'agente chiede il nome. Comunicando le presenze senza nominare l'insegnante, l'agente non lo chiede e non registra indicazioni.",
     "Una seconda indicazione per una lezione che ne ha già una valida non crea duplicati. L'agente propone la correzione: annulla l'indicazione errata con data, autore e motivo e registra quella corretta secondo REQ-STUDIO-008. Un'indicazione annullata riporta la lezione all'insegnante atteso.",
     "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e verifica deterministica del database: lezione passata, lezione senza registrazioni, sostituzione singola, sostituzione su più lezioni con e senza conferma, sostituito non atteso, mittente collegato e non collegato, presenze senza insegnante, correzione."
-  ]
+  ],
+  "outcome": "Implementate in hermes/SOUL.md indicazioni e sostituzioni per lezioni passate e future, conferma delle sostituzioni multiple, chiarimenti senza scritture, identità del mittente collegato ricavata dal sistema, anagrafiche, duplicati e correzioni con annullamento unico e storico. Estesi catalogo, fixture e confronto completo delle indicazioni, preservando clienti, presenze e regole; database verificato anche quando fallisce il testo. Contesto finale 29be77b: 13 nuovi scenari reali e 4 regressioni passati singolarmente con z-ai/glm-5.2 via OpenRouter. Gate finale superato (lint, typecheck, 64 test in memoria, build), test:local 24/24; test:db, test:author e test:hermes passati separatamente su 5e16339. Evidenze per criterio, esiti negativi, riesami, interruzione e limiti lessicali/non deterministici in docs/operations/TEC-012-prove.md. README, design e CHANGELOG aggiornati; nessuna nuova migrazione, modifica di privilegi o dello stack operativo. Su scelta esplicita dell'utente, la modifica preesistente a .pi/settings.json resta locale e fuori dai commit, come unica eccezione al working tree pulito.",
+  "closed_at": "2026-11-12"
 }
