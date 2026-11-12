@@ -16,6 +16,7 @@
     "2026-11-10: L'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007).",
     "2026-11-11: Aggiunto TEC-038: aggiornamento al template v2.1.0 e push automatico limitato ai commit documentali di aggiunta di item dopo l’adozione (REQ-NFR-020).",
     "2026-11-12: Aggiunto TEC-039: backup a caldo del solo database di produzione con un comando ops (REQ-OPS-008), concordato con l'utente.",
-    "2026-11-12: Concordato con l'utente: correggere il fallimento intermittente del ripristino del backup a caldo nella CI successiva al merge di TEC-039, senza introdurre nuove funzionalità."
+    "2026-11-12: Concordato con l'utente: correggere il fallimento intermittente del ripristino del backup a caldo nella CI successiva al merge di TEC-039, senza introdurre nuove funzionalità.",
+    "2026-11-12: Concordato con l'utente: versionare e installare nella home di jarvis il launcher manuale parametrico di aggiornamento, con istruzioni per ottenere l'ultimo commit pubblicato; nessuna esecuzione dell'aggiornamento di produzione durante l'item."
   ]
 }

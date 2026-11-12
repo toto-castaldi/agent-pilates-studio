@@ -1,0 +1,31 @@
+{
+  "id": "TEC-040",
+  "title": "Launcher parametrico per aggiornare la produzione",
+  "version": "v0.3.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-035",
+    "TEC-037"
+  ],
+  "requirements": [
+    "REQ-OPS-005",
+    "REQ-OPS-007",
+    "REQ-OPS-009",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §9"
+  ],
+  "description": "Sostituire il commit cablato nello script della home di jarvis con un parametro esplicito, versionare il piccolo launcher e spiegare come leggere da GitHub il tip di main e l'ultimo commit con immagini pubblicate. Il lavoro include la sola installazione del launcher, non l'aggiornamento dei servizi.",
+  "acceptance_criteria": [
+    "Il launcher accetta un solo SHA completo minuscolo obbligatorio, non ha un commit predefinito e rifiuta argomenti mancanti o malformati prima di Docker; l'aiuto non produce effetti.",
+    "Docker esegue l'immagine ops del commit richiesto con update e lo stesso commit, montando solo socket Docker e directory di produzione; il codice di errore è propagato senza falso successo e senza gestire direttamente dati o segreti.",
+    "Test locali con Docker sostitutivo verificano esattamente argomenti, rifiuti, aiuto e propagazione degli errori senza accedere allo stack operativo.",
+    "La procedura e il README descrivono installazione, SHA obbligatorio e comandi GitHub per tip di main e ultimo run push riuscito con pubblicazione, con scelta esplicita e avvertenza sull'interruzione dei turni.",
+    "Il launcher è copiato in ~/update-agent-pilates.sh su jarvis, con copia di sicurezza del precedente, permessi privati eseguibili e verifica di sintassi e aiuto; non viene eseguito alcun aggiornamento di produzione."
+  ]
+}

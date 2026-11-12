@@ -62,6 +62,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Cambio di scope del 2026-11-09: ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), e collegato a una propria app Meta con callback stabile (REQ-OPS-006); messa in esercizio continuativa del gateway pubblico di produzione.
 - Cambio di scope del 2026-11-10: l'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007).
 - Cambio di scope del 2026-11-12: backup a caldo del solo database di produzione con un comando `ops`, senza fermare gateway e broker, per consultare i dati (REQ-OPS-008).
+- Cambio di scope del 2026-11-12: launcher manuale di aggiornamento con commit parametrico e istruzioni per scegliere l'ultimo commit di `main` con immagini pubblicate (REQ-OPS-009).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -212,7 +213,7 @@ Da qualsiasi clone del repository l'operatore deve poter lavorare su un ambiente
 
 #### REQ-OPS-005 — Aggiornamento manuale della produzione
 
-L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit delle immagini, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico. Su `jarvis` non è presente il codice del progetto: restano Docker, i volumi, le immagini e una directory privata con segreti e configurazione. La procedura è eseguita dall'immagine `ops`, l'unica a ricevere il socket Docker, solo per la durata del comando e mai in Hermes.
+L'operatore deve poter installare e aggiornare la produzione su `jarvis` solo a mano, con una procedura precisa e versionata: scelta esplicita del commit delle immagini, backup quiescente preliminare, migrazioni, ricreazione dei servizi, verifica di salute e ritorno documentato alla versione precedente. Nessun deploy automatico. Su `jarvis` non è presente un checkout del codice applicativo: restano Docker, i volumi, le immagini e una directory privata con segreti e configurazione. È ammesso il solo launcher shell minimale di REQ-OPS-009, senza logica di aggiornamento propria. La procedura è eseguita dall'immagine `ops`, l'unica a ricevere il socket Docker, solo per la durata del comando e mai in Hermes.
 
 #### REQ-OPS-007 — Immagini di produzione da pipeline
 
@@ -225,6 +226,12 @@ Ogni ambiente ha una propria app Meta, un proprio numero WhatsApp Business e pro
 #### REQ-OPS-008 — Backup a caldo del database di produzione
 
 L'operatore deve poter ottenere a mano, con un comando dell'immagine `ops`, una copia del database PostgreSQL di produzione senza fermare gateway e broker, per consultarla o ripristinarla altrove. La copia è coerente, esclude i dati che il backup quiescente esclude, è privata e verificabile con checksum e non contiene la cronologia di Hermes. Non sostituisce il backup quiescente di aggiornamento e ritorno (REQ-OPS-005) e non è usata dal ritorno alla versione precedente. Nessun meccanismo la avvia automaticamente.
+
+#### REQ-OPS-009 — Launcher parametrico di aggiornamento
+
+L'operatore deve poter aggiornare manualmente la produzione con `~/update-agent-pilates.sh <commit>`, senza modificare lo script a ogni versione. Il launcher versionato accetta un solo SHA completo esplicito, rifiuta argomenti mancanti o non validi prima di invocare Docker e inoltra lo stesso commit all'immagine `ops` selezionata. Non sceglie versioni automaticamente, non richiede un checkout né credenziali GitHub e non duplica backup, migrazioni o verifiche di salute di REQ-OPS-005; un errore resta un errore.
+
+La procedura deve spiegare come leggere da GitHub sia l'ultimo commit di `main` sia l'ultimo commit di `main` con CI su push completata e immagini pubblicate, distinguendoli: il primo può non essere ancora installabile. La scelta del commit e l'avvio dell'aggiornamento restano intenzionali; installare o sostituire il launcher non aggiorna i servizi. La copia del launcher nella home di `jarvis` non porta sul server il codice applicativo o i segreti del repository.
 
 #### REQ-OPS-003 — Osservabilità essenziale
 

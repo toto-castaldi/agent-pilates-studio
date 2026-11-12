@@ -22,7 +22,7 @@ Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cam
 
 - Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione e permessi degli insegnanti, pacchetti, pagamenti, richiesta automatica delle presenze e anagrafica degli utilizzatori.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-004–007), nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
+- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
 
 ## 4. Stack and architecture
 
