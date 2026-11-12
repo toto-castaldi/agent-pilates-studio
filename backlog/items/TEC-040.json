@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-040-launcher-aggiornamento-produzione",
   "dependencies": [
     "TEC-035",
     "TEC-037"
