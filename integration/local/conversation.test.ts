@@ -19,6 +19,18 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       assert.equal(link.phone, scenario.sender);
       assert.ok(link.firstName && link.lastName);
     }
+    for (const person of scenario.setup?.teachers ?? []) assert.ok(person.firstName && person.lastName);
+    for (const rule of scenario.setup?.teacherRules ?? []) {
+      assert.ok(scenario.setup.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === rule.teacher));
+      assert.ok(rule.text?.trim() && rule.intervals.length);
+      assert.ok(!rule.createdAt && !rule.deactivatedAt && !rule.inactive);
+      for (const interval of rule.intervals) {
+        assert.ok(Number.isInteger(interval.weekday) && interval.weekday >= 1 && interval.weekday <= 7);
+        assert.match(interval.min, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+        assert.match(interval.max, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+        assert.ok(interval.min <= interval.max);
+      }
+    }
     for (const row of scenario.setup?.attendance ?? []) {
       assert.match(row.createdAt, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)T\d\d:\d\d:\d\dZ$/);
       assert.match(row.lessonDate, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)$/);
@@ -32,6 +44,29 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
       assert.ok(turn.response.contains.length || turn.response.anyOf?.length || turn.response.counts?.length);
+      assert.equal([turn.expected, turn.teacherExpected, turn.assignmentExpected, turn.attendanceExpected, turn.unchanged].filter(Boolean).length, 1);
+      if (turn.assignmentExpected) {
+        assert.ok(scenario.setup);
+        assert.ok(Array.isArray(turn.assignmentExpected.addedTeachers) && Array.isArray(turn.assignmentExpected.assignments));
+        const teachers = [...(scenario.setup.teachers ?? []), ...turn.assignmentExpected.addedTeachers];
+        for (const row of turn.assignmentExpected.assignments) {
+          assert.ok(teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === row.teacher));
+          assert.match(row.lessonDate, /^(?:\d{4}-\d{2}-\d{2}|\$YESTERDAY|\$NEXT_MONDAY(?:\+\d+)?)$/);
+          assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+          assert.equal(row.authorPhone, scenario.sender);
+          assert.equal(row.authorName, scenario.profile ?? null);
+          if (row.cancellation) {
+            assert.equal(row.cancellation.authorPhone, scenario.sender);
+            assert.equal(row.cancellation.authorName, scenario.profile ?? null);
+          }
+        }
+        for (const person of turn.assignmentExpected.addedTeachers) {
+          assert.ok(person.firstName && person.lastName);
+          assert.equal(person.authorPhone, scenario.sender);
+          assert.equal(person.authorName, scenario.profile ?? null);
+        }
+        continue;
+      }
       if (turn.teacherExpected) {
         assert.ok(!turn.expected && !turn.unchanged && !turn.attendanceExpected);
         assert.ok(Array.isArray(turn.teacherExpected.teachers) && Array.isArray(turn.teacherExpected.rules));
@@ -55,7 +90,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         assert.ok(scenario.setup && !turn.expected);
         assert.ok(Array.isArray(turn.attendanceExpected.addedClients) && Array.isArray(turn.attendanceExpected.attendance));
         for (const row of turn.attendanceExpected.attendance) {
-          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY|\$NEXT_MONDAY(?:\+\d+)?)$/.test(row.lessonDate));
+          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY|\$YESTERDAY|\$NEXT_MONDAY(?:\+\d+)?)$/.test(row.lessonDate));
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);
