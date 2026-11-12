@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -76,6 +76,43 @@ test('attendance cancellation keeps the original immutable and verifies attribut
   const cancelledAnticipation = { ...anticipated, cancelledAt: cancelled.cancelledAt, cancelledByPhone: cancelled.cancelledByPhone, cancelledByName: null, cancellationReason: cancelled.cancellationReason };
   assert.ok(historyPreserved({ ...before, attendance: [anticipated] }, { ...after, attendance: [cancelledAnticipation] }));
   assert.equal(historyPreserved({ ...before, attendance: [anticipated] }, { ...after, attendance: [{ ...cancelledAnticipation, createdAt: row.createdAt }] }), false);
+});
+
+test('teacher scenarios compare inclusive coverage, author, transitions and immutable history', () => {
+  const author = { authorPhone: '15555550102', authorName: 'Sintetico' };
+  const teacher = { id: '1', firstName: 'Antonio', lastName: 'Neri', createdAt: '2026-01-01T09:00:00Z', ...author };
+  const interval = { weekday: 1, min: '13:00', max: '17:59', isActive: true };
+  const rule = { id: '2', teacher: 'Antonio Neri', text: 'Antonio lunedì pomeriggio', createdAt: '2026-01-01T09:00:00Z', ...author,
+    deactivatedAt: null, deactivatedByPhone: null, deactivatedByName: null, deactivationReason: null, intervals: [interval] };
+  const before: ActualState = { clients: [], rules: [], attendance: [], teachers: [teacher], teacherRules: [rule], teacherAssignments: [] };
+  const expectation = { teachers: [{ firstName: 'Antonio', lastName: 'Neri' }], rules: [{ teacher: 'Antonio Neri', intervals: [interval], ruleCount: 1 }] };
+  assert.ok(teacherScenarioMatches(before, expectation, author.authorPhone, author.authorName));
+  assert.equal(stateMatches(before, { clients: [], rules: [] }), false);
+  for (const changed of [
+    { ...rule, text: ' ' }, { ...rule, authorPhone: '999' }, { ...rule, createdAt: '' },
+    { ...rule, intervals: [{ ...interval, min: '13:01' }] },
+    { ...rule, intervals: [{ ...interval, max: '18:00' }] },
+    { ...rule, intervals: [{ ...interval, isActive: false }] },
+    { ...rule, intervals: [interval, interval] },
+  ]) assert.equal(teacherScenarioMatches({ ...before, teacherRules: [changed] }, expectation, author.authorPhone, author.authorName), false);
+  assert.equal(teacherScenarioMatches({ ...before, teachers: [{ ...teacher, authorName: 'Falso' }] }, expectation, author.authorPhone, author.authorName), false);
+  assert.equal(teacherScenarioMatches({ ...before, teacherAssignments: [{}] }, expectation, author.authorPhone, author.authorName), false);
+  const stopped = { ...rule, deactivatedAt: '2026-01-02T09:00:00Z', deactivatedByPhone: author.authorPhone,
+    deactivatedByName: author.authorName, deactivationReason: 'Sostituzione', intervals: [{ ...interval, isActive: false }] };
+  const left = { ...rule, id: '3', intervals: [{ ...interval, max: '14:59' }] };
+  const right = { ...rule, id: '4', intervals: [{ ...interval, min: '15:01' }] };
+  const after = { ...before, teacherRules: [stopped, left, right] };
+  const replacement = { teachers: expectation.teachers, rules: [
+    { teacher: 'Antonio Neri', inactive: true, intervals: [interval], ruleCount: 1 },
+    { teacher: 'Antonio Neri', intervals: [left.intervals[0], right.intervals[0]], ruleCount: 2 },
+  ] };
+  assert.ok(historyPreserved(before, after));
+  assert.ok(teacherScenarioMatches(after, replacement, author.authorPhone, author.authorName));
+  assert.equal(teacherScenarioMatches({ ...after, teacherRules: [stopped, left] }, replacement, author.authorPhone, author.authorName), false);
+  assert.equal(teacherScenarioMatches({ ...after, teacherRules: [{ ...stopped, deactivationReason: ' ' }, left, right] }, replacement, author.authorPhone, author.authorName), false);
+  assert.equal(historyPreserved(after, { ...after, teacherRules: [{ ...stopped, deactivationReason: 'riscritta' }, left, right] }), false);
+  assert.equal(historyPreserved(before, { ...after, teacherRules: [{ ...stopped, text: 'riscritta' }, left, right] }), false);
+  assert.equal(historyPreserved(before, { ...after, teachers: [] }), false);
 });
 
 test('relative day uses the Rome calendar across midnight and DST', () => {

@@ -15,8 +15,11 @@ test('secret initialization uses private files and preserves existing passwords 
   for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'whatsapp-verify-token']) {
     assert.equal((await system.lstat(`/synthetic/secrets/${name}`)).mode & 0o077, 0);
   }
+  assert.equal(system.content('/synthetic/secrets/whatsapp-teacher-links'), '[]\n');
+  system.put('/synthetic/secrets/whatsapp-teacher-links', '[{"phone":"15555550102","firstName":"Antonio","lastName":"Neri"}]\n');
   await initSecrets(args);
   assert.equal(system.content('/synthetic/secrets/db-admin'), first);
+  assert.match(system.content('/synthetic/secrets/whatsapp-teacher-links') ?? '', /Antonio/);
   system.mode('/synthetic/secrets/db-admin', 0o644);
   await assert.rejects(initSecrets(args), /private regular file/);
   assert.ok(!system.logs.join(' ').includes(first?.trim() ?? 'missing'));

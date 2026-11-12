@@ -68,6 +68,7 @@ services:
       - whatsapp_app_secret
       - whatsapp_allowed_users
       - whatsapp_phone_number_id
+      - whatsapp_teacher_links
     tmpfs:
       - /run/pilates-broker:mode=0700
     logging:
@@ -167,6 +168,8 @@ secrets:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-home-channel
   whatsapp_phone_number_id:
     file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-phone-number-id
+  whatsapp_teacher_links:
+    file: ${SECRETS_DIR:-./.local/secrets}/whatsapp-teacher-links
 
 # One prefix names both volumes, so an environment cannot mix them. Unset, the
 # names match the default Compose naming and existing volumes are preserved.

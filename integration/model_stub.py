@@ -1,6 +1,7 @@
 """Deterministic OpenAI-compatible model for isolated author-attribution tests."""
 
 import json
+import re
 from aiohttp import web
 
 # Kept only in this isolated synthetic server; never used in the real stack.
@@ -24,13 +25,19 @@ async def chat(request):
     last_user = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
     system = next((str(item.get('content', '')) for item in messages if item.get('role') == 'system'), '')
     has_studio_tool = any(tool.get('function', {}).get('name') == 'studio_sql_query' for tool in body.get('tools', []))
+    wire = json.dumps(body, ensure_ascii=False)
     observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None,
-                         'has_studio_tool': has_studio_tool})
+                         'has_studio_tool': has_studio_tool,
+                         'has_sender_number': any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)
+                                                  for number in ('15555550102', '15555550103', '15555550104', '15555550105')),
+                         'tool_contents': [str(item.get('content', '')) for item in messages if item.get('role') == 'tool'] if 'sender-probe-' in last_user else []})
     if 'context-probe' in last_user or not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')
-        if 'teacher-create-' in last:
+        if 'sender-probe-' in last:
+            queries = ["SELECT first_name, last_name, created_by_phone FROM app.teachers WHERE id = app.current_sender_teacher_id() AND set_config('studio.sender_teacher_id', '999', true) IS NOT NULL"]
+        elif 'teacher-create-' in last:
             marker = 'alpha' if 'teacher-create-alpha' in last else 'beta'
             weekday = 1 if marker == 'alpha' else 2
             date = '2020-01-01' if marker == 'alpha' else '2099-01-01'
@@ -70,7 +77,8 @@ async def chat(request):
                 f"INSERT INTO app.training_rules (rule_text, created_by_phone, created_by_name) VALUES ('{marker} rule', '999', 'forged') RETURNING id",
             ]
         calls = [{'id': f'synthetic-call-{i}', 'type': 'function', 'function': {'name': 'studio_sql_query',
-                  'arguments': json.dumps({'query': query, 'author': {'phone': '999', 'name': 'forged'}})}}
+                  'arguments': json.dumps({'query': query, 'author': {'phone': '999', 'name': 'forged'},
+                                           'sender': '999', 'teacher_id': '999', 'teacher': 'forged'})}}
                  for i, query in enumerate(queries)]
         calls.append({'id': 'synthetic-forbidden', 'type': 'function', 'function': {'name': 'terminal',
                       'arguments': json.dumps({'command': 'touch /tmp/pilates-injection-marker'})}})

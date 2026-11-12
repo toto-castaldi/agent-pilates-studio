@@ -9,7 +9,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
-import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches } from '../dist/src/conversation.js';
+import { attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
+import { parseTeacherLinks } from './teacher-links.mjs';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -51,6 +52,13 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     failed = true;
     break;
   }
+  try {
+    parseTeacherLinks(JSON.stringify(scenario.teacherLinks ?? []), scenario.sender);
+  } catch {
+    console.error('Collegamenti sintetici del catalogo non validi.');
+    failed = true;
+    break;
+  }
   const directory = await mkdtemp(join(tmpdir(), 'pilates-conversation-'));
   const project = `pilates-conv-${randomBytes(8).toString('hex')}`;
   const secrets = {
@@ -66,6 +74,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     'whatsapp-allowed-users': scenario.sender,
     'whatsapp-home-channel': scenario.sender,
     'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': JSON.stringify(scenario.teacherLinks ?? []),
   };
   const override = join(directory, 'override.yaml');
   const env = { ...safeEnv, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', WHATSAPP_WEBHOOK_PATH: '/whatsapp/webhook', PILATES_MODEL: model };
@@ -161,7 +170,18 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         a.outcome, a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName",
         a.cancelled_at::text AS "cancelledAt", a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
         FROM app.attendance a JOIN app.clients c ON c.id = a.client_id ORDER BY a.id`)).rows;
-      return { clients, rules, attendance };
+      const teachers = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM app.teachers ORDER BY id')).rows;
+      const teacherRules = (await client.query(`SELECT r.id::text AS id, t.first_name || ' ' || t.last_name AS teacher, r.rule_text AS text,
+        r.created_at::text AS "createdAt", r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName",
+        r.deactivated_at::text AS "deactivatedAt", r.deactivated_by_phone AS "deactivatedByPhone", r.deactivated_by_name AS "deactivatedByName", r.deactivation_reason AS "deactivationReason",
+        COALESCE((SELECT json_agg(json_build_object('weekday', i.weekday, 'min', to_char(i.start_time_min, 'HH24:MI'), 'max', to_char(i.start_time_max, 'HH24:MI'), 'isActive', i.is_active) ORDER BY i.weekday, i.start_time_min, i.start_time_max)
+          FROM app.teacher_rule_intervals i WHERE i.rule_id = r.id), '[]'::json) AS intervals
+        FROM app.teacher_rules r JOIN app.teachers t ON t.id = r.teacher_id ORDER BY r.id`)).rows;
+      const teacherAssignments = (await client.query(`SELECT a.id::text AS id, a.teacher_id::text AS "teacherId", a.lesson_date::text AS date, a.start_time::text AS time,
+        a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName", a.cancelled_at::text AS "cancelledAt",
+        a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
+        FROM app.teacher_assignments a ORDER BY a.id`)).rows;
+      return { clients, rules, attendance, teachers, teacherRules, teacherAssignments };
     };
     let previous = await snapshot();
     if (!stateMatches(previous, scenario.initial)) throw new Error('initial state');
@@ -328,11 +348,13 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       stage = `turno ${index + 1}: stato database`;
       const current = await snapshot();
       const historyOk = historyPreserved(previous, current);
-      const stateOk = attendanceExpected ? !!seededSnapshot && attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
-        : turn.unchanged ? !!seededSnapshot && snapshotsMatch(seededSnapshot, current) : stateMatches(current, turn.expected);
+      const stateOk = turn.teacherExpected ? teacherScenarioMatches(current, turn.teacherExpected, scenario.sender, scenario.profile ?? null)
+        : attendanceExpected ? !!seededSnapshot && attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
+          : turn.unchanged ? !!seededSnapshot && snapshotsMatch(seededSnapshot, current) : stateMatches(current, turn.expected);
       if (!historyOk || !stateOk) {
         const rows = current.attendance ?? [];
-        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}.`);
+        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, clienti ${current.clients.length}, regole clienti ${current.rules.length}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}, insegnanti ${current.teachers.length}, regole insegnanti ${current.teacherRules.length}.`);
+        console.error(`Indicatori sintetici risposta: domanda ${/[?？]/.test(text) ? 'sì' : 'no'}, conferma ${/conferm/i.test(text) ? 'sì' : 'no'}, errore ${/errore|fallit|impossibil/i.test(text) ? 'sì' : 'no'}.`);
         throw new Error('database mismatch');
       }
       previous = current;

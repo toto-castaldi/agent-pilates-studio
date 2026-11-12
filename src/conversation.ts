@@ -67,10 +67,39 @@ export interface ActualRule {
   deactivationReason?: string | null;
 }
 
+export interface TeacherInterval {
+  weekday: number;
+  min: string;
+  max: string;
+  isActive?: boolean;
+}
+
+export interface TeacherRuleState {
+  id: string;
+  teacher: string;
+  text: string;
+  createdAt: string;
+  authorPhone: string;
+  authorName: string | null;
+  deactivatedAt: string | null;
+  deactivatedByPhone: string | null;
+  deactivatedByName: string | null;
+  deactivationReason: string | null;
+  intervals: TeacherInterval[];
+}
+
+export interface TeacherExpectation {
+  teachers: { firstName: string; lastName: string }[];
+  rules: { teacher: string; intervals: TeacherInterval[]; inactive?: boolean; ruleCount?: number }[];
+}
+
 export interface ActualState {
   clients: ClientState[];
   rules: ActualRule[];
   attendance?: AttendanceState[];
+  teachers?: ClientState[];
+  teacherRules?: TeacherRuleState[];
+  teacherAssignments?: unknown[];
 }
 
 export interface ExpectedResponse {
@@ -175,7 +204,7 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
 // SQL decomposition. Each resulting rule must belong to one group; the union
 // of its Cartesian associations must cover the group exactly once.
 export function stateMatches(actual: ActualState, expected: ExpectedState): boolean {
-  if (actual.attendance?.length) return false;
+  if (actual.attendance?.length || actual.teachers?.length || actual.teacherRules?.length || actual.teacherAssignments?.length) return false;
   if (actual.clients.length !== expected.clients.length) return false;
   const remainingClients = [...actual.clients];
   for (const client of expected.clients) {
@@ -222,6 +251,9 @@ export function stateMatches(actual: ActualState, expected: ExpectedState): bool
 // Attendance scenarios compare the entire rule snapshot and all attendance
 // rows, including cancelled ones, rather than only the currently valid rows.
 export function attendanceScenarioMatches(before: ActualState, actual: ActualState, expected: AttendanceExpectation): boolean {
+  if (JSON.stringify(before.teachers ?? []) !== JSON.stringify(actual.teachers ?? [])
+    || JSON.stringify(before.teacherRules ?? []) !== JSON.stringify(actual.teacherRules ?? [])
+    || JSON.stringify(before.teacherAssignments ?? []) !== JSON.stringify(actual.teacherAssignments ?? [])) return false;
   if (JSON.stringify(before.rules) !== JSON.stringify(actual.rules)) return false;
   if (JSON.stringify(before.clients) !== JSON.stringify(actual.clients.slice(0, before.clients.length))) return false;
   const added = actual.clients.slice(before.clients.length);
@@ -253,9 +285,82 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
   return true;
 }
 
+// Compare teacher coverage minute by minute, permitting equivalent splits but
+// rejecting duplicates, missing endpoints, wrong authors and extra records.
+export function teacherScenarioMatches(actual: ActualState, expected: TeacherExpectation, authorPhone: string, authorName: string | null): boolean {
+  if (actual.clients.length || actual.rules.length || actual.attendance?.length || actual.teacherAssignments?.length) return false;
+  const teachers = [...(actual.teachers ?? [])];
+  if (teachers.length !== expected.teachers.length) return false;
+  for (const person of expected.teachers) {
+    const index = teachers.findIndex((row) => normalized(row.firstName) === normalized(person.firstName)
+      && normalized(row.lastName) === normalized(person.lastName) && row.authorPhone === authorPhone
+      && row.authorName === authorName && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt)));
+    if (index < 0) return false;
+    teachers.splice(index, 1);
+  }
+  const minutes = (intervals: TeacherInterval[]): string[] | null => {
+    const result: string[] = [];
+    for (const interval of intervals) {
+      if (!Number.isInteger(interval.weekday) || interval.weekday < 1 || interval.weekday > 7
+        || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(interval.min)
+        || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(interval.max)) return null;
+      const [minHours, minMinutes] = interval.min.split(':').map(Number);
+      const [maxHours, maxMinutes] = interval.max.split(':').map(Number);
+      const min = minHours * 60 + minMinutes;
+      const max = maxHours * 60 + maxMinutes;
+      if (min > max) return null;
+      for (let minute = min; minute <= max; minute++) result.push(`${interval.weekday}:${minute}`);
+    }
+    return result;
+  };
+  const groups = expected.rules.map((rule) => {
+    const edges = minutes(rule.intervals);
+    return { rule, edges, expected: new Set(edges ?? []), seen: new Set<string>(), count: 0 };
+  });
+  const names = new Set(expected.teachers.map((person) => normalized(`${person.firstName} ${person.lastName}`)));
+  const identities = groups.map(({ rule }) => JSON.stringify([normalized(rule.teacher), !!rule.inactive]));
+  if (new Set(identities).size !== identities.length || groups.some(({ rule, edges, expected: coverage }) =>
+    !names.has(normalized(rule.teacher)) || !edges?.length || coverage.size !== edges.length)) return false;
+  for (const row of actual.teacherRules ?? []) {
+    const inactive = !!row.deactivatedAt;
+    const group = groups.find(({ rule }) => normalized(rule.teacher) === normalized(row.teacher) && !!rule.inactive === inactive);
+    const edges = minutes(row.intervals);
+    if (!group || !row.id || !row.createdAt || Number.isNaN(Date.parse(row.createdAt))
+      || !row.text.trim() || row.text !== row.text.trim() || row.authorPhone !== authorPhone || row.authorName !== authorName
+      || !edges?.length || new Set(edges).size !== edges.length || row.intervals.some((interval) => interval.isActive !== !inactive)
+      || (inactive ? Number.isNaN(Date.parse(row.deactivatedAt ?? '')) || Date.parse(row.deactivatedAt ?? '') < Date.parse(row.createdAt) || row.deactivatedByPhone !== authorPhone
+        || row.deactivatedByName !== authorName || !row.deactivationReason?.trim()
+        : !!row.deactivatedByPhone || !!row.deactivatedByName || !!row.deactivationReason)
+      || edges.some((edge) => !group.expected.has(edge) || group.seen.has(edge))) return false;
+    for (const edge of edges) group.seen.add(edge);
+    group.count++;
+  }
+  return groups.every(({ rule, expected: coverage, seen, count }) => coverage.size === seen.size
+    && (rule.ruleCount === undefined || rule.ruleCount === count));
+}
+
 // Existing records are immutable except for the first cancellation or
-// deactivation; a cancelled attendance row must remain exactly unchanged.
+// deactivation; cancelled or deactivated rows must remain exactly unchanged.
 export function historyPreserved(previous: ActualState, current: ActualState): boolean {
+  if (!(previous.teachers ?? []).every((row) => {
+    const matches = (current.teachers ?? []).filter((next) => next.id === row.id);
+    return !!row.id && matches.length === 1 && JSON.stringify(matches[0]) === JSON.stringify(row);
+  })) return false;
+  if (JSON.stringify(previous.teacherAssignments ?? []) !== JSON.stringify(current.teacherAssignments ?? [])) return false;
+  if (!(previous.teacherRules ?? []).every((row) => {
+    const matches = (current.teacherRules ?? []).filter((next) => next.id === row.id);
+    if (matches.length !== 1) return false;
+    const next = matches[0];
+    if (JSON.stringify(row) === JSON.stringify(next)) return true;
+    if (row.deactivatedAt || row.deactivatedByPhone || row.deactivatedByName || row.deactivationReason
+      || !next.deactivatedAt || Number.isNaN(Date.parse(next.deactivatedAt)) || !next.deactivatedByPhone
+      || !next.deactivationReason?.trim() || row.intervals.some((interval) => interval.isActive !== true)
+      || next.intervals.some((interval) => interval.isActive !== false)) return false;
+    const restored = { ...next, deactivatedAt: row.deactivatedAt, deactivatedByPhone: row.deactivatedByPhone,
+      deactivatedByName: row.deactivatedByName, deactivationReason: row.deactivationReason,
+      intervals: next.intervals.map((interval) => ({ ...interval, isActive: true })) };
+    return JSON.stringify(restored) === JSON.stringify(row);
+  })) return false;
   if (!(previous.attendance ?? []).every((row) => {
     if (!row.id || !row.createdAt) return false;
     const matches = (current.attendance ?? []).filter((next) => next.id === row.id);

@@ -18,6 +18,7 @@ test('configured home is immutable through signed WhatsApp turns and cron stays 
     'whatsapp-access-token': 'synthetic-access-token', 'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-allowed-users': '15555550102,15555550103',
     'whatsapp-home-channel': '15555550102', 'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-teacher-links': '[]',
   };
   const override = join(directory, 'override.yaml');
   const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', PILATES_MODEL: 'synthetic/test-model' };

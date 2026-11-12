@@ -50,8 +50,13 @@ async def chat(request):
         kind = 'summary'
     else:
         kind = 'aux'
+    # Record only a boolean, never the request or the synthetic phone itself.
+    wire = json.dumps(body, ensure_ascii=False)
+    private_phone = any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)
+                        for number in ('15555550102', '15555550103'))
     observations.append({
         'kind': kind, 'model': body.get('model'), 'chars': size, 'last_role': messages[-1].get('role') if messages else None,
+        'private_phone': private_phone,
         'verbatim': sorted({m for m in MARKER.findall(joined) if m == m.upper()}),
         'all': sorted({m.upper() for m in MARKER.findall(joined)}),
         'current': [m for m in MARKER.findall(last_user) if m == m.upper()],

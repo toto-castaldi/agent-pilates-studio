@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "us/US-011-anagrafica-e-regole-degli-insegnanti",
   "dependencies": [
     "TEC-033"
   ],
@@ -38,5 +39,7 @@
   ],
   "remarks": [
     "Pianificato il 2026-11-08 con il cambio di scope della v0.3.0 (REQ-STUDIO-011–014): le indicazioni e le sostituzioni sono in US-014, le consultazioni in US-015."
-  ]
+  ],
+  "outcome": "Implementate anagrafica e regole settimanali degli insegnanti, riconoscimento dei nomi, conferma delle sovrapposizioni e ricostruzione degli intervalli residui. Il collegamento facoltativo dei mittenti autorizzati resta privato; il broker ricava l'insegnante dal webhook firmato e lo espone nel contesto SQL protetto senza fornire il numero al modello nei percorsi verificati. Documentati configurazione, ADR-002, produzione e limiti di privacy e atomicità. Passati lint, typecheck, test unitari, build, backlog check e le suite isolate local, db, author, compaction, hermes, upgrade, start e images. Passati otto scenari insegnanti e una regressione clienti con z-ai/glm-5.2 su OpenRouter reale e dati sintetici, con confronto del database; esiti negativi durante sviluppo e limiti in docs/operations/TEC-012-prove.md. Nessuna prova Meta reale, nessun aggiornamento dello stack operativo né accettazione privacy.",
+  "closed_at": "2026-11-11"
 }
