@@ -1,0 +1,63 @@
+{
+  "id": "TEC-043",
+  "title": "Transizione operativa e verifiche dell'identità unica",
+  "version": "v0.3.0",
+  "epic": "EPIC-006",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-042"
+  ],
+  "requirements": [
+    "REQ-DB-001",
+    "REQ-DB-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-011",
+    "REQ-STUDIO-015",
+    "REQ-STUDIO-016",
+    "REQ-STUDIO-017",
+    "REQ-WA-002",
+    "REQ-WA-003",
+    "REQ-AGENT-003",
+    "REQ-AGENT-004",
+    "REQ-AGENT-006",
+    "REQ-OPS-002",
+    "REQ-OPS-004",
+    "REQ-OPS-005",
+    "REQ-OPS-006",
+    "REQ-OPS-007",
+    "REQ-OPS-008",
+    "REQ-NFR-002",
+    "REQ-NFR-003",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §3",
+    "TECHNICAL-DESIGN §4",
+    "TECHNICAL-DESIGN §5",
+    "TECHNICAL-DESIGN §6",
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §9",
+    "TECHNICAL-DESIGN §10",
+    "ADR-003"
+  ],
+  "description": "Verificare la transizione completa dalla baseline con allowlist/mapping/nome WhatsApp al modello unico di identità, da installazione vuota e da dati esistenti, e documentare aggiornamento, completamento manuale degli insegnanti, recupero del gestore e backup/ripristino. Le prove avvengono su risorse isolate con dati sintetici e non sostituiscono i test di sicurezza obbligatori nei tre item precedenti.",
+  "acceptance_criteria": [
+    "Una prova isolata parte dalla baseline precedente con insegnanti, regole attive/disattivate, indicazioni valide/annullate, clienti, presenze/assenze e autori WhatsApp storici; applica l'aggiornamento e confronta gli snapshot completi, inclusi ID e relazioni. Nessun mapping, allowlist o nome WhatsApp viene importato come identità o autorizzazione, anche se i vecchi file esistono ancora.",
+    "Dopo l'aggiornamento il solo gestore configurato avvia il proprio censimento/completamento e completa gli altri insegnanti via chat, senza duplicare persone. Le anagrafiche preesistenti incomplete restano nelle lezioni senza accesso; i nuovi censimenti richiedono tutti i dati. La stessa procedura è verificata da database nuovo; home deriva dal gestore senza numero separato, cron o avvisi aggiuntivi.",
+    "La procedura operativa distingue il trasferimento della funzione di gestore a un'altra persona dal cambio del numero della stessa persona. Entrambe sono intenzionali, allineano configurazione e anagrafica, tolgono i privilegi gestionali al vecchio numero e mantengono un percorso di recupero verificabile; il cambio numero della stessa persona conserva l'ID e blocca l'accesso dal numero sostituito. I tentativi equivalenti via chat restano vietati.",
+    "Riavvio e ricreazione conservano identità, accessi e tracciamento. Backup quiescente e a caldo includono i dati persistenti nuovi senza log sensibili; il ripristino isolato conserva dati e privilegi e non trasforma contesti fidati o vecchie conferme guidate in autorizzazioni valide. Restano l'esclusione del contesto effimero e le protezioni anti-replay previste dalla procedura esistente.",
+    "La matrice end-to-end con webhook firmati e servizi reali isolati copre gestore, utilizzatore abilitato, numero sconosciuto, incompleto e revocato, cambio numero, numero attribuito a un'altra persona, conferme interrotte e SQL ostile. Osserva zero chiamate al modello per mittenti non abilitati e passaggi gestionali con numeri; dopo turni normali e compattazione nessun telefono di identità/gestione/autore raggiunge richieste principali, titoli o richieste ausiliarie e nessuna persona eredita la chat altrui.",
+    "Sono eseguite e registrate le suite test:local, test:pi, test:pi-package, test:db, test:hermes, test:author, test:compaction, test:upgrade, test:start e test:images sul nuovo modello, compreso il percorso dalle immagini ops senza checkout applicativo sul server. Le fixture sono sintetiche e nessuna prova avvia o modifica lo stack operativo dello studio.",
+    "Il catalogo e le prove con OpenRouter reale documentano le regressioni disponibili dello studio dopo il refactoring: identità censita, io, autore, regole clienti/insegnanti, presenze/assenze e indicazioni/sostituzioni. Stato del database e risposte sono confrontati, inclusi chiarimenti senza scritture e assenza di proposte di profilo. Evidenze, esiti negativi, limiti e prove Meta eventualmente richieste dalla release sono distinti dai test deterministici; credenziali esterne restano private e l'ambiente operativo non viene usato come fixture.",
+    "README, .env.example, SOUL.md, design, ADR e istruzioni ops descrivono installazione nuova, aggiornamento manuale, rimozione delle vecchie fonti, completamento delle anagrafiche, protezione e recupero del gestore e ritorno documentato da backup. È esplicito che censire un destinatario non lo preregistra sul numero di test Meta e che i backup e le cronologie precedenti non diventano anonimi.",
+    "Le evidenze associano ogni criterio di release dell'identità unica a una prova e segnalano ciò che non è verificato. Non si dichiara completato un controllo mancante; non si introduce deploy automatico, più gestori, ruoli configurabili, uso dell'agente da parte di non insegnanti o gestione ordinaria dell'anagrafica fuori dalla chat."
+  ],
+  "remarks": [
+    "Quarto e ultimo item del piano concordato il 2026-11-12 per la v0.3.0: TEC-041 → US-017 → TEC-042 → questa verifica operativa. I singoli item mantengono i propri obblighi di test; questo item copre integrazione e recupero complessivi. L'aggiunta documentale non autorizza aggiornamenti della produzione e usa soltanto la deroga esplicita per lasciare .pi/settings.json locale, intatto e fuori dai commit."
+  ]
+}

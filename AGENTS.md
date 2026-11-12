@@ -71,7 +71,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 - Per SPIKE-001, su richiesta dell'utente, lo spike comprende anche l'implementazione dello stack locale e i criteri originariamente assegnati a TEC-003, TEC-004 e US-001, confluiti nello spike. In deroga a `docs/PROCESS.md` §§1, 4.3 e 4.4, l'item può comprendere il lavoro originariamente suddiviso in più item e il suo codice implementativo può essere committato e, previa richiesta esplicita, integrato dal branch dello spike; non è limitato alla sola ricerca. Restano obbligatori il rapporto, tutti i criteri di accettazione, la Definition of Done e le altre regole di sicurezza e di merge.
 
-- Per la sola aggiunta documentale dei quattro item di identità concordati il 2026-11-12, l'utente ha autorizzato una deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dai commit. La deroga non autorizza altre modifiche estranee, avvii o implementazioni e non si estende alle operazioni successive.
+- Per la sola aggiunta documentale di TEC-041, US-017, TEC-042 e TEC-043, concordata il 2026-11-12, l'utente ha autorizzato una deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dai commit. La deroga non autorizza altre modifiche estranee, avvii o implementazioni e non si estende alle operazioni successive.
 
 ## 9. Security and configuration
 
