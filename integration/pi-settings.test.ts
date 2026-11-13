@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -115,7 +115,7 @@ test('Pi discovers the backlog extension only with project trust', { timeout: 90
   }
 });
 
-test('Pi exposes orchestrate and merge-task only as explicit commands with project trust', { timeout: 90_000 }, () => {
+test('Pi exposes explicit process commands with trust and never lists the Claude plugin as a skill', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-orchestrate-skill-'));
   const project = join(root, 'project');
   const agent = join(root, 'agent');
@@ -127,10 +127,11 @@ test('Pi exposes orchestrate and merge-task only as explicit commands with proje
       mkdirSync(join(project, '.agents', 'skills', name), { recursive: true });
       copyFileSync(`.agents/skills/${name}/SKILL.md`, join(project, '.agents', 'skills', name, 'SKILL.md'));
     }
+    cpSync('.agents/skills/backlog-overlay', join(project, '.agents/skills/backlog-overlay'), { recursive: true });
     // Synthetic probe: records only which skill names appear in the model-visible system prompt.
     writeFileSync(
       join(project, '.pi', 'extensions', 'probe.js'),
-      `import { writeFileSync } from "node:fs"; export default function(pi) { pi.on("session_start", async (_event, ctx) => { const prompt = ctx.getSystemPrompt(); writeFileSync("skills-in-prompt.json", JSON.stringify(${JSON.stringify(skills)}.filter((name) => prompt.includes("<name>" + name + "</name>")))); }); }\n`,
+      `import { writeFileSync } from "node:fs"; export default function(pi) { pi.on("session_start", async (_event, ctx) => { const prompt = ctx.getSystemPrompt(); writeFileSync("skills-in-prompt.json", JSON.stringify(${JSON.stringify([...skills, 'backlog-overlay'])}.filter((name) => prompt.includes("<name>" + name + "</name>")))); }); }\n`,
     );
     for (const approved of [true, false]) {
       rmSync(join(project, 'skills-in-prompt.json'), { force: true });
@@ -139,6 +140,7 @@ test('Pi exposes orchestrate and merge-task only as explicit commands with proje
       for (const name of skills) {
         assert.equal(response?.data?.commands?.some((command) => command.name === `skill:${name}`), approved, name);
       }
+      assert.equal(response?.data?.commands?.some((command) => command.name === 'skill:backlog-overlay'), false);
       if (approved) {
         const visible = JSON.parse(readFileSync(join(project, 'skills-in-prompt.json'), 'utf8')) as string[];
         assert.deepEqual(visible, ['start-task', 'finish-task']);

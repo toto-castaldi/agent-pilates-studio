@@ -11,6 +11,9 @@
 !.pi/extensions/backlog/index.ts
 .claude/settings.local.json
 
+# Claude Code module types generated locally when the plugin loads
+.agents/skills/backlog-overlay/.claude-plugin/types/
+
 # Local configuration and secrets
 .local/
 .env

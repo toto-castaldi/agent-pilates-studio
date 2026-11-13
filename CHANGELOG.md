@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Pannello `/backlog` di sola lettura per Claude Code, con filtri di sessione, navigazione, scorrimento, aggiornamento e gli stessi stati e avvisi della CLI e di Pi (TEC-044).
 - Base dati additiva dell'identità unica degli insegnanti, con telefoni privati, funzioni fidate di censimento e gestione, accesso revocabile e audit protetto; conserva la compatibilità del runtime precedente senza attivare ancora il nuovo riconoscimento (TEC-041).
 - Launcher manuale `update-agent-pilates.sh <commit>` senza versione cablata, con validazione dello SHA e istruzioni per scegliere l'ultimo commit con immagini pubblicate (TEC-040).
 - Comando manuale `ops backup-hot` per copiare il solo PostgreSQL di produzione senza fermare gateway e broker, con verifica e ripristino isolato per consultazione (TEC-039).
@@ -28,6 +29,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Template v2.2.1 adottato: risoluzione unica dei branch nella CLI per `status`, `list`, `ready`, `show` ed `export`, con provenienza, concorrenza, cache e fetch limitato; preservati dati del backlog e adattamenti Pi (TEC-044).
 - Disabilitata l'offerta iniziale di profilo di Hermes; Ambrogio usa il nome WhatsApp disponibile senza censimento e non propone spontaneamente la profilazione degli utilizzatori (US-016).
 - Processo e skill allineati al template v2.1.0: le aggiunte documentali di item su `main` sono pubblicate automaticamente se esiste un upstream, con controlli e recupero degli errori (TEC-038).
 - Adozione del template v2.0.0: backlog in `backlog/` gestito con `.agents/tools/backlog.py`, stato calcolato su richiesta e processo ridotto; rimossi `BACKLOG.md` e `STATUS.md` (TEC-031).
@@ -37,6 +39,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Fixed
 
+- Nuovi lanci Herdr con `--no-parent`, mantenendo shell, spazio e `pi --approve`; coordinamento tramite rapporti e controlli a inizio turno, attesa esplicita per nome senza rilanciare worker esistenti (TEC-044).
 - Il ripristino locale del backup a caldo e la relativa prova CI attendono il PostgreSQL definitivo, evitando il server temporaneo di inizializzazione che interrompeva il ripristino (BUG-003).
 
 ### Removed

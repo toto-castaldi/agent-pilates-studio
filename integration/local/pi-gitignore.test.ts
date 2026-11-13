@@ -20,10 +20,17 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       return result.status === 0;
     }
 
-    for (const path of ['.pi/settings.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.agents/skills/start-task/SKILL.md']) {
+    for (const path of [
+      '.pi/settings.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.agents/skills/start-task/SKILL.md',
+      '.agents/skills/backlog-overlay/.claude-plugin/plugin.json', '.agents/skills/backlog-overlay/hooks/hooks.json',
+      '.agents/skills/backlog-overlay/hooks/register.tsx', '.agents/skills/backlog-overlay/types/index.d.ts',
+    ]) {
       assert.equal(isIgnored(path), false, `${path} must be eligible for versioning`);
     }
     for (const path of [
+      '.agents/skills/backlog-overlay/.claude-plugin/types/claude-code.d.ts',
+      '.agents/skills/backlog-overlay/.claude-plugin/types/nested/index.d.ts',
+      '.claude/settings.local.json',
       '.pi/auth.json',
       '.pi/credentials.json',
       '.pi/models.json',

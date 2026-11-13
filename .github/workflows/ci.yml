@@ -38,6 +38,10 @@ jobs:
         run: npm run test:pi
       - name: Test pacchetto Pi fissato
         run: npm run test:pi-package
+      - name: Installa Claude Code per la prova senza modello
+        run: npm install --global @anthropic-ai/claude-code@2.1.323
+      - name: Test plugin e pannello Claude Code
+        run: npm run test:claude
       - name: Allinea Docker alla versione di produzione
         run: bash scripts/ci-install-docker.sh
       - name: Prepara immagini di integrazione
