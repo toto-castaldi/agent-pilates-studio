@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-044-allineamento-template-v2-2-1",
   "dependencies": [
     "TEC-038"
@@ -46,5 +46,7 @@
   ],
   "remarks": [
     "Chiarimento dell’utente (2026-11-13): mantenere la CLI identica al template v2.2.1; provenienza nel solo show testuale e in export JSON, non in show JSON. Non aggiungere una divergenza locale alla CLI."
-  ]
+  ],
+  "outcome": "Adottato il template v2.2.1 al commit fissato e77bc386ab25d421186e3057eb0fa9e6cfc6c4c3, con tag annotato e basi per risorsa verificati; processo 2.2.1, regole parallele, CLI e orchestrate coincidono con upstream. La CLI unica risolve i branch per le cinque viste; su chiarimento esplicito dell’utente show JSON resta il solo record, provenienza nel testo e in export JSON. Pi conserva la sola segnalazione locale delle eccezioni inattese; aggiunto il plugin Claude Code originale, senza SKILL.md, con tipi generati ignorati. Nuovi lanci Herdr --no-parent, rapporti e controlli non bloccanti, attesa per nome; wrapper, spazio e pi --approve preservati. Aggiornati provenienza, requisiti, design, AGENTS, README, CHANGELOG e CI con test:claude separato. Superati lint, typecheck, build, 67 test unitari in memoria, test:local (37), test:pi (7, Pi 1.5.0) e test:claude (2, inclusi 3 casi nativi e TUI reale con Claude Code 2.1.323), oltre ai diff check. Fixture condivise sintetiche provano precedenze, provenienza, concorrenza, cache, assenza di scritture e timeout reale di 10 secondi senza prompt. Prime anomalie dell’harness e del lint corrette; validatore Claude normale positivo con avviso, --strict resta negativo per autore upstream assente, senza rivendicare idoneità al catalogo. Evidenze e limiti in docs/TEMPLATE-ORIGIN.md. Herdr è simulato e nessun modello è esercitato; niente worker reali, produzione, segreti o configurazioni personali modificati. Store e storico preservati; suite Docker, Meta/OpenRouter e CI remota non eseguite per questa adozione. Nessun merge o push di main.",
+  "closed_at": "2026-11-13"
 }
