@@ -29,7 +29,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     'whatsapp-allowed-users': '15555550102',
     'whatsapp-home-channel': '15555550102',
     'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[]',
+    'whatsapp-teacher-links': '[{"phone":"15555550102","firstName":"History","lastName":"Synthetic"}]',
   };
   const oldOverride = join(directory, 'old.yaml');
   const newOverride = join(directory, 'new.yaml');
@@ -140,8 +140,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     stateContains(oldGateway, ['synthetic-before-upgrade']);
     assert.equal(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
     compose(oldOverride, 'stop', 'hermes');
-    // Apply TEC-033 independently on the old database, populate its history,
-    // and only then apply the new sender-identity migration during the upgrade.
+    // Apply TEC-033 and US-011 independently on the old database, populate
+    // history, then apply only the additive identity foundation during upgrade.
     await cp('prisma/migrations/20261111000000_teachers', join(legacyMigrations, '20261111000000_teachers'), { recursive: true });
     migrate(databaseHost, true);
     await migrator.query('BEGIN');
@@ -149,7 +149,10 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [teacherBinding.pid, teacherBinding.txid]);
     await seedTeacherHistory(migrator);
     await migrator.query('COMMIT');
+    await cp('prisma/migrations/20261111141813_sender_teacher', join(legacyMigrations, '20261111141813_sender_teacher'), { recursive: true });
+    migrate(databaseHost, true);
     const teachersBefore = await readTeacherState(migrator);
+    const teacherStorageOid = (await migrator.query("SELECT 'app.teachers'::regclass::oid::text AS oid")).rows[0].oid;
     await migrator.end();
     migrator = undefined;
 
@@ -163,6 +166,11 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     migrator = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_migrator', password });
     await migrator.connect();
     assert.match((await migrator.query('SHOW server_version')).rows[0].server_version, /^17\.10/);
+    assert.equal((await migrator.query("SELECT 'studio_private.teachers'::regclass::oid::text AS oid")).rows[0].oid, teacherStorageOid);
+    assert.equal((await migrator.query("SELECT relkind FROM pg_class WHERE oid = 'app.teachers'::regclass")).rows[0].relkind, 'v');
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers WHERE phone IS NOT NULL OR access_enabled OR NOT legacy_identity OR identity_revision <> 1')).rows[0].n, 0);
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_changes')).rows[0].n, 0);
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_writes')).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
     assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.clients c JOIN app.rule_clients rc ON rc.client_id = c.id JOIN app.training_rules r ON r.id = rc.rule_id JOIN app.rule_slots s ON s.rule_id = r.id WHERE c.first_name = 'Upgrade' AND r.rule_text = 'synthetic upgrade rule' AND s.weekday = 1")).rows[0].n, 1);
     for (const [table, rows] of Object.entries(planningBefore)) {

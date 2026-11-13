@@ -39,10 +39,21 @@ export async function checkTeacherHistoryProtection(agent: Client, migrator: Cli
   for (const connection of [agent, migrator]) {
     for (const table of teacherTables) {
       await assert.rejects(connection.query(`DELETE FROM app.${table}`), { code: '42501' });
-      await assert.rejects(connection.query(`TRUNCATE app.${table} CASCADE`), { code: '42501' });
+      await assert.rejects(connection.query(`TRUNCATE app.${table} CASCADE`), (error: unknown) => {
+        const code = (error as { code?: string }).code;
+        // The compatibility view cannot be truncated; its backing table still
+        // enforces the original no-delete/no-truncate triggers below.
+        return code === '42501' || (table === 'teachers' && code === '42809');
+      });
     }
   }
   for (const table of teacherTables) {
-    await assert.rejects(agent.query(`ALTER TABLE app.${table} ADD COLUMN forbidden text`), { code: '42501' });
+    await assert.rejects(agent.query(`ALTER TABLE app.${table} ADD COLUMN forbidden text`), (error: unknown) => {
+      const code = (error as { code?: string }).code;
+      return code === '42501' || (table === 'teachers' && code === '42809');
+    });
+  }
+  for (const action of ['DELETE FROM', 'TRUNCATE']) {
+    await assert.rejects(migrator.query(`${action} studio_private.teachers${action === 'TRUNCATE' ? ' CASCADE' : ''}`), { code: '42501' });
   }
 }

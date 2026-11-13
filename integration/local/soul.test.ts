@@ -46,6 +46,18 @@ test('studio context is mounted read-only and matches the versioned schema witho
       assert.match(definition, new RegExp(`^\\s*${column}\\s+`, 'm'));
     }
   }
+  const identityMigration = await readFile('prisma/migrations/20261112000000_teacher_identity/migration.sql', 'utf8');
+  assert.match(identityMigration, /ALTER TABLE app\.teachers SET SCHEMA studio_private;/);
+  assert.match(identityMigration, /CREATE VIEW app\.teachers WITH \(security_barrier = true\)/);
+  assert.match(identityMigration, /CREATE TRIGGER teachers_legacy_insert INSTEAD OF INSERT ON app\.teachers/);
+  assert.match(identityMigration, /REVOKE ALL ON studio_private\.teachers FROM PUBLIC, studio_agent, studio_broker;/);
+  for (const column of ['phone', 'access_enabled', 'legacy_identity', 'identity_revision']) {
+    assert.match(identityMigration, new RegExp(`ADD COLUMN ${column} `));
+    assert.ok(soul.includes(`\`${column}\``), `missing private identity column ${column}`);
+  }
+  assert.match(soul, /studio_private\.teachers.*inaccessibile/);
+  assert.match(soul, /nuovo riconoscimento e il percorso guidato non sono ancora attivati/);
+  assert.match(soul, /numeri degli autori storici.*passaggio comune/);
   assert.doesNotMatch(soul, /(?:sk-or-v1-|sk-proj-|ghp_|xox[baprs]-)[a-z0-9-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b\d{10,15}\b/i);
   assert.doesNotMatch(soul, /(?:password|api[_ -]?key|token|secret)\s*[:=]\s*["']?[^\s"']{8,}/i);
   for (const file of ['hermes/config.yaml', 'hermes/pilates_trusted.py']) {

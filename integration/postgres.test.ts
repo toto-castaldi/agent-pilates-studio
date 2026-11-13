@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { Client } from 'pg';
 import { checkAttendance } from './attendance-checks.js';
+import { checkTeacherIdentities } from './identity-checks.js';
 import { checkTeachers } from './teacher-checks.js';
 
 test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
@@ -342,6 +343,10 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     agent = new Client({ ...connection, user: 'studio_agent', password: passwords.agent });
     await agent.connect();
     assert.equal((await agent.query('SELECT current_user')).rows[0].current_user, 'studio_agent');
+    await checkTeacherIdentities(agent, migrator, broker, {
+      agent: { ...connection, user: 'studio_agent', password: passwords.agent },
+      broker: { ...connection, user: 'studio_broker', password: passwords.broker },
+    });
   } finally {
     await agent?.end();
     await broker?.end();
