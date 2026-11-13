@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-045-manifest-workflow-pi-settings-locale",
   "dependencies": [],
   "requirements": [
@@ -35,5 +35,7 @@
   ],
   "remarks": [
     "Pianificazione concordata il 2026-11-13: ampliamento esplicito della v0.3.0, EPIC-001, P2, nessun modulo e nessuna dipendenza bloccante. TEC-013 e TEC-014 sono precedenti storici conclusi, non duplicati da riaprire. La modifica preesistente a .pi/settings.json resta intatta e fuori dal commit della sola aggiunta, per deroga esplicita registrata in AGENTS §8."
-  ]
+  ],
+  "outcome": "Introdotti .pi/workflow.json (sole packages/skills/extensions/prompts), sincronizzazione pura validata e launcher node scripts/start-pi.mjs con sostituzione atomica/idempotenza, conservazione di preferenze sconosciute/annidate, rifiuti sicuri e inoltro di argomenti/esiti/segnali. Settings rimosso dal versionamento senza toccare la copia locale; documentati recupero privato prima dell'aggiornamento, sezioni locali e limite dell'avvio diretto. Futuri worker tramite lo stesso launcher con --approve, processi generici e stack operativo invariati. Aggiornati lettori, allowlist, README, AGENTS, design, provenienza e CHANGELOG. npm ci riuscito; lint/typecheck/build e 69 unit test in memoria passano; test:local 38, test:pi 7 e test:pi-package 1 passano con Pi 1.5.0; prova mirata preferenze/riavvio passa anche su 1.5.2. Git reale verifica transizione, clone nuovo e status/diff puliti dopo modifiche locali. Prove solo sintetiche, nessuna configurazione personale o credenziale letta; RPC modello/thinking transitori, preferenze persistenti salvate esplicitamente prima del riavvio, non test del selettore modello UI o di Herdr/modello reale. Evidenze e limiti in docs/operations/TEC-045-pi-workflow.md.",
+  "closed_at": "2026-11-13"
 }

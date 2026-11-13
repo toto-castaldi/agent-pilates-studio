@@ -25,13 +25,20 @@ test('launcher prepares fresh/existing clones, preserves preferences and args/st
     git('add', '-f', '.pi/settings.json'); git('commit', '-qm', 'old synthetic settings');
     copyFileSync(settings, join(project, '.pi/recovery.json')); chmodSync(join(project, '.pi/recovery.json'), 0o600);
     git('rm', '--cached', '.pi/settings.json');
-    writeFileSync(join(project, 'bin/pi'), '#!/usr/bin/env node\nconst fs = require("node:fs"); fs.writeFileSync(".pi/args.json",JSON.stringify(process.argv.slice(2))); process.exit(23);\n');
+    writeFileSync(join(project, 'bin/pi'), '#!/usr/bin/env node\nconst fs = require("node:fs"); fs.writeFileSync(".pi/args.json",JSON.stringify(process.argv.slice(2))); if (process.argv.includes("--synthetic-signal")) process.kill(process.pid,"SIGTERM"); else process.exit(23);\n');
     chmodSync(join(project, 'bin/pi'), 0o700);
     git('add', '.'); git('commit', '-qm', 'workflow transition');
-    const run = () => spawnSync(process.execPath, ['scripts/start-pi.mjs', '--approve', '--resume', 'text with spaces'], { cwd: project, encoding: 'utf8', timeout: 10_000, env: { PATH: `${join(project, 'bin')}:${process.env.PATH}`, HOME: root, PI_CODING_AGENT_DIR: './.pi' } });
+    const run = (args = ['--approve', '--resume', 'text with spaces']) => spawnSync(process.execPath, ['scripts/start-pi.mjs', ...args], { cwd: project, encoding: 'utf8', timeout: 10_000, env: { PATH: `${join(project, 'bin')}:${process.env.PATH}`, HOME: root, PI_CODING_AGENT_DIR: './.pi' } });
+    const clone = join(root, 'clone');
+    assert.equal(spawnSync('git', ['clone', '--quiet', '--no-local', project, clone]).status, 0);
+    const fresh = spawnSync(process.execPath, ['scripts/start-pi.mjs', '--approve'], { cwd: clone, encoding: 'utf8', env: { HOME: root, PATH: `${join(clone, 'bin')}:${process.env.PATH}`, PI_CODING_AGENT_DIR: './.pi' } });
+    assert.equal(fresh.status, 23, fresh.stderr);
+    assert.deepEqual(JSON.parse(readFileSync(join(clone, '.pi/settings.json'), 'utf8')), { skills: ['+new', '!old'] });
+    assert.equal(spawnSync('git', ['status', '--porcelain'], { cwd: clone, encoding: 'utf8' }).stdout, '');
     assert.equal(run().status, 23);
     assert.deepEqual(JSON.parse(readFileSync(settings, 'utf8')), { ...local, skills: ['+new', '!old'] });
     assert.deepEqual(JSON.parse(readFileSync(join(project, '.pi/args.json'), 'utf8')), ['--approve', '--resume', 'text with spaces']);
+    assert.equal(run(['--synthetic-signal']).signal, 'SIGTERM');
     const before = statSync(settings);
     assert.equal(run().status, 23);
     assert.equal(statSync(settings).mtimeMs, before.mtimeMs);
@@ -63,5 +70,14 @@ test('launcher prepares fresh/existing clones, preserves preferences and args/st
       assert.equal(run().status, 1, kind); rmSync(settings, { recursive: true });
     }
     chmodSync(join(project, '.pi'), 0o777); assert.equal(run().status, 1); chmodSync(join(project, '.pi'), 0o700);
+    writeFileSync(settings, '{"private":"private-marker"}');
+    writeFileSync(manifest, '{"skills":[]}');
+    chmodSync(join(project, '.pi'), 0o500);
+    assert.equal(run().status, 1);
+    assert.equal(readFileSync(settings, 'utf8'), '{"private":"private-marker"}');
+    chmodSync(join(project, '.pi'), 0o700);
+    rmSync(join(project, '.pi'), { recursive: true });
+    symlinkSync(join(clone, '.pi'), join(project, '.pi'));
+    assert.equal(run().status, 1);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

@@ -11,7 +11,7 @@ const target = join(directory, 'settings.json');
 let temporary;
 try {
   const parent = lstatSync(directory);
-  if (!parent.isDirectory() || parent.isSymbolicLink() || (parent.mode & 0o022)) throw new Error();
+  if (!parent.isDirectory() || parent.isSymbolicLink() || (parent.mode & 0o002)) throw new Error();
   let previous;
   try { previous = lstatSync(target); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   if (previous && (!previous.isFile() || previous.isSymbolicLink() || previous.nlink !== 1)) throw new Error();
@@ -20,7 +20,11 @@ try {
     const fd = openSync(target, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     try { settings = JSON.parse(readFileSync(fd, 'utf8')); } finally { closeSync(fd); }
   }
-  const manifest = JSON.parse(readFileSync(join(directory, 'workflow.json'), 'utf8'));
+  const manifestPath = join(directory, 'workflow.json');
+  if (!lstatSync(manifestPath).isFile() || lstatSync(manifestPath).isSymbolicLink()) throw new Error();
+  const manifestFd = openSync(manifestPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(manifestFd, 'utf8')); } finally { closeSync(manifestFd); }
   const merged = synchronizeWorkflow(manifest, settings);
   if (!previous || merged.changed) {
     temporary = join(directory, `.settings-${randomUUID()}.tmp`);

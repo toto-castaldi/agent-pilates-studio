@@ -8,10 +8,10 @@ import { test } from 'node:test';
 interface Response {
   id?: string;
   success?: boolean;
-  data?: { commands?: { name: string }[] };
+  data?: { commands?: { name: string }[]; model?: { id: string; provider: string }; thinkingLevel?: string };
 }
 
-function runPi(project: string, home: string, agentDirectory: string, approved = true): Response[] {
+function runPi(project: string, home: string, agentDirectory: string, approved = true, changes: object[] = []): Response[] {
   mkdirSync(join(project, 'scripts'), { recursive: true });
   mkdirSync(join(project, 'src'), { recursive: true });
   mkdirSync(join(project, '.pi'), { recursive: true });
@@ -25,11 +25,28 @@ function runPi(project: string, home: string, agentDirectory: string, approved =
   const input = [
     { id: 'commands', type: 'get_commands' },
     { id: 'change', type: 'set_steering_mode', mode: 'all' },
-  ].map((record) => JSON.stringify(record)).join('\n');
+    ...changes,
+    { id: 'state', type: 'get_state' },
+  ];
+  // RPC may handle requests asynchronously: wait for each response before sending the next.
+  const driver = `import sys, json, subprocess
+requests = json.load(sys.stdin)
+p = subprocess.Popen(sys.argv[1:], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+for request in requests:
+    p.stdin.write(json.dumps(request) + '\\n'); p.stdin.flush()
+    while True:
+        line = p.stdout.readline()
+        if not line: raise RuntimeError('Synthetic RPC ended early')
+        record = json.loads(line)
+        print(line, end='')
+        if record.get('id') == request['id']: break
+p.stdin.close()
+for line in p.stdout: print(line, end='')
+sys.exit(p.wait())`;
   // No inherited credentials or Pi state: all files and configuration are synthetic.
-  const result = spawnSync(process.execPath, ['scripts/start-pi.mjs', '--mode', 'rpc', '--no-session', approved ? '--approve' : '--no-approve', '--offline', '--no-mcp', '--no-context-files'], {
+  const result = spawnSync('python3', ['-c', driver, process.execPath, 'scripts/start-pi.mjs', '--mode', 'rpc', '--no-session', approved ? '--approve' : '--no-approve', '--offline', '--no-mcp', '--no-context-files'], {
     cwd: project,
-    input: `${input}\n`,
+    input: JSON.stringify(input),
     encoding: 'utf8',
     timeout: 60_000,
     env: {
@@ -52,7 +69,7 @@ test('Pi --approve loads an extension without the trust dialog and does not pers
   assert.equal(result.status, 0, `${result.error?.message ?? ''}\n${result.stderr}\n${result.stdout}`);
 });
 
-test('direct Pi startup loads project and personal resources without changing project settings when directories differ', { timeout: 90_000 }, () => {
+test('prepared Pi startup loads project and personal resources without changing project settings when directories differ', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-settings-integration-'));
   const project = join(root, 'project');
   const agent = join(root, 'agent');
@@ -161,14 +178,14 @@ test('Pi exposes explicit process commands with trust and never lists the Claude
   }
 });
 
-test('prepared Pi preserves model/thinking and shared resources across restarts with agent directory .pi' , { timeout: 90_000 }, () => {
+test('prepared Pi preserves model/thinking and shared resources across restarts with agent directory .pi', { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-same-settings-integration-'));
   const project = join(root, 'project');
   const agent = join(project, '.pi');
   try {
     mkdirSync(agent, { recursive: true });
     const settingsPath = join(agent, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({ steeringMode: 'one-at-a-time', defaultProvider: 'openai', defaultModel: 'gpt-5', defaultThinkingLevel: 'low', modelThinkingLevels: { 'openai/gpt-5': 'high' }, theme: 'dark', unknown: { nested: ['kept'] } }));
+    writeFileSync(settingsPath, JSON.stringify({ steeringMode: 'one-at-a-time', defaultProvider: 'openai', defaultModel: 'gpt-4o', defaultThinkingLevel: 'high', modelThinkingLevels: { 'openai/gpt-5': 'high' }, theme: 'dark', unknown: { nested: ['kept'] } }));
     mkdirSync(join(agent, 'prompts'));
     writeFileSync(join(agent, 'prompts/shared.md'), '---\ndescription: Synthetic shared prompt\n---\nSynthetic only');
     writeFileSync(join(agent, 'workflow.json'), JSON.stringify({ prompts: ['./prompts/shared.md'] }));
@@ -176,11 +193,26 @@ test('prepared Pi preserves model/thinking and shared resources across restarts 
     assert.equal(responses.find((response) => response.id === 'change')?.success, true);
     const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
     assert.equal(settings.steeringMode, 'all');
-    // A local edit models preference changes made between sessions; Pi must read it on restart.
-    settings.defaultModel = 'gpt-5'; settings.defaultThinkingLevel = 'high';
-    settings.modelThinkingLevels['openai/gpt-5'] = 'low'; settings.theme = 'light';
-    writeFileSync(settingsPath, JSON.stringify(settings));
+    const changed = runPi(project, root, './.pi', true, [
+      { id: 'model', type: 'set_model', provider: 'openai', modelId: 'gpt-5' },
+      { id: 'thinking', type: 'set_thinking_level', level: 'low' },
+    ]);
+    assert.equal(changed.find((r) => r.id === 'model')?.success, true);
+    assert.equal(changed.find((r) => r.id === 'thinking')?.success, true);
+    const state = changed.find((r) => r.id === 'state')?.data;
+    assert.equal(state?.model?.id, 'gpt-5');
+    assert.equal(state?.thinkingLevel, 'low');
+    const updated = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    // RPC set_model/set_thinking_level are session-only in Pi 1.5.x.
+    // Persist synthetic preferences explicitly, then verify Pi reads them on restart.
+    updated.defaultProvider = 'openai'; updated.defaultModel = 'gpt-5';
+    updated.defaultThinkingLevel = 'high'; updated.modelThinkingLevels['openai/gpt-5'] = 'low';
+    updated.theme = 'light';
+    writeFileSync(settingsPath, JSON.stringify(updated));
     const restarted = runPi(project, root, './.pi');
+    assert.equal(restarted.find((r) => r.id === 'state')?.data?.model?.id, 'gpt-5');
+    // The preserved per-model override wins over the general default.
+    assert.equal(restarted.find((r) => r.id === 'state')?.data?.thinkingLevel, 'low');
     assert.ok(restarted.find((r) => r.id === 'commands')?.data?.commands?.some((c) => c.name === 'shared'));
     const persisted = JSON.parse(readFileSync(settingsPath, 'utf8'));
     assert.equal(persisted.defaultThinkingLevel, 'high');
