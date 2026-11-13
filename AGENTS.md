@@ -73,6 +73,8 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 - Per la sola aggiunta documentale di TEC-041, US-017, TEC-042 e TEC-043, concordata il 2026-11-12, l'utente ha autorizzato una deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dai commit. La deroga non autorizza altre modifiche estranee, avvii o implementazioni e non si estende alle operazioni successive.
 
+- Per la sola aggiunta documentale di TEC-045, concordata il 2026-11-13, l'utente ha autorizzato una nuova deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dal commit. Sono consentiti soltanto l'item e i relativi aggiornamenti documentali di requisiti, design, scope e questa deroga; nessuna implementazione, generazione del settings, modifica degli avvii o lancio di worker. La deroga non si estende alle operazioni successive.
+
 ## 9. Security and configuration
 
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.

@@ -1,0 +1,38 @@
+{
+  "id": "TEC-045",
+  "title": "Manifest del workflow Pi e settings locale persistente",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-002",
+    "REQ-NFR-007",
+    "REQ-NFR-008",
+    "REQ-NFR-018",
+    "REQ-NFR-022"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §9",
+    "PROCESS §6",
+    "AGENTS §9",
+    "AGENTS §10"
+  ],
+  "description": "Versionare in .pi/workflow.json i soli pacchetti e la selezione di skill, estensioni e prompt del workflow, compilando prima di Pi il normale .pi/settings.json locale e ignorato. Preservare tutte le preferenze non gestite senza imporre directory separate o più settings da far interpretare a Pi. Sostituire l’assetto storico di TEC-007/TEC-013/TEC-014 con la nuova decisione del 2026-11-13, senza aggiornare implicitamente i pacchetti o modificare lo stack dello studio. Aggiornare avvio previsto, futuri worker, documentazione e test; la sola aggiunta non implementa o avvia nulla.",
+  "acceptance_criteria": [
+    "Il manifest .pi/workflow.json è versionato e validato con un insieme esplicito di sole chiavi gestite: packages, skills, extensions e prompts. Conserva riferimenti ai pacchetti e inclusioni/esclusioni delle risorse condivise concordate; file locali di skill, estensioni e prompt restano versionati selettivamente. themes e theme non sono ammessi nel manifest né gestiti dal generatore.",
+    "Il generatore sincronizza le chiavi gestite nell’unico .pi/settings.json effettivo prima del caricamento delle risorse di Pi: aggiunte, sostituzioni e rimozioni non lasciano residui, anche se una chiave gestita scompare dal manifest. Conserva ogni chiave non gestita, inclusi valori sconosciuti e annidati, provider, modello, thinking generale e per modello, compattazione, themes, theme, preferenze UI e stato interno. Avvii ripetuti sono idempotenti e non riscrivono un file già allineato; le preferenze locali non sono azzerate.",
+    "Un launcher dedicato funziona da clone nuovo o esistente, anche con PI_CODING_AGENT_DIR=./.pi, senza ripristinare scripts/pi.sh né imporre la separazione fra directory personale e progetto. Prepara il settings prima di Pi e conserva argomenti, --approve quando richiesto ed esito del processo. Manifest/settings non validi ed errori di preparazione impediscono l’avvio senza perdita o scritture parziali e senza stampare contenuti personali; percorsi di destinazione non sicuri sono gestiti esplicitamente.",
+    "La transizione documentata toglie .pi/settings.json dal versionamento e lo ignora senza perdere le preferenze esistenti, con recupero privato e reversibile dei dati locali. Un clone nuovo genera il file dal manifest. Sessioni, autenticazione, log, cache e segreti restano esclusi da Git; non sono copiati nei clone dei worker e non si usano skip-worktree, assume-unchanged o filtri Git per nascondere modifiche.",
+    "Il comando configurato per i futuri worker usa lo stesso punto d’ingresso, preservando la semantica di --approve e le protezioni di AGENTS §10. La generazione non accorda fiducia autonomamente, non avvia worker e non interrompe o rilancia quelli esistenti. Non cambia lo stack operativo dello studio né introduce modifiche ai documenti generici del processo.",
+    "README, AGENTS, design, provenienza del template ove pertinente e lettori/test della configurazione condivisa, inclusi i riferimenti al pacchetto dei tool di domanda, sono allineati al manifest. Sono documentati avvio e transizione, sezioni locali/gestite, riallineamento delle modifiche dirette alle chiavi gestite e limite dell’avvio diretto pi che non garantisce sincronizzazione. Temi disponibili e tema scelto restano interamente locali.",
+    "Prove sintetiche ripetibili coprono validazione, aggiunte/rimozioni, valori sconosciuti/annidati, idempotenza, conservazione delle preferenze fra riavvii, transizione da file precedentemente versionato, errori senza perdita e argomenti/esiti del launcher. Git reale verifica che avvio e cambi di modello/thinking, temi e preferenze non producano diff o impedimenti ai controlli di working tree pulito. Le prove non leggono impostazioni o credenziali personali.",
+    "Pi reale offline carica risorse sintetiche condivise e preserva modifiche di preferenze, inclusi modello/thinking, con directory agente coincidente con .pi; fiducia e --approve mantengono il contratto previsto. Passano gate rapido e suite separate pertinenti test:local, test:pi e test:pi-package, aggiornate per leggere il manifest e non il settings personale. Prove con filesystem, Git, processi o rete restano fuori da npm test; versioni esercitate e limiti delle simulazioni sono registrati senza rivendicare prove del modello o di Herdr reale."
+  ],
+  "remarks": [
+    "Pianificazione concordata il 2026-11-13: ampliamento esplicito della v0.3.0, EPIC-001, P2, nessun modulo e nessuna dipendenza bloccante. TEC-013 e TEC-014 sono precedenti storici conclusi, non duplicati da riaprire. La modifica preesistente a .pi/settings.json resta intatta e fuori dal commit della sola aggiunta, per deroga esplicita registrata in AGENTS §8."
+  ]
+}
