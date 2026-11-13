@@ -5,7 +5,8 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-044-allineamento-template-v2-2-1",
   "dependencies": [
     "TEC-038"
   ],
