@@ -5,7 +5,8 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-045-manifest-workflow-pi-settings-locale",
   "dependencies": [],
   "requirements": [
     "REQ-NFR-002",
