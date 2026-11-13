@@ -18,7 +18,7 @@
     "openrouter/moonshotai/kimi-k3.1-pro": "high"
   },
   "defaultModel": "gpt-6.1-sol",
-  "defaultThinkingLevel": "max",
+  "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": true
   }
