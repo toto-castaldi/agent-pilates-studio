@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 
 export function checkPiPaths(tracked: string[], secrets: string[], settingsIsFile: boolean, skills: boolean[]) {
-  assert.deepEqual([...tracked].sort(), ['.pi/extensions/backlog/index.ts', '.pi/prompts/work-alone.md', '.pi/settings.json'], 'Unexpected or missing tracked Pi resource: review the allowlist before sharing it.');
+  assert.deepEqual([...tracked].sort(), ['.pi/extensions/backlog/index.ts', '.pi/prompts/work-alone.md', '.pi/workflow.json'], 'Unexpected or missing tracked Pi resource: review the allowlist before sharing it.');
   assert.ok(secrets.every((path) => path === '.env.example'), 'Unexpected tracked local configuration or secrets.');
-  assert.ok(settingsIsFile, 'Project Pi settings must be a regular file.');
+  assert.ok(settingsIsFile, 'Project Pi workflow must be a regular file.');
   assert.ok(skills.length === 3 && skills.every(Boolean), 'Missing project skill.');
 }
 
@@ -26,7 +26,7 @@ export function checkQuestionPackage(settings: unknown): string {
 export function checkPiReadme(readme: string) {
   const match = readme.match(/## Configurazione Pi\n([\s\S]*?)(?=\n## |$)/);
   assert.ok(match, 'Pi configuration section is missing.');
-  assert.match(match[1], /```bash\npi\n/);
+  assert.match(match[1], /```bash\nnode scripts\/start-pi\.mjs\n/);
   assert.match(match[1], /PI_CODING_AGENT_DIR/);
   assert.match(match[1], /npm run test:pi/);
   assert.match(match[1], /\/work-alone/);

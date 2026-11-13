@@ -1,6 +1,6 @@
 # Local agent state and credentials; allow only reviewed Pi resources
 .pi/*
-!.pi/settings.json
+!.pi/workflow.json
 !.pi/prompts/
 .pi/prompts/*
 !.pi/prompts/work-alone.md

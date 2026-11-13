@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -13,6 +13,9 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
     const project = join(root, 'project');
     mkdirSync(bin);
     mkdirSync(project);
+    for (const directory of ['scripts', 'src', '.pi']) mkdirSync(join(project, directory));
+    for (const file of ['scripts/start-pi.mjs', 'src/pi-workflow.ts']) copyFileSync(file, join(project, file));
+    writeFileSync(join(project, '.pi/workflow.json'), '{}');
     const workerLog = join(root, 'worker.json');
     const hcLog = join(root, 'hc.json');
     const executable = (name: string, text: string) => {
@@ -34,13 +37,14 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
     };
     const agents = readFileSync('AGENTS.md', 'utf8');
     const configured = /^- \*\*Worker agent command:\*\* `([^`]+)`$/m.exec(agents)?.[1];
-    assert.equal(configured, 'pi --approve');
+    assert.equal(configured, 'node scripts/start-pi.mjs --approve');
     const skill = readFileSync('.agents/skills/orchestrate/SKILL.md', 'utf8');
     const template = /```bash\n\s*(hc run --bg --json --no-parent[\s\S]*?)\n\s*```/.exec(skill)?.[1];
     assert.ok(template, 'actual Herdr launch command missing');
     const task = 'Synthetic task with spaces';
-    for (const command of [configured, 'pi --approve --no-session']) {
-      const expected = command.split(' ').slice(1);
+    for (const command of [configured, `${configured} --no-session`]) {
+      const commandArgs = command.split(' ').slice(1);
+      const expected = commandArgs.slice(1);
       const herdr = template.replaceAll('<name>', 'synthetic').replaceAll('<space>', 'synthetic-space')
         .replaceAll('<Workspace root>/<ID>', project).replaceAll('<Worker agent command>', command).replaceAll('<task>', task);
       const run = (script: string) => {
@@ -55,7 +59,7 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
       assert.ok(!args.includes('--outlive-parent'));
       assert.ok(args.includes('herdr.space=synthetic-space'));
       assert.deepEqual(args.slice(0, 4), ['run', '--bg', '--json', '--no-parent']);
-      assert.deepEqual(args.slice(-expected.length - 2), ['pi', ...expected, task]);
+      assert.deepEqual(args.slice(-commandArgs.length - 2), ['node', ...commandArgs, task]);
       // Manual mode uses the same configured command with the task as one shell argument.
       assert.ok(skill.includes('&& <Worker agent command> "<task>"'));
       run(`cd ${project} && ${command} "${task}"`);

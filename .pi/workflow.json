@@ -1,0 +1,12 @@
+{
+  "packages": [
+    "git:github.com/toto-castaldi/agent-harness-stuff@44f36742d47a4e83504abb9bdc0427be5f09ed82",
+    "npm:@tychenjiajun/pi-voice",
+    "npm:pi-web-search",
+    "npm:pi-web-fetch"
+  ],
+  "skills": [
+    "./.pi/skills",
+    "!~/.agents/skills/**"
+  ]
+}

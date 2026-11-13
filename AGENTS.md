@@ -77,6 +77,8 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 ## 9. Security and configuration
 
+- Il workflow Pi condiviso è in `.pi/workflow.json`; avviare dalla radice con `node scripts/start-pi.mjs`. Il launcher sincronizza solo packages/skills/extensions/prompts prima di Pi. `.pi/settings.json`, temi e preferenze restano locali e ignorati; avviare direttamente `pi` non garantisce la sincronizzazione. Per la transizione e il recupero privato prima dell'aggiornamento vedere README, sezione Configurazione Pi. Non copiare settings personali nei worker.
+
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
 - Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare il controllo di accesso. Il modello target usa il censimento nel database e il solo numero gestore in configurazione, non un elenco parallelo di numeri; il canale home deriva dal gestore. Non modificare lo stack operativo per attivare il piano durante la sola aggiunta degli item.
@@ -87,7 +89,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - **Shared claims:** `on`
 - **Parallel work:** `on`
 - **Workspace root:** `../agent-pilates-studio-work`
-- **Worker agent command:** `pi --approve`
+- **Worker agent command:** `node scripts/start-pi.mjs --approve`
 
 Le impostazioni sopra sono attive: leggere `docs/PROCESS-PARALLEL.md` prima di lavorare su un item. I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS-PARALLEL.md` §1. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
 
