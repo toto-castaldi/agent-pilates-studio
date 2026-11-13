@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "us/US-017-gestione-guidata-dell-anagrafica-via-whatsapp",
   "dependencies": [
     "TEC-041"
   ],
