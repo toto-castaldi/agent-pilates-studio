@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { checkQuestionPackage } from '../test/pi-contract.js';
 
 test('pinned question package installs into an isolated Pi project and passes its offline tests', { timeout: 240_000 }, () => {
-  const source = checkQuestionPackage(JSON.parse(readFileSync('.pi/settings.json', 'utf8')) as unknown);
+  const source = checkQuestionPackage(JSON.parse(readFileSync('.pi/workflow.json', 'utf8')) as unknown);
   const expectedCommit = source.slice(source.lastIndexOf('@') + 1);
   const root = mkdtempSync(join(tmpdir(), 'pi-package-integration-'));
   const project = join(root, 'project');

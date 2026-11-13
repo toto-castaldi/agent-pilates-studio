@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Manifest `.pi/workflow.json` e launcher `node scripts/start-pi.mjs` per Pi e futuri worker: settings locale persistente con modello, thinking, temi e preferenze preservati, transizione privata e verifiche sintetiche (TEC-045).
 - Pannello `/backlog` di sola lettura per Claude Code, con filtri di sessione, navigazione, scorrimento, aggiornamento e gli stessi stati e avvisi della CLI e di Pi (TEC-044).
 - Base dati additiva dell'identità unica degli insegnanti, con telefoni privati, funzioni fidate di censimento e gestione, accesso revocabile e audit protetto; conserva la compatibilità del runtime precedente senza attivare ancora il nuovo riconoscimento (TEC-041).
 - Launcher manuale `update-agent-pilates.sh <commit>` senza versione cablata, con validazione dello SHA e istruzioni per scegliere l'ultimo commit con immagini pubblicate (TEC-040).

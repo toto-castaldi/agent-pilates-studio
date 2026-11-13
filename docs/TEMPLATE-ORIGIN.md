@@ -2,6 +2,10 @@
 
 Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0, TEC-028 processo e skill alla v1.6.1, TEC-029 alla v1.7.0, TEC-030 alla v1.7.1, TEC-031 alla v2.0.0, TEC-038 alla v2.1.0 e TEC-044 alla v2.2.1.
 
+## Personalizzazione Pi dopo TEC-045
+
+TEC-045 introduce una personalizzazione del progetto, non un nuovo aggiornamento del template: `.pi/workflow.json` contiene solo packages/skills/extensions/prompts; `.pi/settings.json` è locale ignorato. Il launcher `node scripts/start-pi.mjs` prepara il settings senza imporre directory distinte; i futuri worker lo usano con `--approve` tramite AGENTS §10. Processo generico e skill restano identici alla v2.2.1: nessuna divergenza introdotta nei file condivisi. Temi e preferenze sono locali; nessun pacchetto è aggiornato implicitamente. [Transizione, prove e limiti](operations/TEC-045-pi-workflow.md). Gli inventari e le evidenze di TEC-044 sotto restano storici.
+
 ## Riferimenti e limiti dell'evidenza
 
 - Origine dichiarata: <https://github.com/toto-castaldi/agile-project-template>.

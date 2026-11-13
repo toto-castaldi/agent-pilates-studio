@@ -390,7 +390,7 @@ test('project backlog passes the store check', () => {
 
 test('parallel work settings and instructions keep the studio protections', () => {
   const agents = readFileSync('AGENTS.md', 'utf8');
-  for (const setting of ['- **Shared claims:** `on`', '- **Parallel work:** `on`', '- **Workspace root:** `../agent-pilates-studio-work`', '- **Worker agent command:** `pi --approve`']) {
+  for (const setting of ['- **Shared claims:** `on`', '- **Parallel work:** `on`', '- **Workspace root:** `../agent-pilates-studio-work`', '- **Worker agent command:** `node scripts/start-pi.mjs --approve`']) {
     assert.ok(agents.includes(setting), setting);
   }
   assert.match(agents, /non copiare `\.env`, `\.local\/`/);

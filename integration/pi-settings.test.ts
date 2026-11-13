@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -12,12 +12,22 @@ interface Response {
 }
 
 function runPi(project: string, home: string, agentDirectory: string, approved = true): Response[] {
+  mkdirSync(join(project, 'scripts'), { recursive: true });
+  mkdirSync(join(project, 'src'), { recursive: true });
+  mkdirSync(join(project, '.pi'), { recursive: true });
+  for (const file of ['scripts/start-pi.mjs', 'src/pi-workflow.ts']) copyFileSync(file, join(project, file));
+  const workflowPath = join(project, '.pi/workflow.json');
+  if (!existsSync(workflowPath)) {
+    const settingsPath = join(project, '.pi/settings.json');
+    const existing = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, 'utf8')) : {};
+    writeFileSync(workflowPath, JSON.stringify(Object.fromEntries(['packages', 'skills', 'extensions', 'prompts'].filter((key) => key in existing).map((key) => [key, existing[key]]))));
+  }
   const input = [
     { id: 'commands', type: 'get_commands' },
     { id: 'change', type: 'set_steering_mode', mode: 'all' },
   ].map((record) => JSON.stringify(record)).join('\n');
   // No inherited credentials or Pi state: all files and configuration are synthetic.
-  const result = spawnSync('pi', ['--mode', 'rpc', '--no-session', approved ? '--approve' : '--no-approve', '--offline', '--no-mcp', '--no-context-files'], {
+  const result = spawnSync(process.execPath, ['scripts/start-pi.mjs', '--mode', 'rpc', '--no-session', approved ? '--approve' : '--no-approve', '--offline', '--no-mcp', '--no-context-files'], {
     cwd: project,
     input: `${input}\n`,
     encoding: 'utf8',
@@ -151,18 +161,33 @@ test('Pi exposes explicit process commands with trust and never lists the Claude
   }
 });
 
-test('direct Pi startup can update project settings if its agent directory is the project .pi directory', { timeout: 90_000 }, () => {
+test('prepared Pi preserves model/thinking and shared resources across restarts with agent directory .pi' , { timeout: 90_000 }, () => {
   const root = mkdtempSync(join(tmpdir(), 'pi-same-settings-integration-'));
   const project = join(root, 'project');
   const agent = join(project, '.pi');
   try {
     mkdirSync(agent, { recursive: true });
     const settingsPath = join(agent, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({ steeringMode: 'one-at-a-time' }));
+    writeFileSync(settingsPath, JSON.stringify({ steeringMode: 'one-at-a-time', defaultProvider: 'openai', defaultModel: 'gpt-5', defaultThinkingLevel: 'low', modelThinkingLevels: { 'openai/gpt-5': 'high' }, theme: 'dark', unknown: { nested: ['kept'] } }));
+    mkdirSync(join(agent, 'prompts'));
+    writeFileSync(join(agent, 'prompts/shared.md'), '---\ndescription: Synthetic shared prompt\n---\nSynthetic only');
+    writeFileSync(join(agent, 'workflow.json'), JSON.stringify({ prompts: ['./prompts/shared.md'] }));
     const responses = runPi(project, root, agent);
     assert.equal(responses.find((response) => response.id === 'change')?.success, true);
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as { steeringMode?: string };
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
     assert.equal(settings.steeringMode, 'all');
+    // A local edit models preference changes made between sessions; Pi must read it on restart.
+    settings.defaultModel = 'gpt-5'; settings.defaultThinkingLevel = 'high';
+    settings.modelThinkingLevels['openai/gpt-5'] = 'low'; settings.theme = 'light';
+    writeFileSync(settingsPath, JSON.stringify(settings));
+    const restarted = runPi(project, root, './.pi');
+    assert.ok(restarted.find((r) => r.id === 'commands')?.data?.commands?.some((c) => c.name === 'shared'));
+    const persisted = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    assert.equal(persisted.defaultThinkingLevel, 'high');
+    assert.equal(persisted.modelThinkingLevels['openai/gpt-5'], 'low');
+    assert.equal(persisted.defaultModel, 'gpt-5');
+    assert.equal(persisted.theme, 'light');
+    assert.deepEqual(persisted.unknown, { nested: ['kept'] });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

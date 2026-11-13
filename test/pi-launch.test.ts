@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { checkPiPaths, checkPiReadme, checkQuestionPackage, checkWorkAlonePrompt } from './pi-contract.js';
 
 test('Pi path policy rejects private files and missing resources in memory', () => {
-  const tracked = ['.pi/settings.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts'];
+  const tracked = ['.pi/workflow.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts'];
   checkPiPaths(tracked, ['.env.example'], true, [true, true, true]);
   assert.throws(() => checkPiPaths([...tracked, '.pi/auth.json'], [], true, [true, true, true]));
   assert.throws(() => checkPiPaths(['.pi/settings.json'], [], true, [true, true, true]));
@@ -25,7 +25,7 @@ test('question package contract rejects floating refs and duplicate providers in
 });
 
 test('Pi documentation contract checks synthetic text in memory', () => {
-  const text = '## Configurazione Pi\n```bash\npi\n```\nPI_CODING_AGENT_DIR\nnpm run test:pi\nfiducia /work-alone /reload\n';
+  const text = '## Configurazione Pi\n```bash\nnode scripts/start-pi.mjs\n```\nPI_CODING_AGENT_DIR\nnpm run test:pi\nfiducia /work-alone /reload\n';
   checkPiReadme(text);
   assert.throws(() => checkPiReadme(`${text}scripts/pi.sh`));
   assert.throws(() => checkPiReadme(text.replace('npm run test:pi', '')));
