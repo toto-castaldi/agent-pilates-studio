@@ -13,8 +13,10 @@ import termios
 import time
 from pathlib import Path
 
+from backlog_fixture import (cli as fixture_cli, copy_tool, create_branch_fixture, git as fixture_git,
+                             isolated_env, item, snapshot, viewer_items, write_store)
+
 SOURCE = Path('.pi/extensions/backlog/index.ts').resolve()
-TOOL = Path('.agents/tools/backlog.py').resolve()
 
 
 class Pi:
@@ -93,9 +95,7 @@ def make_project(root, name, global_settings=None, project_settings=None):
     extension = project / '.pi/extensions/backlog/index.ts'
     extension.parent.mkdir(parents=True)
     shutil.copyfile(SOURCE, extension)
-    tool = project / '.agents/tools/backlog.py'
-    tool.parent.mkdir(parents=True)
-    shutil.copyfile(TOOL, tool)
+    copy_tool(project)
     agent.mkdir()
     if global_settings is not None:
         (agent / 'settings.json').write_text(json.dumps(global_settings))
@@ -104,38 +104,9 @@ def make_project(root, name, global_settings=None, project_settings=None):
     return project, agent
 
 
-def item(number, title, kind='Task', priority='P1', status='Todo', version='v0.2.0', epic='EPIC-001', criteria=('Synthetic criterion',)):
-    record = {'id': number, 'title': title, 'epic': epic, 'type': kind, 'priority': priority, 'status': status,
-              'dependencies': [], 'acceptance_criteria': list(criteria)}
-    if version is not None:
-        record['version'] = version
-    return record
-
-
-def write_store(project, items):
-    base = project / 'backlog'
-    shutil.rmtree(base, ignore_errors=True)
-    for folder in ('items', 'epics', 'versions'):
-        (base / folder).mkdir(parents=True)
-    (base / 'versions/v0.2.0.json').write_text(json.dumps({'id': 'v0.2.0', 'goal': 'Synthetic', 'state': 'Open'}))
-    for epic, title in (('EPIC-001', 'Synthetic epic'), ('EPIC-002', 'Synthetic unassigned epic')):
-        (base / 'epics' / f'{epic}.json').write_text(json.dumps({'id': epic, 'title': title, 'scope': 'Synthetic'}))
-    for record in items:
-        (base / 'items' / f"{record['id']}.json").write_text(json.dumps(record))
-
-
-def snapshot(project):
-    return sorted((str(path), path.read_bytes()) for path in (project / 'backlog').rglob('*') if path.is_file())
-
-
 def exercise(root):
     project, agent = make_project(root, 'default')
-    body = [f'Synthetic body line {i:03d}' for i in range(80)]
-    write_store(project, [
-        item('TEC-001', 'Synthetic first', criteria=body),
-        item('TEC-002', 'Synthetic second', kind='User Story', priority='P2', status='Done'),
-        item('TEC-003', 'Synthetic unassigned', status='Blocked', version=None, epic='EPIC-002'),
-    ])
+    write_store(project, viewer_items())
     fixture = snapshot(project)
     before_extension = (project / '.pi/extensions/backlog/index.ts').read_bytes()
     pi = Pi(project, root, agent)
@@ -231,48 +202,14 @@ def exercise(root):
 
 def exercise_branches(root):
     project, agent = make_project(root, 'branches')
-    remote = root / 'synthetic-remote.git'
-    env = {'PATH': os.environ['PATH'], 'HOME': str(root), 'GIT_CONFIG_NOSYSTEM': '1',
-           'GIT_AUTHOR_NAME': 'Synthetic', 'GIT_AUTHOR_EMAIL': 'synthetic@example.invalid',
-           'GIT_COMMITTER_NAME': 'Synthetic', 'GIT_COMMITTER_EMAIL': 'synthetic@example.invalid'}
+    create_branch_fixture(root, project)
+    env = isolated_env(root)
 
-    def git(*args, cwd=project, date=None):
-        extra = {'GIT_AUTHOR_DATE': date, 'GIT_COMMITTER_DATE': date} if date else {}
-        return subprocess.check_output(['git', *args], cwd=cwd, env={**env, **extra}, stderr=subprocess.DEVNULL, text=True).strip()
+    def git(*args):
+        return fixture_git(project, *args, env=env)
 
     backlog = project / 'backlog/items/TEC-001.json'
-    def content(state, title='Synthetic branch item'):
-        return json.dumps(item('TEC-001', title, status=state))
-
-    write_store(project, [item('TEC-001', 'Synthetic branch item')])
-    git('init', '-q', '-b', 'main')
-    backlog.write_text(content('Todo'))
-    git('add', 'backlog')
-    git('commit', '-qm', 'base', date='2020-01-01T00:00:00Z')
-    git('switch', '-qc', 'task/TEC-001-first')
-    backlog.write_text(content('Blocked'))
-    git('commit', '-qam', 'first', date='2020-01-02T00:00:00Z')
-    first_commit = git('rev-parse', 'HEAD')
-    git('switch', '-q', 'main')
-    git('switch', '-qc', 'task/TEC-001-second')
-    backlog.write_text(content('Done'))
-    git('commit', '-qam', 'second', date='2020-01-03T00:00:00Z')
-    git('switch', '-q', 'main')
-    git('clone', '-q', '--bare', str(project), str(remote), cwd=root)
-    git('--git-dir', str(remote), 'update-ref', '-d', 'refs/heads/task/TEC-001-first', cwd=root)
-    # The remote branch first appears only in the viewer's background fetch.
-    git('remote', 'add', 'origin', str(remote))
-    git('fetch', '-q', 'origin')
-    git('switch', '-q', 'task/TEC-001-second')
-    backlog.write_text(content('In Progress'))
-    git('commit', '-qam', 'local', date='2020-01-04T00:00:00Z')
-    git('switch', '-q', 'main')
-    # Remove the other local branch so that the competing branch is remote-tracking.
-    git('branch', '-D', 'task/TEC-001-first')
-    git('branch', 'task/TEC-001-merged', 'main')
-    assert not git('branch', '-r', '--list', 'origin/task/TEC-001-first')
-    git('--git-dir', str(remote), 'update-ref', 'refs/heads/task/TEC-001-first', first_commit, cwd=root)
-    before = backlog.read_bytes(), git('status', '--porcelain')
+    before = snapshot(project), git('status', '--porcelain')
     pi = Pi(project, root, agent)
     try:
         open_command(pi, b'Synthetic branch item')
@@ -283,13 +220,13 @@ def exercise_branches(root):
         assert b'TEC-001-merged' not in out
         assert git('branch', '-r', '--list', 'origin/task/TEC-001-first')
         close_view(pi)
-        assert before == (backlog.read_bytes(), git('status', '--porcelain'))
+        assert before == (snapshot(project), git('status', '--porcelain'))
     finally:
         pi.close()
 
     # On the item branch, its uncommitted working-tree copy wins over every ref.
     git('switch', '-q', 'task/TEC-001-second')
-    backlog.write_text(content('Todo', 'Synthetic working copy'))
+    backlog.write_text(json.dumps(item('TEC-001', 'Synthetic working copy')))
     pi = Pi(project, root, agent)
     try:
         out = open_command(pi, b'Synthetic working copy') + pi.drain(3)
@@ -307,7 +244,31 @@ def exercise_branches(root):
         open_command(pi, b'Synthetic branch item')
         pi.send(b'S')
         pi.wait_for(b'fetch failed: showing last known state', 20)
-        assert before == (backlog.read_bytes(), git('status', '--porcelain'))
+        assert before == (snapshot(project), git('status', '--porcelain'))
+    finally:
+        pi.close()
+
+
+def exercise_refresh_failure(root):
+    project, agent = make_project(root, 'refresh-failure')
+    write_store(project, [item('TEC-001', 'Synthetic cached item')])
+    base = json.loads(fixture_cli(project, 'export', '--json'))
+    tool = project / '.agents/tools/backlog.py'
+    # Malformed branch metadata triggers an unexpected refresh exception, not a normal CLI exit.
+    tool.write_text('import json, sys\n'
+                    f'store = json.loads({json.dumps(json.dumps(base))})\n'
+                    "if '--branches' in sys.argv:\n"
+                    "    store['branches'] = {'fetch': 'skipped', 'remotes': [], 'items': None}\n"
+                    'print(json.dumps(store))\n')
+    before = snapshot(project), tool.read_bytes()
+    pi = Pi(project, root, agent)
+    try:
+        output = open_command(pi, b'Synthetic cached item')
+        warning = b'fetch failed: showing last known state'
+        if warning not in output:
+            output += pi.wait_for(warning)
+        assert b'Synthetic cached item' in output and warning in output
+        assert before == (snapshot(project), tool.read_bytes())
     finally:
         pi.close()
 
@@ -317,4 +278,5 @@ if __name__ == '__main__':
     with tempfile.TemporaryDirectory(prefix='pilates-pi-backlog-') as temporary:
         exercise(Path(temporary))
         exercise_branches(Path(temporary))
+        exercise_refresh_failure(Path(temporary))
     print('Synthetic isolated Pi backlog TUI checks passed')

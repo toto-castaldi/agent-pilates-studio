@@ -22,6 +22,7 @@
     "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
     "test:pi": "npm run build --silent && node --test dist/integration/pi-settings.test.js dist/integration/pi-backlog.test.js",
     "test:pi-package": "npm run build --silent && node --test dist/integration/pi-package.test.js",
+    "test:claude": "npm run build --silent && node --test dist/integration/claude-backlog.test.js",
     "start:local": "node scripts/start-local.mjs",
     "test:start": "npm run build --silent && node --test dist/integration/start-local.test.js",
     "test:images": "npm run build --silent && node --test --test-concurrency=1 dist/integration/images-only.test.js dist/integration/hot-backup.test.js",

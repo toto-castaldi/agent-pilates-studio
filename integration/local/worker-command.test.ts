@@ -36,7 +36,7 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
     const configured = /^- \*\*Worker agent command:\*\* `([^`]+)`$/m.exec(agents)?.[1];
     assert.equal(configured, 'pi --approve');
     const skill = readFileSync('.agents/skills/orchestrate/SKILL.md', 'utf8');
-    const template = /```bash\n\s*(hc run --bg --json --outlive-parent[\s\S]*?)\n\s*```/.exec(skill)?.[1];
+    const template = /```bash\n\s*(hc run --bg --json --no-parent[\s\S]*?)\n\s*```/.exec(skill)?.[1];
     assert.ok(template, 'actual Herdr launch command missing');
     const task = 'Synthetic task with spaces';
     for (const command of [configured, 'pi --approve --no-session']) {
@@ -51,7 +51,10 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
       };
       run(herdr);
       const args = JSON.parse(readFileSync(hcLog, 'utf8')) as string[];
-      assert.ok(args.includes('--outlive-parent'));
+      assert.ok(args.includes('--no-parent'));
+      assert.ok(!args.includes('--outlive-parent'));
+      assert.ok(args.includes('herdr.space=synthetic-space'));
+      assert.deepEqual(args.slice(0, 4), ['run', '--bg', '--json', '--no-parent']);
       assert.deepEqual(args.slice(-expected.length - 2), ['pi', ...expected, task]);
       // Manual mode uses the same configured command with the task as one shell argument.
       assert.ok(skill.includes('&& <Worker agent command> "<task>"'));
