@@ -5,6 +5,9 @@ values as tool arguments. The broker independently verifies the raw Meta signatu
 """
 
 import contextvars
+import hashlib
+import hmac
+import json
 import math
 import os
 import re
@@ -239,6 +242,45 @@ def install():
 
     async def handle(app, request):
         if request.method == 'POST' and request.path == os.environ.get('WHATSAPP_CLOUD_WEBHOOK_PATH', '/whatsapp/webhook'):
+            if os.environ.get('PILATES_MANAGER_PHONE'):
+                # This path precedes the adapter, its slash commands, SQLite,
+                # titles and model turns. Never fall through on broker failure.
+                from aiohttp import web
+                from multidict import CIMultiDict
+                try:
+                    raw = await request.read()
+                    headers = {'X-Pilates-Bridge': bridge_token(),
+                               'X-Hub-Signature-256': request.headers.get('X-Hub-Signature-256', '')}
+                    async with ClientSession(timeout=ClientTimeout(total=20), trust_env=False) as session:
+                        async with session.post(BROKER_URL + '/v1/management', data=raw, headers=headers) as response:
+                            if response.status != 200:
+                                return web.Response(status=response.status)
+                            decision = await response.json()
+                    import httpx
+                    async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
+                        for reply in decision['replies']:
+                            # Long administrative lists are sent as bounded chunks.
+                            for start in range(0, len(reply['text']), 3500):
+                                await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
+                                    headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
+                                    json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
+                                          'text': {'body': reply['text'][start:start+3500]}})
+                    payload = decision['payload']
+                    if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
+                        return web.Response(status=200)
+                    # Only non-management messages reach the native adapter. The
+                    # broker has verified the original signature; re-sign the
+                    # filtered wire copy for the adapter's independent verifier.
+                    wire = json.dumps(payload).encode()
+                    signature = 'sha256=' + hmac.new(os.environ['WHATSAPP_CLOUD_APP_SECRET'].encode(), wire, hashlib.sha256).hexdigest()
+                    filtered_headers = CIMultiDict(request.headers)
+                    filtered_headers['X-Hub-Signature-256'] = signature
+                    filtered_headers['Content-Length'] = str(len(wire))
+                    request._read_bytes = None
+                    request.content.unread_data(wire)
+                    request = request.clone(headers=filtered_headers)
+                except Exception:
+                    return web.Response(status=503)
             await send_evidence(request)
         return await original_handle(app, request)
 

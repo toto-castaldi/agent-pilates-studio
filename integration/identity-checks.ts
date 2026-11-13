@@ -68,6 +68,7 @@ export async function checkTeacherIdentities(
   for (const signature of [
     'studio_private.manage_teacher_identity(text,text,text,bigint,text,text,text)',
     'studio_private.list_teacher_identities(text,text)',
+    'studio_private.preview_manager_bootstrap(text,text,text,text)',
     'studio_private.resolve_teacher_identity(text)',
     'studio_private.bind_teacher_identity(integer,bigint,text)',
   ]) {
@@ -130,6 +131,12 @@ export async function checkTeacherIdentities(
   await migrator.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [legacyBinding.pid, legacyBinding.txid]);
   const legacyPerson = (await migrator.query('SELECT * FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0];
   assert.equal(legacyPerson.phone, null);
+  const previewSql = 'SELECT * FROM studio_private.preview_manager_bootstrap($1,$2,$3,$4)';
+  const previewParams = [managerSender, managerPhone, 'legacy', 'managersynthetic'];
+  assert.equal((await broker.query(previewSql, previewParams)).rows[0].id, manager.id);
+  await assert.rejects(agent.query(previewSql, previewParams), { code: '42501' });
+  await assert.rejects(broker.query(previewSql, ['15555550129', managerPhone, 'legacy', 'managersynthetic']), { code: '42501' });
+  await assert.rejects(agent.query('SELECT * FROM studio_private.management_sessions'), { code: '42501' });
   assert.equal(legacyPerson.access_enabled, false);
   assert.equal(legacyPerson.legacy_identity, true);
   await rejectUnchanged(() => mutate(broker, 'bootstrap', null, 'Other', 'Synthetic', '+15555550129'), '42501');
@@ -142,6 +149,13 @@ export async function checkTeacherIdentities(
   await rejectUnchanged(() => list('15555550121'), '42501');
   await rejectUnchanged(() => list(managerSender, '+15555550121'), '42501');
   assert.deepEqual((await resolve(managerSender)).rows, [{ id: manager.id, first_name: 'Legacy', last_name: 'ManagerSynthetic', access_enabled: true, identity_revision: '2' }]);
+
+  const guidedBinding = await bind(agent, managerSender);
+  await migrator.query('UPDATE studio_private.author_context SET management_only_enrollment=true WHERE backend_pid=$1 AND transaction_id=$2', [guidedBinding.pid, guidedBinding.txid]);
+  // Even arbitrary SQL and a forged GUC cannot bypass the trusted context policy.
+  await agent.query("SET LOCAL app.management_only_enrollment = 'false'");
+  await assert.rejects(agent.query("INSERT INTO app.teachers(first_name,last_name) VALUES ('Forbidden','Synthetic')"), { code: '42501' });
+  await release(agent, guidedBinding);
 
   const enrolled = (await mutate(broker, 'enroll', null, '  New  Synthetic ', ' Identity ', '+1 (555) 555-0123')).rows[0];
   const enrolledId = enrolled.id as string;

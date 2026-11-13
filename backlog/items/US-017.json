@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "us/US-017-gestione-guidata-dell-anagrafica-via-whatsapp",
   "dependencies": [
     "TEC-041"
@@ -47,5 +47,7 @@
   ],
   "remarks": [
     "Secondo dei quattro item concordati il 2026-11-12 per la v0.3.0. Il riconoscimento ordinario di mittente, nome, io e autore passerà insieme al database nell'item di attivazione, senza lasciare fonti discordanti. La deroga alla pulizia del working tree riguarda soltanto questa aggiunta documentale con .pi/settings.json preesistente lasciato intatto e fuori dai commit."
-  ]
+  ],
+  "outcome": "Consegnato il componente di gestione guidata via WhatsApp: bootstrap nuovo/preesistente, elenco e tutte le operazioni ammesse con conferma monouso, scadenza e annullamento; stato privato, anti-replay persistente e blocco delle conferme dopo riavvio o cambio di identità/autorizzazione. Intercettazione prima di Hermes e cronologia, rifiuti deterministici, zero richieste al modello per la gestione e nessun telefono o nome gestionale nelle richieste successive/compattazione o nei log delle prove. Migrazione additiva per preview bootstrap, stato privato e divieto fidato del censimento SQL quando la gestione è configurata, senza migrare accesso ordinario, nome, io o autore: attivazione e rimozione definitiva del legacy restano a TEC-042. Gate rapido passato (71 unit test); test:author (3), test:db, test:local (38), test:upgrade, test:hermes e test:compaction passati con PostgreSQL reale, webhook firmati e soli dati sintetici. Protocollo, coperture e limiti in docs/operations/US-017-gestione.md, incluso un primo bootstrap fallito di test:hermes seguito da riesecuzione completa riuscita senza causa determinata. Nessun uso di servizi/credenziali reali, nessun aggiornamento dello stack operativo o attivazione TEC-045.",
+  "closed_at": "2026-11-13"
 }

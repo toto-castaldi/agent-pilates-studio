@@ -178,9 +178,10 @@ class Broker:
                     )) if teacher else None
                     await connection.execute(
                         "INSERT INTO studio_private.author_context "
-                        "(backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id) "
-                        "VALUES ($1, $2, $3, $4, clock_timestamp() + interval '60 seconds', $5)",
-                        pid, int(txid), receipt['sender'], receipt['name'], teacher_id, timeout=5,
+                        "(backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id, management_only_enrollment) "
+                        "VALUES ($1, $2, $3, $4, clock_timestamp() + interval '60 seconds', $5, $6)",
+                        pid, int(txid), receipt['sender'], receipt['name'], teacher_id,
+                        bool(os.environ.get('PILATES_MANAGER_PHONE')), timeout=5,
                     )
             return web.Response(status=204)
         except (ValueError, TypeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
@@ -245,6 +246,11 @@ def main():
                     read_secret('whatsapp_allowed_users'), read_secret('whatsapp_phone_number_id'),
                     read_secret('whatsapp_teacher_links'))
     app = web.Application(client_max_size=MAX_BODY)
+    import sys
+    sys.path.insert(0, '/opt/pilates')  # Root-owned code, not HOME or the working directory.
+    from identity_management import IdentityManagement
+    management = IdentityManagement(broker)
+    app.router.add_post('/v1/management', management.handle)
     app.router.add_post('/v1/evidence', broker.evidence)
     app.router.add_post('/v1/context', broker.context)
     app.router.add_post('/v1/release', broker.release)

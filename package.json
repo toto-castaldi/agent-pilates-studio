@@ -16,7 +16,7 @@
     "test:local": "npm run build --silent && node --test \"dist/integration/local/**/*.test.js\"",
     "test:db": "npm run build --silent && node --test dist/integration/postgres.test.js",
     "test:hermes": "npm run build --silent && node --test dist/integration/hermes.test.js",
-    "test:author": "npm run build --silent && node --test dist/integration/author.test.js dist/integration/home-channel.test.js",
+    "test:author": "npm run build --silent && node --test dist/integration/author.test.js dist/integration/home-channel.test.js dist/integration/management.test.js",
     "test:conversation": "npm run build --silent && node scripts/conversation.mjs",
     "test:compaction": "npm run build --silent && node --test dist/integration/compaction.test.js",
     "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
