@@ -1,0 +1,29 @@
+{
+  "id": "SPIKE-003",
+  "title": "Skill e tool per un contesto dell'agente compatto",
+  "version": "v0.3.0",
+  "epic": "EPIC-002",
+  "module": "MOD-001",
+  "type": "Spike",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-AGENT-008",
+    "REQ-DB-002",
+    "REQ-NFR-002",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "TECHNICAL-DESIGN §6",
+    "TECHNICAL-DESIGN §7",
+    "TECHNICAL-DESIGN §10"
+  ],
+  "description": "Indagare come ridurre SOUL.md sotto 15.000 caratteri a comportamenti invariati, usando skill Hermes caricate su richiesta e ricostruzioni dei dati in viste, funzioni del database o tool del plugin. Nessuna modifica dello stack operativo; il codice esplorativo non è integrato.",
+  "acceptance_criteria": [
+    "Il rapporto in docs/spikes/ descrive, con evidenze sull'immagine Hermes 0.22.7 fissata, come vengono scoperte, caricate e iniettate le skill e quali tool comprende il toolset skills, e se può essere abilitato in sola lettura impedendo al modello di creare, modificare o installare skill, anche nei due percorsi di esecuzione dei tool e con l'allowlist attuale.",
+    "Il rapporto verifica con prove sintetiche locali dove finisce il contenuto delle skill caricate (contesto, cronologia persistita, compattazione, richieste ausiliarie) e la sua compatibilità con REQ-NFR-006 e con il montaggio in sola lettura dalle immagini pubblicate.",
+    "Il rapporto confronta per le ricostruzioni complesse (almeno la query di riferimento di US-015, le lezioni esistenti e gli attesi delle presenze) viste o funzioni del database e tool del plugin, rispetto a privilegi senza DDL per l'agente, attribuzione dell'autore, testabilità su PostgreSQL reale e confine con le regole di comportamento.",
+    "Il rapporto propone la ripartizione dei contenuti tra SOUL.md, skill e dati calcolati con una stima della dimensione risultante sotto 15.000 caratteri, rischi, limiti e una raccomandazione con eventuali ADR o decisioni dell'utente necessarie per l'attività di implementazione."
+  ]
+}

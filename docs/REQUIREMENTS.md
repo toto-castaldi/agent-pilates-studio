@@ -71,6 +71,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Cambio di scope del 2026-11-12: backup a caldo del solo database di produzione con un comando `ops`, senza fermare gateway e broker, per consultare i dati (REQ-OPS-008).
 - Cambio di scope del 2026-11-12: launcher manuale di aggiornamento con commit parametrico e istruzioni per scegliere l'ultimo commit di `main` con immagini pubblicate (REQ-OPS-009).
 - Cambio di scope del 2026-11-14: audit privacy dei log del proxy Cloudflare e locali (TEC-008, REQ-NFR-002 e REQ-NFR-004), con evidenze verificabili, prove sintetiche e limiti non osservabili espliciti; nessuna dichiarazione anticipata di conformità né autorizzazione implicita a modifiche infrastrutturali.
+- Cambio di scope del 2026-11-14: contesto dell'agente compatto, con `SOUL.md` entro 15.000 caratteri, skill versionate di sola lettura caricate su richiesta e ricostruzioni dei dati in viste, funzioni o tool dedicati, a comportamenti invariati (REQ-AGENT-008).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -192,6 +193,14 @@ L'agente non propone spontaneamente di creare un profilo dell'utilizzatore, né 
 Il solo gestore non ancora censito segue il percorso iniziale obbligatorio di REQ-STUDIO-016: non è una proposta spontanea di profilazione. Un numero non abilitato riceve soltanto il rifiuto fisso di REQ-WA-002, senza invito all'autoiscrizione. La gestione ordinaria avviene via chat, non tramite profili precompilati via CLI.
 
 **Evoluzione delle decisioni:** la precisazione del 2026-11-11 prevedeva solo i dati WhatsApp già disponibili, senza censimento. La decisione del 2026-11-12 la sostituisce per identità e anagrafica, mantenendo il divieto di proposte spontanee di profilo e le protezioni della cronologia.
+
+#### REQ-AGENT-008 — Contesto dell'agente compatto
+
+Il contesto sempre presente dell'agente, `SOUL.md`, non deve superare 15.000 caratteri e contiene identità, nome, principi generali, protezioni, limiti delle fasce orarie e indicazioni su quando usare le istruzioni di dettaglio. Le istruzioni di dettaglio di un'area, ad esempio presenze o insegnanti, possono stare in skill versionate nel progetto e caricate su richiesta; le ricostruzioni dei dati complesse e ripetitive possono essere fornite da viste o funzioni del database oppure da tool dedicati, calcolati deterministicamente. Le regole di comportamento restano in `SOUL.md` e nelle skill versionate, senza duplicazioni nel codice; viste, funzioni e tool calcolano dati ma non decidono conferme, chiarimenti o resoconti.
+
+Le skill sono di sola lettura per l'agente: il modello non può crearle, modificarle o installarne altre, e restano incluse nelle immagini pubblicate come `SOUL.md`. Eventuali viste, funzioni o tool rispettano REQ-DB-002, l'attribuzione di REQ-STUDIO-003 e la protezione dei numeri di REQ-NFR-006, senza concedere DDL all'agente. La riduzione non deve modificare i comportamenti richiesti dai requisiti dello studio e dell'agente.
+
+**Decisione dell'utente (2026-11-14):** requisito aggiunto alla v0.3.0 come cambio di scope, da attuare prima di TEC-042 con uno spike preliminare e un'attività di implementazione. Fino al completamento dell'implementazione resta valida la regola corrente: le regole di comportamento stanno soltanto in `SOUL.md`.
 
 ### Comunicazione WhatsApp Business
 
