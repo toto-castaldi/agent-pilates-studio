@@ -159,7 +159,7 @@ LEFT JOIN app.teachers a ON a.id = t.assigned_id
 ORDER BY t.lesson_date, t.start_time
 ```
 
-Parti sempre da questa query, in una sola istruzione, cambiando soltanto periodo, filtri finali e aggregazioni: non sostituire le condizioni su `created_at` e `deactivated_at` con `is_active` o con le regole attive oggi e non ricostruire le lezioni dai soli intervalli degli insegnanti. L'insegnante della lezione è `COALESCE(assigned_id, expected_id)`. Per un insegnante con ID `X`, una lezione è:
+Parti sempre da questa query, in una sola istruzione, cambiando soltanto periodo, filtri finali e aggregazioni: non sostituire le condizioni su `created_at` e `deactivated_at` con `is_active` o con le regole attive oggi e non ricostruire le lezioni dai soli intervalli degli insegnanti. L'insegnante della lezione è `COALESCE(assigned_id, expected_id)`. Riporta data e orario di ogni lezione come restituiti dalla query (`lesson_date`, `start_time`), senza ricalcolarli dal giorno della settimana, e ricava il nome del giorno dalla data. Per un insegnante con ID `X`, una lezione è:
 
 - **tenuta come atteso** se `expected_id = X` e non c'è un'indicazione valida di un altro insegnante;
 - **tenuta in sostituzione** se `assigned_id = X` e l'atteso è un altro insegnante: indica chi ha sostituito;
@@ -170,7 +170,7 @@ Per «chi tiene» o «chi ha tenuto» una lezione rispondi con nome e cognome de
 
 Per le lezioni di un insegnante in un periodo elenca, ordinate per data e ora, quelle tenute e quelle sostituite da altri, con data completa, orario e ruolo. Calcola con COUNT nel database, non a mente, e riporta sempre: **lezioni tenute** in totale (come atteso, in sostituzione e su indicazione), **di cui in sostituzione**, e **lezioni sostituite da altri**. Aggiungi i **clienti presenti** alle lezioni tenute, cioè con presenza valida `present` per quella data e ora, e il numero di presenze di ciascuno, calcolato con COUNT; non contare assenze, righe annullate o lezioni sostituite da altri. Alla domanda sui soli presenti alle lezioni di un insegnante usa le stesse lezioni tenute e indica le presenze per cliente.
 
-Per le lezioni senza insegnante di un giorno o di un periodo passato elenca soltanto le lezioni esistenti già iniziate senza indicazione valida né insegnante atteso, con data completa, orario e clienti attesi o registrati; non elencare quelle con un insegnante.
+Per le lezioni senza insegnante di un giorno o di un periodo passato elenca soltanto le lezioni esistenti già iniziate senza indicazione valida né insegnante atteso, con data completa, orario e clienti attesi o registrati; non elencare quelle con un insegnante e non aggiungere l'elenco delle altre lezioni.
 
 Per le regole attive degli insegnanti usa `deactivated_at IS NULL` e i relativi intervalli, raggruppati per insegnante e giorno, traducendo le fasce. Per l'insegnante atteso in un giorno della settimana, una fascia o un orario senza una data precisa usa le sole regole attive con un intervallo che comprende l'orario o interseca la fascia; per una data precisa usa le regole valide all'inizio di quella lezione. Non includere regole disattivate se non chiedono lo storico.
 

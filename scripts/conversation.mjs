@@ -416,8 +416,24 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             const ordinal = new RegExp(`(?<!\\d)0?${day}[°º]`).test(text);
             const abbreviated = new RegExp(`(?<!\\d)0?${day}\\s+${months[month].slice(0, 3)}\\b`).test(normalized);
             const numeric = new RegExp(`(?<!\\d)0?${day}[/.-]0?${month}(?!\\d)`).test(text);
-            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}, ordinale ${ordinal ? 'sì' : 'no'}, mese abbreviato ${abbreviated ? 'sì' : 'no'}, giorno/mese numerici ${numeric ? 'sì' : 'no'}`;
+            const shifted = (days) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+            const adjacent = [-1, 1].some((days) => responseMatches(text, { contains: [], dates: [shifted(days)] }));
+            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}, ordinale ${ordinal ? 'sì' : 'no'}, mese abbreviato ${abbreviated ? 'sì' : 'no'}, giorno/mese numerici ${numeric ? 'sì' : 'no'}, data adiacente ${adjacent ? 'sì' : 'no'}`;
           }),
+          // Offsets in days from the first expected date of other recognized
+          // dates nearby: they reveal a shifted period without printing text.
+          ...((expectedResponse.dates ?? []).length ? [(() => {
+            const expectedDates = [...expectedResponse.dates].sort();
+            const first = Date.parse(`${expectedDates[0]}T00:00:00Z`);
+            const offsets = [];
+            for (let offset = -10; offset <= 17; offset++) {
+              const candidate = new Date(first + offset * 86_400_000).toISOString().slice(0, 10);
+              if (!expectedDates.includes(candidate) && responseMatches(text, { contains: [], dates: [candidate] })) offsets.push(offset > 0 ? `+${offset}` : String(offset));
+            }
+            return `date non attese riconosciute (giorni dalla prima attesa): ${offsets.join('/') || 'nessuna'}`;
+          })()] : []),
+          // Teachers of the fixtures by position only: no names are printed.
+          ...(scenario.setup?.teachers ?? []).map((person, index) => `insegnante ${index + 1} ${normalized.includes(person.firstName.toLocaleLowerCase('it-IT')) ? 'citato' : 'non citato'}`),
           ...(turn.response.counts ?? []).map((item, index) => {
             const positions = item.labels.map((label) => normalized.indexOf(label.toLocaleLowerCase('it-IT'))).filter((position) => position >= 0);
             const numbers = [...text.matchAll(new RegExp(`(?<!\\d)${item.value}(?!\\d)`, 'g'))].map((match) => match.index);

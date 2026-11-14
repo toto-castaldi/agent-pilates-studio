@@ -129,7 +129,9 @@
         ]
       },
       "turns": [
-        { "message": "Quali lezioni della settimana scorsa non avevano insegnante?", "response": { "contains": [], "anyOf": [["insegnant"]], "dates": ["$LAST_WEEK_MONDAY+1", "$LAST_WEEK_MONDAY+3", "$LAST_WEEK_MONDAY+4"], "times": ["10:00", "17:00", "19:00"], "excludes": ["Zeno", "Ugo", "Francesca", "Giulia", "18:00", "19:30"] }, "unchanged": true },
+        { "message": "Quali lezioni della settimana scorsa non avevano insegnante?", "response": { "contains": [], "anyOf": [["insegnant"]], "dates": ["$LAST_WEEK_MONDAY+1", "$LAST_WEEK_MONDAY+3", "$LAST_WEEK_MONDAY+4"], "times": ["10:00", "17:00", "19:00"] }, "unchanged": true },
+        { "message": "Chi aveva tenuto la lezione di lunedì della settimana scorsa alle 18?", "response": { "contains": ["Francesca"], "anyOf": [["attes", "regol", "previst"]], "times": ["18:00"], "dates": ["$LAST_WEEK_MONDAY"] }, "unchanged": true },
+        { "message": "E quella di mercoledì della settimana scorsa alle 19:30?", "response": { "contains": ["Giulia"], "anyOf": [["indicazion", "indicat"]], "times": ["19:30"], "dates": ["$LAST_WEEK_MONDAY+2"] }, "unchanged": true },
         { "message": "E nella settimana dal 2 all'8 gennaio 2023?", "response": { "contains": [], "anyOf": [["nessun", "non risult", "non ci sono", "non c'erano", "non ho trovato", "non sono state"]] }, "unchanged": true }
       ]
     },

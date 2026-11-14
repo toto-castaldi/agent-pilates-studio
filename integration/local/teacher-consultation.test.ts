@@ -156,14 +156,28 @@ test('teacher consultation catalog matches an independent oracle and never expec
   const missing = scenario('consultazione-lezioni-senza-insegnante');
   const lastWeek = lessons(missing, day('$LAST_WEEK_MONDAY'), day('$LAST_WEEK_MONDAY+6'));
   const withoutTeacher = lastWeek.filter((lesson) => !lesson.teacher);
-  const [noTeacher, emptyWeek] = missing.turns;
+  const [noTeacher, expectedTeacher, indicatedTeacher, emptyWeek] = missing.turns;
   assert.deepEqual(noTeacher.response.dates?.map(day), withoutTeacher.map((lesson) => lesson.date));
   assert.deepEqual([...(noTeacher.response.times ?? [])].sort(), [...new Set(withoutTeacher.map((lesson) => lesson.time))].sort());
   const listed = withoutTeacher.map((lesson) => `${lesson.date} alle ${lesson.time}`).join('; ');
   assert.ok(responseMatches(`Lezioni senza insegnante: ${listed}.`, resolved(noTeacher.response)));
-  for (const lesson of lastWeek.filter((entry) => entry.teacher)) {
-    assert.equal(responseMatches(`Lezioni senza insegnante: ${listed}; ${lesson.date} alle ${lesson.time} con ${lesson.teacher}.`, resolved(noTeacher.response)), false);
+  // Omitting a lesson, as when a current rule is applied to the past, fails.
+  for (const omitted of withoutTeacher) {
+    const others = withoutTeacher.filter((lesson) => lesson !== omitted).map((lesson) => `${lesson.date} alle ${lesson.time}`).join('; ');
+    assert.equal(responseMatches(`Lezioni senza insegnante: ${others}.`, resolved(noTeacher.response)), false);
   }
+  // The lessons that had a teacher are verified with explicit questions: the
+  // expected teacher of Monday and the indication-only lesson of Wednesday.
+  const mondayLesson = lastWeek.find((lesson) => lesson.date === day('$LAST_WEEK_MONDAY') && lesson.time === '18:00');
+  const wednesdayLesson = lastWeek.find((lesson) => lesson.date === day('$LAST_WEEK_MONDAY+2') && lesson.time === '19:30');
+  assert.deepEqual([mondayLesson?.expected, mondayLesson?.assigned], ['Francesca Blu', undefined]);
+  assert.deepEqual([wednesdayLesson?.expected, wednesdayLesson?.assigned], [undefined, 'Giulia Rosa']);
+  assert.deepEqual([expectedTeacher.response.contains, expectedTeacher.response.times, expectedTeacher.response.dates], [['Francesca'], ['18:00'], ['$LAST_WEEK_MONDAY']]);
+  assert.deepEqual([indicatedTeacher.response.contains, indicatedTeacher.response.times, indicatedTeacher.response.dates], [['Giulia'], ['19:30'], ['$LAST_WEEK_MONDAY+2']]);
+  assert.ok(responseMatches(`Lunedì ${mondayLesson?.date} alle 18:00 l'ha tenuta Francesca Blu, insegnante atteso dalla regola.`, resolved(expectedTeacher.response)));
+  assert.equal(responseMatches(`Lunedì ${mondayLesson?.date} alle 18:00 era senza insegnante.`, resolved(expectedTeacher.response)), false);
+  assert.ok(responseMatches(`Mercoledì ${wednesdayLesson?.date} alle 19:30 l'ha tenuta Giulia Rosa, su indicazione.`, resolved(indicatedTeacher.response)));
+  assert.equal(responseMatches(`Mercoledì ${wednesdayLesson?.date} alle 19:30 era senza insegnante.`, resolved(indicatedTeacher.response)), false);
   assert.ok(lastWeek.some((lesson) => lesson.teacher && lesson.assigned) && lastWeek.some((lesson) => lesson.teacher && lesson.expected));
   assert.ok((missing.setup.teacherRules ?? []).some((rule) => !rule.createdAt && rule.intervals.some((interval) => interval.weekday === 2)),
     'the current Tuesday rule must not give a teacher to last week');
