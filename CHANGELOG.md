@@ -33,6 +33,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Processo, skill e CLI del backlog allineati al template v3.0.0: requisiti e design suddivisi in file indirizzabili (`docs/requirements/`, `docs/design/`) e condensati allo stato attuale, comando `backlog docs` e orchestrazione con worker Claude Code (TEC-047).
 - Documentate, con prove sintetiche isolate, le opzioni per un contesto dell'agente compatto: skill Hermes di sola lettura, funzioni SQL di sola lettura per lezioni, insegnanti e attesi, e ripartizione di `SOUL.md` sotto 15.000 caratteri (SPIKE-003).
 - Template v2.2.1 adottato: risoluzione unica dei branch nella CLI per `status`, `list`, `ready`, `show` ed `export`, con provenienza, concorrenza, cache e fetch limitato; preservati dati del backlog e adattamenti Pi (TEC-044).
 - Disabilitata l'offerta iniziale di profilo di Hermes; Ambrogio usa il nome WhatsApp disponibile senza censimento e non propone spontaneamente la profilazione degli utilizzatori (US-016).

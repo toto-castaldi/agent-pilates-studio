@@ -1,0 +1,7 @@
+# REQ-STUDIO-006 — Registrazione delle presenze
+
+**State:** Active
+
+Un utilizzatore deve poter comunicare conversando via WhatsApp, di propria iniziativa, quali clienti hanno partecipato a una lezione puntuale (ad esempio "oggi alle 19 c'erano Mario Rossi e Lucia Bianchi"). L'agente registra una presenza per ciascun cliente con data e orario d'inizio della lezione, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Date e orari si interpretano nel fuso Europe/Rome rispetto alla data corrente fornita dal sistema. Si possono registrare lezioni passate senza limiti e lezioni di oggi già iniziate; le lezioni non ancora iniziate sono rifiutate anche dal database, salvo le assenze anticipate di REQ-STUDIO-010. Per ogni cliente e lezione puntuale può esistere al più una registrazione valida, presenza o assenza.
+
+Con espressioni come "c'erano tutti" o "tutti tranne Lucia", l'agente ricava i clienti attesi dalle regole valide per la lezione e registra le presenze senza chiedere conferma; chiede chiarimenti solo in caso di ambiguità, ad esempio se la lezione non è identificabile o se nessun cliente era atteso. Un cliente presente ma non atteso, ad esempio per un recupero o una lezione extra, viene registrato e segnalato nel riepilogo; un cliente non ancora in anagrafica è creato secondo REQ-STUDIO-002. La registrazione di presenze e assenze non crea, modifica né disattiva regole di allenamento.

@@ -18,7 +18,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4"
+    "design/data-model"
   ],
   "description": "Come titolare o collaboratore, voglio chiedere all'agente via WhatsApp chi si allena e quando, così da conoscere la pianificazione delle lezioni.",
   "acceptance_criteria": [

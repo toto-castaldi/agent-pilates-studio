@@ -1,0 +1,9 @@
+# Integrations
+
+- **Hermes:** immagine ufficiale v0.22.7 fissata per digest e avviata in Compose. Gli adattamenti del progetto (launcher del gateway, `pilates_trusted.py`, plugin SQL) usano punti interni dell'immagine fissata: ogni aggiornamento di Hermes richiede la ripetizione delle suite di integrazione pertinenti.
+- **OpenRouter:** provider configurato esternamente; il modello predefinito è `openai/gpt-6.1-terra` e resta configurabile con `PILATES_MODEL`. Il catalogo dei modelli determina la soglia di compattazione (`compaction`).
+- **WhatsApp Business:** gateway nativo di Hermes con un'app Meta per ambiente (`production`); webhook verificato anche dal broker (`webhook-trust`). Il canale home è passato al plugin Hermes con `WHATSAPP_CLOUD_HOME_CHANNEL`; il gateway rifiuta valori mancanti o non autorizzati. Il gestore interno `_handle_set_home_command` è sostituito con un rifiuto fisso, senza mutare configurazione o variabili persistenti, e gli avvisi interni del motore non sono inviati agli utilizzatori.
+- **PostgreSQL:** plugin SQL nativo (`studio_sql_query`) con il solo ruolo agente; privilegi distinti verificati su PostgreSQL reale (`invariants`).
+- **Job cron:** il launcher fidato sostituisce la selezione del provider cron con un provider inattivo e disabilita il recupero dei job scaduti nella manutenzione del gateway; disabilitare il solo tool `cronjob` non ferma lo scheduler. L'accesso alla CLI dell'operatore resta separato e non autorizza job pianificati.
+
+Identità del mittente e gestione guidata sono in `identity`; contesto dello studio e comportamenti del modello in `agent-context`.

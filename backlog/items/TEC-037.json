@@ -17,7 +17,7 @@
     "REQ-NFR-003"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §9"
+    "design/configuration"
   ],
   "description": "Rendere lo stack eseguibile dalle sole immagini e pubblicarle da GitHub Actions, senza avviare aggiornamenti.",
   "acceptance_criteria": [

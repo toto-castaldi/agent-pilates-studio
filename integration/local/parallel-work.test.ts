@@ -400,7 +400,11 @@ test('parallel work settings and instructions keep the studio protections', () =
   const skill = readFileSync('.agents/skills/orchestrate/SKILL.md', 'utf8');
   assert.match(skill, /^disable-model-invocation: true$/m);
   assert.ok(skill.includes('`Worker agent command` [`pi --approve`]'));
-  assert.ok(readFileSync('.agents/skills/kickoff/SKILL.md', 'utf8').includes('`Worker agent command` (default `pi --approve`)'));
+  assert.ok(readFileSync('.agents/skills/kickoff/SKILL.md', 'utf8').includes('`Worker agent command` (default `pi --approve`; not used when the orchestrator runs in Claude Code)'));
+  // Claude Code orchestrators bypass the configured command: the studio documents the risk and keeps the clone protections.
+  assert.ok(skill.includes('workers are Claude Code sessions started with `--dangerously-skip-permissions`'));
+  assert.ok(agents.includes('Un orchestratore eseguito in Claude Code ignora `Worker agent command`'));
+  assert.ok(agents.includes('Le protezioni dei clone sotto valgono in ogni modalità.'));
   for (const phrase of [
     'Run only because the user explicitly asked', 'never implement items yourself', 'Never give the go on your own',
     'Merge only on explicit user request, one item at a time', 'never overwrite it', 'do not remove the clone',
@@ -415,7 +419,7 @@ test('parallel work settings and instructions keep the studio protections', () =
     assert.ok(skill.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 2\.2\.1/);
+  assert.match(processDoc, /\*\*Process version:\*\* 3\.0\.0/);
   for (const phrase of ['**only** through the CLI', 'read with `date +%F`', 'The merge commit contains only the merge and its conflict resolution']) {
     assert.ok(processDoc.includes(phrase), phrase);
   }

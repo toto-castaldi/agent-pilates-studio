@@ -1,0 +1,9 @@
+# REQ-STUDIO-010 — Assenze annunciate in anticipo
+
+**State:** Active
+
+Un utilizzatore deve poter comunicare, prima della lezione, che un cliente non potrà esserci (ad esempio "lunedì prossimo Anna Rossi non potrà esserci"). L'agente registra un'assenza giustificata per la lezione puntuale futura, con data e orario d'inizio, data di registrazione e autore (REQ-STUDIO-003), e riepiloga quanto salvato. Un'assenza anticipata è sempre giustificata e l'agente non chiede il tipo; non c'è un limite di anticipo. Presenze e assenze non giustificate per lezioni non ancora iniziate restano rifiutate anche dal database. Vale l'unicità di REQ-STUDIO-006.
+
+La lezione si ricava dalle regole attive: se il cliente è atteso a una sola lezione nel giorno indicato l'agente ne usa l'orario, altrimenti chiede chiarimenti. Se il cliente non è atteso alla lezione indicata, l'agente lo segnala e registra solo dopo la conferma dell'utilizzatore, ad esempio per un recupero già concordato. Per assenze su più lezioni (ad esempio "per le prossime due settimane" o "tutti i lunedì di dicembre") l'agente elenca le lezioni attese nel periodo e le registra solo dopo la conferma dell'elenco; senza conferma non registra nulla.
+
+Prima dell'inizio della lezione, se il cliente alla fine partecipa, l'agente annulla l'assenza anticipata con data, autore e motivo, senza registrare una presenza futura. Dopo l'inizio della lezione, se l'utilizzatore comunica le presenze con "c'erano tutti", "tutti tranne" o citando un cliente che ha un'assenza anticipata valida, l'agente segnala il conflitto e chiede se il cliente era presente. In caso di conferma annulla l'assenza e registra la presenza secondo REQ-STUDIO-008; altrimenti, anche senza risposta, mantiene l'assenza. Le assenze anticipate valide sono registrazioni valide anche ai fini delle consultazioni di REQ-STUDIO-009.

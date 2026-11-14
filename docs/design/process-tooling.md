@@ -1,0 +1,23 @@
+# Process tooling
+
+Processo, regole parallele, skill e CLI provengono dal template di origine e sono identici alla versione adottata, indicata da `Process version` in `docs/PROCESS.md`. Provenienza, basi, risorse adottate e divergenze sono registrate in `docs/TEMPLATE-ORIGIN.md` (REQ-NFR-013); ogni aggiornamento è un'attività di processo con confronto e decisione espliciti, senza merge o sovrascritture automatiche.
+
+## Backlog
+
+- `backlog/` contiene un file JSON per record ed è letto e modificato solo con `.agents/tools/backlog.py` (Python 3.10+, sola libreria standard); lo stato è calcolato su richiesta. `backlog docs` elenca requisiti e argomenti del design e `backlog check` verifica anche l'esistenza dei file referenziati.
+- La CLI è l'unica implementazione della risoluzione degli stati dai branch per le viste `status`, `list`, `ready`, `show` ed `export` (`docs/PROCESS-PARALLEL.md` §1). Provenienza e branch concorrenti sono nel `show` testuale e nell'`export` JSON; `show --json` restituisce il solo record. Il fetch non richiede input, ha timeout di 10 secondi e si salta con `--no-fetch`; se fallisce si usano gli ultimi riferimenti disponibili.
+
+## Visualizzatori
+
+- **Pi:** `/backlog` in `.pi/extensions/backlog/index.ts`, di sola lettura, con scorciatoia configurabile o disattivabile, filtri per tipo, priorità e stato persistenti nella sessione, navigazione, scorrimento, provenienza e avvisi di fetch. Legge lo store tramite l'export della CLI, senza logica Git propria. Unica divergenza dal template: se la vista è aperta, il `catch` del refresh segnala le eccezioni impreviste con `setFetchState("failed")` e conserva i dati visibili.
+- **Claude Code:** plugin `backlog-overlay` in `.agents/skills/backlog-overlay/`, senza `SKILL.md`, caricato dopo la fiducia al progetto tramite il collegamento versionato `.claude/skills`; compatibile da Claude Code 2.1.287. Usa hook nativi, atom di sessione e `$.process.run` per la stessa CLI. I tipi generati in `.claude-plugin/types/` sono ignorati da Git; il contratto `types/index.d.ts` è versionato. Il validatore `--strict` segnala l'autore mancante nel manifest upstream; l'idoneità a un catalogo pubblico non è dichiarata.
+
+## Lavoro parallelo
+
+Shared claims e lavoro parallelo sono attivi (`AGENTS.md` §10), con un clone per item sotto `../agent-pilates-studio-work`. La skill `orchestrate` si usa solo su richiesta esplicita e sceglie la modalità:
+
+- **Herdr**, se l'orchestratore gira in un terminale `hc`: un tab per worker, lanciato senza genitore (`--no-parent`) tramite il wrapper `"$SHELL" -ic` nello spazio Herdr dell'orchestratore; rapporti e controllo a inizio turno sostituiscono le notifiche dei figli e l'attesa esplicita riguarda un worker per nome;
+- **Claude Code**, se l'orchestratore gira in Claude Code: i worker sono sessioni headless `claude -p --dangerously-skip-permissions`, un turno alla volta, con sessione e log in `.git/` del clone;
+- **manuale** negli altri casi.
+
+Il comando dei worker Pi è `node scripts/start-pi.mjs --approve`: prepara il settings dal manifest e accorda fiducia ai file locali del clone per la sessione, consentendo il caricamento delle risorse e l'esecuzione delle estensioni del progetto attendibile. Un orchestratore in Claude Code ignora questo comando: i suoi worker eseguono ogni comando nel clone senza chiedere conferma, quindi va usato solo con clone che contengono esclusivamente file versionati. In ogni modalità valgono le protezioni dei clone di `AGENTS.md` §10 (niente `.env`, `.local/`, segreti o stato personale; preparazione con `npm ci`; nessun intervento sullo stack operativo). Le istruzioni della skill e dei worker non sono garanzie tecniche; le prove simulate non dimostrano il comportamento di Herdr reale, di Claude Code headless o di un modello.

@@ -21,7 +21,7 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "§6; TECHNICAL-DESIGN §8",
+    "§6; design/test-strategy",
     "§10; `docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare il progetto dal template v1.6.1 adottato da TEC-028 al tag `v1.7.0`, commit `d261947d4c76b08147c17ddb0e1cc630ba7bd0d3`, senza sovrascrivere le personalizzazioni dello studio. Il riferimento è fissato: eventuali versioni successive richiedono una nuova decisione.",

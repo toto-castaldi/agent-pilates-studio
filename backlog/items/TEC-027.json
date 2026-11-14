@@ -21,7 +21,7 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
+    "design/data-model",
     "§5",
     "§6",
     "§8",
@@ -35,7 +35,7 @@
     "Il ruolo dell'agente può leggere e inserire registrazioni e aggiornare solo i campi di annullamento, una sola volta; `DELETE` e `TRUNCATE` sono rifiutati anche al ruolo di migrazione, come per le regole; il DDL resta rifiutato.",
     "Test su PostgreSQL reale verificano la migrazione da uno stato pulito e dallo schema della v0.2.0 con dati preesistenti, vincoli, unicità, rifiuto delle lezioni future e dei confini di oggi (inizio appena passato e appena futuro), autore non falsificabile, annullamento unico, rifiuto di cancellazione, riscrittura e DDL, con soli dati sintetici; le suite `test:db`, `test:author` e `test:upgrade` sono aggiornate dove pertinente.",
     "`SOUL.md` descrive le nuove tabelle e colonne e la definizione di cliente atteso tramite le regole valide per la lezione, senza duplicare nel codice le regole di comportamento; il controllo automatico di coerenza tra `SOUL.md` e migrazioni copre le nuove colonne.",
-    "`docs/TECHNICAL-DESIGN.md` §4 descrive il modello dati e §5 le invarianti introdotte; backup e ripristino includono le nuove tabelle."
+    "`design/README` §4 descrive il modello dati e §5 le invarianti introdotte; backup e ripristino includono le nuove tabelle."
   ],
   "outcome": "Migrazione e contesto dello studio per presenze e assenze, con unicità, controllo temporale, attribuzione protetta e annullamento senza riscrittura o cancellazione. Verificati PostgreSQL reale, turni autenticati sintetici, upgrade dalla v0.2.0 con dati, backup/ripristino e quality gate; nessuna prova conversazionale con modello reale. Completato il 2026-11-07.",
   "closed_at": "2026-11-07"

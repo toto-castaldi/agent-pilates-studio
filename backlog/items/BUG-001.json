@@ -16,7 +16,7 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
+    "design/modules",
     "§6",
     "§7",
     "§9"
@@ -30,7 +30,7 @@
     "L'avvio locale fallisce con un messaggio fisso, senza riportare il numero, se il canale home manca o non è nell'elenco autorizzato.",
     "Con il canale configurato nessun utilizzatore riceve l'avviso né suggerimenti di `/sethome`, alla prima conversazione e dopo riavvio o ricreazione del gateway; `/sethome` inviato da un utilizzatore non modifica il canale home configurato. I job cron restano disabilitati fino a TEC-019.",
     "Un test di regressione con gateway reale, webhook firmato e dati sintetici verifica che i messaggi inviati al sostituto Meta non contengano l'avviso e che `/sethome` non cambi il canale; il filtro dell'avviso nell'harness di TEC-012 è rimosso, così gli scenari falliscono se riappare.",
-    "Log e output rispettano REQ-NFR-002; `docs/TECHNICAL-DESIGN.md` descrive la scelta."
+    "Log e output rispettano REQ-NFR-002; `design/README` descrive la scelta."
   ],
   "outcome": "Canale home privato e validato, `/sethome` bloccato, cron del gateway disabilitati e filtro dell'harness rimosso. Verificati gateway reale con webhook firmati, sostituti Meta e modello sintetici, riavvio e ricreazione, cron scaduto, privacy dei log, avvio e upgrade isolati; nessuna nuova prova Meta/OpenRouter reale né accettazione privacy. Completato il 2026-11-06.",
   "closed_at": "2026-11-06"

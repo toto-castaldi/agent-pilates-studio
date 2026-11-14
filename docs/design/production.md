@@ -1,0 +1,27 @@
+# Production
+
+## Ambienti
+
+I due ambienti (REQ-OPS-004) usano lo stesso `compose.yaml`. Lo sviluppo mantiene il progetto Compose predefinito del repository; la produzione usa il progetto esplicito `agent-pilates-prod` su `jarvis`, con configurazione e segreti fuori dal checkout e porte loopback distinte. `PILATES_VOLUME_PREFIX` determina insieme i nomi dei volumi PostgreSQL e Hermes; se non è impostato vale il nome del progetto, conservando i volumi esistenti. `start:local` verifica la configurazione risolta da Compose e rifiuta progetto e volumi di produzione; `restore.sh` ignora il prefisso ereditato per non puntare ai volumi di un altro ambiente.
+
+## Immagini
+
+Le immagini `hermes`, `postgres`, `migrator` e `ops` sono costruite da GitHub Actions e pubblicate su GHCR solo dopo il superamento della CI su `main`, marcate con il commit; sono pubbliche e non contengono segreti. `compose.yaml` non monta file del checkout: le immagini sono parametriche per ambiente (`PILATES_HERMES_IMAGE`, `PILATES_POSTGRES_IMAGE`) e lo sviluppo le costruisce in locale. `SOUL.md`, configurazione e plugin sono montati in sola lettura dall'immagine stessa con mount `type: image` dentro `/opt/data`: una copia nel volume permetterebbe all'agente, che ne possiede la directory, di sostituirli, e un volume esistente non riceverebbe i file nuovi. Serve un Docker che accetti più mount `subpath` dalla stessa immagine: la 28.0.4 li rifiuta, la 29.9.2 di `jarvis` li accetta e la CI installa la stessa versione.
+
+## Aggiornamento manuale
+
+La procedura (REQ-OPS-005, [procedura](../operations/TEC-035-produzione.md), che estende la [continuità](../operations/TEC-005-continuita.md)) è eseguita dall'immagine `ops`, che contiene `compose.yaml` e le procedure ed è l'unica a ricevere il socket Docker, solo per la durata del comando. È distinta da `start:local`. Non c'è un checkout applicativo sul server. Le migrazioni vanno solo avanti: il ritorno alla versione precedente riparte da un backup quiescente ripristinato in volumi nuovi, selezionati con `PILATES_VOLUME_PREFIX`, conservando quelli precedenti.
+
+## Launcher
+
+`scripts/update-agent-pilates.sh`, copiabile come `~/update-agent-pilates.sh` (REQ-OPS-009), richiede un solo SHA completo minuscolo e non contiene un commit predefinito. Dopo la validazione esegue `docker run --rm` dell'immagine `ops` di quel commit con gli unici bind mount del socket Docker e di `/opt/agent-pilates-prod`, poi `update` con lo stesso SHA; nessun checkout, build o ricerca automatica di versioni sul server. Propaga l'esito di Docker senza dichiarare un successo proprio. La selezione della versione è un comando separato dell'operatore: GitHub CLI può leggere il tip di `main` oppure l'ultimo run riuscito di `ci.yml` filtrato per `main` ed evento `push`, che comprende la pubblicazione; solo il secondo è certamente installabile.
+
+## Backup a caldo
+
+`ops backup-hot <commit>` (REQ-OPS-008) richiede il commit completo dell'immagine `ops`, che può essere più recente di quella in esercizio. Esegue `pg_dump -Fc` nel PostgreSQL sano del progetto attivo, con la stessa esclusione del backup quiescente, senza fermare o ricreare gateway e broker e senza copiare il volume Hermes. Una directory nuova `hot-*` sotto `backups/` è privata; `INCOMPLETE` viene rinominato atomicamente in `COMPLETE` con valore `hot-postgres-v1` solo dopo dump, checksum e proprietà, e l'assenza del marcatore completo indica un errore. Il ritorno alla versione precedente verifica prima degli arresti formato quiescente, marcatore `1`, entrambi gli archivi e i checksum, e `restore.sh` ripete la verifica; immagini `ops` precedenti a questa verifica possono fermare i servizi prima di rifiutare il backup. Il ripristino locale senza proprietari e privilegi è solo per consultazione. Checksum e permessi non garantiscono autenticità, cifratura, assenza di ACL o mutua esclusione; un solo operatore alla volta. Nessun automatismo avvia il backup in produzione.
+
+## WhatsApp per ambiente
+
+Si usano due app Meta (REQ-OPS-006) anziché una con override del callback per numero, per non condividere l'app secret con i clone di sviluppo. Il tunnel instrada l'hostname di produzione verso la porta loopback di produzione su `jarvis` e quello di sviluppo verso la porta a cui si collega il clone con `ssh -R`; il filtro del proxy copre entrambi gli hostname (`proxy-logs`). Il percorso pubblico di produzione è limitato a `/whatsapp/webhook`; il resto dell'hostname risponde 404.
+
+La produzione usa il numero di test Meta della propria app: i destinatari sono anche registrati nell'elenco del numero di test su Meta (al massimo 5; la durata del numero non è documentata nelle fonti consultate). Numero di test, account WhatsApp ed elenco destinatari appartengono al Business portfolio, non all'app: la produzione ha un portfolio Meta proprio, con app pubblicata, solo il campo `messages` e l'app iscritta all'account WhatsApp. Il passaggio a un numero reale aggiorna i segreti `whatsapp-*` di produzione (e, fino alla transizione all'identità unica, l'allowlist) e richiede il riavvio coordinato della procedura di aggiornamento; il censimento nel database resta indipendente dal trasporto. Procedura ed evidenze: [WhatsApp per ambiente](../operations/TEC-036-whatsapp-ambienti.md).

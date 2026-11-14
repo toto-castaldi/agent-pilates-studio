@@ -16,7 +16,7 @@
   "design_references": [
     "PROCESS §3",
     "§6; AGENTS §6",
-    "§9; TECHNICAL-DESIGN §8"
+    "§9; design/test-strategy"
   ],
   "description": "I tool `question` e `questionnaire` del pacchetto esterno `npm:pi-question-tool@0.1.1` aprono la propria interfaccia con `ctx.ui.custom()` senza l'opzione `blocked`. Pi 1.5.0 continua quindi a segnalare `working` tramite OSC 7501 mentre attende la risposta, e i terminali come Herdr mostrano l'agente al lavoro anziché in attesa. Si sostituisce il pacchetto con un fork adattato, con licenza MIT e attribuzione, nel pacchetto condiviso `git:github.com/toto-castaldi/agent-harness-stuff`.",
   "acceptance_criteria": [

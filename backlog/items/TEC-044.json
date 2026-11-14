@@ -30,8 +30,8 @@
     "PROCESS §6",
     "PROCESS-PARALLEL §1",
     "PROCESS-PARALLEL §2",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §10",
+    "design/test-strategy",
+    "design/README",
     "docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare dalla v2.1.0 adottata con TEC-038 alla release v2.2.1 di agile-project-template, tag annotato e commit e77bc386ab25d421186e3057eb0fa9e6cfc6c4c3 verificati sul repository pubblico il 2026-11-13. Includere la risoluzione condivisa degli stati dai branch nella CLI e nei visualizzatori Pi e Claude Code e la correzione dei nuovi lanci Herdr con --no-parent. Il pannello Claude Code è incluso per decisione esplicita. Preservare personalizzazioni e protezioni dello studio; non adottare automaticamente versioni successive, non migrare o sostituire i dati del backlog e non modificare lo stack operativo o la configurazione personale.",

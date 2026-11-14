@@ -19,7 +19,7 @@
   "design_references": [
     "PROCESS §3",
     "§6; AGENTS §6",
-    "§9; TECHNICAL-DESIGN §8"
+    "§9; design/test-strategy"
   ],
   "description": "Rendere condivisibile il template Pi locale `/start`, attualmente ignorato da Git, senza ripristinare il template `/avvio` rimosso né includere dati locali privati.",
   "acceptance_criteria": [

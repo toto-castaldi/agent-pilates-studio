@@ -23,7 +23,7 @@
     "§4",
     "§6",
     "§7",
-    "§8; TECHNICAL-DESIGN §8",
+    "§8; design/test-strategy",
     "§10; `docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Allineare processo e skill condivise al tag `v1.6.1` del template, commit `6bea086a1ef9f1cd4b7ab79e86a504ddceb81788`, rispetto alla base adottata con TEC-024. Attivare la modalità parallela con shared claims, radice dei workspace predefinita del template e comando worker `pi`, senza avviare worker per la sola adozione.",

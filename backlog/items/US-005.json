@@ -20,7 +20,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §6",
+    "design/integrations",
     "§8"
   ],
   "description": "Come titolare o collaboratore, voglio che l'agente abbia un nome con cui si presenta e risponde, così da riconoscerlo e rivolgermi a lui in modo naturale. Oggi, alla domanda «come ti chiami tu?», l'agente risponde di essere l'assistente dello studio Pilates, di non avere un nome specifico e di poter essere chiamato come si preferisce.",

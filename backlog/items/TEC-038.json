@@ -27,8 +27,8 @@
     "PROCESS §6",
     "PROCESS-PARALLEL §1",
     "PROCESS-PARALLEL §2",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §10",
+    "design/test-strategy",
+    "design/README",
     "docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare dalla v2.0.0 adottata con TEC-031 al tag v2.1.0 del template agile-project-template, commit e8f7f86db40977e45f2a0546d9256fe12e20a193. Adottare la pubblicazione automatica delle sole aggiunte di item, preservando le personalizzazioni e le protezioni dello studio; eventuali versioni successive richiedono una decisione separata.",

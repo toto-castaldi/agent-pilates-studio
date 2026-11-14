@@ -16,7 +16,7 @@
     "REQ-NFR-003"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §7",
+    "design/security",
     "§8",
     "§9"
   ],

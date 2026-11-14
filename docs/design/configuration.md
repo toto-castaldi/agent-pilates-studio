@@ -1,0 +1,23 @@
+# Configuration and local runtime
+
+## Avvio locale
+
+L'ambiente locale usa Docker Compose; Node.js e npm sull'host, `.env` privato e `npm run start:local`, senza esporre automaticamente il webhook pubblico. Node.js 24.14.0 è indicato in `.nvmrc`; gli intervalli supportati di Node.js e npm sono in `package.json`. Le immagini dei componenti sono fissate per digest nella configurazione.
+
+L'orchestratore locale prepara dipendenze e file privati, avvia database e bootstrap, applica le migrazioni e attende la salute dei servizi. Verifica i valori richiesti e i permessi (`security`), non elimina volumi e segnala i fallimenti senza dichiarare sano lo stack; la salute locale non prova la disponibilità dei servizi esterni.
+
+A ogni avvio arresta il gateway con SIGKILL, per evitare avvisi di spegnimento al vecchio canale home, poi il broker; aggiorna i file esterni e ricrea entrambi, applicando anche i file montati sostituiti da checkout. I turni in corso sono interrotti. Dopo un errore nell'aggiornamento tenta di arrestare entrambi; un guasto Docker può impedire l'arresto e richiede verifica manuale prima del recupero. I file parzialmente aggiornati si riallineano rilanciando il comando. Credenziali database e interne non sono ruotate.
+
+Variabili, esempi e comandi operativi sono descritti nel README e in `.env.example`, senza segreti reali.
+
+## Identità in configurazione
+
+- **Runtime attuale:** `WHATSAPP_ALLOWED_USERS` elenca i numeri autorizzati; il collegamento opzionale `WHATSAPP_TEACHER_LINKS` in `.env` è un array JSON di numero autorizzato, nome e cognome, e l'assenza equivale a `[]`. Valori non validi arrestano `start:local` prima di modificare servizi o segreti, senza riportare numeri o nomi. Il file privato `whatsapp-teacher-links` è montato solo nel broker. In produzione `ops init`, installazione e aggiornamento predispongono il file vuoto se manca, senza sovrascriverlo.
+- **Identità unica:** l'unico numero personale configurato è `PILATES_MANAGER_PHONE`, in formato internazionale validato e normalizzato; il canale home ne deriva automaticamente e un valore mancante o malformato arresta l'avvio senza esporlo. `WHATSAPP_ALLOWED_USERS`, `WHATSAPP_TEACHER_LINKS` e il numero home separato non sono più fonti né fallback. Nome, cognome, telefoni degli altri insegnanti e accessi si mantengono soltanto nel database tramite il gestore. Esempi e procedure cambiano insieme al runtime, alla transizione (`identity`). Censire un destinatario non supera il limite o la preregistrazione del numero di test Meta.
+
+## Altre variabili
+
+- `PILATES_MODEL`: modello OpenRouter; `PILATES_IDLE_COMPACT_SECONDS`: intervallo di inattività prima della compattazione, in secondi (`compaction`).
+- `PILATES_VOLUME_PREFIX`: prefisso comune dei volumi PostgreSQL e Hermes (`production`).
+
+La produzione presume un server Linux con Docker/Compose e un endpoint HTTPS pubblico già disponibili; DNS, certificati e provisioning del server sono fuori scope.

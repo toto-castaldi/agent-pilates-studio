@@ -20,8 +20,8 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §6"
+    "design/data-model",
+    "design/integrations"
   ],
   "description": "Come titolare o collaboratore, voglio chiedere all'agente chi ha tenuto le lezioni e come sono andate le lezioni di ciascun insegnante, così da seguire l'attività degli insegnanti.",
   "acceptance_criteria": [

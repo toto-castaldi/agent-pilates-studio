@@ -19,8 +19,8 @@
     "REQ-NFR-004"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §9"
+    "design/security",
+    "design/configuration"
   ],
   "description": "Creazione guidata con l'operatore della seconda app Meta, con il suo numero di test come numero iniziale di produzione, e collegamento stabile dei due ambienti al tunnel esistente.",
   "acceptance_criteria": [

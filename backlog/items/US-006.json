@@ -20,7 +20,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
+    "design/data-model",
     "§5",
     "§6"
   ],

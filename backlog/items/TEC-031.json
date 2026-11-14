@@ -21,7 +21,7 @@
   "design_references": [
     "PROCESS §3",
     "§4",
-    "§7; TECHNICAL-DESIGN §10; `docs/TEMPLATE-ORIGIN.md"
+    "§7; design/README; `docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare il progetto dalla v1.7.1 adottata da TEC-030 al tag `v2.0.0` del template, commit `e4fb57679f8a523401245e4080bd6aca54f95552`, migrando il backlog in `backlog/` e rimuovendo `BACKLOG.md` e `STATUS.md`. Il riferimento è fissato; versioni successive richiedono una decisione separata.",
   "acceptance_criteria": [

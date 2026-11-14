@@ -6,7 +6,7 @@
 
 Verificata soltanto la base dati additiva di ADR-003: stessa anagrafica, telefono corrente canonico, accesso tecnico, risoluzione privata, gestione atomica e audit. Il gateway e il broker applicativi restano quelli della baseline; non viene attivato il modello target. Nessuna configurazione privata, dato reale o stack operativo dello studio è stato usato o modificato. Il clone è stato preparato con `npm ci`, senza copie dal clone principale.
 
-Riferimenti: [contratto SQL](../data/TEC-041-identity-contract.md), [ADR-003](../adr/ADR-003-unified-teacher-identity.md), TECHNICAL-DESIGN §§3–5, 7–8. Il contratto distingue gli ingressi già disponibili nel database dal loro futuro utilizzo nel runtime e dalle restrizioni definitive di TEC-042.
+Riferimenti: [contratto SQL](../data/TEC-041-identity-contract.md), [ADR-003](../adr/ADR-003-unified-teacher-identity.md), design tecnico (oggi `docs/design/`: `modules`, `data-model`, `invariants`, `identity`, `security`, `test-strategy`). Il contratto distingue gli ingressi già disponibili nel database dal loro futuro utilizzo nel runtime e dalle restrizioni definitive di TEC-042.
 
 ## Environment
 
@@ -27,7 +27,7 @@ Riferimenti: [contratto SQL](../data/TEC-041-identity-contract.md), [ADR-003](..
 | Audit, atomicità e conservazione dello studio | Ogni modifica riuscita ha autore e data di sistema, stato prima/dopo e revisione coerente con la riga corrente. Errori e duplicati non lasciano persona, audit o guardia parziali; il commit di una guardia dimenticata viene rifiutato dal trigger differito. UPDATE, DELETE e TRUNCATE dell'audit sono vietati anche al DML del migratore. Clienti, regole, slot, legami, presenze, regole degli insegnanti e indicazioni vengono confrontati dopo le operazioni gestionali; gli snapshot originali restano identici. |
 | Concorrenza di revoca e operazioni | Il contesto nuovo prende un lock condiviso della persona per la transazione. Una revoca concorrente attende finché l'operazione precedente termina; dopo la conferma non autorizza un vecchio contesto. Correzione, cambio numero e successiva riabilitazione non rendono di nuovo valida una vecchia revisione. |
 | Compatibilità e persistenza | `test:author` e `test:compaction` passano con il runtime precedente, webhook firmati e componenti reali. `test:hermes` migra da vuoto, prepara persone complete/incomplete, accessi abilitati/revocati, cambio numero e audit; confronta lo stato privato completo dopo riavvio, ricreazione e backup/ripristino quiescente. Dopo il ripristino verifica nuovamente gestione, risoluzione, funzione del mittente e privilegi. `test:start` e `test:images` verificano installazione isolata, migrazioni e immagini senza checkout; il backup a caldo continua a essere coerente e ripristinabile. |
-| Documentazione e mancata attivazione | TECHNICAL-DESIGN, ADR-003, contratto SQL, README e descrizione dello schema in SOUL distinguono dati additivi e runtime ancora legacy. `test:local` confronta colonne pubbliche/private e il montaggio del contesto. Nessuna modifica a Compose, segreti, configurazione di avvio o codice dei consumatori gateway/broker. |
+| Documentazione e mancata attivazione | Design tecnico, ADR-003, contratto SQL, README e descrizione dello schema in SOUL distinguono dati additivi e runtime ancora legacy. `test:local` confronta colonne pubbliche/private e il montaggio del contesto. Nessuna modifica a Compose, segreti, configurazione di avvio o codice dei consumatori gateway/broker. |
 
 ## Executed commands
 

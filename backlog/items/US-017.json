@@ -24,13 +24,13 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §9",
+    "design/modules",
+    "design/data-model",
+    "design/invariants",
+    "design/integrations",
+    "design/security",
+    "design/test-strategy",
+    "design/configuration",
     "ADR-003"
   ],
   "description": "Come unico gestore riconosciuto dal numero configurato, voglio mantenere l'anagrafica degli insegnanti attraverso una procedura guidata nella chat WhatsApp, senza trasmettere telefoni al modello, così da censire e aggiornare gli utilizzatori senza modificare altri elenchi o concedere agli insegnanti ordinari permessi gestionali. Il flusso usa le interfacce protette di TEC-041; l'attivazione dell'accesso ordinario nuovo è coordinata nell'item successivo.",

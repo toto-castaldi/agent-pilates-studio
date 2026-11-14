@@ -15,7 +15,7 @@
     "REQ-NFR-004"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §7"
+    "design/security"
   ],
   "description": "Debito tecnico concordato, pianificato nella v0.3.0 su decisione dell’utente del 2026-11-14: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La pianificazione non dimostra la conformità a REQ-NFR-002 né modifica il divieto di REQ-NFR-004 o la decisione del 2026-11-09 sull’uso continuativo della sola produzione. Per decisione dell’utente del 2026-11-05, l’accettazione privacy della v0.1.0 è rinviata a questo item; le modifiche infrastrutturali richiedono autorizzazioni separate.",
   "acceptance_criteria": [
