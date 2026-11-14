@@ -1,6 +1,7 @@
 {
   "id": "TEC-008",
   "title": "Audit privacy dei log del proxy",
+  "version": "v0.3.0",
   "epic": "EPIC-003",
   "type": "Task",
   "priority": "P1",
@@ -15,7 +16,7 @@
   "design_references": [
     "TECHNICAL-DESIGN §7"
   ],
-  "description": "Debito tecnico concordato: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La mancata assegnazione a una versione non modifica REQ-NFR-002 né autorizza l'uso continuativo del gateway. Per decisione dell'utente del 2026-11-05, l'accettazione privacy della v0.1.0 è rinviata a questo item.",
+  "description": "Debito tecnico concordato, pianificato nella v0.3.0 su decisione dell’utente del 2026-11-14: verificare la conservazione, i campi e la retention dei log Cloudflare e la copertura dei formati locali del proxy, eliminando o mitigando eventuali esposizioni di segreti, messaggi o numeri. La pianificazione non dimostra la conformità a REQ-NFR-002 né modifica il divieto di REQ-NFR-004 o la decisione del 2026-11-09 sull’uso continuativo della sola produzione. Per decisione dell’utente del 2026-11-05, l’accettazione privacy della v0.1.0 è rinviata a questo item; le modifiche infrastrutturali richiedono autorizzazioni separate.",
   "acceptance_criteria": [
     "Sono documentati, con evidenze verificabili e senza riportare dati sensibili, configurazione, campi raccolti, destinazioni e tempi di conservazione dei log pertinenti Cloudflare e locali; le parti non osservabili restano esplicitamente non verificate.",
     "Prove ripetibili con soli indicatori sintetici coprono i formati locali individuati e i principali esiti del proxy; non viene avviato lo streaming remoto dei log del tunnel condiviso, come previsto da REQ-NFR-004.",

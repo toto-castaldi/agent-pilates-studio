@@ -70,6 +70,7 @@ Con la v0.3.0 l'agente registra le presenze e le assenze effettive dei clienti a
 - Cambio di scope del 2026-11-10: l'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore, né al primo contatto né successivamente (REQ-AGENT-007).
 - Cambio di scope del 2026-11-12: backup a caldo del solo database di produzione con un comando `ops`, senza fermare gateway e broker, per consultare i dati (REQ-OPS-008).
 - Cambio di scope del 2026-11-12: launcher manuale di aggiornamento con commit parametrico e istruzioni per scegliere l'ultimo commit di `main` con immagini pubblicate (REQ-OPS-009).
+- Cambio di scope del 2026-11-14: audit privacy dei log del proxy Cloudflare e locali (TEC-008, REQ-NFR-002 e REQ-NFR-004), con evidenze verificabili, prove sintetiche e limiti non osservabili espliciti; nessuna dichiarazione anticipata di conformità né autorizzazione implicita a modifiche infrastrutturali.
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.3.0
@@ -392,6 +393,8 @@ Credenziali e segreti non devono essere inclusi nel repository; i log non devono
 Per la sola prova pubblica controllata di TEC-005, l'operatore ha autorizzato temporaneamente il rischio residuo dovuto all'audit incompleto dei log Cloudflare e di alcuni formati locali del proxy. Restano obbligatori il filtro locale verificato, la soppressione dell'output sensibile dei servizi, l'assenza di esportazioni Cloudflare e il divieto di streaming di REQ-NFR-004. Non registrare intenzionalmente dati sensibili; in caso di esposizione rilevata, interrompere la prova e coordinare la rotazione dei segreti coinvolti. L'autorizzazione non dimostra la conformità completa né autorizza un uso continuativo senza una decisione separata; l'approfondimento va tracciato come debito tecnico.
 
 **Decisione dell'utente (2026-11-09):** l'operatore accetta il rischio residuo dell'audit incompleto dei log del proxy (TEC-008) anche per l'uso continuativo del gateway di produzione, dichiarando che alla data della decisione non sono presenti dati sensibili. La decisione non dimostra la conformità; restano obbligatori il filtro locale verificato esteso all'hostname di produzione, la soppressione dell'output sensibile dei servizi, l'assenza di esportazioni Cloudflare e il divieto di REQ-NFR-004.
+
+**Decisione dell'utente (2026-11-14):** TEC-008 è assegnato alla v0.3.0 come ampliamento dello scope. La pianificazione dell'audit non dimostra la conformità né modifica la decisione del 2026-11-09 e il divieto di REQ-NFR-004; le modifiche infrastrutturali richiedono autorizzazioni separate.
 
 #### REQ-NFR-003 — Integrazione continua
 

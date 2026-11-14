@@ -77,6 +77,8 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 - Per il solo abbandono di TEC-019 perché troppo generico, l'utente ha autorizzato una deroga a `docs/PROCESS.md` §6.1: il passaggio a `Dropped`, con motivazione e questa deroga, è registrato in un unico commit documentale direttamente su `main`, senza branch di backlog né merge. Nessun push è autorizzato; la deroga non si estende ad altre operazioni.
 
+- Per la sola pianificazione di TEC-008 nella v0.3.0, concordata il 2026-11-14, l'utente ha autorizzato una deroga a `docs/PROCESS.md` §6.1: assegnazione, cambio di scope, note e relativi aggiornamenti documentali sono registrati in un unico commit documentale direttamente su `main`, senza branch di backlog né merge. È autorizzato il push di questo commit e del precedente `7506b70` per TEC-019, superando per quest'ultimo il solo divieto di push originario. È autorizzato il lancio del worker TEC-008 per preparare il piano e attendere il via, non l'implementazione né modifiche infrastrutturali. La deroga non si estende ad altre operazioni.
+
 ## 9. Security and configuration
 
 - Il workflow Pi condiviso è in `.pi/workflow.json`; avviare dalla radice con `node scripts/start-pi.mjs`. Il launcher sincronizza solo packages/skills/extensions/prompts prima di Pi. `.pi/settings.json`, temi e preferenze restano locali e ignorati; avviare direttamente `pi` non garantisce la sincronizzazione. Per la transizione e il recupero privato prima dell'aggiornamento vedere README, sezione Configurazione Pi. Non copiare settings personali nei worker.
