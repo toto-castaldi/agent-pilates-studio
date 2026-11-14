@@ -66,5 +66,20 @@ test('assignment catalog covers recording, confirmations, identity, correction a
   assert.match(harness, /assignmentScenarioMatches\(seededSnapshot, current, assignmentExpected\)/);
   assert.match(harness, /historyPreserved\(previous, current\)/);
   assert.ok(harness.indexOf('const stateOk =') < harness.indexOf('if (!responseMatches(text, expectedResponse))'), 'database checks must also run on a lexical failure');
-  assert.doesNotMatch(harness, /DISABLE TRIGGER (?:teachers_author|teacher_rules_author|teacher_assignments_author)/);
+  // US-015: historical fixtures may bypass only the rule and assignment author
+  // triggers, inside the migrator's setup transaction; teachers keep theirs.
+  assert.doesNotMatch(harness, /DISABLE TRIGGER (?:teachers_author|ALL|USER)\b/);
+  assert.equal([...harness.matchAll(/DISABLE TRIGGER (\w+)/g)].map((match) => match[1]).sort().join(','), 'attendance_author,teacher_assignments_author,teacher_rules_author');
+  const begin = harness.indexOf("await client.query('BEGIN')");
+  const commit = harness.indexOf("await client.query('COMMIT')");
+  for (const [table, trigger] of [['teacher_rules', 'teacher_rules_author'], ['teacher_assignments', 'teacher_assignments_author'], ['attendance', 'attendance_author']]) {
+    const disable = harness.indexOf(`ALTER TABLE app.${table} DISABLE TRIGGER ${trigger}`);
+    const enable = harness.indexOf(`ALTER TABLE app.${table} ENABLE TRIGGER ${trigger}`);
+    assert.ok(begin > 0 && disable > begin && enable > disable && commit > enable, `${trigger} must be restored inside the setup transaction`);
+  }
+  const flush = harness.indexOf('SET CONSTRAINTS app.teacher_rules_complete IMMEDIATE');
+  assert.ok(flush > 0 && flush < harness.indexOf('ALTER TABLE app.teacher_rules ENABLE TRIGGER teacher_rules_author'), 'pending rule checks must run before ALTER TABLE');
+  assert.ok(harness.indexOf('SET CONSTRAINTS app.teacher_rules_complete DEFERRED') > flush);
+  assert.match(harness, /tgenabled !== 'O'/);
+  assert.match(harness, /seededTeacherFixturesMatch\(seededSnapshot, setup\.teacherRules \?\? \[\], setup\.assignments \?\? \[\]/);
 });

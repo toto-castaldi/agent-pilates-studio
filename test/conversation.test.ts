@@ -130,6 +130,30 @@ test('relative day uses the Rome calendar across midnight and DST', () => {
   assert.equal(scenarioRelativeDate(reference, '2025-02-01'), '2025-02-01');
 });
 
+test('last Saturday and last week are resolved in the Rome calendar for every weekday', () => {
+  // Monday 2026-11-09 to Sunday 2026-11-15, at noon UTC.
+  const lastSaturday = ['2026-11-07', '2026-11-07', '2026-11-07', '2026-11-07', '2026-11-07', '2026-11-07', '2026-11-14'];
+  for (let offset = 0; offset < 7; offset++) {
+    const reference = new Date(Date.UTC(2026, 10, 9 + offset, 12));
+    assert.equal(scenarioRelativeDate(reference, '$LAST_SATURDAY'), lastSaturday[offset]);
+    assert.equal(scenarioRelativeDate(reference, '$LAST_WEEK_MONDAY'), '2026-11-02');
+    assert.equal(scenarioRelativeDate(reference, '$LAST_WEEK_MONDAY+6'), '2026-11-08');
+  }
+  // Saturday counts the previous week; just after midnight Rome is already Sunday.
+  assert.equal(scenarioRelativeDate(new Date('2026-11-14T22:30:00Z'), '$LAST_SATURDAY'), '2026-11-07');
+  assert.equal(scenarioRelativeDate(new Date('2026-11-14T23:30:00Z'), '$LAST_SATURDAY'), '2026-11-14');
+  assert.equal(scenarioRelativeDate(new Date('2026-11-15T23:30:00Z'), '$LAST_WEEK_MONDAY'), '2026-11-09');
+  // Across the end of daylight saving time and a year boundary.
+  assert.equal(scenarioRelativeDate(new Date('2025-10-27T10:00:00Z'), '$LAST_WEEK_MONDAY+6'), '2025-10-26');
+  assert.equal(scenarioRelativeDate(new Date('2026-01-01T10:00:00Z'), '$LAST_WEEK_MONDAY'), '2025-12-22');
+  assert.equal(scenarioRelativeTimestamp(new Date('2026-11-14T12:00:00Z'), '$LAST_SATURDAYT20:30:00Z'), '2026-11-07T20:30:00Z');
+  assert.equal(scenarioRelativeTimestamp(new Date('2026-11-14T12:00:00Z'), '$LAST_WEEK_MONDAY+3T08:00:00Z'), '2026-11-05T08:00:00Z');
+  assert.equal(scenarioRelativeTimestamp(new Date('2026-11-14T12:00:00Z'), '2025-10-15T09:00:00Z'), '2025-10-15T09:00:00Z');
+  // Unknown or malformed tokens stay unchanged and are rejected by the harness.
+  for (const value of ['$LAST_SUNDAY', '$LAST_SATURDAY-1', '$last_saturday', 'LAST_SATURDAY']) assert.equal(scenarioRelativeDate(new Date(), value), value);
+  assert.equal(scenarioRelativeTimestamp(new Date(), '$LAST_SUNDAYT10:00:00Z'), '$LAST_SUNDAYT10:00:00Z');
+});
+
 test('home-channel notices are detected rather than excluded from replies', () => {
   assert.equal(hasHomeChannelNotice('📬 No home channel is set for Whatsapp. Synthetic notice.'), true);
   assert.equal(hasHomeChannelNotice('Digita /sethome'), true);

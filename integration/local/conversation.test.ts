@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { responseMatches, stateMatches } from '../../src/conversation.js';
+import { relativeDateTokens, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, stateMatches } from '../../src/conversation.js';
+
+// Fixture dates are absolute or one of the relative tokens resolved at the
+// start of a scenario; a fixed reference keeps the chronological checks stable.
+const token = `\\$(?:${relativeDateTokens.join('|')})(?:\\+\\d+)?`;
+const fixtureDate = new RegExp(`^(?:\\d{4}-\\d\\d-\\d\\d|${token})$`);
+const fixtureInstant = new RegExp(`^(?:\\d{4}-\\d\\d-\\d\\d|${token})T\\d\\d:\\d\\d:\\d\\dZ$`);
+const reference = new Date('2026-11-14T12:00:00Z');
+const resolveDate = (value: string) => scenarioRelativeDate(reference, value);
+const resolveInstant = (value: string) => Date.parse(scenarioRelativeTimestamp(reference, value) ?? '');
 
 test('conversation catalog is synthetic, complete and excluded from CI', async () => {
   const catalog = JSON.parse(await readFile('scenarios/basic.json', 'utf8'));
@@ -23,7 +32,13 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     for (const rule of scenario.setup?.teacherRules ?? []) {
       assert.ok(scenario.setup.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === rule.teacher));
       assert.ok(rule.text?.trim() && rule.intervals.length);
-      assert.ok(!rule.createdAt && !rule.deactivatedAt && !rule.inactive);
+      assert.ok(!rule.inactive, 'historical deactivation is expressed with deactivatedAt');
+      if (rule.createdAt) assert.match(rule.createdAt, fixtureInstant);
+      if (rule.deactivatedAt) {
+        assert.ok(rule.createdAt, 'only historical rules can be seeded as deactivated');
+        assert.match(rule.deactivatedAt, fixtureInstant);
+        assert.ok(resolveInstant(rule.deactivatedAt) > resolveInstant(rule.createdAt));
+      }
       for (const interval of rule.intervals) {
         assert.ok(Number.isInteger(interval.weekday) && interval.weekday >= 1 && interval.weekday <= 7);
         assert.match(interval.min, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
@@ -32,14 +47,23 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       }
     }
     for (const row of scenario.setup?.attendance ?? []) {
-      assert.match(row.createdAt, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)T\d\d:\d\d:\d\dZ$/);
-      assert.match(row.lessonDate, /^(?:\d{4}-\d\d-\d\d|\$YESTERDAY)$/);
+      assert.match(row.createdAt, fixtureInstant);
+      assert.match(row.lessonDate, fixtureDate);
       assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
       assert.ok(scenario.setup.clients.some((client: { firstName: string; lastName: string }) => `${client.firstName} ${client.lastName}` === row.client));
-      const lessonDate = row.lessonDate.replace('$YESTERDAY', '2025-01-06');
-      const createdAt = row.createdAt.replace('$YESTERDAY', '2025-01-06');
-      if (row.outcome !== 'excused_absence') assert.ok(Date.parse(createdAt) > Date.parse(`${lessonDate}T${row.time}:00Z`));
-      if (row.cancelledAt) assert.ok(Date.parse(row.cancelledAt.replace('$YESTERDAY', '2025-01-06')) > Date.parse(createdAt));
+      const createdAt = resolveInstant(row.createdAt);
+      if (row.outcome !== 'excused_absence') assert.ok(createdAt > Date.parse(`${resolveDate(row.lessonDate)}T${row.time}:00Z`));
+      if (row.cancelledAt) assert.ok(resolveInstant(row.cancelledAt) > createdAt);
+    }
+    for (const row of scenario.setup?.assignments ?? []) {
+      assert.ok(scenario.setup.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === row.teacher));
+      assert.match(row.lessonDate, fixtureDate);
+      assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
+      assert.match(row.createdAt, fixtureInstant);
+      if (row.cancelledAt) {
+        assert.match(row.cancelledAt, fixtureInstant);
+        assert.ok(resolveInstant(row.cancelledAt) > resolveInstant(row.createdAt));
+      }
     }
     for (const turn of scenario.turns) {
       assert.ok(turn.message && Array.isArray(turn.response.contains));
@@ -51,7 +75,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         const teachers = [...(scenario.setup.teachers ?? []), ...turn.assignmentExpected.addedTeachers];
         for (const row of turn.assignmentExpected.assignments) {
           assert.ok(teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === row.teacher));
-          assert.match(row.lessonDate, /^(?:\d{4}-\d{2}-\d{2}|\$YESTERDAY|\$NEXT_MONDAY(?:\+\d+)?)$/);
+          assert.match(row.lessonDate, fixtureDate);
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.equal(row.authorPhone, scenario.sender);
           assert.equal(row.authorName, scenario.profile ?? null);
@@ -90,7 +114,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
         assert.ok(scenario.setup && !turn.expected);
         assert.ok(Array.isArray(turn.attendanceExpected.addedClients) && Array.isArray(turn.attendanceExpected.attendance));
         for (const row of turn.attendanceExpected.attendance) {
-          assert.ok(row.client && /^(?:\d{4}-\d{2}-\d{2}|\$TODAY|\$YESTERDAY|\$NEXT_MONDAY(?:\+\d+)?)$/.test(row.lessonDate));
+          assert.ok(row.client && fixtureDate.test(row.lessonDate));
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);

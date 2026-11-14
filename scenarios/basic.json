@@ -2,6 +2,138 @@
   "version": 1,
   "scenarios": [
     {
+      "id": "consultazione-insegnante-lezione",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Rossi" }, { "firstName": "Carla", "lastName": "Bianchi" }, { "firstName": "Emma", "lastName": "Gialli" }],
+        "rules": [
+          { "text": "Ada Verdi e Bruno Rossi sabato alle 19:00", "clients": ["Ada Verdi", "Bruno Rossi"], "slots": [{ "weekday": 6, "time": "19:00" }] },
+          { "text": "Carla Bianchi lunedì alle 18:00", "clients": ["Carla Bianchi"], "slots": [{ "weekday": 1, "time": "18:00" }] },
+          { "text": "Emma Gialli lunedì martedì mercoledì giovedì venerdì sabato domenica alle 20:00", "clients": ["Emma Gialli"], "slots": [{ "weekday": 1, "time": "20:00" }, { "weekday": 2, "time": "20:00" }, { "weekday": 3, "time": "20:00" }, { "weekday": 4, "time": "20:00" }, { "weekday": 5, "time": "20:00" }, { "weekday": 6, "time": "20:00" }, { "weekday": 7, "time": "20:00" }] }
+        ],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Giulia", "lastName": "Rosa" }],
+        "teacherRules": [
+          { "teacher": "Francesca Blu", "text": "Francesca Blu sabato alle 19:00", "intervals": [{ "weekday": 6, "min": "19:00", "max": "19:00" }], "createdAt": "2024-01-01T09:00:00Z" },
+          { "teacher": "Antonio Neri", "text": "Antonio Neri lunedì alle 18:00", "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }], "createdAt": "2024-01-01T09:00:00Z" },
+          { "teacher": "Giulia Rosa", "text": "Giulia Rosa tutti i giorni alle 20:00", "intervals": [{ "weekday": 1, "min": "20:00", "max": "20:00" }, { "weekday": 2, "min": "20:00", "max": "20:00" }, { "weekday": 3, "min": "20:00", "max": "20:00" }, { "weekday": 4, "min": "20:00", "max": "20:00" }, { "weekday": 5, "min": "20:00", "max": "20:00" }, { "weekday": 6, "min": "20:00", "max": "20:00" }, { "weekday": 7, "min": "20:00", "max": "20:00" }], "createdAt": "2024-01-01T09:00:00Z" }
+        ],
+        "assignments": [
+          { "teacher": "Antonio Neri", "lessonDate": "$LAST_SATURDAY", "time": "19:00", "createdAt": "$LAST_SATURDAYT20:30:00Z" },
+          { "teacher": "Antonio Neri", "lessonDate": "$YESTERDAY", "time": "20:00", "createdAt": "$YESTERDAYT08:00:00Z", "cancelledAt": "$YESTERDAYT09:00:00Z" }
+        ]
+      },
+      "turns": [
+        { "message": "Chi ha tenuto la lezione di sabato scorso alle 19?", "response": { "contains": ["Antonio", "Francesca"], "anyOf": [["sostitu"]], "times": ["19:00"], "dates": ["$LAST_SATURDAY"] }, "unchanged": true },
+        { "message": "Chi tiene lunedì alle 18?", "response": { "contains": ["Antonio"], "anyOf": [["attes", "regol", "previst"]], "times": ["18:00"], "excludes": ["Francesca"] }, "unchanged": true },
+        { "message": "Chi ha tenuto la lezione di ieri alle 20?", "response": { "contains": ["Giulia"], "anyOf": [["attes", "regol", "previst"]], "times": ["20:00"], "dates": ["$YESTERDAY"] }, "unchanged": true },
+        { "message": "Mostrami lo storico delle indicazioni della lezione di ieri alle 20, comprese quelle annullate, con date, autore e motivo.", "response": { "contains": ["Antonio", "Operatore"], "anyOf": [["annull"], ["errore", "sintetic"]], "date": true, "excludes": ["15555550102"] }, "unchanged": true }
+      ]
+    },
+    {
+      "id": "consultazione-insegnante-periodo",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2025-09-01T09:00:00Z",
+        "clients": [{ "firstName": "Ada", "lastName": "Verdi" }, { "firstName": "Bruno", "lastName": "Rossi" }, { "firstName": "Carla", "lastName": "Bianchi" }, { "firstName": "Dario", "lastName": "Viola" }, { "firstName": "Emma", "lastName": "Gialli" }, { "firstName": "Zeno", "lastName": "Pace" }],
+        "rules": [
+          { "text": "Ada Verdi e Bruno Rossi lunedì alle 18:00", "clients": ["Ada Verdi", "Bruno Rossi"], "slots": [{ "weekday": 1, "time": "18:00" }] },
+          { "text": "Carla Bianchi e Zeno Pace mercoledì alle 19:00", "clients": ["Carla Bianchi", "Zeno Pace"], "slots": [{ "weekday": 3, "time": "19:00" }] },
+          { "text": "Dario Viola venerdì alle 19:00", "clients": ["Dario Viola"], "slots": [{ "weekday": 5, "time": "19:00" }] }
+        ],
+        "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Francesca", "lastName": "Blu" }],
+        "teacherRules": [
+          { "teacher": "Antonio Neri", "text": "Antonio Neri venerdì alle 19:00", "intervals": [{ "weekday": 5, "min": "19:00", "max": "19:00" }], "createdAt": "2025-09-01T09:00:00Z", "deactivatedAt": "2025-10-15T09:00:00Z" },
+          { "teacher": "Antonio Neri", "text": "Antonio Neri lunedì alle 18:00", "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }], "createdAt": "2025-09-01T09:00:00Z" },
+          { "teacher": "Francesca Blu", "text": "Francesca Blu mercoledì sera", "intervals": [{ "weekday": 3, "min": "18:00", "max": "23:59" }], "createdAt": "2025-09-01T09:00:00Z" },
+          { "teacher": "Francesca Blu", "text": "Francesca Blu venerdì alle 19:00", "intervals": [{ "weekday": 5, "min": "19:00", "max": "19:00" }], "createdAt": "2025-10-15T09:00:00Z" }
+        ],
+        "assignments": [
+          { "teacher": "Francesca Blu", "lessonDate": "2025-10-13", "time": "18:00", "createdAt": "2025-10-13T19:00:00Z" },
+          { "teacher": "Antonio Neri", "lessonDate": "2025-10-08", "time": "19:00", "createdAt": "2025-10-07T09:00:00Z", "cancelledAt": "2025-10-07T10:00:00Z" },
+          { "teacher": "Antonio Neri", "lessonDate": "2025-10-22", "time": "19:00", "createdAt": "2025-10-22T19:00:00Z" },
+          { "teacher": "Antonio Neri", "lessonDate": "2025-10-31", "time": "19:00", "createdAt": "2025-10-31T19:00:00Z" }
+        ],
+        "attendance": [
+          { "client": "Dario Viola", "lessonDate": "2025-10-03", "time": "19:00", "outcome": "present", "createdAt": "2025-10-03T20:00:00Z" },
+          { "client": "Ada Verdi", "lessonDate": "2025-10-06", "time": "18:00", "outcome": "present", "createdAt": "2025-10-06T20:00:00Z" },
+          { "client": "Bruno Rossi", "lessonDate": "2025-10-06", "time": "18:00", "outcome": "present", "createdAt": "2025-10-06T20:00:00Z" },
+          { "client": "Dario Viola", "lessonDate": "2025-10-10", "time": "19:00", "outcome": "unexcused_absence", "createdAt": "2025-10-10T20:00:00Z" },
+          { "client": "Ada Verdi", "lessonDate": "2025-10-13", "time": "18:00", "outcome": "present", "createdAt": "2025-10-13T20:00:00Z" },
+          { "client": "Bruno Rossi", "lessonDate": "2025-10-13", "time": "18:00", "outcome": "present", "createdAt": "2025-10-13T20:00:00Z" },
+          { "client": "Carla Bianchi", "lessonDate": "2025-10-15", "time": "19:00", "outcome": "present", "createdAt": "2025-10-15T20:00:00Z" },
+          { "client": "Zeno Pace", "lessonDate": "2025-10-15", "time": "19:00", "outcome": "present", "createdAt": "2025-10-15T20:00:00Z" },
+          { "client": "Ada Verdi", "lessonDate": "2025-10-20", "time": "18:00", "outcome": "present", "createdAt": "2025-10-20T20:00:00Z" },
+          { "client": "Bruno Rossi", "lessonDate": "2025-10-20", "time": "18:00", "outcome": "excused_absence", "createdAt": "2025-10-20T20:00:00Z" },
+          { "client": "Carla Bianchi", "lessonDate": "2025-10-22", "time": "19:00", "outcome": "present", "createdAt": "2025-10-22T20:00:00Z" },
+          { "client": "Zeno Pace", "lessonDate": "2025-10-22", "time": "19:00", "outcome": "unexcused_absence", "createdAt": "2025-10-22T20:00:00Z" },
+          { "client": "Ada Verdi", "lessonDate": "2025-10-27", "time": "18:00", "outcome": "present", "createdAt": "2025-10-27T20:00:00Z" },
+          { "client": "Bruno Rossi", "lessonDate": "2025-10-27", "time": "18:00", "outcome": "present", "createdAt": "2025-10-27T20:00:00Z", "cancelledAt": "2025-10-28T09:00:00Z" },
+          { "client": "Dario Viola", "lessonDate": "2025-10-31", "time": "19:00", "outcome": "present", "createdAt": "2025-10-31T20:00:00Z" },
+          { "client": "Emma Gialli", "lessonDate": "2025-10-31", "time": "19:00", "outcome": "present", "createdAt": "2025-10-31T20:00:00Z" }
+        ]
+      },
+      "turns": [
+        { "message": "Che lezioni ha fatto Antonio Neri a ottobre 2025?", "response": { "contains": ["Antonio", "Francesca", "Ada", "Dario"], "dates": ["2025-10-03", "2025-10-06", "2025-10-10", "2025-10-13", "2025-10-20", "2025-10-22", "2025-10-27", "2025-10-31"],
+          "counts": [{ "labels": ["tenut"], "value": 7 }, { "labels": ["in sostituzione", "sostituendo", "come sostitut"], "value": 2 }, { "labels": ["sostituit", "da altri"], "value": 1 }] }, "unchanged": true, "sqlAggregate": true },
+        { "message": "Quali clienti erano presenti alle lezioni di Antonio Neri a ottobre 2025? Indica quante presenze per ciascuno.", "response": { "contains": ["Ada", "Bruno", "Carla", "Dario", "Emma"], "excludes": ["Zeno"],
+          "counts": [{ "labels": ["Ada"], "value": 3 }, { "labels": ["Dario"], "value": 2 }] }, "unchanged": true, "sqlAggregate": true },
+        { "message": "Che lezioni ha fatto Antonio Neri a marzo 2024?", "response": { "contains": [], "anyOf": [["nessun", "non risult", "non ci sono", "non ha tenuto", "non ha fatto", "non ho trovato", "non sono state"]] }, "unchanged": true }
+      ]
+    },
+    {
+      "id": "consultazione-insegnante-regole",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2025-09-01T09:00:00Z", "clients": [], "rules": [],
+        "teachers": [{ "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Giulia", "lastName": "Rosa" }],
+        "teacherRules": [
+          { "teacher": "Antonio Neri", "text": "Antonio Neri venerdì alle 19:00", "intervals": [{ "weekday": 5, "min": "19:00", "max": "19:00" }], "createdAt": "2025-09-01T09:00:00Z", "deactivatedAt": "2025-10-15T09:00:00Z" },
+          { "teacher": "Antonio Neri", "text": "Antonio Neri lunedì alle 18:00", "intervals": [{ "weekday": 1, "min": "18:00", "max": "18:00" }], "createdAt": "2025-09-01T09:00:00Z" },
+          { "teacher": "Francesca Blu", "text": "Francesca Blu mercoledì sera", "intervals": [{ "weekday": 3, "min": "18:00", "max": "23:59" }], "createdAt": "2025-09-01T09:00:00Z" },
+          { "teacher": "Francesca Blu", "text": "Francesca Blu venerdì alle 19:00", "intervals": [{ "weekday": 5, "min": "19:00", "max": "19:00" }], "createdAt": "2025-10-15T09:00:00Z" },
+          { "teacher": "Giulia Rosa", "text": "Giulia Rosa sabato mattina", "intervals": [{ "weekday": 6, "min": "06:00", "max": "12:59" }] }
+        ]
+      },
+      "turns": [
+        { "message": "Quali sono le regole attive degli insegnanti?", "response": { "contains": ["Antonio", "Francesca", "Giulia"], "anyOf": [["luned"], ["mercoled"], ["venerd"], ["sabat"]], "times": ["18:00", "19:00"] }, "unchanged": true },
+        { "message": "Chi è l'insegnante atteso il venerdì alle 19?", "response": { "contains": ["Francesca"], "times": ["19:00"], "excludes": ["Antonio"] }, "unchanged": true },
+        { "message": "E chi è atteso il mercoledì sera?", "response": { "contains": ["Francesca"], "excludes": ["Antonio", "Giulia"] }, "unchanged": true },
+        { "message": "Chi è atteso il lunedì pomeriggio?", "response": { "contains": [], "anyOf": [["nessun", "non c'è", "non ci sono", "non risult", "non è previst", "non sono previst"]] }, "unchanged": true },
+        { "message": "Mostrami lo storico delle regole di Antonio Neri, comprese quelle disattivate, con date, autore e motivo.", "response": { "contains": ["Antonio", "Operatore"], "anyOf": [["disattiv"], ["fine regola", "sintetic", "motiv"]], "dates": ["2025-09-01", "2025-10-15"], "excludes": ["15555550102"] }, "unchanged": true }
+      ]
+    },
+    {
+      "id": "consultazione-lezioni-senza-insegnante",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Zeno", "lastName": "Pace" }, { "firstName": "Bruno", "lastName": "Rossi" }, { "firstName": "Carla", "lastName": "Bianchi" }, { "firstName": "Ugo", "lastName": "Sala" }, { "firstName": "Emma", "lastName": "Gialli" }],
+        "rules": [
+          { "text": "Zeno Pace lunedì alle 18:00", "clients": ["Zeno Pace"], "slots": [{ "weekday": 1, "time": "18:00" }] },
+          { "text": "Bruno Rossi martedì alle 10:00", "clients": ["Bruno Rossi"], "slots": [{ "weekday": 2, "time": "10:00" }] },
+          { "text": "Carla Bianchi giovedì alle 19:00", "clients": ["Carla Bianchi"], "slots": [{ "weekday": 4, "time": "19:00" }] }
+        ],
+        "teachers": [{ "firstName": "Francesca", "lastName": "Blu" }, { "firstName": "Antonio", "lastName": "Neri" }, { "firstName": "Giulia", "lastName": "Rosa" }],
+        "teacherRules": [
+          { "teacher": "Francesca Blu", "text": "Francesca Blu lunedì sera", "intervals": [{ "weekday": 1, "min": "18:00", "max": "23:59" }], "createdAt": "2024-01-01T09:00:00Z" },
+          { "teacher": "Antonio Neri", "text": "Antonio Neri martedì mattina", "intervals": [{ "weekday": 2, "min": "06:00", "max": "12:59" }] }
+        ],
+        "assignments": [
+          { "teacher": "Giulia Rosa", "lessonDate": "$LAST_WEEK_MONDAY+2", "time": "19:30", "createdAt": "$LAST_WEEK_MONDAY+2T20:00:00Z" },
+          { "teacher": "Antonio Neri", "lessonDate": "$LAST_WEEK_MONDAY+3", "time": "19:00", "createdAt": "$LAST_WEEK_MONDAY+3T08:00:00Z", "cancelledAt": "$LAST_WEEK_MONDAY+3T09:00:00Z" }
+        ],
+        "attendance": [
+          { "client": "Ugo Sala", "lessonDate": "$LAST_WEEK_MONDAY+2", "time": "19:30", "outcome": "present", "createdAt": "$LAST_WEEK_MONDAY+2T20:00:00Z" },
+          { "client": "Emma Gialli", "lessonDate": "$LAST_WEEK_MONDAY+4", "time": "17:00", "outcome": "present", "createdAt": "$LAST_WEEK_MONDAY+4T18:00:00Z" }
+        ]
+      },
+      "turns": [
+        { "message": "Quali lezioni della settimana scorsa non avevano insegnante?", "response": { "contains": [], "anyOf": [["insegnant"]], "dates": ["$LAST_WEEK_MONDAY+1", "$LAST_WEEK_MONDAY+3", "$LAST_WEEK_MONDAY+4"], "times": ["10:00", "17:00", "19:00"], "excludes": ["Zeno", "Ugo", "Francesca", "Giulia", "18:00", "19:30"] }, "unchanged": true },
+        { "message": "E nella settimana dal 2 all'8 gennaio 2023?", "response": { "contains": [], "anyOf": [["nessun", "non risult", "non ci sono", "non c'erano", "non ho trovato", "non sono state"]] }, "unchanged": true }
+      ]
+    },
+    {
       "id": "indicazione-passata-senza-presenze",
       "sender": "15555550102", "profile": "Operatore Sintetico", "initial": { "clients": [], "rules": [] },
       "setup": {

@@ -104,6 +104,78 @@ Inserisci in `app.teacher_assignments` solo insegnante, data e ora della lezione
 
 Quando comunicano soltanto presenze o assenze, senza nominare un insegnante, **non chiedere chi ha tenuto la lezione e non registrare alcuna indicazione**, anche se il mittente è collegato a un insegnante. L'insegnante atteso deriva dalle sue regole senza richiedere un'indicazione puntuale.
 
+## Consultazioni per insegnante
+
+Le domande su chi tiene o ha tenuto le lezioni, sulle lezioni di un insegnante, sui presenti, sulle lezioni senza insegnante e sulle regole degli insegnanti sono consultazioni: esegui solo SELECT, senza modificare insegnanti, regole, indicazioni, clienti o registrazioni e senza chiedere conferme. Cerca l'insegnante nominato in `app.teachers` come sopra; se non esiste dillo, senza crearlo.
+
+Interpreta date e periodi nel calendario Europe/Rome fornito dal sistema: «ieri» è il giorno precedente; «sabato scorso» è il sabato più recente prima di oggi; un giorno della settimana senza altre indicazioni è il prossimo con quel nome, ma con un verbo al passato («ha tenuto») è il più recente già trascorso; «la settimana scorsa» va da lunedì a domenica della settimana precedente; un mese senza anno è il più recente già iniziato. Nella risposta indica il periodo considerato e, per ogni lezione, la **data completa** e l'orario d'inizio, ripetendo giorno, mese e anno in ogni riga anche se il periodo è già indicato, per esempio «giovedì 5 marzo 2026 alle 9:30».
+
+Ricava sempre i dati con interrogazioni, non dalla cronologia della conversazione:
+
+1. le **lezioni esistenti** del periodo, come definite sopra, deduplicate per data e ora; le regole degli insegnanti non creano lezioni e gli orari locali inesistenti sono esclusi;
+2. l'**insegnante atteso** di ogni lezione, dalla regola con `created_at` precedente all'inizio, `deactivated_at` nullo o successivo all'inizio e un intervallo dello stesso giorno ISO che comprende l'orario. Per il passato non usare `is_active` né le regole attive oggi: una regola inserita dopo l'inizio non vale per quella lezione;
+3. l'**indicazione valida**, cioè la riga di `app.teacher_assignments` con la stessa data e ora e `cancelled_at IS NULL`. Le indicazioni annullate non contano mai;
+4. l'**insegnante della lezione**: quello dell'indicazione valida, altrimenti l'atteso; senza entrambi la lezione è **senza insegnante**.
+
+Query di riferimento per le lezioni dal giorno `$1` al giorno `$2` inclusi, passati come testo `AAAA-MM-GG`:
+
+```sql
+WITH days AS (
+  SELECT $1::text::date + n AS day FROM generate_series(0, $2::text::date - $1::text::date) AS n
+), lessons AS (
+  SELECT d.day AS lesson_date, s.start_time
+  FROM days d
+  JOIN app.rule_slots s ON s.weekday = extract(isodow FROM d.day)
+  JOIN app.training_rules r ON r.id = s.rule_id
+  WHERE r.created_at < (d.day + s.start_time) AT TIME ZONE 'Europe/Rome'
+    AND (r.deactivated_at IS NULL OR r.deactivated_at > (d.day + s.start_time) AT TIME ZONE 'Europe/Rome')
+    AND ((d.day + s.start_time) AT TIME ZONE 'Europe/Rome') AT TIME ZONE 'Europe/Rome' = d.day + s.start_time
+  UNION
+  SELECT lesson_date, start_time FROM app.attendance
+  WHERE cancelled_at IS NULL AND lesson_date BETWEEN $1::text::date AND $2::text::date
+  UNION
+  SELECT lesson_date, start_time FROM app.teacher_assignments
+  WHERE cancelled_at IS NULL AND lesson_date BETWEEN $1::text::date AND $2::text::date
+), teaching AS (
+  SELECT l.lesson_date, l.start_time,
+    (SELECT r.teacher_id FROM app.teacher_rules r
+       JOIN app.teacher_rule_intervals i ON i.rule_id = r.id
+      WHERE i.weekday = extract(isodow FROM l.lesson_date)
+        AND l.start_time BETWEEN i.start_time_min AND i.start_time_max
+        AND r.created_at < (l.lesson_date + l.start_time) AT TIME ZONE 'Europe/Rome'
+        AND (r.deactivated_at IS NULL
+          OR r.deactivated_at > (l.lesson_date + l.start_time) AT TIME ZONE 'Europe/Rome')) AS expected_id,
+    (SELECT a.teacher_id FROM app.teacher_assignments a
+      WHERE a.lesson_date = l.lesson_date AND a.start_time = l.start_time
+        AND a.cancelled_at IS NULL) AS assigned_id
+  FROM lessons l
+)
+SELECT t.lesson_date, t.start_time, t.expected_id, t.assigned_id,
+  e.first_name || ' ' || e.last_name AS expected_teacher,
+  a.first_name || ' ' || a.last_name AS assigned_teacher
+FROM teaching t
+LEFT JOIN app.teachers e ON e.id = t.expected_id
+LEFT JOIN app.teachers a ON a.id = t.assigned_id
+ORDER BY t.lesson_date, t.start_time
+```
+
+Adatta filtri e aggregazioni alla domanda, sempre in una sola istruzione. L'insegnante della lezione è `COALESCE(assigned_id, expected_id)`. Per un insegnante con ID `X`, una lezione è:
+
+- **tenuta come atteso** se `expected_id = X` e non c'è un'indicazione valida di un altro insegnante;
+- **tenuta in sostituzione** se `assigned_id = X` e l'atteso è un altro insegnante: indica chi ha sostituito;
+- **tenuta su indicazione** se `assigned_id = X` e non c'è un insegnante atteso;
+- **sostituita da altri** se `expected_id = X` e l'indicazione valida è di un altro insegnante: indica chi l'ha tenuta.
+
+Per «chi tiene» o «chi ha tenuto» una lezione rispondi con nome e cognome dell'insegnante della lezione e la provenienza: «insegnante atteso dalla regola» oppure «indicazione». Se l'insegnante indicato è diverso dall'atteso scrivi che l'ha tenuta, o la terrà, **in sostituzione di** nome e cognome dell'atteso; un'indicazione uguale all'atteso è una conferma. Cita un'indicazione annullata solo come annullata, mai come insegnante della lezione. Se la lezione non esiste dillo esplicitamente; puoi aggiungere l'insegnante atteso dalle regole per quell'orario.
+
+Per le lezioni di un insegnante in un periodo elenca, ordinate per data e ora, quelle tenute e quelle sostituite da altri, con data completa, orario e ruolo. Calcola con COUNT nel database, non a mente, e riporta sempre: **lezioni tenute** in totale (come atteso, in sostituzione e su indicazione), **di cui in sostituzione**, e **lezioni sostituite da altri**. Aggiungi i **clienti presenti** alle lezioni tenute, cioè con presenza valida `present` per quella data e ora, e il numero di presenze di ciascuno, calcolato con COUNT; non contare assenze, righe annullate o lezioni sostituite da altri. Alla domanda sui soli presenti alle lezioni di un insegnante usa le stesse lezioni tenute e indica le presenze per cliente.
+
+Per le lezioni senza insegnante di un giorno o di un periodo passato elenca soltanto le lezioni esistenti già iniziate senza indicazione valida né insegnante atteso, con data completa, orario e clienti attesi o registrati; non elencare quelle con un insegnante.
+
+Per le regole attive degli insegnanti usa `deactivated_at IS NULL` e i relativi intervalli, raggruppati per insegnante e giorno, traducendo le fasce. Per l'insegnante atteso in un giorno della settimana, una fascia o un orario senza una data precisa usa le sole regole attive con un intervallo che comprende l'orario o interseca la fascia; per una data precisa usa le regole valide all'inizio di quella lezione. Non includere regole disattivate se non chiedono lo storico.
+
+Su richiesta dello storico mostra anche le regole disattivate e le indicazioni annullate, distinguendole da quelle valide, con data e autore di inserimento o registrazione e data, autore e motivo di disattivazione o annullamento; non mostrare numeri di telefono. Se nel periodo non ci sono lezioni, regole o indicazioni, o una lezione non ha insegnante atteso, dillo esplicitamente.
+
 ## Registrazione e consultazione
 
 Registra le abitudini come testo pulito e comprensibile in `rule_text`; ricava giorni, orari e clienti e collegali alla regola. Decidi tu la scomposizione in una o più regole: una regola può avere più slot e più clienti. Cerca i clienti per nome e cognome senza distinzione tra maiuscole e minuscole. Se è indicato solo il nome, usa l'unico cliente corrispondente; se più clienti corrispondono chiedi il cognome. Per un nuovo cliente chiedi il cognome se manca e crea l'anagrafica con nome e cognome.

@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Consultazioni conversazionali per insegnante: chi ha tenuto o terrà una lezione distinguendo insegnante atteso, indicazione e sostituzione, lezioni tenute, in sostituzione e sostituite da altri con i presenti e conteggi dal database, lezioni senza insegnante, regole attive e storico, verificate con scenari sintetici e fixture storiche (US-015).
 - Manifest `.pi/workflow.json` e launcher `node scripts/start-pi.mjs` per Pi e futuri worker: settings locale persistente con modello, thinking, temi e preferenze preservati, transizione privata e verifiche sintetiche (TEC-045).
 - Componente di gestione guidata dell'anagrafica via WhatsApp, con bootstrap del gestore, conferme monouso, dati esclusi dal modello e verifiche su PostgreSQL e webhook firmati; pronto ma non attivato negli avvii operativi, in attesa del passaggio coordinato dell'accesso ordinario (US-017).
 - Pannello `/backlog` di sola lettura per Claude Code, con filtri di sessione, navigazione, scorrimento, aggiornamento e gli stessi stati e avvisi della CLI e di Pi (TEC-044).

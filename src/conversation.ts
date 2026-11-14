@@ -116,6 +116,28 @@ export interface ActualState {
   teacherAssignments?: TeacherAssignmentState[];
 }
 
+// Synthetic teacher fixtures. A rule without createdAt is created during the
+// scenario through the normal triggers; createdAt/deactivatedAt describe a
+// historical rule seeded by the isolated migrator. Assignments are historical.
+export interface TeacherRuleFixture {
+  teacher: string;
+  text: string;
+  intervals: TeacherInterval[];
+  createdAt?: string;
+  deactivatedAt?: string;
+}
+
+export interface TeacherAssignmentFixture {
+  teacher: string;
+  lessonDate: string;
+  time: string;
+  createdAt: string;
+  cancelledAt?: string;
+}
+
+export const fixtureRuleDeactivationReason = 'Fine regola sintetica';
+export const fixtureCancellationReason = 'Errore sintetico';
+
 export interface ExpectedResponse {
   contains: string[];
   anyOf?: string[][];
@@ -140,23 +162,30 @@ export function romeDate(instant: Date): string {
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
+export const relativeDateTokens = ['TODAY', 'YESTERDAY', 'NEXT_MONDAY', 'LAST_SATURDAY', 'LAST_WEEK_MONDAY'] as const;
+const relativeDatePattern = new RegExp(`^\\$(${relativeDateTokens.join('|')})(?:\\+(\\d+))?$`);
+
 // Freeze relative fixture dates at the start of a scenario, in Rome's calendar.
+// $LAST_SATURDAY is the latest Saturday strictly before today; $LAST_WEEK_MONDAY
+// is the Monday of the previous ISO week. An optional +N adds whole days.
 export function scenarioRelativeDate(reference: Date, value: string): string {
-  const today = romeDate(reference);
-  if (value === '$TODAY') return today;
-  const date = new Date(`${today}T00:00:00Z`);
-  if (value === '$YESTERDAY') {
-    date.setUTCDate(date.getUTCDate() - 1);
-    return date.toISOString().slice(0, 10);
-  }
-  const match = /^\$NEXT_MONDAY(?:\+(\d+))?$/.exec(value);
+  const match = relativeDatePattern.exec(value);
   if (!match) return value;
-  date.setUTCDate(date.getUTCDate() + ((8 - date.getUTCDay()) % 7 || 7) + Number(match[1] || 0));
+  const date = new Date(`${romeDate(reference)}T00:00:00Z`);
+  const day = date.getUTCDay();
+  const shifts: Record<(typeof relativeDateTokens)[number], number> = {
+    TODAY: 0,
+    YESTERDAY: -1,
+    NEXT_MONDAY: (8 - day) % 7 || 7,
+    LAST_SATURDAY: -((day + 1) % 7 || 7),
+    LAST_WEEK_MONDAY: -((day + 6) % 7) - 7,
+  };
+  date.setUTCDate(date.getUTCDate() + shifts[match[1] as keyof typeof shifts] + Number(match[2] || 0));
   return date.toISOString().slice(0, 10);
 }
 
 export function scenarioRelativeTimestamp(reference: Date, value: string | undefined): string | undefined {
-  return value?.replace(/^\$YESTERDAY(?=T)/, scenarioRelativeDate(reference, '$YESTERDAY'));
+  return value?.replace(/^\$[A-Z_]+(?:\+\d+)?(?=T)/, (token) => scenarioRelativeDate(reference, token));
 }
 
 export function hasHomeChannelNotice(text: string): boolean {
@@ -396,6 +425,55 @@ export function teacherScenarioMatches(actual: ActualState, expected: TeacherExp
   }
   return groups.every(({ rule, expected: coverage, seen, count }) => coverage.size === seen.size
     && (rule.ruleCount === undefined || rule.ruleCount === count));
+}
+
+// Historical teacher rules are seeded before the rules created through the
+// normal triggers; each group keeps the catalog order.
+export function teacherFixtureOrder<T extends { createdAt?: string }>(rules: T[]): T[] {
+  return [...rules.filter((rule) => rule.createdAt), ...rules.filter((rule) => !rule.createdAt)];
+}
+
+// Compare the seeded teacher history row by row with the resolved fixtures:
+// teacher, text, intervals, instants, authenticated author and fixed reasons.
+export function seededTeacherFixturesMatch(actual: ActualState, rules: TeacherRuleFixture[], assignments: TeacherAssignmentFixture[],
+  authorPhone: string, authorName: string | null): boolean {
+  const instant = (value: string | null | undefined) => (value ? Date.parse(value) : Number.NaN);
+  const sameInstant = (value: string | null | undefined, expected: string) => !Number.isNaN(instant(value)) && instant(value) === instant(expected);
+  const intervalKey = (interval: TeacherInterval) => JSON.stringify([interval.weekday, interval.min, interval.max]);
+  const teachers = actual.teachers ?? [];
+  const rows = actual.teacherRules ?? [];
+  const ordered = teacherFixtureOrder(rules);
+  if (rows.length !== ordered.length || new Set(rows.map((row) => row.id)).size !== rows.length) return false;
+  const rulesMatch = ordered.every((fixture, index) => {
+    const row = rows[index];
+    const inactive = !!fixture.deactivatedAt;
+    if (!row.id || normalized(row.teacher) !== normalized(fixture.teacher) || row.text !== fixture.text
+      || row.authorPhone !== authorPhone || row.authorName !== authorName
+      || JSON.stringify(row.intervals.map(intervalKey).sort()) !== JSON.stringify(fixture.intervals.map(intervalKey).sort())
+      || row.intervals.some((interval) => interval.isActive !== !inactive)) return false;
+    if (fixture.createdAt ? !sameInstant(row.createdAt, fixture.createdAt) : Number.isNaN(instant(row.createdAt))) return false;
+    if (fixture.deactivatedAt && !fixture.createdAt) return false;
+    return fixture.deactivatedAt
+      ? sameInstant(row.deactivatedAt, fixture.deactivatedAt) && instant(row.deactivatedAt) > instant(row.createdAt)
+        && row.deactivatedByPhone === authorPhone && row.deactivatedByName === authorName
+        && row.deactivationReason === fixtureRuleDeactivationReason
+      : !row.deactivatedAt && !row.deactivatedByPhone && !row.deactivatedByName && !row.deactivationReason;
+  });
+  if (!rulesMatch) return false;
+  const seeded = actual.teacherAssignments ?? [];
+  if (seeded.length !== assignments.length || new Set(seeded.map((row) => row.id)).size !== seeded.length) return false;
+  return assignments.every((fixture, index) => {
+    const row = seeded[index];
+    const teacher = teachers.find((person) => person.id === row.teacherId);
+    if (!row.id || !teacher || normalized(`${teacher.firstName} ${teacher.lastName}`) !== normalized(fixture.teacher)
+      || normalized(row.teacher) !== normalized(fixture.teacher) || row.lessonDate !== fixture.lessonDate || row.time !== fixture.time
+      || row.authorPhone !== authorPhone || row.authorName !== authorName || !sameInstant(row.createdAt, fixture.createdAt)) return false;
+    return fixture.cancelledAt
+      ? sameInstant(row.cancelledAt, fixture.cancelledAt) && instant(row.cancelledAt) > instant(row.createdAt)
+        && row.cancelledByPhone === authorPhone && row.cancelledByName === authorName
+        && row.cancellationReason === fixtureCancellationReason
+      : !row.cancelledAt && !row.cancelledByPhone && !row.cancelledByName && !row.cancellationReason;
+  });
 }
 
 // Existing records are immutable except for the first cancellation or
