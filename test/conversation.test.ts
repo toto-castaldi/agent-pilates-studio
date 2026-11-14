@@ -199,6 +199,13 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('_09/11/2026_ e *16 novembre 2026*', { contains: [], dates: ['2026-11-09', '2026-11-16'], date: true }));
   assert.equal(responseMatches('Il 9 novembre alle 19', { contains: [], dates: ['2026-11-09', '2026-11-16'] }), false);
   assert.equal(responseMatches('Il 9 novembre 2025', { contains: [], dates: ['2026-11-09'] }), false);
+  // Italian ordinal day: «1° settembre», with either the degree or the ordinal sign.
+  assert.ok(responseMatches('Inserita il 1° settembre 2025', { contains: [], date: true }));
+  assert.ok(responseMatches('Dal 1º settembre 2025 al 15 ottobre 2025', { contains: [], dates: ['2025-09-01', '2025-10-15'] }));
+  assert.ok(responseMatches('**1° settembre 2025**', { contains: [], dates: ['2025-09-01'] }));
+  assert.equal(responseMatches('11° settembre 2025', { contains: [], dates: ['2025-09-01'] }), false);
+  assert.equal(responseMatches('1° settembre 2024', { contains: [], dates: ['2025-09-01'] }), false);
+  assert.equal(responseMatches('1° ottobre 2025', { contains: [], dates: ['2025-09-01'] }), false);
   assert.equal(responseMatches('09/11/2025', { contains: [], dates: ['2026-11-09'] }), false);
   const counts = { contains: [], counts: [{ labels: ['presenz'], value: 2 }, { labels: ['attes', 'previst'], value: 4 }] };
   assert.ok(responseMatches('Presenze: 2; lezioni previste: 4', counts));

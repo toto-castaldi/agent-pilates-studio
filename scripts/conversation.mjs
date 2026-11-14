@@ -413,7 +413,10 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
             const dayFound = new RegExp(`(?<!\\d)0?${day}(?!\\d)`).test(text);
             const monthFound = normalized.includes(months[month]) || new RegExp(`(?<!\\d)0?${month}(?!\\d)`).test(text);
-            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}`;
+            const ordinal = new RegExp(`(?<!\\d)0?${day}[°º]`).test(text);
+            const abbreviated = new RegExp(`(?<!\\d)0?${day}\\s+${months[month].slice(0, 3)}\\b`).test(normalized);
+            const numeric = new RegExp(`(?<!\\d)0?${day}[/.-]0?${month}(?!\\d)`).test(text);
+            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}, ordinale ${ordinal ? 'sì' : 'no'}, mese abbreviato ${abbreviated ? 'sì' : 'no'}, giorno/mese numerici ${numeric ? 'sì' : 'no'}`;
           }),
           ...(turn.response.counts ?? []).map((item, index) => {
             const positions = item.labels.map((label) => normalized.indexOf(label.toLocaleLowerCase('it-IT'))).filter((position) => position >= 0);

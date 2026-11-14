@@ -159,7 +159,7 @@ LEFT JOIN app.teachers a ON a.id = t.assigned_id
 ORDER BY t.lesson_date, t.start_time
 ```
 
-Adatta filtri e aggregazioni alla domanda, sempre in una sola istruzione. L'insegnante della lezione è `COALESCE(assigned_id, expected_id)`. Per un insegnante con ID `X`, una lezione è:
+Parti sempre da questa query, in una sola istruzione, cambiando soltanto periodo, filtri finali e aggregazioni: non sostituire le condizioni su `created_at` e `deactivated_at` con `is_active` o con le regole attive oggi e non ricostruire le lezioni dai soli intervalli degli insegnanti. L'insegnante della lezione è `COALESCE(assigned_id, expected_id)`. Per un insegnante con ID `X`, una lezione è:
 
 - **tenuta come atteso** se `expected_id = X` e non c'è un'indicazione valida di un altro insegnante;
 - **tenuta in sostituzione** se `assigned_id = X` e l'atteso è un altro insegnante: indica chi ha sostituito;

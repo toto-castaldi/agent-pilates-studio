@@ -224,13 +224,13 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
       && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
   }
   const dateText = value.replace(/[*_`~]/g, '');
-  if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(dateText)) return false;
+  if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[°º]?\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(dateText)) return false;
   const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
   if (!(expected.dates ?? []).every((date) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
     const [year, month, day] = date.split('-').map(Number);
     if (!months[month] || day < 1 || day > 31) return false;
-    const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year}\\b|(?![/.-]\\d)\\b)|\\b0?${day}\\s+${months[month]}(?:\\s+${year}\\b|(?!\\s+\\d{4})\\b))`, 'i');
+    const expression = new RegExp(`(?:\\b${date}\\b|\\b0?${day}[/.-]0?${month}(?:[/.-]${year}\\b|(?![/.-]\\d)\\b)|\\b0?${day}[°º]?\\s+${months[month]}(?:\\s+${year}\\b|(?!\\s+\\d{4})\\b))`, 'i');
     return expression.test(dateText);
   })) return false;
   return (expected.times ?? []).every((time) => {
