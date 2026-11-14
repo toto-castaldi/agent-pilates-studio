@@ -5,7 +5,7 @@ Prove eseguite il 2026-11-07 su Hermes v0.22.7 (immagine fissata dal progetto), 
 ## Analisi dell'immagine fissata
 
 - La soglia percentuale di Hermes è alzata ad almeno il 75% per le finestre sotto 512K token; `compression.threshold_tokens` è un limite superiore, applicato dopo quel ricalcolo. Il progetto lo imposta al 40% della finestra ricavata dal catalogo all'avvio.
-- L'inattività nativa misura il tempo da `_last_activity_ts`, azzerato all'inizio di ogni turno dell'agente in cache e perso al riavvio, e non compatta sotto l'8% della finestra: è disabilitata e sostituita dall'adattamento descritto in `docs/TECHNICAL-DESIGN.md` §6.
+- L'inattività nativa misura il tempo da `_last_activity_ts`, azzerato all'inizio di ogni turno dell'agente in cache e perso al riavvio, e non compatta sotto l'8% della finestra: è disabilitata e sostituita dall'adattamento descritto in [`docs/design/compaction.md`](../design/compaction.md).
 - `auxiliary.free_only` blocca anche il modello principale su OpenRouter: la prima esecuzione della suite ha mostrato una conversazione oltre 140K token senza alcuna richiesta di riassunto. È stato sostituito da `auxiliary.openrouter_model` fissato al modello configurato.
 - In modalità `lean` il riassunto conserva estratti dei messaggi utente: la compattazione è quindi verificata dalla riduzione della richiesta, non dalla scomparsa dei marcatori.
 

@@ -19,10 +19,12 @@
     "REQ-NFR-006"
   ],
   "design_references": [
+    "design/agent-context",
     "design/data-model",
     "design/integrations",
     "design/security",
     "design/test-strategy",
+    "design/conversation-tests",
     "design/README"
   ],
   "description": "Attuare la raccomandazione di SPIKE-003: riscrivere e deduplicare SOUL.md, spostare le istruzioni di dettaglio in skill versionate di sola lettura e le ricostruzioni dei dati in viste, funzioni del database o tool del plugin, senza cambiare i comportamenti richiesti. Precede TEC-042.",

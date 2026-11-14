@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 
 test('studio context is mounted read-only and matches the versioned schema without secrets', async () => {
   const soul = await readFile('hermes/SOUL.md', 'utf8');
-  const requirements = await readFile('docs/REQUIREMENTS.md', 'utf8');
+  const requirements = await readFile('docs/requirements/REQ-AGENT-005.md', 'utf8');
   const name = requirements.match(/il nome dell'agente è ([\p{L}]+)\./u)?.[1];
   assert.ok(name, 'missing agreed agent name');
   assert.ok(soul.includes(name), 'SOUL must contain the agreed agent name');

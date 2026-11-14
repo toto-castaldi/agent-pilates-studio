@@ -6,4 +6,4 @@ Il contesto sempre presente dell'agente, `SOUL.md`, non deve superare 15.000 car
 
 Le skill sono di sola lettura per l'agente: il modello non può crearle, modificarle o installarne altre, e restano incluse nelle immagini pubblicate come `SOUL.md`. Eventuali viste, funzioni o tool rispettano REQ-DB-002, l'attribuzione di REQ-STUDIO-003 e la protezione dei numeri di REQ-NFR-006, senza concedere DDL all'agente. La riduzione non deve modificare i comportamenti richiesti dai requisiti dello studio e dell'agente.
 
-**Decisione dell'utente (2026-11-14):** requisito aggiunto alla v0.3.0 come cambio di scope, da attuare prima di TEC-042 con SPIKE-003 e TEC-046. Fino al completamento dell'implementazione resta valida la regola corrente: le regole di comportamento stanno soltanto in `SOUL.md`.
+Finché la riduzione non è attuata (decisione aperta in `docs/design/README.md`), le regole di comportamento stanno soltanto in `SOUL.md`.

@@ -9,7 +9,7 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 - **Name:** `agent-pilates-studio`
 - **Summary:** assistente WhatsApp dello studio Pilates per titolare e collaboratori, basato su Hermes con database relazionale, OpenRouter e WhatsApp Business; installazione, aggiornamento e prova riproducibili.
 - **Current version:** v0.3.0 — vedere `python3 .agents/tools/backlog.py status`.
-- **Requirements:** `docs/REQUIREMENTS.md` · **Design:** `docs/TECHNICAL-DESIGN.md`
+- **Requirements:** `docs/requirements/` · **Design:** `docs/design/` (un file ciascuno, elencati con `python3 .agents/tools/backlog.py docs`; leggere solo quelli necessari)
 
 ## 2. Language
 
@@ -18,19 +18,19 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 ## 3. Scope
 
-Lo scope è definito in `docs/REQUIREMENTS.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
+Lo scope della versione corrente è definito in `docs/requirements/README.md`; concordare e registrare ogni cambiamento prima dell'implementazione.
 
 - Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Il cambio di scope del 2026-11-12 include l'anagrafica unica insegnanti/utilizzatori con telefono, nome e cognome, accesso revocabile e gestione guidata riservata all'unico gestore configurato (REQ-STUDIO-015–017). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione degli insegnanti dalle lezioni, permessi diversi sulle operazioni dello studio, più gestori, anagrafiche separate degli utilizzatori, pacchetti, pagamenti e richiesta automatica delle presenze. Il nuovo modello è pianificato, non ancora attivo: la transizione dalla baseline precedente segue ADR-003.
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
+- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti di REQ-NFR-002.
 
 ## 4. Stack and architecture
 
 - TypeScript, Node.js LTS e npm per il codice del progetto; Hermes mantiene i propri prerequisiti.
 - PostgreSQL e migrazioni Prisma; Docker Compose in locale e su server Linux predisposto.
-- OpenRouter, API WhatsApp Business e GitHub Actions; le integrazioni Hermes sono state verificate nei limiti documentati da SPIKE-001.
-- Framework di test e versioni di riferimento: `docs/TECHNICAL-DESIGN.md` §§1, 8–9.
-- Confini dei componenti e decisioni aperte: `docs/TECHNICAL-DESIGN.md` §§1–3, 10.
+- OpenRouter, API WhatsApp Business e GitHub Actions; integrazioni Hermes nei limiti documentati in `docs/design/integrations.md`.
+- Framework di test e versioni di riferimento: `docs/design/README.md`, `docs/design/test-strategy.md` e `docs/design/configuration.md`.
+- Confini dei componenti e decisioni aperte: `docs/design/modules.md`, `docs/design/context.md` e `docs/design/README.md`.
 
 ## 5. Domain rules
 
@@ -86,7 +86,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 - Non committare segreti; usare configurazione locale esterna e, quando introdotto, un `.env.example` privo di valori reali.
 - Non registrare nei log credenziali, messaggi o numeri di telefono.
 - Proteggere le credenziali di migrazione dall'agente e limitare l'accesso al database; autenticare i webhook e applicare il controllo di accesso. Il modello target usa il censimento nel database e il solo numero gestore in configurazione, non un elenco parallelo di numeri; il canale home deriva dal gestore. Non modificare lo stack operativo per attivare il piano durante la sola aggiunta degli item.
-- Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). L'uso continuativo della sola produzione è regolato dalla decisione del 2026-11-09 in REQ-NFR-002; per l'audit privacy e i limiti residui, vedere TEC-008 e `docs/TECHNICAL-DESIGN.md` §§7, 10.
+- Non avviare lo streaming remoto dei log del tunnel condiviso (REQ-NFR-004). L'uso continuativo della sola produzione è regolato da REQ-NFR-002; per l'audit privacy, il verify token monouso e i limiti residui vedere `docs/design/proxy-logs.md`.
 
 ## 10. Parallel work
 
@@ -97,7 +97,7 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 Le impostazioni sopra sono attive: leggere `docs/PROCESS-PARALLEL.md` prima di lavorare su un item. I branch degli item vengono pubblicati ai cambi di stato secondo `docs/PROCESS-PARALLEL.md` §1. I claim coordinano le copie ma non costituiscono un blocco atomico tra avvii concorrenti.
 
-Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS-PARALLEL.md` §2: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. `--approve` accorda fiducia ai file locali del clone per la sessione: risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite. L'adozione della modalità non avvia worker. I nuovi worker Herdr sono terminali senza genitore (`--no-parent`): rapporti e controlli a inizio turno sostituiscono le notifiche dei figli; un'attesa esplicitamente richiesta usa il nome del worker. L'aggiornamento non interrompe né rilancia worker esistenti.
+Con `Parallel work` attivo, la skill `orchestrate` si usa solo su richiesta esplicita dell'utente e segue `docs/PROCESS-PARALLEL.md` §2: un clone per item sotto `Workspace root`, relativo al clone principale, e un worker avviato con `Worker agent command`. `--approve` accorda fiducia ai file locali del clone per la sessione: risorse ed estensioni del progetto attendibile possono essere caricate ed eseguite. L'adozione della modalità non avvia worker. I nuovi worker Herdr sono terminali senza genitore (`--no-parent`): rapporti e controlli a inizio turno sostituiscono le notifiche dei figli; un'attesa esplicitamente richiesta usa il nome del worker. L'aggiornamento non interrompe né rilancia worker esistenti. Un orchestratore eseguito in Claude Code ignora `Worker agent command`: i suoi worker sono sessioni Claude Code avviate con `--dangerously-skip-permissions`, che eseguono ogni comando nel clone senza chiedere conferma e non preparano il workflow Pi; prima del lancio l'orchestratore lo segnala all'utente. Le protezioni dei clone sotto valgono in ogni modalità.
 
 - I clone dei worker contengono solo file versionati: non copiare `.env`, `.local/`, segreti o stato Pi personale senza una richiesta esplicita dell'utente. Il worker prepara il clone con `npm ci` (§6) e non avvia né modifica lo stack operativo dello studio.
 - Prima del primo clone, se `git fetch origin` o il controllo `git log --oneline origin/main..main` falliscono, l'orchestratore non avvia worker e non considera verificato `origin/main`: segnala l'errore e chiede all'utente come procedere. Se `main` è avanti rispetto a `origin/main`, pubblica `main` solo su richiesta esplicita. L'aggiunta di un item segue l'eccezione limitata di `docs/PROCESS.md` §6.1: pubblica il solo commit documentale se esiste un upstream.

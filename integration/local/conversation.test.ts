@@ -227,7 +227,7 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   const otherNaming = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nome-altro-interlocutore');
   assert.ok(naming && otherNaming);
   assert.notEqual(naming.sender, otherNaming.sender);
-  const requirements = await readFile('docs/REQUIREMENTS.md', 'utf8');
+  const requirements = await readFile('docs/requirements/REQ-AGENT-005.md', 'utf8');
   const name = requirements.match(/il nome dell'agente è ([\p{L}]+)\./u)?.[1];
   assert.ok(name);
   assert.ok(naming.turns[0].response.contains.includes(name));

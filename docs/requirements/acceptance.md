@@ -1,7 +1,5 @@
 # Release acceptance — v0.3.0
 
-**Allineamento concordato (2026-11-08):** il criterio database include l'eccezione per le assenze giustificate anticipate di REQ-STUDIO-010.
-
 - Su PostgreSQL reale presenze e assenze sono registrate per lezioni puntuali con autore ricavato dal sistema; il database ammette per lezioni non ancora iniziate solo assenze giustificate anticipate e rifiuta presenze e assenze non giustificate future, registrazioni valide duplicate, cancellazioni e riscritture. Consente un solo annullamento con data, autore e motivo.
 - Un utilizzatore comunica via WhatsApp le presenze di una lezione, anche con "c'erano tutti" o "tutti tranne", e l'agente le registra in base ai clienti attesi, segnalando i clienti non attesi e creando quelli nuovi.
 - Un utilizzatore comunica assenze giustificate e non giustificate; l'agente chiede il tipo quando manca e chiede degli attesi non citati, senza registrare assenze non confermate.
@@ -15,34 +13,9 @@
 - L'aggiornamento da database con dati conserva persone, ID, regole, presenze, indicazioni e snapshot degli autori; non importa i vecchi mapping e consente al gestore di completare le anagrafiche preesistenti. Cambio numero e riassegnazione non trasferiscono la chat precedente. Backup e ripristino conservano il nuovo modello e i suoi privilegi; canale home e recupero del gestore sono verificati senza abilitare cron.
 - Un utilizzatore chiede chi ha tenuto una lezione, le lezioni e i conteggi di un insegnante, i presenti alle sue lezioni e le lezioni senza insegnante, e riceve risposte coerenti con regole e indicazioni valide.
 - Gli scenari conversazionali delle presenze e degli insegnanti sono eseguiti con il modello reale e i risultati registrati; il quality gate e le suite di integrazione passano in CI.
-- Processo e strumenti del template v2.2.1 sono allineati: risoluzione condivisa degli stati dai branch nella CLI e nei visualizzatori Pi e Claude Code, pubblicazione delle sole aggiunte documentali al backlog e orchestrazione parallela con nuovi worker Herdr senza genitore sono verificate nei limiti documentati, preservando coordinamento non bloccante, comando dei worker e protezioni dello studio (REQ-NFR-016–021).
+- Processo e strumenti del template adottato sono allineati e verificati nei limiti documentati in `docs/TEMPLATE-ORIGIN.md`: risoluzione condivisa degli stati dai branch nella CLI e nei visualizzatori Pi e Claude Code, pubblicazione delle sole aggiunte documentali al backlog, requisiti e design in file indirizzabili e orchestrazione parallela non bloccante, preservando comando dei worker e protezioni dello studio (REQ-NFR-013).
 - Il punto d'ingresso Pi prepara il workflow condiviso da clone nuovo o esistente, anche con directory agente coincidente con `.pi`; cambi di modello/thinking, temi e preferenze restano locali e persistenti senza differenze Git né impedimenti al workflow. I futuri worker usano la stessa preparazione senza copiare stato personale; test sintetici verificano caricamento delle risorse, sincronizzazione e rifiuti (REQ-NFR-022).
 - I log non contengono nomi, messaggi, numeri o credenziali.
-- La produzione su `jarvis` è installata e aggiornata con la procedura manuale, separata dallo sviluppo; un numero autorizzato conversa con l'agente tramite il numero WhatsApp di produzione e il callback stabile, nei limiti della decisione del 2026-11-09 in REQ-NFR-002.
+- La produzione su `jarvis` è installata e aggiornata con la procedura manuale, separata dallo sviluppo; un numero autorizzato conversa con l'agente tramite il numero WhatsApp di produzione e il callback stabile, nei limiti di REQ-NFR-002.
 
 Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
-
-## Previous version — v0.2.0
-
-- Un utilizzatore registra via WhatsApp regole individuali, di gruppo e con più giorni; il database contiene il testo pulito, i dati strutturati, la data e l'autore ricavato dal sistema, e crea o riconosce i clienti per nome e cognome.
-- Un utilizzatore chiede chi si allena in un giorno, una fascia o un orario e quando si allena un cliente, e riceve risposte coerenti con le regole attive.
-- Un utilizzatore comunica cambiamenti espliciti o impliciti; l'agente disattiva le regole superate con motivo, data e autore, lo comunica e mantiene lo storico; il database rifiuta la cancellazione delle regole.
-- Gli scenari conversazionali documentati sono eseguiti con il modello reale e i risultati registrati; il quality gate e i test su PostgreSQL reale passano in CI.
-- Processo e strumenti del template v1.5.0 sono adottati e verificati con le personalizzazioni dello studio; il backlog è consultabile in Pi con filtri e stati dai branch, gli shared claims sono attivi e il modulo concordato è documentato.
-- Il contesto di ciascun utilizzatore è separato e viene compattato automaticamente al 40% della finestra del modello configurato e alla ripresa dopo l'inattività configurata, senza avvisi agli utilizzatori.
-- L'agente risponde con il proprio nome quando gli viene chiesto e si presenta con il nome nella prima risposta di una conversazione nuova, senza ripresentarsi nei messaggi successivi.
-- I log non contengono nomi, messaggi, numeri o credenziali; l'uso continuativo resta escluso.
-
-Le prove reali dipendono da accesso ai servizi esterni e credenziali Meta e OpenRouter.
-
-## Previous version — v0.1.0
-
-- Da un ambiente pulito l'operatore avvia localmente Hermes e PostgreSQL, applica le migrazioni e verifica il quality gate.
-- Su PostgreSQL reale l'agente può eseguire DML e non DDL; le credenziali di migrazione non sono disponibili all'agente.
-- Con l'app Meta configurata, HTTPS pubblico e credenziali valide, un numero autorizzato invia un messaggio WhatsApp e riceve una risposta tramite Hermes e OpenRouter; numeri non autorizzati e webhook non autenticati sono respinti.
-- Sul server di produzione predisposto l'operatore installa e aggiorna l'ambiente; i dati persistono dopo riavvio e aggiornamento. Un backup viene ripristinato e verificato con dati di prova.
-- Stato, disponibilità e log dei servizi sono consultabili nel rispetto della sicurezza; la procedura documenta il divieto operativo di streaming dei log del tunnel condiviso; GitHub Actions esegue le verifiche previste senza deploy automatico.
-
-Le prove reali dipendono da accesso ai servizi esterni, rete, configurazione e credenziali Meta e OpenRouter. SPIKE-001 ha verificato il modello effettivo e le integrazioni in una prova reale; eventuali cambi di scope richiedono accordo. La chiusura di TEC-005 e il rinvio dell'audit a TEC-008 non dimostrano l'accettazione privacy della release né autorizzano l'uso continuativo.
-
-**Decisione dell'utente (2026-11-05):** la v0.1.0 viene chiusa senza l'accettazione privacy dei log del proxy, che è rinviata a TEC-008, non assegnato a una versione. La chiusura non dichiara la conformità a REQ-NFR-002 né autorizza l'uso continuativo del gateway; REQ-NFR-002 e REQ-NFR-004 restano vincolanti.

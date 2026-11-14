@@ -24,8 +24,10 @@
     "AGENTS §3",
     "AGENTS §4",
     "AGENTS §10",
+    "design/process-tooling",
     "design/test-strategy",
     "design/README",
+    "requirements/README",
     "docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare dalla v2.2.1 adottata con TEC-044 alla release v3.0.0 di agile-project-template (tag annotato, commit c880d61848bb665cd96f270895c4f083ca4c004d), passando per la v2.3.0 (commit 60a7fac2ff63f769a4e4f509748ff3d7492d3239), verificati sul repository pubblico il 2026-11-14. Includere la modalità Claude Code di orchestrate, la suddivisione di requirements/README e design/README in docs/requirements/ e docs/design/ con migrate-docs e, nello stesso item per decisione esplicita, la condensazione dei nuovi file allo stato attuale. Preservare personalizzazioni e protezioni dello studio; non adottare automaticamente versioni successive, non sostituire i dati del backlog con il seed del template e non modificare lo stack operativo, la produzione o la configurazione personale.",

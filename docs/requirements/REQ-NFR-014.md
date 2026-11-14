@@ -1,9 +1,7 @@
 # REQ-NFR-014 — Aggiornamento dal template e consultazione del backlog
 
-**State:** Active
+**State:** Withdrawn
 
-Il progetto deve adottare il processo, le skill e il visualizzatore Pi del backlog del template `agile-project-template` v1.4.0, preservando le personalizzazioni, i requisiti e le protezioni propri dello studio. Eventuali conflitti o deroghe devono essere concordati e documentati, non risolti con sovrascritture indiscriminate. La provenienza e le risorse effettivamente adottate devono essere registrate secondo REQ-NFR-013.
+**Withdrawn:** registrava soltanto l'adozione di una versione del template, che è un'attività di processo e non richiede un requisito (`docs/PROCESS.md` §3). Il comportamento vigente è descritto da `docs/PROCESS.md`, `docs/PROCESS-PARALLEL.md`, `AGENTS.md` §10 e `docs/design/process-tooling.md`; riferimenti, basi e divergenze adottate sono in `docs/TEMPLATE-ORIGIN.md` (REQ-NFR-013). Lo storico resta nel backlog e in git.
 
-Il progetto deve definire un solo modulo architetturale, `MOD-001 — Agente`, per la soluzione dell'assistente dello studio nel repository corrente. Gli item aperti pertinenti possono riferirsi al modulo; il lavoro trasversale e lo storico completato non richiedono una classificazione retroattiva.
-
-In Pi l'operatore deve poter consultare gli item del backlog senza modificarli, navigando tra gli item e scorrendone il contenuto; il visualizzatore si apre con `/backlog` e dispone di una scorciatoia configurabile o disattivabile. Gli strumenti rispettano REQ-NFR-002, REQ-NFR-007 e il gate di REQ-NFR-008; le prove non leggono né modificano impostazioni personali.
+Ambito originario: adozione del processo, delle skill e del visualizzatore Pi del backlog del template v1.4.0, con il solo modulo `MOD-001 — Agente` e il comando `/backlog` di sola lettura con scorciatoia configurabile o disattivabile.

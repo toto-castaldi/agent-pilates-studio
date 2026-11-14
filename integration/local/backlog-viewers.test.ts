@@ -8,13 +8,21 @@ function blob(text: string): string {
   return createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 }
 
-test('shared resources match the pinned v2.2.1 blobs, with only the agreed Pi refresh adaptation', () => {
-  // Public template commit e77bc386ab25d421186e3057eb0fa9e6cfc6c4c3, verified for TEC-044.
+test('shared resources match the pinned v3.0.0 blobs, with only the agreed Pi refresh adaptation', () => {
+  // Public template commit c880d61848bb665cd96f270895c4f083ca4c004d (tag v3.0.0), verified for TEC-047.
   const hashes: Record<string, string> = {
-    'docs/PROCESS.md': '56fd65fba0e0047b233c37b9fea80f37f649c62c',
-    'docs/PROCESS-PARALLEL.md': '0ad72b31d8165badf06fa5ee186f0f28cb387ff3',
-    '.agents/tools/backlog.py': '7e926aba169355a6d8c4403f454d7bd2ddc35c62',
-    '.agents/skills/orchestrate/SKILL.md': '5798c265311b2125d2cc13bef2c20e27c25bf381',
+    'docs/PROCESS.md': '49ada5d12c7f35d9fc89c4909a889bd284677dd8',
+    'docs/PROCESS-PARALLEL.md': 'bb5d94da8777a26aa6bc01d8ad14d3b0399b1b36',
+    '.agents/tools/backlog.py': '64f83cdf4506aec2c0b776b1ef981eb17b717e0b',
+    '.agents/skills/orchestrate/SKILL.md': 'c5acf4b53278b7c6a3004e438c2df16a7133321f',
+    '.agents/skills/add-item/SKILL.md': '98b5e183b1713197e36c1afad7f28fabab924472',
+    '.agents/skills/start-task/SKILL.md': '4b85caafccf11a207e0e05376df0c5817fa63b2d',
+    '.agents/skills/finish-task/SKILL.md': 'f477085f7a8259cd6851d5d1f6fe6a15a63809fa',
+    '.agents/skills/close-version/SKILL.md': '5aaa5419f974452f0d8645795634c496e5a049fc',
+    '.agents/skills/kickoff/SKILL.md': 'f8ec1c080724f2548e423b153daf8ad18e1f27e1',
+    '.agents/skills/merge-task/SKILL.md': '4bb3cda765cb41d5e18da12d29cacbdd4af4ba78',
+    'docs/requirements/_TEMPLATE.md': '0a0a56f9453428e7e350baa7a4392609d6693a3d',
+    'docs/design/_TEMPLATE.md': 'f166771727b13bb74dfdd78d2805ea9930862838',
     '.agents/skills/backlog-overlay/.claude-plugin/plugin.json': '0953298a0c504bbfc7c3bb4ab5757b566c08f77c',
     '.agents/skills/backlog-overlay/hooks/hooks.json': '5a63f649593a5d89af8775a8e3d12db0f0940b12',
     '.agents/skills/backlog-overlay/hooks/register.tsx': '00eb24701eddc868e61e166df0f4a004d0848350',

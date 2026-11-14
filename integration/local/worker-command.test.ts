@@ -46,7 +46,7 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
       const commandArgs = command.split(' ').slice(1);
       const expected = commandArgs.slice(1);
       const herdr = template.replaceAll('<name>', 'synthetic').replaceAll('<space>', 'synthetic-space')
-        .replaceAll('<Workspace root>/<ID>', project).replaceAll('<Worker agent command>', command).replaceAll('<task>', task);
+        .replaceAll('<Workspace root>/<ID>', project).replaceAll('<worker command>', command).replaceAll('<task>', task);
       const run = (script: string) => {
         rmSync(workerLog, { force: true });
         const result = spawnSync('/bin/bash', ['-c', script], { env, encoding: 'utf8', timeout: 10_000 });
@@ -61,7 +61,9 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
       assert.deepEqual(args.slice(0, 4), ['run', '--bg', '--json', '--no-parent']);
       assert.deepEqual(args.slice(-commandArgs.length - 2), ['node', ...commandArgs, task]);
       // Manual mode uses the same configured command with the task as one shell argument.
-      assert.ok(skill.includes('&& <Worker agent command> "<task>"'));
+      assert.ok(skill.includes('&& <worker command> "<task>"'));
+      // Outside Claude Code the worker command is the configured one.
+      assert.ok(skill.includes('otherwise it is `Worker agent command`'));
       run(`cd ${project} && ${command} "${task}"`);
     }
   } finally {
