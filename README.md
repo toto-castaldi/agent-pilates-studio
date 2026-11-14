@@ -192,7 +192,7 @@ docker compose --env-file /dev/null kill -s SIGKILL hermes
 docker compose --env-file /dev/null stop author-broker
 ```
 
-Questi comandi non caricano `.env`; usare lo stesso eventuale nome di progetto Compose impostato nell'ambiente per l'avvio. La salute locale non verifica Meta, OpenRouter o la raggiungibilità pubblica. Il port forwarding verso `jarvis` e il proxy HTTPS sono esterni al comando. Non pubblicare `/health`; la prova temporanea conclusa non autorizza di per sé l'uso continuativo dello sviluppo. La successiva decisione in REQ-NFR-002 accetta il rischio residuo per la sola produzione alle condizioni documentate. L'audit privacy del proxy resta aperto e **non** va avviato lo streaming remoto dei log del tunnel condiviso, nemmeno per diagnostica.
+Questi comandi non caricano `.env`; usare lo stesso eventuale nome di progetto Compose impostato nell'ambiente per l'avvio. La salute locale non verifica Meta, OpenRouter o la raggiungibilità pubblica. Il port forwarding verso `jarvis` e il proxy HTTPS sono esterni al comando. Non pubblicare `/health`; la prova temporanea conclusa non autorizza di per sé l'uso continuativo dello sviluppo. La successiva decisione in REQ-NFR-002 accetta il rischio residuo per la sola produzione alle condizioni documentate. L'audit privacy del proxy è descritto in [Audit privacy del proxy](#audit-privacy-del-proxy). **Non** va avviato lo streaming remoto dei log del tunnel condiviso, nemmeno per diagnostica.
 
 Sviluppo e produzione usano lo stesso `compose.yaml` e non condividono progetto, volumi, segreti o porte. Lo sviluppo gira da qualsiasi clone con `npm run start:local`; la produzione gira su `jarvis` nel progetto `agent-pilates-prod`, con configurazione e segreti propri e porte loopback diverse. `PILATES_VOLUME_PREFIX` imposta il prefisso di entrambi i volumi (`<prefisso>_postgres_data`, `<prefisso>_hermes_data`); se non è impostato vale il nome del progetto Compose. `start:local` rifiuta il progetto e i volumi di produzione, anche se eseguito su `jarvis` o con variabili ereditate dalla shell.
 
@@ -303,7 +303,7 @@ Nella procedura manuale l'eventuale `PILATES_IDLE_COMPACT_SECONDS` va esportato 
 
 ### Configurazione del gateway
 
-Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni e le credenziali del comando unico sono descritte in `.env.example`; la procedura manuale continua a usare i file di segreto separati. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** il percorso del webhook a quella porta senza alterare il corpo della richiesta. Il percorso predefinito è `/whatsapp/webhook`; impostare `WHATSAPP_WEBHOOK_PATH` per usare un percorso già configurato. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi.
+Il modello predefinito è `openai/gpt-6.1-terra`; `PILATES_MODEL` lo rende configurabile. Le opzioni e le credenziali del comando unico sono descritte in `.env.example`; la procedura manuale continua a usare i file di segreto separati. Il webhook è esposto solo su `127.0.0.1:18090` (`WHATSAPP_WEBHOOK_PORT` per cambiare porta). Un reverse proxy HTTPS già predisposto deve inoltrare **solo** il percorso del webhook a quella porta senza alterare il corpo della richiesta. Il percorso predefinito è `/whatsapp/webhook`; impostare `WHATSAPP_WEBHOOK_PATH` per usare un percorso già configurato. Configurare su Meta l'URL pubblico corrispondente, lo stesso verify token e la sottoscrizione all'evento `messages`. Non esporre `/health`. Configurare anche il proxy affinché non registri token nei parametri URL, numeri o corpi dei messaggi. Con Cloudflare la query string resta comunque nei dataset di analytics: vedere [Audit privacy del proxy](#audit-privacy-del-proxy).
 
 Il plugin nativo `studio_sql_query` riceve una singola query SQL ed eventuali parametri `$1`, `$2`, ecc. Hermes si collega come `studio_agent`: PostgreSQL autorizza il DML previsto e rifiuta il DDL sugli schemi. Per ogni turno WhatsApp ammesso un broker separato verifica nuovamente la firma e l'allowlist, associa l'identità alla transazione e la rende disponibile ai trigger; gli autori proposti dal modello sono ignorati. Senza prova attendibile il tool rifiuta la richiesta. Il broker accetta messaggi firmati fino a 5 minuti di età, con 30 secondi di tolleranza futura; un messaggio ritardato o un turno interrotto dal riavvio può richiedere un nuovo messaggio. Il broker non espone porte sull'host; solo il tool SQL è abilitato al modello. Non si usa MCP. **Eccezione accettata:** PostgreSQL permette comunque al ruolo di modificare la propria password, con il rischio di interrompere l'accesso; non sono privilegi esclusivamente DML in senso assoluto. I dati delle sessioni di Hermes sono in un volume SQLite separato da PostgreSQL e devono essere protetti.
 
@@ -324,6 +324,23 @@ I test usano solo credenziali e messaggi sintetici, una rete Docker senza access
 
 Per verificare una configurazione reale, dopo i controlli e con le mitigazioni e le autorizzazioni descritte in REQ-NFR-002 e nella procedura operativa, avviare il proxy HTTPS e inviare dal numero autorizzato un messaggio di prova; confermare la risposta sul dispositivo. Per verificare anche i privilegi si può chiedere al modello di eseguire `SELECT current_user` e di tentare `CREATE TEMP TABLE spike_permission_probe (id integer)`: il primo restituisce il ruolo agente e il secondo deve essere rifiutato. Non includere numeri, messaggi o credenziali nei rapporti.
 
+### Audit privacy del proxy
+
+`npm run proxy:audit` ripete l'audit dei log del proxy pubblico dal PC dell'operatore, con Node.js 24, `ssh` verso `jarvis` (alias predefinito, `--host` per cambiarlo) e Python 3 sul server. In sintesi:
+
+- invia richieste HTTPS con soli marcatori sintetici agli hostname di produzione e sviluppo;
+- usa un'origine temporanea su `127.0.0.1:8300` solo se la porta è libera, e la chiude a fine prova;
+- raccoglie sul server, in sola lettura, configurazione, conservazione e conteggi del journal e di syslog, senza lasciare file;
+- riporta solo esiti, conteggi ed enumerazioni.
+
+`npm run proxy:audit -- privileged` aggiunge i fatti leggibili solo da root, chiedendo la password sudo all'operatore.
+
+Con `--cloudflare-config /percorso/privato` verifica anche dataset, campi e conservazione Cloudflare tramite GraphQL. Il file indicato contiene il token o le righe `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID` e `CLOUDFLARE_ACCOUNT_ID`; deve essere privato, `0600` e fuori dal repository. Il token ha soli permessi di lettura (Analytics Read e Logs Read). Lo streaming dei log non viene mai avviato.
+
+Report e stato restano in `.local/proxy-audit/`. Il codice di uscita è 0 se tutto è verificato senza esposizioni, 1 se ci sono esposizioni, 3 se alcune parti non sono verificate.
+
+L'audit del 2026-11-14 ha rilevato che Cloudflare conserva per 31-32 giorni la query string delle richieste, compreso il verify token delle verifiche Meta; corpi e header non sono conservati. Procedura, evidenze, limiti e decisioni sono in [TEC-008](docs/operations/TEC-008-audit-proxy.md).
+
 Se il servizio non diventa sano o non risponde, verificare con `docker compose ps` che PostgreSQL e Hermes siano avviati, che tutti i file dei segreti richiesti esistano e abbiano permessi `0600`, che il percorso del proxy corrisponda a `WHATSAPP_WEBHOOK_PATH` e che le credenziali esterne siano valide. Non stampare i segreti per diagnostica. I dettagli dei log non sono disponibili con l'attuale mitigazione della privacy.
 
 ## Prerequisiti previsti per l'ambiente completo
@@ -334,4 +351,4 @@ Se il servizio non diventa sano o non risponde, verificare con `docker compose p
 - Un endpoint HTTPS pubblico già disponibile per i webhook Meta.
 - App Meta WhatsApp Business configurata e credenziali per i servizi esterni; non inserire credenziali nel repository.
 
-La [procedura operativa](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. La prova pubblica temporanea è conclusa; l'audit completo dei log del proxy resta nel debito TEC-008. L'accettazione successiva del rischio per l'uso continuativo riguarda la sola produzione e non dimostra conformità, come indicato in REQ-NFR-002.
+La [procedura operativa](docs/operations/TEC-005-continuita.md) descrive installazione intenzionale, backup quiescente e ripristino isolato. Gli script `scripts/backup.sh` e `scripts/restore.sh` non avviano Hermes durante il recupero e non cifrano i backup: proteggerli su supporti cifrati. La prova pubblica temporanea è conclusa; l'audit dei log del proxy è documentato in [TEC-008](docs/operations/TEC-008-audit-proxy.md). L'accettazione successiva del rischio per l'uso continuativo riguarda la sola produzione e non dimostra conformità, come indicato in REQ-NFR-002.

@@ -93,6 +93,8 @@ Il tunnel è gestito localmente da `/etc/cloudflared/config.yml`, modificabile s
    sudo systemctl restart cloudflared
    ```
 
+4. **Verifica ripetibile del filtro e dei log**, dopo ogni modifica del tunnel o aggiornamento di `cloudflared`: dal clone sul PC eseguire `npm run proxy:audit` e, per i fatti leggibili solo da root, `npm run proxy:audit -- privileged`. Lo strumento invia solo richieste sintetiche e conta i marcatori sul server, senza stampare righe di log ([TEC-008](TEC-008-audit-proxy.md)).
+
 ## Sviluppo da qualsiasi clone
 
 L'URL di sviluppo nella tabella è stato comunicato dall'operatore dal pannello Meta e registrato su sua richiesta esplicita. Per questo ambiente `WHATSAPP_WEBHOOK_PATH` deve essere `/webhooks/whatsapp`, diverso da `/whatsapp/webhook` di produzione.
@@ -136,4 +138,4 @@ Produzione installata da vuoto con il commit `c755f2b`; risultati:
 - da un clone su una macchina diversa da quella usata in precedenza, con il port forward sulla porta della regola di sviluppo e senza modifiche su Meta, lo sviluppo ha risposto sul proprio numero; la produzione ha risposto sia con il port forward aperto sia dopo averlo chiuso;
 - durante la prova la rimozione di un record DNS jolly ha reso l'hostname di produzione irraggiungibile (NXDOMAIN) senza errori su `jarvis`; il CNAME dedicato ha ripristinato le risposte 404, 403 e 401 attese.
 
-Limiti: il rifiuto del numero non autorizzato non è stato provato con un telefono reale attraverso Meta, né è stata osservata l'assenza di risposte in uscita; il filtro dei log non è stato osservato su richieste reali: dopo le prove il journal di cloudflared non conteneva righe con l'hostname o il percorso, ma non è stato verificato se cloudflared le avrebbe registrate senza filtro.
+Limiti: il rifiuto del numero non autorizzato non è stato provato con un telefono reale attraverso Meta, né è stata osservata l'assenza di risposte in uscita; il filtro dei log non è stato osservato su richieste reali: dopo le prove il journal di cloudflared non conteneva righe con l'hostname o il percorso, ma non è stato verificato se cloudflared le avrebbe registrate senza filtro. TEC-008 ha poi provato con marcatori sintetici gli esiti 404, 403, 401, 502, 200, 500, la chiusura brusca e l'annullamento: restano solo righe senza URL, senza alcun marcatore.
