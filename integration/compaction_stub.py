@@ -53,10 +53,11 @@ async def chat(request):
     # Record only a boolean, never the request or the synthetic phone itself.
     wire = json.dumps(body, ensure_ascii=False)
     private_phone = any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)
-                        for number in ('15555550102', '15555550103'))
+                        for number in ('15555550102', '15555550103', '15555550901', '15555550902', '15555550903', '15555550904'))
     observations.append({
         'kind': kind, 'model': body.get('model'), 'chars': size, 'last_role': messages[-1].get('role') if messages else None,
         'private_phone': private_phone,
+        'private_management': any(value in wire for value in ('CorrectedManager', 'ChangedAgain', 'LegacyManager')),
         'verbatim': sorted({m for m in MARKER.findall(joined) if m == m.upper()}),
         'all': sorted({m.upper() for m in MARKER.findall(joined)}),
         'current': [m for m in MARKER.findall(last_user) if m == m.upper()],
@@ -70,8 +71,10 @@ async def chat(request):
         markers = ' '.join(m.lower() for m in sorted({m.upper() for m in MARKER.findall(joined)}))
         message = {'role': 'assistant', 'content': f'synthetic-summary of {markers}'}
         finish = 'stop'
-    elif kind == 'turn' and 'REGISTER' in last_user and messages[-1].get('role') != 'tool':
-        query = ("INSERT INTO app.clients (first_name, last_name, created_by_phone, created_by_name) "
+    elif kind == 'turn' and ('REGISTER' in last_user or 'ENROLL' in last_user) and messages[-1].get('role') != 'tool':
+        query = ("INSERT INTO app.teachers (first_name,last_name) VALUES ('Forbidden','Synthetic') RETURNING id"
+                 if 'ENROLL' in last_user else
+                 "INSERT INTO app.clients (first_name, last_name, created_by_phone, created_by_name) "
                  "VALUES ('compaction', 'synthetic', '999', 'forged') RETURNING id")
         message = {'role': 'assistant', 'content': None, 'tool_calls': [{
             'id': 'synthetic-register', 'type': 'function',

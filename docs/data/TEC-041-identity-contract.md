@@ -29,6 +29,14 @@ Le operazioni sono `bootstrap`, `enroll`, `complete`, `correct`, `change_phone`,
 
 L'audit append-only `studio_private.teacher_identity_changes` registra operazione, istante del database, ID e snapshot dell'autore, valori gestionali prima/dopo. La guardia `studio_private.teacher_identity_writes` è privata e vincolata a backend/transazione; viene rimossa prima del ritorno e un controllo differito vieta di commetterla. Un errore annulla anche guardia e audit. I privilegi di migrazione restano fidati per il DDL: non si promette protezione da chi può disabilitare i trigger o modificare le funzioni.
 
+## Guided extension — US-017
+
+La migrazione successiva aggiunge `preview_manager_bootstrap(sender text, manager_phone text, first_name text, last_name text)`, SECURITY DEFINER a search_path fisso, riservata al broker: il solo gestore non ancora censito ottiene ID/revisione della persona legacy incompleta corrispondente ai nomi raccolti. Non concede elenco o lettura di telefoni prima del bootstrap. La mutazione resta `manage_teacher_identity` e richiede la conferma del riepilogo nel flusso.
+
+`management_sessions` contiene solo lo stato privato del percorso (chiave: impronta del mittente), non una seconda identità o fonte di autorizzazione. Il broker ha SELECT/INSERT/UPDATE/DELETE su questa tabella, non sulla tabella delle persone o sull'audit. Il modello non vi accede. Lo stato entra nei backup privati; il nonce di istanza invalida le conferme dopo riavvio/ripristino, mantenendo l'intercettazione fino a nuovo ingresso o annullamento.
+
+Il nuovo campo privato `author_context.management_only_enrollment`, default falso, è impostato dal broker quando la gestione è configurata. Il trigger di inserimento legacy rifiuta allora nuovi insegnanti via SQL. Il modello non può impostarlo, annullarlo tramite GUC o aggirarlo con una citazione libera. Il percorso senza configurazione gestionale conserva la compatibilità precedente; non si anticipano la fonte dell'accesso ordinario, la risoluzione del nome, di «io» o dell'autore. Rimozione definitiva dell'inserimento legacy e attivazione dei consumatori restano a TEC-042. Nessuno stack operativo è aggiornato. [Protocollo e verifiche](../operations/US-017-gestione.md).
+
 ## Coordinated activation, not included here
 
 US-017 usa questi ingressi dietro un flusso deterministico, prima di modello e cronologia. TEC-042 sostituisce insieme gateway, broker, autore, «io» e nome nella conversazione; rimuove allowlist, mapping e fallback al nome WhatsApp, impedisce contesti legacy e toglie al modello l'inserimento degli insegnanti. Solo le righe esistenti allora possono restare incomplete: il default transitorio e l'inserimento di compatibilità vengono rimossi. Non collegare un consumatore isolato al nuovo modello prima di quel passaggio.

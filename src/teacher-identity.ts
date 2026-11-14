@@ -1,4 +1,4 @@
-// Pure input policies for the future trusted management path. These functions
+// Pure input policies for the trusted management path. These functions
 // confer no authority: PostgreSQL revalidates inputs and the manager proof.
 export function normalizeInternationalPhone(value: unknown): string {
   if (typeof value !== 'string' || [...value].length > 80) throw new Error('Invalid international phone');

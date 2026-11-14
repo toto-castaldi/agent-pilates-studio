@@ -46,6 +46,14 @@ Le chiamate OpenRouter sono a pagamento e possono richiedere più richieste per 
 
 Il comando tenta di rimuovere container, reti, volumi, immagine temporanea e segreti anche in caso di errore o interruzione gestita. Un arresto forzato, un guasto Docker o del sistema possono impedirlo: verificare e rimuovere solo le risorse del progetto casuale `pilates-conv-*` e le directory temporanee `pilates-conversation-*`, senza toccare gli stack operativi. Non avviare streaming remoto dei log del tunnel; questa prova non usa il proxy pubblico né dimostra l'accettazione privacy o il funzionamento di Meta reale.
 
+## Gestione guidata dell'anagrafica
+
+Il componente deterministico è pronto per il passaggio coordinato dell'identità, ma **non è attivato negli avvii operativi**: allowlist, mapping e identità dei turni ordinari restano alla baseline. Non sostituire la configurazione corrente né attivare soltanto uno dei consumatori. Il censimento non abilita ancora un nuovo numero all'accesso ordinario e non registra destinatari su Meta.
+
+Nel percorso predisposto il gestore usa `/anagrafica`: `elenco`, `nuovo`, `completa ID`, `correggi ID`, `numero ID`, `revoca ID` e `abilita ID`. Il sistema raccoglie i dati in passaggi separati e richiede `/conferma <codice>` sul riepilogo, entro dieci minuti; `/annulla` esce senza salvare. Il gestore inizialmente incompleto deve prima censire sé stesso usando il proprio numero autenticato; le persone preesistenti non vengono duplicate. Non può revocare sé stesso o cambiare il proprio numero. Nessun comando esterno di censimento ordinario e nessun onboarding libero sono introdotti.
+
+Messaggi e risposte gestionali non passano da Hermes, dalla sua cronologia o dal modello. Scadenza e riavvio non salvano bozze: dopo un riavvio il flusso interrotto resta intercettato fino a un nuovo `/anagrafica` o `/annulla`. Le operazioni conservano ID e storico. La prova isolata con webhook firmati, PostgreSQL reale, sostituti locali Meta/modello e soli dati sintetici è inclusa in `npm run test:author`; non legge configurazioni private. [Percorso, confini, configurazione predisposta e limiti](docs/operations/US-017-gestione.md).
+
 ## Integrazione continua
 
 Il workflow `.github/workflows/ci.yml` viene eseguito su push, pull request e avvio manuale. Su un runner Linux usa Node.js da `.nvmrc`, installa le dipendenze ed esegue il gate rapido, `test:local`, `test:pi` e `test:pi-package` con Pi 1.5.0, `test:claude` con Claude Code 2.1.323 e le suite Docker `test:db`, `test:hermes`, `test:author`, `test:compaction`, `test:upgrade` e `test:start`. Prima prepara le immagini fissate dal progetto; i test creano risorse temporanee isolate e usano solo credenziali e dati sintetici. Un comando fallito rende negativo il job; non è previsto deploy automatico né servono segreti GitHub o credenziali Meta/OpenRouter. `test:local` controlla trigger, comandi e configurazione effettiva del workflow.
