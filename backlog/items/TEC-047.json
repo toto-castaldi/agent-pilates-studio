@@ -1,0 +1,42 @@
+{
+  "id": "TEC-047",
+  "title": "Allineamento al template v3.0.0",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-044",
+    "TEC-045"
+  ],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "PROCESS §4.4",
+    "PROCESS §5",
+    "PROCESS §9",
+    "PROCESS-PARALLEL §2",
+    "AGENTS §1",
+    "AGENTS §3",
+    "AGENTS §4",
+    "AGENTS §10",
+    "TECHNICAL-DESIGN §8",
+    "TECHNICAL-DESIGN §10",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Aggiornare dalla v2.2.1 adottata con TEC-044 alla release v3.0.0 di agile-project-template (tag annotato, commit c880d61848bb665cd96f270895c4f083ca4c004d), passando per la v2.3.0 (commit 60a7fac2ff63f769a4e4f509748ff3d7492d3239), verificati sul repository pubblico il 2026-11-14. Includere la modalità Claude Code di orchestrate, la suddivisione di docs/REQUIREMENTS.md e docs/TECHNICAL-DESIGN.md in docs/requirements/ e docs/design/ con migrate-docs e, nello stesso item per decisione esplicita, la condensazione dei nuovi file allo stato attuale. Preservare personalizzazioni e protezioni dello studio; non adottare automaticamente versioni successive, non sostituire i dati del backlog con il seed del template e non modificare lo stack operativo, la produzione o la configurazione personale.",
+  "acceptance_criteria": [
+    "Tag e commit v2.3.0 e v3.0.0 sono verificati e confrontati con le basi adottate dimostrate delle risorse pertinenti. Processo, regole parallele, skill e CLI sono aggiornati senza divergenze salvo accordo esplicito; Process version è 3.0.0. docs/TEMPLATE-ORIGIN.md registra confronto, adozione, percorsi, divergenze e basi ignote, senza dichiarare adottati file solo confrontati.",
+    "La skill orchestrate include la modalità Claude Code della v2.3.0. AGENTS.md §10 e README descrivono il comando dei worker avviati da Claude Code con --dangerously-skip-permissions e i suoi rischi, preservando le protezioni dei clone dello studio (niente .env, .local/, segreti o stato Pi personale; preparazione con npm ci) e l'avvio con node scripts/start-pi.mjs --approve per i worker Pi. La sola adozione non avvia worker.",
+    "migrate-docs è eseguito prima con --dry-run e poi senza: docs/REQUIREMENTS.md e docs/TECHNICAL-DESIGN.md sono sostituiti da docs/requirements/ (README, glossary, acceptance, un file per REQ, requisiti ritirati con State Withdrawn) e docs/design/ (README con decisioni iniziali e aperte, un file per argomento, modules.md con MOD-001). Nessun requisito o modulo referenziato da un item è perso; i riferimenti degli item sono riscritti tramite la CLI e backlog check passa; backlog docs elenca i file.",
+    "I file migrati sono condensati allo stato attuale secondo PROCESS §5.3: senza ID di item, date, narrazioni di decisioni, evidenze e scope delle versioni chiuse, salvo gli item che chiuderanno le decisioni aperte; gli argomenti con più soggetti sono divisi e i riferimenti degli item aperti aggiornati. I requisiti che registrano solo precedenti aggiornamenti del template sono marcati Withdrawn con motivo. Nessun vincolo normativo vigente (dominio, privacy, sicurezza, privilegi, operatività, divieti) va perso; lo storico resta in backlog, ADR e git.",
+    "AGENTS.md §1, §3, §4 e le altre menzioni dei vecchi documenti in AGENTS, README, CLAUDE, skill, prompt, script, test, CI, ADR, spike e documentazione operativa sono aggiornate ai nuovi percorsi, senza perdere regole, deroghe e protezioni dello studio. Store e storico del backlog sono preservati; niente segreti, dati personali, configurazione privata, stack operativo o produzione è letto o modificato.",
+    "Le prove locali che verificano blob adottati, provenienza del template, documenti e riferimenti sono aggiornate e usano solo dati sintetici. Passano il quality gate (lint, typecheck, test, build) e le suite separate pertinenti, incluse test:local, test:pi e test:claude; le prove con Git, filesystem o processi restano fuori da npm test. Versioni e limiti delle prove simulate (Herdr, Claude Code headless) sono registrati senza dichiarare verificato il comportamento di un modello."
+  ],
+  "remarks": [
+    "Decisioni dell'utente del 2026-11-14: adozione completa della v3.0.0, condensazione nello stesso item, assegnazione alla versione aperta v0.3.0 come cambio di scope, priorità P0, avvio e implementazione nella sessione principale."
+  ]
+}
