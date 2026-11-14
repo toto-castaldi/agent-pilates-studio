@@ -295,7 +295,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile,
             row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile : null,
-            row.cancelledAt ? 'Errore sintetico' : null]);
+            row.cancelledAt ? fixtureCancellationReason : null]);
         }
         stage = 'preparazione fixture presenze: riabilitazione trigger';
         await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
@@ -311,7 +311,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           deactivation: rule.active === false ? { ...author, reasonAnyOf: ['Fine abitudine sintetica'] } : undefined })),
       };
       const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author,
-        cancellation: row.cancelledAt ? { ...author, reasonAnyOf: ['Errore sintetico'] } : undefined }));
+        cancellation: row.cancelledAt ? { ...author, reasonAnyOf: [fixtureCancellationReason] } : undefined }));
       const fixtureTimes = (await client.query("SELECT created_at::text AS created, cancelled_at::text AS cancelled, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated, ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') <= clock_timestamp() AS started FROM app.attendance ORDER BY id")).rows;
       const teacherRules = new Map();
       for (const rule of setup.teacherRules ?? []) {
