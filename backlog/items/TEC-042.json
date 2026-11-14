@@ -9,7 +9,8 @@
   "status": "Todo",
   "dependencies": [
     "TEC-041",
-    "US-017"
+    "US-017",
+    "TEC-046"
   ],
   "requirements": [
     "REQ-DB-002",
