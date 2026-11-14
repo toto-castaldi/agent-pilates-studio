@@ -238,6 +238,7 @@ test('missing evidence is reported as not verified', () => {
     ['shippers', { pre: { 'shippers.active': '1', 'shippers.promtail': 'active' } }, /promtail/],
     ['crash', { pre: { 'core.crash_files': '2' }, privileged: { 'core.crash_files': '2' } }, /Crash report/],
     ['ingress', { privileged: { 'ingress.prod_root': 'prod-origin' } }, /prod_root/],
+    ['metrics', { privileged: { 'cloudflared.config.metrics': 'set', 'cloudflared.config.metrics_scope': 'any' } }, /non limitato a loopback/],
     ['probe', { probes: [{ id: 'prod-root', group: 'prod', status: 403, ray: null, edgeBlocked: true }] }, /bloccata da Cloudflare/],
     ['skipped', { probes: [{ id: 'dev-verify', group: 'dev-down', status: 'skipped', ray: null, edgeBlocked: false }] }, /non eseguita/],
   ];

@@ -339,7 +339,7 @@ Con `--cloudflare-config /percorso/privato` verifica anche dataset, campi e cons
 
 Report e stato restano in `.local/proxy-audit/`. Il codice di uscita è 0 se tutto è verificato senza esposizioni, 1 se ci sono esposizioni, 3 se alcune parti non sono verificate.
 
-L'audit del 2026-11-14 ha rilevato che Cloudflare conserva per 31-32 giorni la query string delle richieste, compreso il verify token delle verifiche Meta; corpi e header non sono conservati. Procedura, evidenze, limiti e decisioni sono in [TEC-008](docs/operations/TEC-008-audit-proxy.md).
+L'audit del 2026-11-14 ha rilevato che Cloudflare conserva per 31-32 giorni la query string delle richieste, compreso il verify token delle verifiche Meta; corpi e header non sono conservati. Per questo, dopo ogni verifica Meta, il token lato server si sostituisce subito con il [verify token monouso](docs/operations/TEC-036-whatsapp-ambienti.md#verify-token-monouso). Procedura, evidenze, limiti e decisioni sono in [TEC-008](docs/operations/TEC-008-audit-proxy.md).
 
 Se il servizio non diventa sano o non risponde, verificare con `docker compose ps` che PostgreSQL e Hermes siano avviati, che tutti i file dei segreti richiesti esistano e abbiano permessi `0600`, che il percorso del proxy corrisponda a `WHATSAPP_WEBHOOK_PATH` e che le credenziali esterne siano valide. Non stampare i segreti per diagnostica. I dettagli dei log non sono disponibili con l'attuale mitigazione della privacy.
 

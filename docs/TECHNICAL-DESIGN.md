@@ -123,7 +123,7 @@ TEC-008 ha eseguito l'audit il 2026-11-14 con indicatori sintetici e con la prov
 - **Esiti provati:** per 200, 401, 403, 404, 500, 502, chiusura brusca e richiesta annullata, nessun marcatore compare nel journal o in syslog, in nessun campo. Resta una riga storica di sviluppo del 2026-11-04, anteriore al filtro, con un verify token di origine non determinata.
 - **Cloudflare:** `httpRequestsAdaptive` e gli eventi firewall conservano la query string per 31-32 giorni, non header né corpi. Vi risultano le verifiche Meta accettate, quindi i verify token reali di produzione e sviluppo.
 - **Non verificabile con il token di sola lettura:** job Logpush, Log Explorer della zona, Logpull e sistemi interni di Cloudflare.
-- **Mitigazione proposta:** il verify token monouso (§10). `proxy:audit` la verifica leggendo la sola data di modifica del token di produzione.
+- **Decisione dell'utente (2026-11-14, REQ-NFR-002):** nessuna rotazione e rischio accettato fino alla scadenza della retention. Le verifiche future adottano il verify token monouso (§10). `proxy:audit` lo verifica leggendo la sola data di modifica del token di produzione.
 
 ## 8. Test strategy
 
@@ -245,8 +245,8 @@ WhatsApp per ambiente (REQ-OPS-006): si usano due app Meta anziché una con over
 - TEC-023 adotta processo, skill e visualizzatore Pi del template v1.4.0, con il solo modulo concordato `MOD-001 — Agente`. Su accordo dell'utente, «unassigned» nella regola del modulo indica l'assenza di un modulo, non di una versione: TEC-019 può quindi riferirsi a `MOD-001` pur rimanendo senza versione. `docs/TEMPLATE-ORIGIN.md` distingue le risorse adottate dalle basi sconosciute e dai confronti; futuri aggiornamenti richiedono valutazione e decisione separate.
 - Audit dei log del proxy — TEC-008, pianificato nella v0.3.0 su decisione dell'utente del 2026-11-14 ed eseguito lo stesso giorno, senza streaming remoto ([evidenze](operations/TEC-008-audit-proxy.md), §7).
   - **Esposizione Cloudflare:** la query string conservata da Cloudflare contiene il verify token delle verifiche Meta.
-  - **Mitigazione proposta:** verify token monouso, sostituito sul server subito dopo ogni verifica riuscita, così il valore conservato non è più valido.
-  - **Decisioni aperte:** rotazione o accettazione del rischio fino alla scadenza della retention; accettazione delle parti non verificabili (Logpush, Log Explorer della zona, Logpull, sistemi interni Cloudflare).
+  - **Decisione dell'utente del 2026-11-14:** nessuna rotazione dei token attuali, rischio accettato fino alla scadenza della retention e per la riga storica pre-filtro. Per il futuro, verify token monouso: il valore lato server si sostituisce subito dopo ogni verifica Meta riuscita ([procedura](operations/TEC-036-whatsapp-ambienti.md#verify-token-monouso)).
+  - **Decisione aperta alla chiusura della versione:** accettare come limiti le parti non verificate (Logpush, Log Explorer della zona, Logpull) e non verificabili (sistemi interni Cloudflare), oppure verificarle dal dashboard senza Live logs.
   - REQ-NFR-002 resta vincolante, con la prova temporanea e la successiva accettazione del rischio per la sola produzione.
 - Abilitazione dei job cron, permessi di creazione e accesso al database dei turni pianificati senza mittente autenticato — TEC-019, non assegnato.
 - Verifica conversazionale con il modello reale e scenari di registrazione, consultazione e aggiornamento — TEC-012, US-002, US-003 e US-004.

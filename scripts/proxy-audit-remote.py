@@ -664,6 +664,17 @@ def config_facts(path):
     for name, key in (('logfile', 'logfile'), ('log_directory', 'log-directory'), ('trace_output', 'trace-output'),
                       ('metrics', 'metrics')):
         emit(f'cloudflared.config.{name}', 'set' if key in keys and keys[key].strip('"\' ') else 'unset')
+    metrics = keys.get('metrics', '').strip('"\' ')
+    host = metrics.rsplit(':', 1)[0].strip('[]') if ':' in metrics else metrics
+    if not metrics:
+        scope = 'unset'
+    elif host in ('localhost', '127.0.0.1', '::1'):
+        scope = 'loopback'
+    elif host in ('', '0.0.0.0', '::'):
+        scope = 'any'
+    else:
+        scope = 'other'
+    emit('cloudflared.config.metrics_scope', scope)
     emit('cloudflared.config.output', enum(keys.get('output'), ('default', 'json')))
     emit('cloudflared.config.protocol', enum(keys.get('protocol'), ('quic', 'http2', 'auto')))
     emit('cloudflared.config.no_autoupdate', enum(keys.get('no-autoupdate'), ('true', 'false')))

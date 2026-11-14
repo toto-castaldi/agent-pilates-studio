@@ -74,7 +74,7 @@ printf 'Using rules from %s\\nMatched rule #1\\n\\thostname: example\\n\\tservic
   await writeFile(join(root, 'etc/default/cloudflared'), 'TUNNEL_LOGLEVEL=debug\n');
   await writeFile(join(root, 'etc/cloudflared/config.yml'), `tunnel: 00000000-0000-4000-8000-000000000000
 credentials-file: /etc/cloudflared/synthetic.json
-${dirty ? 'loglevel: debug\nlogfile: /var/log/cloudflared.log\ntoken: synthetic-config-secret\nprotocol: http2\n' : ''}ingress:
+${dirty ? 'loglevel: debug\nlogfile: /var/log/cloudflared.log\ntoken: synthetic-config-secret\nprotocol: http2\nmetrics: 0.0.0.0:2000\n' : 'metrics: localhost:20241\n'}ingress:
   - hostname: ${PROD_HOST}
     path: ^/whatsapp/webhook$
     service: http://127.0.0.1:18190
@@ -255,6 +255,7 @@ test('the collector detects exposures without printing the values that cause the
     assert.equal(facts['cloudflared.config.logfile'], 'set');
     assert.equal(facts['cloudflared.config.token'], 'set');
     assert.equal(facts['cloudflared.config.protocol'], 'http2');
+    assert.equal(facts['cloudflared.config.metrics_scope'], 'any');
     assert.equal(facts['cloudflared.proc_env.tunnel_token'], 'set');
     assert.equal(facts['cloudflared.env_file.tunnel_loglevel'], 'set');
     assert.equal(facts['ingress.prod_webhook'], 'prod-origin');

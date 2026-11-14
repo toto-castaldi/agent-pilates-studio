@@ -63,10 +63,12 @@ test('queries are built only from validated names, tags, instants and Ray IDs', 
   const events = eventsQuery('httpRequestsAdaptive', ZONE, ['datetime', 'rayName'], '2026-11-14T10:00:00Z', '2026-11-14T11:00:00Z', ['0123456789abcdef']);
   assert.match(events, /rayName_in: \["0123456789abcdef"\]/);
   assert.throws(() => eventsQuery('httpRequestsAdaptive', ZONE, ['datetime'], '2026-11-14', '2026-11-14T11:00:00Z', []));
-  const verification = verificationQuery('httpRequestsAdaptive', ZONE, '2026-11-01T00:00:00Z', '2026-11-08T00:00:00Z');
+  const verification = verificationQuery('httpRequestsAdaptive', ZONE, '2026-11-01T00:00:00Z', '2026-11-08T00:00:00Z', PROD_HOST, '200');
   assert.match(verification, /clientRequestQuery_notlike: "%pxaudit%"/);
-  assert.match(verification, /\{ datetime clientRequestHTTPHost edgeResponseStatus \}/, 'query strings are never selected');
-  assert.ok(!/\{[^}]*clientRequestQuery[^_]/.test(verification));
+  assert.match(verification, /clientRequestHTTPHost: "agent-pilates-studio\.toto-castaldi\.com"/);
+  assert.match(verification, /edgeResponseStatus: 200 \}\) \{ datetime \}/, 'only the date is selected, never the query string');
+  assert.match(verificationQuery('httpRequestsAdaptive', ZONE, '2026-11-01T00:00:00Z', '2026-11-08T00:00:00Z', DEV_HOST, '5xx'), /edgeResponseStatus_geq: 500, edgeResponseStatus_lt: 600/);
+  assert.throws(() => verificationQuery('httpRequestsAdaptive', ZONE, '2026-11-01T00:00:00Z', '2026-11-08T00:00:00Z', 'other.example', 'all'));
   assert.equal(rayName('0123456789abcdef-MXP'), '0123456789abcdef');
   assert.equal(rayName('bogus'), null);
 });
@@ -125,20 +127,25 @@ test('Cloudflare findings distinguish conserved query strings, real verify token
   const clean = evaluateCloudflare(evidence());
   assert.ok(!clean.some((finding) => finding.level === 'exposure'));
   assert.ok(clean.some((finding) => /nessun marcatore di query/.test(finding.text)));
+  const incomplete = evaluateCloudflare(evidence({ http: [{ probe: 'prod-verify', found: true, sampled: false, fields: { token: [], header: [] }, missing: ['clientRequestQuery'] }] }));
+  assert.ok(!incomplete.some((finding) => /nessun marcatore di query/.test(finding.text)), 'no absence claim without the query field');
+  assert.ok(incomplete.some((finding) => finding.level === 'unverified' && /non verificata \(campi non restituiti\)/.test(finding.text)));
 
   const query = evaluateCloudflare(evidence({ http: [{ probe: 'prod-verify', found: true, sampled: true, fields: { token: ['clientRequestQuery'], header: [] } }] }));
   assert.ok(query.some((finding) => finding.level === 'exposure' && /query string è conservata/.test(finding.text)));
   assert.ok(query.some((finding) => /campionati/.test(finding.text)));
 
   const counts = emptyVerification(31);
-  addVerifications(counts, [
-    { datetime: '2026-11-10T09:00:00Z', clientRequestHTTPHost: PROD_HOST, edgeResponseStatus: 200 },
-    { datetime: '2026-11-04T09:00:00Z', clientRequestHTTPHost: DEV_HOST, edgeResponseStatus: 502 },
-    { datetime: '2026-11-05T09:00:00Z', clientRequestHTTPHost: DEV_HOST, edgeResponseStatus: 403 },
-    { datetime: '2026-11-05T09:00:00Z', clientRequestHTTPHost: 'other.example', edgeResponseStatus: 200 },
-  ]);
+  const accepted = { datetime: '2026-11-10T09:00:00Z' };
+  addVerifications(counts, 'prod', { all: [accepted], '200': [accepted], '403': [], '5xx': [] });
+  const failed = { datetime: '2026-11-04T09:00:00Z' };
+  const refused = { datetime: '2026-11-05T09:00:00Z' };
+  addVerifications(counts, 'dev', { all: [failed, refused, { datetime: '2026-11-06T09:00:00Z' }], '200': [], '403': [refused], '5xx': [failed] });
   assert.equal(counts.hosts.prod['200'], 1);
   assert.equal(counts.hosts.dev['5xx'], 1);
+  assert.equal(counts.hosts.dev.other, 1);
+  assert.equal(counts.first, '2026-11-04');
+  assert.equal(counts.last, '2026-11-10');
   assert.equal(counts.accepted.prod.lastAt, '2026-11-10T09:00:00Z');
   const real = evaluateCloudflare(evidence({ verification: counts }));
   assert.ok(real.some((finding) => finding.level === 'exposure' && /produzione conservato/.test(finding.text) && /2026-12-11/.test(finding.text)));
@@ -161,6 +168,7 @@ test('Cloudflare findings distinguish conserved query strings, real verify token
 function fakeApi(options: { discover?: boolean; lateEvents?: boolean } = {}) {
   const requests: string[] = [];
   let polls = 0;
+  let clock = Date.parse('2026-11-14T10:30:00Z');
   const types: Record<string, Array<{ name: string; type: { name: string } }>> = {
     viewer: [{ name: 'zones', type: { name: 'zone' } }, { name: 'accounts', type: { name: 'account' } }],
     zone: [{ name: 'settings', type: { name: 'ZoneSettings' } }],
@@ -189,34 +197,54 @@ function fakeApi(options: { discover?: boolean; lateEvents?: boolean } = {}) {
         return { status: 200, json: { data: { viewer: { [scope]: [{ settings }] } } } };
       }
       if (query.includes('rayName_in')) {
-        polls += 1;
+        const selection = (/\) \{ ([A-Za-z ]+) \} \} \} \}$/.exec(query)?.[1] ?? '').split(' ');
+        if (selection.length === 1 && selection[0] === 'rayName' && query.includes('datetime_leq: "2026-11-14T10:16:00Z"')) polls += 1;
         if (options.lateEvents && polls === 1) return { status: 200, json: { data: { viewer: { zones: [{ events: [] }] } } } };
-        const events = query.includes('firewallEventsAdaptive')
-          ? [{ rayName: 'fedcba9876543210', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd06to33333333' }]
-          : [{ rayName: '0123456789abcdef', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd03to11111111', sampleInterval: 1 }, { rayName: 'fedcba9876543210', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd06to33333333' }];
+        // Wide selections are answered from a coarser sample without the synthetic events,
+        // and a window ending at finish + 15 minutes misses the date column.
+        if (selection.length > 3) return { status: 200, json: { data: { viewer: { zones: [{ events: [] }] } } } };
+        if (selection.includes('datetime') && query.includes('datetime_leq: "2026-11-14T10:16:00Z"')) return { status: 200, json: { data: { viewer: { zones: [{ events: [] }] } } } };
+        const common = { clientRequestHTTPHost: PROD_HOST, clientRequestPath: '/whatsapp/webhook', edgeResponseStatus: 403, sampleInterval: null };
+        const all: Array<Record<string, unknown>> = query.includes('firewallEventsAdaptive')
+          ? [{ ...common, datetime: '2026-11-14T10:00:30Z', rayName: 'fedcba9876543210', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd06to33333333', userAgent: 'Python-urllib/3.14' }]
+          : [{ ...common, datetime: '2026-11-14T10:00:10Z', rayName: '0123456789abcdef', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd03to11111111', userAgent: 'curl/8.5.0' }, { ...common, datetime: '2026-11-14T10:00:30Z', rayName: 'fedcba9876543210', clientRequestQuery: 'hub.verify_token=pxaudit0123abcd06to33333333' }];
+        // A per-field query omits the events that lack that field, as a coarser sample would.
+        const events = all.filter((event) => selection.every((key) => Object.hasOwn(event, key))).map((event) => Object.fromEntries(Object.entries(event).filter(([key]) => selection.includes(key))));
         return { status: 200, json: { data: { viewer: { zones: [{ events }] } } } };
       }
       if (query.includes('verify_token')) {
-        return { status: 200, json: { data: { viewer: { zones: [{ events: [{ datetime: '2026-11-10T09:00:00Z', clientRequestHTTPHost: PROD_HOST, edgeResponseStatus: 200 }] }] } } } };
+        // One accepted production verification; the development host has none.
+        const prod = query.includes(`clientRequestHTTPHost: "${PROD_HOST}"`) && !/edgeResponseStatus(: 403|_geq)/.test(query);
+        return { status: 200, json: { data: { viewer: { zones: [{ events: prod ? [{ datetime: '2026-11-10T09:00:00Z' }] : [] }] } } } };
       }
       return { status: 400, json: { errors: [{ message: 'unexpected' }] } };
     },
-    async sleep() {},
-    now: () => Date.parse('2026-11-14T10:30:00Z'),
+    async sleep(ms) {
+      clock += ms;
+    },
+    now: () => clock,
   };
   return { system, requests, polls: () => polls };
 }
 
 test('collectCloudflare discovers datasets, polls for the probes and counts retained verifications', async () => {
   const api = fakeApi({ discover: true, lateEvents: true });
-  const collected = await collectCloudflare(api.system, { token: TOKEN }, state(), { waitMs: 60_000, pollMs: 10 });
+  const collected = await collectCloudflare(api.system, { token: TOKEN }, state(), { waitMs: 60_000, pollMs: 30_000 });
   assert.equal(collected.zone, 'discovered');
   assert.equal(collected.account, 'discovered');
   assert.deepEqual(collected.zoneDatasets?.map((item) => item.name), ['firewallEventsAdaptive', 'httpRequestsAdaptive']);
-  assert.ok(api.polls() >= 3, 'retries until the probe events are ingested');
+  assert.ok(api.polls() >= 2, 'retries until the probe events are ingested');
   assert.deepEqual(collected.http?.map((entry) => [entry.probe, entry.found]), [['prod-verify', true], ['prod-python', true]]);
+  assert.deepEqual(collected.http?.[0].fields.token, ['clientRequestQuery'], 'fields read one by one despite coarse wide selections');
+  assert.deepEqual(collected.http?.[1].missing, ['userAgent'], 'fields not returned are reported, not treated as absent');
+  assert.ok(api.requests.length > 0);
+  const partial = evaluateCloudflare(collected);
+  assert.ok(partial.some((finding) => finding.level === 'unverified' && /alcuni campi non sono stati restituiti/.test(finding.text)));
+  assert.ok(!partial.some((finding) => finding.level === 'ok' && /header, firma, telefono e messaggio sintetici assenti/.test(finding.text) && /httpRequestsAdaptive/.test(finding.text)), 'absence is not claimed for fields that were not returned');
   assert.deepEqual(collected.firewall?.map((entry) => entry.probe), ['prod-python']);
   assert.ok(collected.verification && collected.verification.hosts.prod['200'] >= 1);
+  assert.equal(collected.verification?.hosts.dev['200'], 0);
+  assert.equal(collected.verification?.accepted.prod.lastAt, '2026-11-10T09:00:00Z');
   assert.equal(collected.retentionFlag, false);
   assert.deepEqual(collected.logExplorer, { zone: [], account: [] });
   assert.deepEqual(collected.logSearch.http_requests, { denied: 'HTTP 403, codice 10004' });

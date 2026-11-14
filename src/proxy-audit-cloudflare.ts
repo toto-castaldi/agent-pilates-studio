@@ -261,15 +261,25 @@ export function parseEvents(data: unknown): Array<Record<string, unknown>> {
   return Array.isArray(events) ? events.filter(object) : [];
 }
 
-// Retained verification requests outside the audits, selecting only date, host
-// and response status: the query strings themselves are never requested. Only
-// the correct verify token obtains 200, so a 200 proves a real token is retained.
-export function verificationQuery(dataset: string, zoneTag: string, from: string, to: string): string {
-  if (!NAME.test(dataset) || !ID.test(zoneTag) || !ISO.test(from) || !ISO.test(to)) throw new Error('Richiesta GraphQL non valida.');
-  return `{ viewer { zones(filter: { zoneTag: ${quote(zoneTag)} }) { events: ${dataset}(limit: 1000, filter: { datetime_geq: ${quote(from)}, datetime_lt: ${quote(to)}, clientRequestHTTPHost_in: [${quote(PROD_HOST)}, ${quote(DEV_HOST)}], clientRequestQuery_like: "%verify_token%", clientRequestQuery_notlike: ${quote(`%${MARKER_PREFIX}%`)} }) { datetime clientRequestHTTPHost edgeResponseStatus } } } }`;
+export type StatusClass = '200' | '403' | '5xx' | 'other';
+const STATUS_FILTER: Record<Exclude<StatusClass, 'other'> | 'all', string> = {
+  all: '',
+  '200': ', edgeResponseStatus: 200',
+  '403': ', edgeResponseStatus: 403',
+  '5xx': ', edgeResponseStatus_geq: 500, edgeResponseStatus_lt: 600',
+};
+
+// Retained verification requests outside the audits. Host and status are
+// filters and only the date is selected (a minimal selection is answered at
+// full resolution); the query strings themselves are never requested. Only the
+// correct verify token obtains 200, so a 200 proves a real token is retained.
+export function verificationQuery(dataset: string, zoneTag: string, from: string, to: string, host: string, status: keyof typeof STATUS_FILTER): string {
+  if (!NAME.test(dataset) || !ID.test(zoneTag) || !ISO.test(from) || !ISO.test(to) || ![PROD_HOST, DEV_HOST].includes(host) || !Object.hasOwn(STATUS_FILTER, status)) {
+    throw new Error('Richiesta GraphQL non valida.');
+  }
+  return `{ viewer { zones(filter: { zoneTag: ${quote(zoneTag)} }) { events: ${dataset}(limit: 1000, filter: { datetime_geq: ${quote(from)}, datetime_lt: ${quote(to)}, clientRequestHTTPHost: ${quote(host)}, clientRequestQuery_like: "%verify_token%", clientRequestQuery_notlike: ${quote(`%${MARKER_PREFIX}%`)}${STATUS_FILTER[status]} }) { datetime } } } }`;
 }
 
-export type StatusClass = '200' | '403' | '5xx' | 'other';
 export interface VerificationCounts {
   hosts: Record<'prod' | 'dev', Record<StatusClass, number>>;
   accepted: Record<'prod' | 'dev', { first: string | null; last: string | null; lastAt: string | null }>;
@@ -284,25 +294,26 @@ export function emptyVerification(retentionDays: number): VerificationCounts {
   return { hosts: { prod: zero(), dev: zero() }, accepted: { prod: { first: null, last: null, lastAt: null }, dev: { first: null, last: null, lastAt: null } }, first: null, last: null, truncated: false, retentionDays };
 }
 
-export function addVerifications(counts: VerificationCounts, events: ReadonlyArray<Record<string, unknown>>): void {
-  if (events.length >= 1000) counts.truncated = true;
-  for (const event of events) {
-    const host = event.clientRequestHTTPHost === PROD_HOST ? 'prod' : event.clientRequestHTTPHost === DEV_HOST ? 'dev' : null;
-    if (!host) continue;
-    const status = typeof event.edgeResponseStatus === 'number' ? event.edgeResponseStatus : 0;
-    const kind: StatusClass = status === 200 ? '200' : status === 403 ? '403' : status >= 500 && status < 600 ? '5xx' : 'other';
-    counts.hosts[host][kind] += 1;
-    const day = typeof event.datetime === 'string' && ISO.test(event.datetime) ? event.datetime.slice(0, 10) : null;
-    if (!day) continue;
+// Adds one window: rows per status filter of one host; "other" is the remainder.
+export function addVerifications(counts: VerificationCounts, host: 'prod' | 'dev', rows: Record<'all' | '200' | '403' | '5xx', ReadonlyArray<Record<string, unknown>>>): void {
+  if (Object.values(rows).some((events) => events.length >= 1000)) counts.truncated = true;
+  const target = counts.hosts[host];
+  target['200'] += rows['200'].length;
+  target['403'] += rows['403'].length;
+  target['5xx'] += rows['5xx'].length;
+  target.other += Math.max(0, rows.all.length - rows['200'].length - rows['403'].length - rows['5xx'].length);
+  const instants = (events: ReadonlyArray<Record<string, unknown>>) => events.map((event) => event.datetime).filter((value): value is string => typeof value === 'string' && ISO.test(value));
+  for (const at of instants(rows.all)) {
+    const day = at.slice(0, 10);
     if (!counts.first || day < counts.first) counts.first = day;
     if (!counts.last || day > counts.last) counts.last = day;
-    if (kind === '200') {
-      const accepted = counts.accepted[host];
-      if (!accepted.first || day < accepted.first) accepted.first = day;
-      if (!accepted.last || day > accepted.last) accepted.last = day;
-      const at = event.datetime as string;
-      if (!accepted.lastAt || at > accepted.lastAt) accepted.lastAt = at;
-    }
+  }
+  const accepted = counts.accepted[host];
+  for (const at of instants(rows['200'])) {
+    const day = at.slice(0, 10);
+    if (!accepted.first || day < accepted.first) accepted.first = day;
+    if (!accepted.last || day > accepted.last) accepted.last = day;
+    if (!accepted.lastAt || at > accepted.lastAt) accepted.lastAt = at;
   }
 }
 
@@ -315,9 +326,10 @@ export interface MarkerPresence {
   found: boolean;
   sampled: boolean;
   fields: Record<string, string[]>; // marker kind -> event fields containing it
+  missing?: string[]; // selected fields not returned for this event
 }
 
-export function markerPresence(state: RunState, events: ReadonlyArray<Record<string, unknown>>): MarkerPresence[] {
+export function markerPresence(state: RunState, events: ReadonlyArray<Record<string, unknown>>, selected: readonly string[] = []): MarkerPresence[] {
   return state.probes.filter((probe) => probe.ray).map((probe) => {
     const ray = rayName(probe.ray);
     const event = events.find((item) => item.rayName === ray);
@@ -330,8 +342,56 @@ export function markerPresence(state: RunState, events: ReadonlyArray<Record<str
       }
     }
     const interval = event?.sampleInterval;
-    return { probe: probe.id, found: Boolean(event), sampled: typeof interval === 'number' && interval > 1, fields };
+    const missing = event ? selected.filter((field) => !Object.hasOwn(event, field)) : [];
+    return { probe: probe.id, found: Boolean(event), sampled: typeof interval === 'number' && interval > 1, fields, ...(missing.length ? { missing } : {}) };
   });
+}
+
+// The adaptive datasets answer the same events differently depending on the
+// selection and the time window (sample table and ingestion lag): a wide
+// selection or a window ending in the near future can miss them. Presence is
+// therefore read with the Ray ID alone and each field with its own query,
+// over each window, merging by Ray ID. Polling repeats only what is still
+// missing, until everything is returned or the wait expires.
+export interface PollOptions {
+  waitMs: number;
+  pollMs: number;
+  expected: number;
+}
+
+export async function pollEvents(system: CloudflareSystem, dataset: string, zoneTag: string, fields: readonly string[], windows: () => ReadonlyArray<readonly [string, string]>, rays: readonly string[], options: PollOptions): Promise<Array<Record<string, unknown>> | 'denied' | 'error'> {
+  const merged = new Map<string, Record<string, unknown>>();
+  const deadline = system.now() + options.waitMs;
+  const read = async (selection: string[]): Promise<'denied' | 'error' | null> => {
+    for (const [from, to] of windows()) {
+      const outcome = await graphql(system, eventsQuery(dataset, zoneTag, selection, from, to, rays));
+      if (!outcome.ok) return outcome.reason === 'denied' ? 'denied' : 'error';
+      for (const event of parseEvents(outcome.data)) {
+        if (typeof event.rayName !== 'string') continue;
+        const target = merged.get(event.rayName) ?? { rayName: event.rayName };
+        for (const field of selection) if (Object.hasOwn(event, field)) target[field] = event[field];
+        merged.set(event.rayName, target);
+      }
+    }
+    return null;
+  };
+  let first = true;
+  for (;;) {
+    if (first || merged.size < options.expected) {
+      const failure = await read(['rayName']);
+      if (failure) return failure;
+    }
+    first = false;
+    for (const field of fields.filter((name) => name !== 'rayName')) {
+      if (merged.size === 0 || [...merged.values()].every((event) => Object.hasOwn(event, field))) continue;
+      const failure = await read(['rayName', field]);
+      if (failure) return failure;
+    }
+    const events = [...merged.values()];
+    const complete = events.length >= options.expected && events.every((event) => fields.every((field) => Object.hasOwn(event, field)));
+    if (complete || system.now() >= deadline) return events;
+    await system.sleep(options.pollMs);
+  }
 }
 
 const days = (seconds: number | null) => (seconds === null ? 'n.d.' : `${Math.floor(seconds / 86400)} giorni`);
@@ -395,16 +455,21 @@ export function evaluateCloudflare(evidence: CloudflareEvidence, rotations: Rota
     }
     const found = entries.filter((entry) => entry.found);
     add(found.length ? 'ok' : 'unverified', `${label}: eventi delle prove ritrovati ${found.length} su ${entries.length}${found.some((entry) => entry.sampled) ? ' (alcuni campionati)' : ''}.`);
+    const partial = found.filter((entry) => entry.missing?.length);
+    if (partial.length) add('unverified', `${label}: per ${partial.length} eventi alcuni campi non sono stati restituiti entro l'attesa (campionamento adattivo): per quei campi l'assenza dei marcatori non è verificata.`);
+    const complete = found.length > 0 && partial.length === 0;
     const where = (kinds: string[]) => found.filter((entry) => kinds.some((kind) => (entry.fields[kind] ?? []).length > 0)).map((entry) => entry.probe);
     const query = where(['token', 'challenge', 'query']);
     if (query.length) add('exposure', `${label}: la query string è conservata con i marcatori sintetici (${query.join(', ')}): un hub.verify_token inviato da Meta resta leggibile per tutta la retention.`);
-    else if (found.length) add('ok', `${label}: nessun marcatore di query nei campi conservati.`);
+    else if (complete) add('ok', `${label}: nessun marcatore di query nei campi conservati.`);
     const path = where(['path', 'agent', 'referer']);
     if (path.length) add('info', `${label}: percorso, user-agent o referer conservati (${path.join(', ')}); il percorso del webhook non contiene segreti.`);
     const body = where(['header', 'signature', 'phone', 'message']);
-    add(body.length ? 'exposure' : (found.length ? 'ok' : 'unverified'), body.length
+    add(body.length ? 'exposure' : (complete ? 'ok' : 'unverified'), body.length
       ? `${label}: header o corpo sintetici presenti nei campi (${body.join(', ')}).`
-      : `${label}: header, firma, telefono e messaggio sintetici assenti dai campi disponibili.`);
+      : complete
+        ? `${label}: header, firma, telefono e messaggio sintetici assenti dai campi disponibili.`
+        : `${label}: assenza di header, firma, telefono e messaggio sintetici non verificata (campi non restituiti).`);
   };
   presence('httpRequestsAdaptive', evidence.http, evidence.httpReason);
   presence('firewallEventsAdaptive', evidence.firewall, evidence.firewallReason);
@@ -548,17 +613,16 @@ export async function collectCloudflare(system: CloudflareSystem, config: Cloudf
     if (!dataset?.enabled) return { entries: null, reason: 'dataset non abilitato o non leggibile' };
     const fields = eventFields(dataset);
     if (!fields.includes('rayName') || rays.length === 0) return { entries: null, reason: 'Ray ID non disponibili' };
-    const deadline = system.now() + options.waitMs;
-    let entries: MarkerPresence[] = [];
-    for (;;) {
-      const outcome = await graphql(system, eventsQuery(name, zoneId, fields, from, to, rays));
-      if (!outcome.ok) return { entries: null, reason: outcome.reason === 'denied' ? 'accesso negato' : 'richiesta non riuscita' };
-      entries = markerPresence(state, parseEvents(outcome.data));
-      const expected = name === 'firewallEventsAdaptive' ? state.probes.filter((probe) => probe.edgeBlocked).length : entries.length;
-      if (entries.filter((entry) => entry.found).length >= expected || system.now() >= deadline) break;
-      await system.sleep(options.pollMs);
-    }
-    return { entries: name === 'firewallEventsAdaptive' ? entries.filter((entry) => entry.found || state.probes.find((probe) => probe.id === entry.probe)?.edgeBlocked) : entries };
+    const firewall = name === 'firewallEventsAdaptive';
+    const expected = firewall ? state.probes.filter((probe) => probe.edgeBlocked && rayName(probe.ray)).length : rays.length;
+    const windows = () => {
+      const now = iso(system.now());
+      return now > to ? [[from, to], [from, now]] as const : [[from, to]] as const;
+    };
+    const events = await pollEvents(system, name, zoneId, fields, windows, rays, { waitMs: options.waitMs, pollMs: options.pollMs, expected });
+    if (events === 'denied' || events === 'error') return { entries: null, reason: events === 'denied' ? 'accesso negato' : 'richiesta non riuscita' };
+    const entries = markerPresence(state, events, fields);
+    return { entries: firewall ? entries.filter((entry) => entry.found || state.probes.find((probe) => probe.id === entry.probe)?.edgeBlocked) : entries };
   };
   const http = await lookup('httpRequestsAdaptive');
   evidence.http = http.entries;
@@ -574,13 +638,20 @@ export async function collectCloudflare(system: CloudflareSystem, config: Cloudf
     const step = Math.max(3_600_000, Math.min((httpDataset.maxDuration ?? 86_400) * 1000, 7 * 86_400_000));
     const counts = emptyVerification(Math.floor(httpDataset.notOlderThan / 86_400));
     let failed = false;
-    for (let cursor = start; cursor < end; cursor += step) {
-      const outcome = await graphql(system, verificationQuery('httpRequestsAdaptive', zoneId, iso(cursor), iso(Math.min(cursor + step, end))));
-      if (!outcome.ok) {
-        failed = true;
-        break;
+    for (let cursor = start; cursor < end && !failed; cursor += step) {
+      for (const [host, name] of [['prod', PROD_HOST], ['dev', DEV_HOST]] as const) {
+        const rows: Record<'all' | '200' | '403' | '5xx', Array<Record<string, unknown>>> = { all: [], '200': [], '403': [], '5xx': [] };
+        for (const status of ['all', '200', '403', '5xx'] as const) {
+          const outcome = await graphql(system, verificationQuery('httpRequestsAdaptive', zoneId, iso(cursor), iso(Math.min(cursor + step, end)), name, status));
+          if (!outcome.ok) {
+            failed = true;
+            break;
+          }
+          rows[status] = parseEvents(outcome.data);
+        }
+        if (failed) break;
+        addVerifications(counts, host, rows);
       }
-      addVerifications(counts, parseEvents(outcome.data));
     }
     if (!failed) evidence.verification = counts;
   }

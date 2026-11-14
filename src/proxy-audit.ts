@@ -214,6 +214,7 @@ const RULES: ReadonlyArray<readonly [RegExp, RegExp]> = [
   [/^cloudflared\.config\.readable$/, /^(yes|no|absent)$/],
   [/^cloudflared\.config\.(logfile|log_directory|trace_output|metrics|token)$/, /^(set|unset)$/],
   [/^cloudflared\.config\.no_autoupdate$/, /^(true|false|unset|other)$/],
+  [/^cloudflared\.config\.metrics_scope$/, /^(loopback|any|other|unset)$/],
   [/^cloudflared\.config\.ingress_rules$/, COUNT],
   [/^cloudflared\.journal\.(oldest_epoch|prod_host_newest_epoch|dev_host_newest_epoch)$/, EPOCH_U],
   [/^cloudflared\.journal\.protocol$/, /^(quic|http2|unknown)$/],
@@ -383,6 +384,14 @@ export function evaluateLocal(result: AuditResult): Finding[] {
   else add('cloudflared', 'unverified', 'Argomenti del processo non verificabili.');
   if ([...env('tunnel_log_output'), ...env('tunnel_management_output')].includes('set')) add('cloudflared', 'info', 'Formato di output impostato da variabile d\'ambiente.');
 
+  if (privileged?.['cloudflared.config.metrics'] === 'set') {
+    const scope = privileged['cloudflared.config.metrics_scope'];
+    add('cloudflared', scope === 'loopback' ? 'ok' : scope === 'any' || scope === 'other' ? 'unverified' : 'info', scope === 'loopback'
+      ? 'Endpoint metriche di cloudflared solo su loopback (contatori, configurazione di ingresso e profili, nessun log delle richieste).'
+      : scope === 'any' || scope === 'other'
+        ? 'Endpoint metriche di cloudflared non limitato a loopback: espone contatori, configurazione di ingresso e profili (non log delle richieste).'
+        : 'Endpoint metriche di cloudflared configurato, indirizzo non classificato: espone contatori, configurazione di ingresso e profili, non log delle richieste.');
+  }
   if (privileged) {
     const routes: Array<[string, string]> = [['prod_webhook', 'prod-origin'], ['prod_root', 'status-404'], ['prod_health', 'status-404'], ['prod_subpath', 'status-404'], ['dev_webhook', 'dev-origin']];
     const mismatched = routes.filter(([name, expected]) => privileged[`ingress.${name}`] !== expected).map(([name]) => name);
