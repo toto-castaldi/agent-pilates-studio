@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Spike",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "spike/SPIKE-003-skill-e-tool-contesto-compatto",
   "dependencies": [],
   "requirements": [
     "REQ-AGENT-008",
