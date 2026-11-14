@@ -5,7 +5,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Dropped",
   "dependencies": [
     "BUG-001"
   ],
@@ -23,5 +23,7 @@
   "acceptance_criteria": [],
   "remarks": [
     "Requirements: REQ-WA-003, REQ-STUDIO-003, REQ-NFR-002 (da integrare con i requisiti dei casi d'uso)"
-  ]
+  ],
+  "outcome": "Troppo generico; eventuali casi d’uso saranno definiti in item specifici.",
+  "closed_at": "2026-11-14"
 }

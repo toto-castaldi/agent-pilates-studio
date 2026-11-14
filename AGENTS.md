@@ -75,6 +75,8 @@ Usare test unitari e integrazione su PostgreSQL reale per migrazioni e privilegi
 
 - Per la sola aggiunta documentale di TEC-045, concordata il 2026-11-13, l'utente ha autorizzato una nuova deroga al working tree completamente pulito di `docs/PROCESS.md` §6.1: la modifica preesistente a `.pi/settings.json` resta locale, intatta e fuori dal commit. Sono consentiti soltanto l'item e i relativi aggiornamenti documentali di requisiti, design, scope e questa deroga; nessuna implementazione, generazione del settings, modifica degli avvii o lancio di worker. La deroga non si estende alle operazioni successive.
 
+- Per il solo abbandono di TEC-019 perché troppo generico, l'utente ha autorizzato una deroga a `docs/PROCESS.md` §6.1: il passaggio a `Dropped`, con motivazione e questa deroga, è registrato in un unico commit documentale direttamente su `main`, senza branch di backlog né merge. Nessun push è autorizzato; la deroga non si estende ad altre operazioni.
+
 ## 9. Security and configuration
 
 - Il workflow Pi condiviso è in `.pi/workflow.json`; avviare dalla radice con `node scripts/start-pi.mjs`. Il launcher sincronizza solo packages/skills/extensions/prompts prima di Pi. `.pi/settings.json`, temi e preferenze restano locali e ignorati; avviare direttamente `pi` non garantisce la sincronizzazione. Per la transizione e il recupero privato prima dell'aggiornamento vedere README, sezione Configurazione Pi. Non copiare settings personali nei worker.
