@@ -13,7 +13,7 @@
     "REQ-OPS-004"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §9"
+    "design/configuration"
   ],
   "description": "Rendere impossibile la sovrapposizione tra lo stack di sviluppo di un clone e quello di produzione su jarvis.",
   "acceptance_criteria": [

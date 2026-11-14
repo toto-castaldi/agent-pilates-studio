@@ -21,7 +21,7 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §6",
+    "design/integrations",
     "§7",
     "§10"
   ],
@@ -33,7 +33,7 @@
     "Dopo la compattazione l'agente conserva `SOUL.md`, data e ora per richiesta e i turni recenti necessari, e prosegue correttamente: la compattazione non modifica il database e le registrazioni successive mantengono l'autore ricavato dal sistema.",
     "Gli utilizzatori non ricevono avvisi di avvio, completamento o errore della compattazione. Una prova di regressione con gateway reale, webhook firmato, sostituto Meta e dati sintetici lo verifica anche forzando un errore; il comportamento del turno in caso di errore è documentato.",
     "Riassunti e cronologia restano nel volume SQLite di Hermes, persistono a riavvio e ricreazione, sono inclusi nel backup e non compaiono nei log (REQ-NFR-002).",
-    "Test in memoria coprono il calcolo della soglia e la validazione della configurazione. Una prova di integrazione con gateway reale, modello sintetico con finestra ridotta e inattività simulata verifica entrambe le attivazioni. Gli eventuali adattamenti a punti interni di Hermes sono documentati in `docs/TECHNICAL-DESIGN.md` e richiedono nuove verifiche agli aggiornamenti."
+    "Test in memoria coprono il calcolo della soglia e la validazione della configurazione. Una prova di integrazione con gateway reale, modello sintetico con finestra ridotta e inattività simulata verifica entrambe le attivazioni. Gli eventuali adattamenti a punti interni di Hermes sono documentati in `design/README` e richiedono nuove verifiche agli aggiornamenti."
   ],
   "remarks": [
     "Decision: Su accordo dell'utente (2026-11-07): l'avvio fallisce se la finestra del modello non è determinabile; i riassunti usano lo stesso modello; i turni protetti seguono i valori predefiniti di Hermes; se il riassunto fallisce il turno prosegue senza avvisi; alla ripresa non si compatta se non c'è nulla da riassumere; l'intervallo è `PILATES_IDLE_COMPACT_SECONDS` in secondi."

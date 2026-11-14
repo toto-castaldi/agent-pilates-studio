@@ -20,7 +20,7 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
+    "design/modules",
     "§6",
     "§7",
     "§9",

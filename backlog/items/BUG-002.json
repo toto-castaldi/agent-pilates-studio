@@ -16,7 +16,7 @@
     "REQ-OPS-007"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §9"
+    "design/configuration"
   ],
   "found_in": "v0.3.0",
   "steps_to_reproduce": "Eseguire la CI su main con il runner ubuntu-24.04, che ha Docker 28.0.4: test:hermes avvia il gateway con tre mount type: image dalla stessa immagine.",

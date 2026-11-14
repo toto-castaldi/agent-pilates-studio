@@ -22,7 +22,7 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "§6; TECHNICAL-DESIGN §8",
+    "§6; design/test-strategy",
     "§10; `docs/TEMPLATE-ORIGIN.md"
   ],
   "description": "Aggiornare il progetto dalla v1.7.0 adottata da TEC-029 al tag `v1.7.1` del template, commit `173870cbd7d2722f37adc189b97d7f602988c940`, e configurare `pi --approve` per i futuri worker. Il riferimento è fissato; versioni successive richiedono una decisione separata.",

@@ -1,0 +1,26 @@
+# Glossary
+
+- **Hermes:** software agentico da installare e configurare.
+- **DML:** operazioni di lettura e modifica dei dati, incluse selezione, inserimento, aggiornamento ed eliminazione.
+- **DDL:** operazioni di definizione o modifica degli oggetti dello schema, inclusi creazione, alterazione ed eliminazione.
+- **Migrazione:** modifica versionata e riproducibile dello schema, eseguita con credenziali diverse da quelle dell'agente.
+- **Numero autorizzato:** numero associato nel database a un insegnante con accesso abilitato. Il solo numero del gestore in configurazione consente l'eccezione iniziale per il proprio censimento, non l'uso anonimo dei dati dello studio.
+- **Identità censita:** insegnante con nome, cognome e un solo telefono corrente in formato internazionale normalizzato; il telefono identifica il mittente, mentre l'identità dell'insegnante resta stabile se il numero cambia.
+- **Accesso revocato:** stato che impedisce di usare l'agente senza cancellare l'insegnante o alterare regole, lezioni e storico.
+- **Lezione:** lezione di Pilates di un'ora, individuale o di gruppo, tenuta in qualsiasi giorno della settimana.
+- **Regola di allenamento:** abitudine settimanale ricorrente di uno o più clienti, ad esempio "Antonio Rossi si allena tutti i venerdì alle 9", espressa in un testo in linguaggio naturale pulito e comprensibile, con i giorni, gli orari e i clienti derivati dal testo.
+- **Regola attiva:** regola non disattivata; solo le regole attive determinano la pianificazione.
+- **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel file `SOUL.md` dell'agente.
+- **Lezione puntuale:** lezione in una data e con un orario d'inizio precisi nel fuso Europe/Rome, ad esempio sabato 7 novembre 2026 alle 19:00; l'orario d'inizio comprende ore e minuti e la lezione dura un'ora.
+- **Regola valida per una lezione:** regola inserita prima dell'inizio della lezione puntuale e non disattivata entro quell'istante.
+- **Cliente atteso:** cliente associato a una regola valida per la lezione con uno slot nello stesso giorno della settimana e allo stesso orario d'inizio.
+- **Presenza:** registrazione che un cliente ha partecipato a una lezione puntuale.
+- **Assenza:** registrazione che un cliente non ha partecipato a una lezione puntuale, di tipo giustificata o non giustificata.
+- **Registrazione valida:** presenza o assenza non annullata; solo le registrazioni valide contano nelle consultazioni.
+- **Assenza anticipata:** assenza giustificata registrata prima dell'inizio della lezione puntuale, perché il cliente ha avvisato (REQ-STUDIO-010).
+- **Lezione puntuale esistente:** lezione puntuale con almeno un cliente atteso, una registrazione valida di presenza o assenza o un'indicazione valida dell'insegnante.
+- **Regola dell'insegnante:** abitudine settimanale ricorrente di un insegnante, ad esempio "Antonio allena tutti i mercoledì pomeriggio e i venerdì pomeriggio", espressa in un testo in linguaggio naturale pulito, con l'insegnante e, per ogni giorno della settimana, un intervallo di orari d'inizio delle lezioni; una fascia oraria corrisponde ai limiti definiti in `SOUL.md`, un orario a un solo orario d'inizio.
+- **Regola dell'insegnante valida per una lezione:** regola dell'insegnante inserita prima dell'inizio della lezione puntuale, non disattivata entro quell'istante, con un intervallo nello stesso giorno della settimana che comprende l'orario d'inizio.
+- **Insegnante atteso:** insegnante della regola dell'insegnante valida per la lezione.
+- **Indicazione dell'insegnante:** registrazione puntuale dell'insegnante di una lezione, ad esempio una sostituzione futura o un'indicazione su una lezione passata; prevale sull'insegnante atteso.
+- **Insegnante della lezione:** l'insegnante dell'indicazione valida per la lezione, se presente, altrimenti l'insegnante atteso; una lezione senza entrambi è senza insegnante.

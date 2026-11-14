@@ -16,7 +16,7 @@
   "design_references": [
     "PROCESS §3",
     "§6; AGENTS §6",
-    "§9; TECHNICAL-DESIGN §8"
+    "§9; design/test-strategy"
   ],
   "description": "Pi Voice registra l'audio sul server dove gira Pi. Su un server remoto senza schede audio, come quello usato via SSH e Herdr, il dettato fallisce con `DeviceUnavailable: no input device is available`. Si inoltra il socket Pulse del client Ubuntu (PipeWire con `pipewire-pulse`) come socket Unix tramite `RemoteForward`. Sul server ALSA è instradato verso Pulse (`libasound2-plugins`, `~/.asoundrc`) e `PULSE_SERVER` punta al socket inoltrato. Si aggiungono procedura documentata e script di diagnosi.",
   "acceptance_criteria": [

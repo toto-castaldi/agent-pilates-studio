@@ -1,0 +1,7 @@
+# REQ-STUDIO-012 — Regole degli insegnanti
+
+**State:** Active
+
+Un utilizzatore deve poter descrivere conversando via WhatsApp l'abitudine settimanale di un insegnante (ad esempio "Antonio allena tutti i mercoledì pomeriggio e i venerdì pomeriggio" o "Francesca tiene il lunedì alle 19"). L'agente la registra come regola dell'insegnante con testo pulito, data di inserimento, autore e dati strutturati derivati dal modello: insegnante e, per ogni giorno, l'intervallo degli orari d'inizio. Le fasce orarie si traducono nei limiti definiti in `SOUL.md`, senza duplicarli nel codice. Ogni regola riguarda un solo insegnante. L'agente chiede conferma solo in caso di ambiguità; altrimenti registra e riepiloga quanto salvato.
+
+Una lezione ha al più un insegnante atteso. Se una nuova regola si sovrappone a una regola attiva di un altro insegnante o dello stesso insegnante, l'agente segnala la sovrapposizione e chiede sempre conferma. Con la conferma disattiva le regole sovrapposte con data, autore e motivo, registra la nuova regola e, se le regole disattivate coprivano anche altri giorni o orari, le registra di nuovo per la sola parte non sovrapposta; comunica poi cosa ha disattivato e registrato. Senza conferma non registra nulla. Aggiornamento, disattivazione e storico seguono REQ-STUDIO-005, compreso il divieto di cancellazione e riscrittura imposto dal database. Le regole degli insegnanti non creano lezioni: determinano solo l'insegnante atteso delle lezioni esistenti.

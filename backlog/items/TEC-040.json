@@ -19,7 +19,7 @@
     "REQ-NFR-002"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §9"
+    "design/configuration"
   ],
   "description": "Sostituire il commit cablato nello script della home di jarvis con un parametro esplicito, versionare il piccolo launcher e spiegare come leggere da GitHub il tip di main e l'ultimo commit con immagini pubblicate. Il lavoro include la sola installazione del launcher, non l'aggiornamento dei servizi.",
   "acceptance_criteria": [

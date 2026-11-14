@@ -19,7 +19,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
+    "design/data-model",
     "§5"
   ],
   "description": "Come insegnante, voglio correggere una presenza o un'assenza registrata per errore, così che i dati restino corretti senza perdere lo storico.",

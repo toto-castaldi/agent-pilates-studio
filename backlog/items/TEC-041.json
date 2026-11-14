@@ -23,11 +23,11 @@
     "REQ-NFR-005"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §8",
+    "design/modules",
+    "design/data-model",
+    "design/invariants",
+    "design/security",
+    "design/test-strategy",
     "ADR-003"
   ],
   "description": "Introdurre la base dati additiva dell'identità unica nell'anagrafica esistente degli insegnanti e le interfacce fidate di risoluzione e gestione, senza creare utenti separati o attivare a metà il nuovo controllo di accesso. Il telefono è la chiave di riconoscimento, mentre l'ID interno resta stabile. Il passaggio dei consumatori avverrà solo dopo la disponibilità del percorso guidato del gestore.",
@@ -40,7 +40,7 @@
     "Le operazioni gestionali non riscrivono l'autore originario dell'insegnante o gli snapshot storici, non cancellano persone e non alterano regole, lezioni, presenze o indicazioni. Le nuove modifiche hanno tracciamento protetto; gli errori non lasciano dati parziali o contesti fidati persistenti.",
     "La consegna resta additiva e compatibile con il runtime precedente fino all'attivazione coordinata prevista da ADR-003. Non si introduce una sincronizzazione permanente con la vecchia configurazione; il contratto rende esplicito quali restrizioni definitive si attivano con il passaggio comune dei consumatori.",
     "Test su PostgreSQL reale verificano migrazione da vuoto e da schema precedente con dati, snapshot invariati, normalizzazione, vincoli e concorrenza, privilegi minimi, SQL di estrazione dei telefoni, funzioni del mittente e gestionali, falsificazione dell'autore/gestore, bootstrap e casi negativi. Sono eseguite le suite test:db e test:upgrade pertinenti; unit test in memoria coprono le politiche pure senza sostituire la prova dei privilegi.",
-    "TECHNICAL-DESIGN, ADR-003 e la descrizione dello schema in SOUL.md distinguono base additiva e modello attivato, indicano funzioni e colonne accessibili e non dichiarano il nuovo riconoscimento già operativo. Nessuna modifica dello stack dello studio o uso di dati reali nelle prove."
+    "design/README, ADR-003 e la descrizione dello schema in SOUL.md distinguono base additiva e modello attivato, indicano funzioni e colonne accessibili e non dichiarano il nuovo riconoscimento già operativo. Nessuna modifica dello stack dello studio o uso di dati reali nelle prove."
   ],
   "remarks": [
     "Primo dei quattro item concordati per la v0.3.0 il 2026-11-12. Gli item successivi completano gestione guidata, passaggio comune di gateway/broker/autore e verifiche operative. La sola aggiunta documentale usa la deroga esplicita al working tree pulito limitata a .pi/settings.json, lasciato locale e intatto; nessuna deroga per implementazione o avvio."

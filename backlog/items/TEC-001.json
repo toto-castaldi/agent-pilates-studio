@@ -16,8 +16,8 @@
   "description": "Inizializzare la documentazione del progetto attraverso l'intervista e la pianificazione concordata.",
   "acceptance_criteria": [
     "`AGENTS.md` definisce progetto, lingua, scope, stack, regole, quality gate e aggiunte alla DoD; l'avviso del template non inizializzato è rimosso.",
-    "`docs/REQUIREMENTS.md` contiene obiettivo, attori, glossario, scope, requisiti con ID stabili e accettazione della v0.1.0.",
-    "`docs/TECHNICAL-DESIGN.md` contiene scelte iniziali e decisioni aperte associate agli item.",
+    "`requirements/README` contiene obiettivo, attori, glossario, scope, requisiti con ID stabili e accettazione della v0.1.0.",
+    "`design/README` contiene scelte iniziali e decisioni aperte associate agli item.",
     "`BACKLOG.md` contiene obiettivo, epic e item con dipendenze, riferimenti e criteri; le eventuali idee future sono nel backlog non assegnato.",
     "`README.md` presenta il progetto; `CHANGELOG.md` e `.gitignore` sono adattati.",
     "`STATUS.md` è coerente con `BACKLOG.md`."

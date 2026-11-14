@@ -17,8 +17,8 @@
     "REQ-NFR-002"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §9"
+    "design/test-strategy",
+    "design/configuration"
   ],
   "description": "La CI del merge di TEC-039 fallisce in test:images durante pg_restore nel PostgreSQL vuoto; lo stesso test era passato sul branch. Indagare la causa e correggere test e procedura operativa se coinvolta, mantenendo le verifiche del dump e la protezione degli output.",
   "found_in": "v0.3.0",

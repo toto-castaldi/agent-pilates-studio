@@ -21,12 +21,12 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §9",
-    "TECHNICAL-DESIGN §10"
+    "design/data-model",
+    "design/invariants",
+    "design/integrations",
+    "design/security",
+    "design/configuration",
+    "design/README"
   ],
   "description": "Come titolare o collaboratore, voglio registrare gli insegnanti e le loro abitudini settimanali per fascia o orario, così che ogni lezione abbia un insegnante atteso. Gli insegnanti seguono la struttura dei clienti: regole generali qui, cambi puntuali in US-014. I numeri WhatsApp possono essere collegati agli insegnanti in .env.",
   "acceptance_criteria": [

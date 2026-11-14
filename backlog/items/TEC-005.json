@@ -18,7 +18,7 @@
     "REQ-NFR-004"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §1",
+    "design/README",
     "§2",
     "§5",
     "§7",

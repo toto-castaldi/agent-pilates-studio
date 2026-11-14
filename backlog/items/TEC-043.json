@@ -35,14 +35,14 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §9",
-    "TECHNICAL-DESIGN §10",
+    "design/modules",
+    "design/data-model",
+    "design/invariants",
+    "design/integrations",
+    "design/security",
+    "design/test-strategy",
+    "design/configuration",
+    "design/README",
     "ADR-003"
   ],
   "description": "Verificare la transizione completa dalla baseline con allowlist/mapping/nome WhatsApp al modello unico di identità, da installazione vuota e da dati esistenti, e documentare aggiornamento, completamento manuale degli insegnanti, recupero del gestore e backup/ripristino. Le prove avvengono su risorse isolate con dati sintetici e non sostituiscono i test di sicurezza obbligatori nei tre item precedenti.",

@@ -20,7 +20,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
+    "design/data-model",
     "§5"
   ],
   "description": "Come insegnante, voglio comunicare all'agente le assenze dei clienti con il loro tipo, così che lo storico distingua le assenze giustificate da quelle non giustificate.",

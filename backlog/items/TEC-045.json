@@ -16,8 +16,8 @@
     "REQ-NFR-022"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §9",
+    "design/test-strategy",
+    "design/configuration",
     "PROCESS §6",
     "AGENTS §9",
     "AGENTS §10"

@@ -20,9 +20,9 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §6"
+    "design/data-model",
+    "design/invariants",
+    "design/integrations"
   ],
   "description": "Come titolare o collaboratore, voglio indicare chi tiene o ha tenuto una lezione puntuale, comprese le sostituzioni, e correggere un'indicazione sbagliata, così che per ogni lezione sia noto l'insegnante effettivo.",
   "acceptance_criteria": [

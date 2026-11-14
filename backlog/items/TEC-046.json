@@ -19,11 +19,11 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §10"
+    "design/data-model",
+    "design/integrations",
+    "design/security",
+    "design/test-strategy",
+    "design/README"
   ],
   "description": "Attuare la raccomandazione di SPIKE-003: riscrivere e deduplicare SOUL.md, spostare le istruzioni di dettaglio in skill versionate di sola lettura e le ricostruzioni dei dati in viste, funzioni del database o tool del plugin, senza cambiare i comportamenti richiesti. Precede TEC-042.",
   "acceptance_criteria": [

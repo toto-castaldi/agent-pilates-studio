@@ -30,13 +30,13 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §3",
-    "TECHNICAL-DESIGN §4",
-    "TECHNICAL-DESIGN §5",
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §8",
-    "TECHNICAL-DESIGN §9",
+    "design/modules",
+    "design/data-model",
+    "design/invariants",
+    "design/integrations",
+    "design/security",
+    "design/test-strategy",
+    "design/configuration",
     "ADR-003"
   ],
   "description": "Attivare in modo coordinato l'identità unica già predisposta nel database e il percorso guidato: il mittente WhatsApp autenticato determina accesso, nome, io e autore dalla stessa anagrafica. Rimuovere allowlist, mapping e nome del profilo WhatsApp come fonti applicative, mantenendo il gestore configurato come unica eccezione iniziale e proteggendo anche sessioni esistenti e numeri degli autori.",

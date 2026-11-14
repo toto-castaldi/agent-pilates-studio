@@ -17,7 +17,7 @@
     "PROCESS §3",
     "§6",
     "§8; AGENTS §6",
-    "§9; TECHNICAL-DESIGN §8"
+    "§9; design/test-strategy"
   ],
   "description": "Aggiungere il template Pi condiviso `/work-alone` per l'attività già avviata: «Implementa l'attività in autonomia. Fermati solo se hai bisogno».",
   "acceptance_criteria": [

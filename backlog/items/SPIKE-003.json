@@ -16,9 +16,9 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §6",
-    "TECHNICAL-DESIGN §7",
-    "TECHNICAL-DESIGN §10"
+    "design/integrations",
+    "design/security",
+    "design/README"
   ],
   "description": "Indagare come ridurre SOUL.md sotto 15.000 caratteri a comportamenti invariati, usando skill Hermes caricate su richiesta e ricostruzioni dei dati in viste, funzioni del database o tool del plugin. Nessuna modifica dello stack operativo; il codice esplorativo non è integrato.",
   "acceptance_criteria": [

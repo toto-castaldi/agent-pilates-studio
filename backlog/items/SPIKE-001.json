@@ -21,7 +21,7 @@
     "REQ-NFR-002"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §1",
+    "design/README",
     "§2",
     "§3",
     "§4",

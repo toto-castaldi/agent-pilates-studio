@@ -14,7 +14,7 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "§6; TECHNICAL-DESIGN §10"
+    "§6; design/README"
   ],
   "description": "Rendere esplicita e verificabile l'origine da `https://github.com/toto-castaldi/agile-project-template` e predisporre una procedura manuale per valutare futuri aggiornamenti. L'adozione delle novità del template è esclusa da questa attività e richiede una decisione separata.",
   "acceptance_criteria": [

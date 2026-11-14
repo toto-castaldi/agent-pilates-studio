@@ -19,7 +19,7 @@
     "REQ-NFR-006"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §4",
+    "design/data-model",
     "§6"
   ],
   "description": "Come titolare o collaboratore, voglio chiedere all'agente chi è venuto, chi mancava, quali registrazioni mancano e come vanno le presenze, così da seguire l'andamento dei clienti.",

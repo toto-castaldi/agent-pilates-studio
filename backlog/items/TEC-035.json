@@ -19,7 +19,7 @@
     "REQ-OPS-007"
   ],
   "design_references": [
-    "TECHNICAL-DESIGN §9"
+    "design/configuration"
   ],
   "description": "Procedura versionata nell'immagine ops, lanciata a mano dall'operatore su jarvis, per installare da vuoto e aggiornare la produzione senza codice sul server.",
   "acceptance_criteria": [
