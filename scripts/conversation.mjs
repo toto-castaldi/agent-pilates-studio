@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
-import { assignmentScenarioMatches, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
+import { assignmentScenarioMatches, attendanceScenarioMatches, fixtureCancellationReason, fixtureRuleDeactivationReason, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, seededTeacherFixturesMatch, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
 import { parseTeacherLinks } from './teacher-links.mjs';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -192,8 +192,13 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     let seededSnapshot;
     if (scenario.setup) {
       stage = 'preparazione dati sintetici';
-      const setup = { ...scenario.setup, attendance: scenario.setup.attendance?.map((row) => ({ ...row,
-        lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })) };
+      const setup = { ...scenario.setup,
+        attendance: scenario.setup.attendance?.map((row) => ({ ...row,
+          lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })),
+        teacherRules: scenario.setup.teacherRules?.map((rule) => ({ ...rule,
+          createdAt: relativeTimestamp(rule.createdAt), deactivatedAt: relativeTimestamp(rule.deactivatedAt) })),
+        assignments: scenario.setup.assignments?.map((row) => ({ ...row,
+          lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })) };
       if (!Array.isArray(setup.clients) || !Array.isArray(setup.rules) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(setup.createdAt)) throw new Error('setup');
       await client.query('BEGIN');
       await client.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), $1, $2, clock_timestamp() + interval '10 minutes')", [scenario.sender, scenario.profile]);
@@ -215,20 +220,63 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
         if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, rule.deactivatedAt ?? setup.createdAt]);
       }
-      // Teacher fixtures use the normal authenticated triggers. Their rules
-      // start now and only determine expected teachers for future lessons.
+      // Teachers and current teacher rules use the normal authenticated
+      // triggers; current rules start now and only apply to later lessons.
       const teacherIds = new Map();
       for (const person of setup.teachers ?? []) {
         const result = await client.query('INSERT INTO app.teachers (first_name, last_name) VALUES ($1, $2) RETURNING id', [person.firstName, person.lastName]);
         teacherIds.set(`${person.firstName} ${person.lastName}`, result.rows[0].id);
       }
+      const pastInstant = (value) => /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(value ?? '') && Date.parse(value) < Date.now();
       for (const rule of setup.teacherRules ?? []) {
-        if (!teacherIds.has(rule.teacher) || !Array.isArray(rule.intervals) || !rule.intervals.length
-          || rule.createdAt || rule.deactivatedAt || rule.inactive) throw new Error('teacher fixture');
-        const result = await client.query('INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, $2) RETURNING id', [teacherIds.get(rule.teacher), rule.text]);
-        for (const interval of rule.intervals) {
-          await client.query('INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, $2, $3, $4)', [result.rows[0].id, interval.weekday, interval.min, interval.max]);
+        if (!teacherIds.has(rule.teacher) || !Array.isArray(rule.intervals) || !rule.intervals.length || rule.inactive
+          || (rule.createdAt && !pastInstant(rule.createdAt))
+          || (rule.deactivatedAt && (!rule.createdAt || !pastInstant(rule.deactivatedAt) || Date.parse(rule.deactivatedAt) <= Date.parse(rule.createdAt)))) throw new Error('teacher fixture');
+      }
+      for (const row of setup.assignments ?? []) {
+        if (!teacherIds.has(row.teacher) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)
+          || !pastInstant(row.createdAt) || (row.cancelledAt && (!pastInstant(row.cancelledAt) || Date.parse(row.cancelledAt) <= Date.parse(row.createdAt)))) throw new Error('assignment fixture');
+      }
+      const insertIntervals = async (ruleId, intervals) => {
+        for (const interval of intervals) {
+          await client.query('INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, $2, $3, $4)', [ruleId, interval.weekday, interval.min, interval.max]);
         }
+      };
+      const historicalRules = (setup.teacherRules ?? []).filter((rule) => rule.createdAt);
+      if (historicalRules.length || setup.assignments?.length) {
+        // Retrodated synthetic history: the isolated migrator bypasses only the
+        // two author triggers, inside this transaction and before any turn.
+        stage = 'preparazione fixture insegnanti: disabilitazione trigger';
+        await client.query('ALTER TABLE app.teacher_rules DISABLE TRIGGER teacher_rules_author');
+        await client.query('ALTER TABLE app.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
+        stage = 'preparazione fixture insegnanti: inserimento';
+        for (const rule of historicalRules) {
+          const result = await client.query('INSERT INTO app.teacher_rules (teacher_id, rule_text, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [teacherIds.get(rule.teacher), rule.text, rule.createdAt, scenario.sender, scenario.profile ?? null]);
+          await insertIntervals(result.rows[0].id, rule.intervals);
+          if (rule.deactivatedAt) {
+            await client.query('UPDATE app.teacher_rules SET deactivated_at = $2, deactivated_by_phone = $3, deactivated_by_name = $4, deactivation_reason = $5 WHERE id = $1',
+              [result.rows[0].id, rule.deactivatedAt, scenario.sender, scenario.profile ?? null, fixtureRuleDeactivationReason]);
+          }
+        }
+        for (const row of setup.assignments ?? []) {
+          await client.query(`INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_phone, created_by_name,
+            cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [teacherIds.get(row.teacher), row.lessonDate, row.time, row.createdAt, scenario.sender, scenario.profile ?? null,
+            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile ?? null : null,
+            row.cancelledAt ? fixtureCancellationReason : null]);
+        }
+        stage = 'preparazione fixture insegnanti: riabilitazione trigger';
+        // ALTER TABLE refuses pending deferred events: run the completeness
+        // checks of the seeded rules now, then restore the deferred mode.
+        await client.query('SET CONSTRAINTS app.teacher_rules_complete IMMEDIATE');
+        await client.query('SET CONSTRAINTS app.teacher_rules_complete DEFERRED');
+        await client.query('ALTER TABLE app.teacher_rules ENABLE TRIGGER teacher_rules_author');
+        await client.query('ALTER TABLE app.teacher_assignments ENABLE TRIGGER teacher_assignments_author');
+      }
+      for (const rule of (setup.teacherRules ?? []).filter((entry) => !entry.createdAt)) {
+        const result = await client.query('INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, $2) RETURNING id', [teacherIds.get(rule.teacher), rule.text]);
+        await insertIntervals(result.rows[0].id, rule.intervals);
       }
       // Seed synthetic historical rows with the migrator, restoring the author
       // trigger inside the same transaction before any conversational turn.
@@ -247,7 +295,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile,
             row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile : null,
-            row.cancelledAt ? 'Errore sintetico' : null]);
+            row.cancelledAt ? fixtureCancellationReason : null]);
         }
         stage = 'preparazione fixture presenze: riabilitazione trigger';
         await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
@@ -263,18 +311,27 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           deactivation: rule.active === false ? { ...author, reasonAnyOf: ['Fine abitudine sintetica'] } : undefined })),
       };
       const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author,
-        cancellation: row.cancelledAt ? { ...author, reasonAnyOf: ['Errore sintetico'] } : undefined }));
+        cancellation: row.cancelledAt ? { ...author, reasonAnyOf: [fixtureCancellationReason] } : undefined }));
       const fixtureTimes = (await client.query("SELECT created_at::text AS created, cancelled_at::text AS cancelled, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated, ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') <= clock_timestamp() AS started FROM app.attendance ORDER BY id")).rows;
       const teacherRules = new Map();
       for (const rule of setup.teacherRules ?? []) {
-        const group = teacherRules.get(rule.teacher) ?? { teacher: rule.teacher, intervals: [], ruleCount: 0 };
+        const key = JSON.stringify([rule.teacher, !!rule.deactivatedAt]);
+        const group = teacherRules.get(key) ?? { teacher: rule.teacher, inactive: !!rule.deactivatedAt, intervals: [], ruleCount: 0 };
         group.intervals.push(...rule.intervals);
         group.ruleCount++;
-        teacherRules.set(rule.teacher, group);
+        teacherRules.set(key, group);
       }
+      // All author triggers must be enabled again before the first turn, and
+      // seeded lessons must be valid local times, as the trigger would require.
+      const triggers = (await client.query(`SELECT tgname, tgenabled FROM pg_trigger WHERE NOT tgisinternal AND tgname = ANY($1)
+        AND tgrelid IN ('app.teacher_rules'::regclass, 'app.teacher_assignments'::regclass, 'app.attendance'::regclass)`,
+      [['teacher_rules_author', 'teacher_assignments_author', 'attendance_author']])).rows;
+      const invalidLessons = Number((await client.query(`SELECT count(*) FROM app.teacher_assignments
+        WHERE ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AT TIME ZONE 'Europe/Rome' <> lesson_date + start_time`)).rows[0].count);
+      if (triggers.length !== 3 || triggers.some((row) => row.tgenabled !== 'O') || invalidLessons) throw new Error('setup triggers');
       if (!teacherScenarioMatches({ ...seededSnapshot, clients: [], rules: [], attendance: [], teacherAssignments: [] },
         { teachers: setup.teachers ?? [], rules: [...teacherRules.values()] }, scenario.sender, scenario.profile ?? null)
-        || seededSnapshot.teacherAssignments.length
+        || !seededTeacherFixturesMatch(seededSnapshot, setup.teacherRules ?? [], setup.assignments ?? [], scenario.sender, scenario.profile ?? null)
         || !stateMatches({ ...seededSnapshot, attendance: [], teachers: [], teacherRules: [], teacherAssignments: [] }, expected)
         || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows })
         || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) =>
@@ -356,8 +413,27 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             const months = ['', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
             const dayFound = new RegExp(`(?<!\\d)0?${day}(?!\\d)`).test(text);
             const monthFound = normalized.includes(months[month]) || new RegExp(`(?<!\\d)0?${month}(?!\\d)`).test(text);
-            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}`;
+            const ordinal = new RegExp(`(?<!\\d)0?${day}[°º]`).test(text);
+            const abbreviated = new RegExp(`(?<!\\d)0?${day}\\s+${months[month].slice(0, 3)}\\b`).test(normalized);
+            const numeric = new RegExp(`(?<!\\d)0?${day}[/.-]0?${month}(?!\\d)`).test(text);
+            const shifted = (days) => new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+            const adjacent = [-1, 1].some((days) => responseMatches(text, { contains: [], dates: [shifted(days)] }));
+            return `data ${index + 1}: giorno ${dayFound ? 'presente' : 'assente'}, mese ${monthFound ? 'presente' : 'assente'}, anno ${normalized.includes(String(year)) ? 'presente' : 'assente'}, ordinale ${ordinal ? 'sì' : 'no'}, mese abbreviato ${abbreviated ? 'sì' : 'no'}, giorno/mese numerici ${numeric ? 'sì' : 'no'}, data adiacente ${adjacent ? 'sì' : 'no'}`;
           }),
+          // Offsets in days from the first expected date of other recognized
+          // dates nearby: they reveal a shifted period without printing text.
+          ...((expectedResponse.dates ?? []).length ? [(() => {
+            const expectedDates = [...expectedResponse.dates].sort();
+            const first = Date.parse(`${expectedDates[0]}T00:00:00Z`);
+            const offsets = [];
+            for (let offset = -10; offset <= 17; offset++) {
+              const candidate = new Date(first + offset * 86_400_000).toISOString().slice(0, 10);
+              if (!expectedDates.includes(candidate) && responseMatches(text, { contains: [], dates: [candidate] })) offsets.push(offset > 0 ? `+${offset}` : String(offset));
+            }
+            return `date non attese riconosciute (giorni dalla prima attesa): ${offsets.join('/') || 'nessuna'}`;
+          })()] : []),
+          // Teachers of the fixtures by position only: no names are printed.
+          ...(scenario.setup?.teachers ?? []).map((person, index) => `insegnante ${index + 1} ${normalized.includes(person.firstName.toLocaleLowerCase('it-IT')) ? 'citato' : 'non citato'}`),
           ...(turn.response.counts ?? []).map((item, index) => {
             const positions = item.labels.map((label) => normalized.indexOf(label.toLocaleLowerCase('it-IT'))).filter((position) => position >= 0);
             const numbers = [...text.matchAll(new RegExp(`(?<!\\d)${item.value}(?!\\d)`, 'g'))].map((match) => match.index);

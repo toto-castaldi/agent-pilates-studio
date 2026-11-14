@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "us/US-015-consultazioni-per-insegnante",
   "dependencies": [
     "US-014"
   ],
@@ -29,5 +30,7 @@
     "Alla domanda \"quali lezioni della settimana scorsa non avevano insegnante?\" l'agente elenca le lezioni esistenti senza indicazione valida né insegnante atteso; alle domande sulle regole attive e sull'insegnante atteso per giorno, fascia o orario risponde in base alle regole valide.",
     "Conteggi e statistiche sono calcolati con interrogazioni al database, i periodi relativi si interpretano nel fuso Europe/Rome, l'assenza di risultati è indicata esplicitamente e su richiesta l'agente mostra autore, date e storico di regole e indicazioni.",
     "Gli scenari sono aggiunti al catalogo di TEC-012 ed eseguiti con il modello reale, con esito registrato e stato del database invariato: lezione con indicazione, lezione con insegnante atteso, sostituzione annullata, lezioni e conteggi di un insegnante, presenti alle sue lezioni, lezioni senza insegnante, periodo senza risultati."
-  ]
+  ],
+  "outcome": "Consultazioni per insegnante in hermes/SOUL.md con sole SELECT: query di riferimento delle lezioni esistenti con insegnante atteso dalle regole valide all'inizio e indicazione valida; definizioni di lezioni tenute, in sostituzione, su indicazione e sostituite da altri, presenti e conteggi con COUNT, lezioni senza insegnante, regole attive, atteso per giorno/fascia/orario e storico; giorni e periodi relativi ricavati dal database. Harness: fixture storiche di regole e indicazioni con i soli trigger autore disabilitati nella transazione del migratore isolato (decisione utente 2026-11-14, estende la scelta US-014), verifiche dopo il commit, token $LAST_SATURDAY e $LAST_WEEK_MONDAY, date ordinali e diagnostica booleana; oracolo indipendente in test:local. Contesto finale 4e18e46: i quattro nuovi scenari passati con z-ai/glm-5.2 via OpenRouter, snapshot invariato e aggregazioni SQL per i conteggi; regressioni US-014, US-011, US-009, US-003 e base passate, consultazione-presenze-statistiche instabile anche con SOUL di main. Esiti negativi, cause non determinate e limiti in docs/operations/TEC-012-prove.md; query verificata su PostgreSQL reale. Gate superato (lint, typecheck, 78 test in memoria, build), test:local 40/40, test:author 3/3. Nessuna migrazione, privilegio o modifica dello stack operativo; documentato il troncamento di SOUL.md con finestre sotto circa 170K token.",
+  "closed_at": "2026-11-14"
 }
