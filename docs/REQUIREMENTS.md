@@ -405,6 +405,14 @@ Per la sola prova pubblica controllata di TEC-005, l'operatore ha autorizzato te
 
 **Decisione dell'utente (2026-11-14):** TEC-008 è assegnato alla v0.3.0 come ampliamento dello scope. La pianificazione dell'audit non dimostra la conformità né modifica la decisione del 2026-11-09 e il divieto di REQ-NFR-004; le modifiche infrastrutturali richiedono autorizzazioni separate.
 
+**Esito dell'audit TEC-008 (2026-11-14):** l'audit con indicatori sintetici è descritto in [TEC-008](operations/TEC-008-audit-proxy.md).
+
+- **Log locali del proxy:** nei formati e negli esiti osservati non conservano credenziali, messaggi o numeri. Fa eccezione una riga storica di sviluppo del 2026-11-04, anteriore al filtro, con un verify token di origine non determinata, nel journal e in copia in syslog.
+- **Cloudflare:** conserva per 31-32 giorni la query string delle richieste nei dataset di analytics. Vi risultano i verify token reali di produzione (verifica accettata il 2026-11-10) e di sviluppo (2026-11-05). Corpi, header e firme non sono conservati.
+- **Non verificabili con l'accesso in sola lettura:** job Logpush (richiedono permessi di modifica non concessi), dataset Log Explorer della zona, flag Logpull e sistemi interni Cloudflare. L'utente non esegue i controlli dal dashboard, che restano non verificati.
+
+**Decisione dell'utente (2026-11-14):** nessuna rotazione dei verify token di produzione e sviluppo. L'utente accetta il rischio residuo fino alla scadenza della retention Cloudflare (circa 2026-12-06 per lo sviluppo e 2026-12-11 per la produzione) e per la riga storica su `jarvis`. Per le verifiche future adotta il verify token monouso: subito dopo ogni verifica Meta riuscita il valore lato server viene sostituito con uno nuovo, non comunicato a Meta ([procedura](operations/TEC-036-whatsapp-ambienti.md#verify-token-monouso)). La decisione non autorizza rotazioni o modifiche infrastrutturali e non dichiara la conformità a REQ-NFR-002. Il token API in sola lettura usato dall'audit va revocato al termine di TEC-008.
+
 #### REQ-NFR-003 — Integrazione continua
 
 GitHub Actions deve eseguire il quality gate, compresi i test di integrazione su PostgreSQL reale, senza deploy automatico. Le prove che richiedono servizi esterni e credenziali reali devono essere documentate separatamente.

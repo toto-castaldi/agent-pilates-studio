@@ -2,7 +2,7 @@
 
 **Data:** 2026-11-05
 
-**Stato:** prove operative completate nei limiti indicati; l'operatore ha autorizzato una sola prova pubblica temporanea e controllata, accettando il rischio residuo dei log descritto in REQ-NFR-002. La prova è conclusa e non autorizza l'uso continuativo; l'audit completo del proxy è separato in TEC-008.
+**Stato:** prove operative completate nei limiti indicati; l'operatore ha autorizzato una sola prova pubblica temporanea e controllata, accettando il rischio residuo dei log descritto in REQ-NFR-002. La prova è conclusa e non autorizza l'uso continuativo; l'audit completo del proxy è separato in TEC-008, eseguito il 2026-11-14 ([esito](TEC-008-audit-proxy.md)).
 
 ## Installazione parziale
 
@@ -69,3 +69,9 @@ Dopo la riconfigurazione è stato ricreato brevemente Hermes sul volume operativ
 Le prove coprono alcuni successi ed errori sintetici e l'operatore esclude esportazioni Cloudflare; non dimostrano quali dati Cloudflare conservi internamente né coprono ogni formato di errore locale. Resta possibile che il verify token o altri dati sensibili compaiano in log non osservati. Il debito consiste nel verificare conservazione, campi e retention Cloudflare applicabili all'account, censire ulteriori destinazioni e formati locali e, se necessario, adottare e provare una mitigazione che non esponga token, numeri o messaggi, mantenendo il divieto di streaming remoto. Eventuali token esposti dovranno essere ruotati in modo coordinato con Meta.
 
 L'operatore ha chiesto di rinviare questo approfondimento come debito e ha autorizzato una sola prova pubblica temporanea e controllata, accettando il rischio residuo. La prova non dimostra la conformità completa a REQ-NFR-002 né autorizza l'uso continuativo. Il debito è registrato su `main` come TEC-008 nel backlog non assegnato; l'accettazione privacy della release resta da verificare.
+
+**Esito (TEC-008, 2026-11-14):** l'audit con indicatori sintetici ha verificato i formati locali, le destinazioni e la conservazione ([TEC-008](TEC-008-audit-proxy.md)).
+
+- **Journal locale:** il filtro scarta le righe con gli hostname prima della memorizzazione e dell'inoltro a syslog; le righe conservate non contengono URL.
+- **Cloudflare:** conserva la query string per 31-32 giorni, compreso il verify token delle verifiche Meta.
+- **Non verificabili via API con un token di sola lettura:** job Logpush, Log Explorer della zona e Logpull.

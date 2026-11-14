@@ -39,7 +39,7 @@ Il numero di test, il suo account WhatsApp Business e l'elenco dei destinatari a
 
    `whatsapp-verify-token` si genera su `jarvis` senza mostrarlo: `umask 077; openssl rand -hex 32 > /opt/agent-pilates-prod/secrets/whatsapp-verify-token`.
 5. Installare con `ops install` (TEC-035) e configurare il tunnel (sezione seguente) prima del webhook.
-6. In Casi d'uso > Personalizza > Configurazione di produzione > Configura webhook: callback di produzione e verify token, letto dall'operatore con `ssh jarvis cat /opt/agent-pilates-prod/secrets/whatsapp-verify-token`, poi «Verifica e salva». Meta iscrive in automatico dieci campi: lasciare solo `messages`. Il broker ignora gli altri, ma portano dati non necessari, come quelli delle chiamate.
+6. In Casi d'uso > Personalizza > Configurazione di produzione > Configura webhook: callback di produzione e verify token, letto dall'operatore con `ssh jarvis cat /opt/agent-pilates-prod/secrets/whatsapp-verify-token`, poi «Verifica e salva». Meta iscrive in automatico dieci campi: lasciare solo `messages`. Il broker ignora gli altri, ma portano dati non necessari, come quelli delle chiamate. Subito dopo applicare il [verify token monouso](#verify-token-monouso).
 7. Pubblicare l'app: senza pubblicazione riceve solo i webhook di prova del pannello, nemmeno i messaggi di amministratori e tester. Basta l'URL dell'informativa sulla privacy, lo stesso dell'app di sviluppo; Meta non ha chiesto verifica dell'azienda né App Review.
 8. Iscrivere l'app all'account WhatsApp di produzione: l'iscrizione dei campi nell'app non basta, e senza questa i messaggi vengono consegnati al numero ma non al callback. L'ID dell'account («ID account WhatsApp Business», nella pagina Prova) va scritto in un file temporaneo, mai in chat:
 
@@ -53,6 +53,17 @@ Il numero di test, il suo account WhatsApp Business e l'elenco dei destinatari a
 
    L'elenco deve contenere `agent-pilates-studio-live`. Si annulla con `DELETE` sullo stesso indirizzo.
 9. Il numero di test non compare tra i contatti finché non scrive per primo: dalla pagina Prova inviare il template `hello_world` al destinatario e rispondere in quella chat.
+
+## Verify token monouso
+
+Meta invia il verify token nella query della richiesta di verifica, e Cloudflare conserva la query string per 31-32 giorni nei dataset di analytics, come accertato da [TEC-008](TEC-008-audit-proxy.md). Per decisione dell'utente del 2026-11-14, dopo **ogni** «Verifica e salva» riuscito su Meta il valore lato server si sostituisce subito con uno nuovo, senza comunicarlo a Meta. Il valore conservato da Cloudflare smette così di essere valido.
+
+Le notifiche dei messaggi non usano il verify token: sono autenticate dalla firma con l'app secret. Una nuova verifica, ad esempio dopo una modifica del webhook, richiede di impostare su Meta un nuovo token e poi di ripetere la sostituzione.
+
+- **Produzione:** generare il nuovo valore senza mostrarlo, con `ssh jarvis 'umask 077; d=/opt/agent-pilates-prod/secrets; openssl rand -hex 32 > "$d/whatsapp-verify-token.new" && mv -f "$d/whatsapp-verify-token.new" "$d/whatsapp-verify-token"'`. Applicarlo con `~/update-agent-pilates.sh` e il commit installato in `/opt/agent-pilates-prod/state/release`: backup e ricreazione di gateway e broker, turni interrotti.
+- **Sviluppo:** nuovo `WHATSAPP_VERIFY_TOKEN` casuale nel `.env` privato del clone, poi `npm run start:local`.
+
+`npm run proxy:audit` considera mitigata una verifica conservata se la data di modifica del file del token di produzione è successiva all'ultima verifica accettata. Per lo sviluppo l'operatore può dichiarare l'istante con `--dev-token-rotated`. La decisione del 2026-11-14 non ruota i token attuali: la procedura vale per le verifiche future.
 
 ## Tunnel e filtro dei log su `jarvis`
 
@@ -92,6 +103,8 @@ Il tunnel è gestito localmente da `/etc/cloudflared/config.yml`, modificabile s
    sudo cloudflared tunnel --config $C ingress rule https://agent-pilates-studio.toto-castaldi.com/health            # http_status:404
    sudo systemctl restart cloudflared
    ```
+
+4. **Verifica ripetibile del filtro e dei log**, dopo ogni modifica del tunnel o aggiornamento di `cloudflared`: dal clone sul PC eseguire `npm run proxy:audit` e, per i fatti leggibili solo da root, `npm run proxy:audit -- privileged`. Lo strumento invia solo richieste sintetiche e conta i marcatori sul server, senza stampare righe di log ([TEC-008](TEC-008-audit-proxy.md)).
 
 ## Sviluppo da qualsiasi clone
 
@@ -136,4 +149,4 @@ Produzione installata da vuoto con il commit `c755f2b`; risultati:
 - da un clone su una macchina diversa da quella usata in precedenza, con il port forward sulla porta della regola di sviluppo e senza modifiche su Meta, lo sviluppo ha risposto sul proprio numero; la produzione ha risposto sia con il port forward aperto sia dopo averlo chiuso;
 - durante la prova la rimozione di un record DNS jolly ha reso l'hostname di produzione irraggiungibile (NXDOMAIN) senza errori su `jarvis`; il CNAME dedicato ha ripristinato le risposte 404, 403 e 401 attese.
 
-Limiti: il rifiuto del numero non autorizzato non è stato provato con un telefono reale attraverso Meta, né è stata osservata l'assenza di risposte in uscita; il filtro dei log non è stato osservato su richieste reali: dopo le prove il journal di cloudflared non conteneva righe con l'hostname o il percorso, ma non è stato verificato se cloudflared le avrebbe registrate senza filtro.
+Limiti: il rifiuto del numero non autorizzato non è stato provato con un telefono reale attraverso Meta, né è stata osservata l'assenza di risposte in uscita; il filtro dei log non è stato osservato su richieste reali: dopo le prove il journal di cloudflared non conteneva righe con l'hostname o il percorso, ma non è stato verificato se cloudflared le avrebbe registrate senza filtro. TEC-008 ha poi provato con marcatori sintetici gli esiti 404, 403, 401, 502, 200, 500, la chiusura brusca e l'annullamento: restano solo righe senza URL, senza alcun marcatore.

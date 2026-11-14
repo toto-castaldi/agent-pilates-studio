@@ -5,7 +5,8 @@
   "epic": "EPIC-003",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-008-audit-privacy-log-proxy",
   "dependencies": [
     "TEC-005"
   ],
@@ -22,5 +23,7 @@
     "Prove ripetibili con soli indicatori sintetici coprono i formati locali individuati e i principali esiti del proxy; non viene avviato lo streaming remoto dei log del tunnel condiviso, come previsto da REQ-NFR-004.",
     "Eventuali esposizioni individuate sono rimosse o mitigate con misure documentate e verifiche di regressione, senza compromettere gli altri servizi del tunnel condiviso; le modifiche infrastrutturali richiedono le autorizzazioni pertinenti.",
     "Sono documentati l'esito rispetto a REQ-NFR-002, i limiti residui e le eventuali decisioni ancora necessarie per l'accettazione della release, senza dichiarare conformità non dimostrata."
-  ]
+  ],
+  "outcome": "Audit privacy del proxy eseguito il 2026-11-14 con la prova ripetibile npm run proxy:audit: collector in sola lettura su jarvis, raccolta privilegiata eseguita dall'utente, marcatori sintetici, origine temporanea sulla porta 8300 libera e poi chiusa, GraphQL Cloudflare in sola lettura, nessuno streaming. Locale: cloudflared 2026.10.7 identico all'asset ufficiale, livello info, nessun file di log, endpoint metriche su loopback; il filtro journald scarta le righe con gli hostname prima di memorizzazione e inoltri. Nessuno dei 40 marcatori è in journal o syslog per gli esiti 404, 403, 401, 502, 200, 500, chiusura brusca e annullamento. Resta una riga storica di sviluppo del 2026-11-04 con verify token di origine non determinata. Cloudflare: httpRequestsAdaptive e gli eventi firewall conservano la query string per 31-32 giorni, inclusi i verify token reali di produzione (2026-11-10) e di sviluppo (2026-11-05); corpi, header e firme non sono conservati. Decisione dell'utente registrata in REQ-NFR-002: nessuna rotazione, rischio accettato fino alla scadenza della retention, verify token monouso per le verifiche future (procedura in TEC-036). Restano non verificati Logpush, Log Explorer della zona, Logpull e i sistemi interni Cloudflare; conformità a REQ-NFR-002 non dichiarata. Il token API dell'audit va revocato. Gate, unit test e test:local passati.",
+  "closed_at": "2026-11-14"
 }

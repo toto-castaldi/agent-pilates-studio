@@ -30,6 +30,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "voice:diagnose": "node scripts/voice-diagnose.mjs",
     "voice:setup": "bash scripts/voice-server-setup.sh",
+    "proxy:audit": "node scripts/proxy-audit.mjs",
     "build": "npm run clean --silent && tsc"
   },
   "devDependencies": {
