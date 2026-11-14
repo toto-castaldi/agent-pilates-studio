@@ -5,7 +5,8 @@
   "epic": "EPIC-003",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-008-audit-privacy-log-proxy",
   "dependencies": [
     "TEC-005"
   ],
