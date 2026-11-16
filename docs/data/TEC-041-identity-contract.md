@@ -37,13 +37,16 @@ La migrazione successiva aggiunge `preview_manager_bootstrap(sender text, manage
 
 Il nuovo campo privato `author_context.management_only_enrollment`, default falso, è impostato dal broker quando la gestione è configurata. Il trigger di inserimento legacy rifiuta allora nuovi insegnanti via SQL. Il modello non può impostarlo, annullarlo tramite GUC o aggirarlo con una citazione libera. Il percorso senza configurazione gestionale conserva la compatibilità precedente; non si anticipano la fonte dell'accesso ordinario, la risoluzione del nome, di «io» o dell'autore. Rimozione definitiva dell'inserimento legacy e attivazione dei consumatori restano a TEC-042. Nessuno stack operativo è aggiornato. [Protocollo e verifiche](../operations/US-017-gestione.md).
 
-## Coordinated activation, not included here
+## Coordinated activation — TEC-042
 
-US-017 usa questi ingressi dietro un flusso deterministico, prima di modello e cronologia. TEC-042 sostituisce insieme gateway, broker, autore, «io» e nome nella conversazione; rimuove allowlist, mapping e fallback al nome WhatsApp, impedisce contesti legacy e toglie al modello l'inserimento degli insegnanti. Solo le righe esistenti allora possono restare incomplete: il default transitorio e l'inserimento di compatibilità vengono rimossi. Non collegare un consumatore isolato al nuovo modello prima di quel passaggio.
+La migrazione `20261117000000_unified_sender_identity` completa il contratto insieme al cambio di gateway e broker ([ADR-003](../adr/ADR-003-unified-teacher-identity.md)):
 
-Non installare i nuovi contesti su turni reali del modello prima di quel passaggio: i trigger attribuiscono correttamente le operazioni, ma non redigono le colonne autore della baseline, ancora leggibili. Se un numero di autore coincide con un telefono corrente, la base additiva non ne dichiara già impedita ogni lettura da quella vecchia fonte. La facciata protegge le nuove colonne di identità e l'audit; non sostituisce la restrizione comune delle fonti precedenti.
-
-Nella stessa attivazione TEC-042 protegge **tutti** i numeri degli autori, anche storici, su clienti, regole, presenze, insegnanti e indicazioni: proiezioni senza telefoni e revoca dell'accesso alle colonne/base che permettono SQL esplicito, conversioni della riga, RETURNING o errori con valori privati. I dati sottostanti e gli snapshot non si cancellano. La fase additiva protegge già i nuovi telefoni correnti e l'audit, ma non dichiara anonimi né inaccessibili tutti gli autori della baseline o le vecchie cronologie. Le richieste principali e ausiliarie, i risultati/errori SQL, le sessioni precedenti e i riassunti si verificano in TEC-042; transizione operativa, backup/ripristino e recupero del gestore in TEC-043.
+- `app.clients`, `training_rules`, `attendance`, `teacher_rules` e `teacher_assignments` diventano viste aggiornabili senza le colonne `*_by_phone`, sopra le stesse righe spostate in `studio_private`; `app.teachers` perde il numero dell'autore e diventa di sola lettura per l'agente. I privilegi dell'agente sono quelli precedenti meno i numeri; dati, OID, chiavi esterne e snapshot non cambiano.
+- `insert_legacy_teacher`, `configured_teacher_id` e il default transitorio di `legacy_identity` sono rimossi: `apply_teacher_creation` accetta solo la guardia delle funzioni gestionali. `management_only_enrollment` non serve più ed è rimosso.
+- `author_context` richiede insegnante, revisione e nome; i contesti senza revisione sono eliminati e `require_author_context()` ricontrolla sempre la riga corrente. Il broker perde l'INSERT diretto sul contesto.
+- `bind_teacher_identity(backend, transaction, sender, expected_teacher, expected_revision)` sostituisce la versione a tre argomenti e rifiuta un'identità diversa da quella ammessa con il messaggio.
+- `identity_phone_digits()`, riservata al broker, restituisce le cifre dei numeri dell'anagrafica, dell'audit e degli autori per la sola redazione delle copie verso il modello.
+- `studio_private.chat_owners` registra il proprietario della conversazione Hermes di ogni chat (impronta del mittente), con SELECT/INSERT/UPDATE per il broker.
 
 ## Verification
 

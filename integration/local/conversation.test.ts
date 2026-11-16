@@ -24,10 +24,13 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.match(scenario.sender, /^1555555\d{4}$/);
     assert.ok(stateMatches({ clients: [], rules: [] }, scenario.initial));
     assert.ok(scenario.turns.length >= 2);
-    for (const link of scenario.teacherLinks ?? []) {
-      assert.equal(link.phone, scenario.sender);
-      assert.ok(link.firstName && link.lastName);
-    }
+    // Every sender is a registered identity whose name differs from the
+    // WhatsApp profile; no configuration link or mapping exists any more.
+    assert.equal('teacherLinks' in scenario, false);
+    assert.ok(scenario.identity?.firstName && scenario.identity?.lastName);
+    const registered = `${scenario.identity.firstName} ${scenario.identity.lastName}`;
+    assert.notEqual(scenario.profile, registered);
+    for (const turn of scenario.turns) assert.deepEqual(turn.assignmentExpected?.addedTeachers ?? [], [], 'the model never creates teachers');
     for (const person of scenario.setup?.teachers ?? []) assert.ok(person.firstName && person.lastName);
     for (const rule of scenario.setup?.teacherRules ?? []) {
       assert.ok(scenario.setup.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === rule.teacher));
@@ -78,16 +81,16 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
           assert.match(row.lessonDate, fixtureDate);
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.equal(row.authorPhone, scenario.sender);
-          assert.equal(row.authorName, scenario.profile ?? null);
+          assert.equal(row.authorName, registered);
           if (row.cancellation) {
             assert.equal(row.cancellation.authorPhone, scenario.sender);
-            assert.equal(row.cancellation.authorName, scenario.profile ?? null);
+            assert.equal(row.cancellation.authorName, registered);
           }
         }
         for (const person of turn.assignmentExpected.addedTeachers) {
           assert.ok(person.firstName && person.lastName);
           assert.equal(person.authorPhone, scenario.sender);
-          assert.equal(person.authorName, scenario.profile ?? null);
+          assert.equal(person.authorName, registered);
         }
         continue;
       }
@@ -118,16 +121,16 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
           assert.match(row.time, /^(?:[01]\d|2[0-3]):[0-5]\d$/);
           assert.ok(['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome));
           assert.equal(row.authorPhone, scenario.sender);
-          assert.equal(row.authorName, scenario.profile);
+          assert.equal(row.authorName, registered);
           if (row.cancellation) {
             assert.equal(row.cancellation.authorPhone, scenario.sender);
-            assert.equal(row.cancellation.authorName, scenario.profile);
+            assert.equal(row.cancellation.authorName, registered);
           }
         }
         for (const person of turn.attendanceExpected.addedClients) {
           assert.ok(person.firstName && person.lastName);
           assert.equal(person.authorPhone, scenario.sender);
-          assert.equal(person.authorName, scenario.profile);
+          assert.equal(person.authorName, registered);
         }
         continue;
       }
@@ -135,16 +138,16 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       for (const rule of turn.expected.rules) {
         assert.ok(rule.clients.length && rule.slots.length);
         assert.equal(rule.authorPhone, scenario.sender);
-        assert.equal(rule.authorName, scenario.profile);
+        assert.equal(rule.authorName, registered);
         if (rule.deactivation) {
           assert.equal(rule.deactivation.authorPhone, scenario.sender);
-          assert.equal(rule.deactivation.authorName, scenario.profile);
+          assert.equal(rule.deactivation.authorName, registered);
           assert.ok(rule.deactivation.reasonAnyOf?.length);
         }
       }
       for (const client of turn.expected.clients) {
         assert.equal(client.authorPhone, scenario.sender);
-        assert.equal(client.authorName, scenario.profile);
+        assert.equal(client.authorName, registered);
       }
     }
   }
@@ -152,7 +155,26 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
   for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-tutti-tranne', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
-  for (const id of ['insegnanti-fasce-e-orari', 'insegnanti-cognome-e-riconoscimento', 'insegnanti-sovrapposizione-conferma', 'insegnanti-sovrapposizione-stesso', 'insegnanti-disattivazione-parziale', 'insegnanti-mittente-collegato', 'insegnanti-mittente-non-collegato', 'insegnanti-mittente-collegato-inesistente']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  for (const id of ['insegnanti-fasce-e-orari', 'insegnanti-cognome-e-riconoscimento', 'insegnanti-sovrapposizione-conferma', 'insegnanti-sovrapposizione-stesso', 'insegnanti-disattivazione-parziale', 'insegnanti-mittente-collegato', 'insegnante-sconosciuto-regola', 'insegnanti-io-nome-censito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  // Unified identity (TEC-042): registered name instead of the profile, false
+  // declared identity, «io» for rules and assignments, system author and
+  // unknown teachers never created.
+  const byId = (id: string) => catalog.scenarios.find((entry: { id: string }) => entry.id === id);
+  for (const id of ['indicazione-mittente-collegato', 'insegnanti-mittente-collegato', 'insegnanti-io-nome-censito', 'insegnante-sconosciuto-regola']) {
+    assert.equal(byId(id).identity.teacher, true, id);
+  }
+  assert.ok(byId('indicazione-mittente-collegato').turns[1].message.includes('Mi chiamo Francesca Blu'));
+  assert.ok(byId('insegnanti-mittente-collegato').turns[2].message.includes('Mi chiamo Francesca Blu'));
+  assert.ok(byId('insegnanti-io-nome-censito').turns[1].response.contains.includes('Maria Verdi'));
+  assert.ok(byId('insegnanti-io-nome-censito').turns[1].response.excludes.includes(byId('insegnanti-io-nome-censito').profile));
+  for (const id of ['insegnante-sconosciuto-regola', 'insegnante-sconosciuto-indicazione', 'indicazione-nome-chiarimento']) {
+    const scenario = byId(id);
+    const last = scenario.turns.at(-1);
+    assert.ok(scenario.turns.some((turn: { response: { anyOf?: string[][] } }) => turn.response.anyOf?.some((group) => group.includes('gestore'))), id);
+    if (last.assignmentExpected) assert.ok(last.assignmentExpected.assignments.every((row: { teacher: string }) => !['Luisa Rossi', 'Elena Neri'].includes(row.teacher)));
+  }
+  assert.deepEqual(byId('insegnante-sconosciuto-regola').turns[0].teacherExpected.rules, []);
+  assert.ok(byId('autore-non-dichiarato').turns[0].message.includes('Operatore Falso'));
   const teacherOverlap = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'insegnanti-sovrapposizione-conferma');
   assert.ok(teacherOverlap.turns[1].response.question && teacherOverlap.turns[3].response.question);
   for (const turn of teacherOverlap.turns.slice(1, 4)) assert.deepEqual(turn.teacherExpected, teacherOverlap.turns[0].teacherExpected);
@@ -160,11 +182,6 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
   const selfOverlap = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'insegnanti-sovrapposizione-stesso');
   assert.equal(selfOverlap.turns[1].response.question, true);
   for (const turn of selfOverlap.turns.slice(1)) assert.deepEqual(turn.teacherExpected, selfOverlap.turns[0].teacherExpected);
-  for (const id of ['insegnanti-mittente-non-collegato', 'insegnanti-mittente-collegato-inesistente']) {
-    const scenario = catalog.scenarios.find((entry: { id: string }) => entry.id === id);
-    assert.equal(scenario.turns[0].response.question, true);
-    assert.deepEqual(scenario.turns[0].teacherExpected, { teachers: [], rules: [] });
-  }
   const future = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-singola-annullamento');
   assert.ok(future.turns[2].attendanceExpected.attendance[0].cancellation);
   const conflict = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'assenza-anticipata-conflitto-presenza');
@@ -204,15 +221,17 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       assert.deepEqual(turn.expected, { clients: [], rules: [] });
       assert.equal(responseMatches('Vuoi creare un profilo?', turn.response), false);
     }
-    assert.deepEqual(scenario.turns[2].response.contains, [scenario.profile]);
-    assert.ok(responseMatches(`Su WhatsApp ti chiami ${scenario.profile}.`, scenario.turns[2].response));
-    assert.equal(responseMatches(`Su WhatsApp ti chiami ${scenario.profile}. Vuoi creare un profilo?`, scenario.turns[2].response), false);
+    const registered = `${scenario.identity.firstName} ${scenario.identity.lastName}`;
+    assert.deepEqual(scenario.turns[2].response.contains, [registered]);
+    assert.ok(responseMatches(`Ti chiami ${registered}.`, scenario.turns[2].response));
+    assert.equal(responseMatches(`Ti chiami ${registered}, su WhatsApp ${scenario.profile}.`, scenario.turns[2].response), false);
+    assert.equal(responseMatches(`Ti chiami ${registered}. Vuoi creare un profilo?`, scenario.turns[2].response), false);
   }
   const noName = catalog.scenarios.find((scenario: { id: string }) => scenario.id === 'nessun-profilo-nome-assente');
   assert.ok(noName);
   assert.equal(noName.profile, undefined, 'the webhook must omit the profile name');
-  assert.ok(responseMatches('WhatsApp non mi ha fornito il tuo nome.', noName.turns[1].response));
-  assert.equal(responseMatches('WhatsApp non mi ha fornito il tuo nome. Dimmi il tuo nome.', noName.turns[1].response), false);
+  assert.ok(responseMatches(`Ti chiami ${noName.identity.firstName} ${noName.identity.lastName}.`, noName.turns[1].response));
+  assert.equal(responseMatches('Non conosco il tuo nome: come ti chiami?', noName.turns[1].response), false);
   assert.equal(responseMatches('Ti chiami Operatore Sintetico.', noName.turns[1].response), false);
   assert.ok(responseMatches('Ciao, sono Ambrogio!', greeting.turns[0].response));
   assert.equal(responseMatches('Ciao!', greeting.turns[0].response), false);

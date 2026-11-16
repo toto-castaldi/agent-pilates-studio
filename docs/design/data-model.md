@@ -2,10 +2,14 @@
 
 Il database applicativo è PostgreSQL 17.10, fissato per digest in Compose; lo schema è gestito con Prisma 7.10.1 e migrazioni versionate. L'accesso diretto di Hermes usa un plugin nel formato Python richiesto dal suo runtime e il driver `asyncpg` già presente nell'immagine, senza un servizio MCP. Lo schema `app` appartiene al ruolo di migrazione; i metadati Prisma risiedono in `public`, senza accesso da parte dell'agente. I vincoli sono in `invariants`.
 
+## Proiezioni senza numeri
+
+Clienti, regole di allenamento, presenze, insegnanti, regole degli insegnanti e indicazioni hanno le righe fisiche nello schema privato (`studio_private.clients`, `training_rules`, `attendance`, `teachers`, `teacher_rules`, `teacher_assignments`), con gli stessi OID, ID, sequenze, chiavi esterne e snapshot degli autori, compresi i numeri e i nomi dei profili WhatsApp storici. Lo schema `app` le espone come viste con le stesse colonne meno quelle dei numeri degli autori (`*_by_phone`) e, per gli insegnanti, meno i campi dell'identità. Le viste semplici restano aggiornabili: INSERT, `RETURNING`, `ON CONFLICT` e gli UPDATE delle colonne consentite raggiungono le righe private, dove i trigger esistenti impongono autore e storico; `SELECT *` e le conversioni della riga non includono mai i numeri. `app.teachers` è in sola lettura per l'agente. `rule_slots`, `rule_clients` e `teacher_rule_intervals` non hanno autori e restano tabelle di `app`. Si preferiscono le viste ai soli privilegi di colonna, che farebbero fallire `SELECT *` e `RETURNING *` ([ADR-003](../adr/ADR-003-unified-teacher-identity.md)).
+
 ## Clienti e regole di allenamento
 
-- `app.clients`: nome e cognome univoci senza distinzione tra maiuscole e minuscole, data e autore di creazione.
-- `app.training_rules`: testo pulito, inserimento e disattivazione con i rispettivi autori e motivo.
+- `app.clients`: nome e cognome univoci senza distinzione tra maiuscole e minuscole, data e nome dell'autore di creazione.
+- `app.training_rules`: testo pulito, inserimento e disattivazione con i nomi dei rispettivi autori e motivo.
 - `app.rule_slots`: giorno ISO e ora; `app.rule_clients`: legame N:N fra regole e clienti.
 
 ## Presenze e assenze
@@ -16,8 +20,8 @@ Il cliente atteso si ricava dai legami e dagli slot delle regole inserite prima 
 
 ## Insegnanti, regole e indicazioni
 
-- `studio_private.teachers`: identità degli insegnanti, con nome e cognome univoci senza distinzione di maiuscole, data e autore di creazione, `phone` canonico univoco (non chiave delle relazioni), `access_enabled`, `legacy_identity` e `identity_revision`.
-- `app.teachers`: vista di compatibilità con le sole sei colonne pubbliche (ID, nomi, creazione e autore). Preserva SELECT, anche `*` e conversioni della riga, e INSERT con parametri e RETURNING tramite trigger fidato; telefono corrente e audit non fanno parte del tipo di riga accessibile al modello. L'autore telefonico di una persona creata dalla gestione guidata è mascherato nella vista e conservato nella tabella.
+- `studio_private.teachers`: identità degli insegnanti, con nome e cognome univoci senza distinzione di maiuscole, data e autore di creazione, `phone` canonico univoco (non chiave delle relazioni), `access_enabled`, `legacy_identity` (default falso) e `identity_revision`.
+- `app.teachers`: proiezione in sola lettura con ID, nomi, data e nome dell'autore di creazione; telefoni, numeri degli autori e audit non fanno parte del tipo di riga accessibile al modello. Nuove persone si creano solo con le funzioni gestionali.
 - `app.teacher_rules`: insegnante, testo pulito, inserimento e disattivazione con autori e motivo.
 - `app.teacher_rule_intervals`: regola, giorno ISO, minimo e massimo inclusivi degli orari d'inizio al minuto, proiezione tecnica `is_active` dello stato corrente.
 - `app.teacher_assignments`: indicazioni dell'insegnante per data e ora locale della lezione al minuto, con registrazione e annullamento, autori e motivo. Un indice univoco parziale sulle righe non annullate garantisce al più un'indicazione valida per lezione, senza limiti di data.
@@ -30,7 +34,8 @@ Le lezioni esistenti e i loro insegnanti non sono materializzati: una SELECT uni
 Funzioni private, con EXECUTE per il solo broker e nessun DML diretto su persone, audit o guardia ([contratto SQL](../data/TEC-041-identity-contract.md)):
 
 - `studio_private.resolve_teacher_identity(text)`: ID, nomi, accesso e revisione della riga riconosciuta tramite le cifre internazionali del mittente autenticato;
-- `bind_teacher_identity(integer,bigint,text)`: installa il contesto dell'identità per backend e transazione;
+- `bind_teacher_identity(integer,bigint,text,bigint,bigint)`: installa il contesto dell'identità per backend e transazione, solo se la persona del numero è ancora quella ammessa (ID) alla stessa revisione e abilitata;
+- `identity_phone_digits()`: cifre di tutti i numeri dell'anagrafica, dell'audit e degli autori, usate dal gateway fidato solo per oscurarle nelle copie inviate al modello;
 - `manage_teacher_identity(text,text,text,bigint,text,text,text)`: salva atomicamente bootstrap, nuovo censimento, completamento, correzione, cambio numero, revoca e riabilitazione;
 - `list_teacher_identities(text,text)`: dati di gestione per il solo gestore abilitato;
 - una preview ristretta del bootstrap, che restituisce solo ID e revisione corrispondenti ai nomi già raccolti, senza elenco o telefoni.
@@ -40,8 +45,9 @@ Funzioni private, con EXECUTE per il solo broker e nessun DML diretto su persone
 - `studio_private.teacher_identity_changes`: audit append-only con data di sistema, autore e dati prima/dopo, senza cambiare la creazione originale.
 - `studio_private.teacher_identity_writes`: guardia privata di backend e transazione, svuotata prima del ritorno; un controllo differito impedisce di commetterla.
 - `studio_private.management_sessions`: stato del percorso guidato, indicizzato dall'impronta del mittente; non è un'altra anagrafica.
+- `studio_private.chat_owners`: insegnante proprietario della conversazione Hermes di ogni chat, indicizzato dall'impronta del mittente; serve solo ad azzerare una chat che cambia persona (`identity`) e non è una fonte di identità o di accesso.
 
-Le funzioni nuove creano solo persone complete. Finché la transizione all'identità unica non è attiva, il runtime precedente può ancora creare righe incomplete (`legacy_identity = true`, telefono NULL, accesso falso), salvo nell'assetto gestionale configurato (`identity`); alla transizione questo inserimento e il default transitorio sono rimossi e solo le righe preesistenti possono restare incomplete. Nessuna importazione di allowlist, mapping o nomi WhatsApp e nessuna riscrittura di autori o di altre entità.
+Solo le funzioni gestionali creano persone, sempre complete; l'inserimento del runtime precedente e il default transitorio sono stati rimossi dalla TEC-042. Restano incomplete (`legacy_identity = true`, telefono NULL, accesso falso) soltanto le righe preesistenti, finché il gestore non le completa. Nessuna importazione di allowlist, mapping o nomi WhatsApp e nessuna riscrittura di autori o di altre entità.
 
 ## Funzioni di lettura delle lezioni
 
@@ -51,7 +57,7 @@ Sono funzioni SQL `STABLE`, con diritti dell'invocante e nomi qualificati, senza
 
 ## Dati privati del broker
 
-- `studio_private.author_context`: contesto autore per PID e ID di transazione (`webhook-trust`), inaccessibile all'agente ed escluso dai backup.
+- `studio_private.author_context`: contesto autore per PID e ID di transazione con insegnante e revisione obbligatori (`webhook-trust`), scritto solo da `bind_teacher_identity`, inaccessibile all'agente ed escluso dai backup.
 - `studio_private.consumed_messages`: impronte temporanee degli ID già usati, per impedire replay anche dopo un riavvio; conservate nei backup.
 
 Identità, audit e stato gestionale entrano nei backup privati; la guardia è sempre vuota al commit.

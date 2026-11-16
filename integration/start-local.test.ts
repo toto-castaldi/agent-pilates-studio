@@ -133,7 +133,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       .replace('synthetic-private-access-token', 'synthetic-new-access-token')
       .replace('synthetic-private-app-secret', 'synthetic-new-app-secret')
       .replace('synthetic-private-verify-token', 'synthetic-new-verify-token')
-      .replaceAll('15555550102', '15555550103')
+      .replace('+1 (555) 555-0102', '0015555550103')
       .replace('123456789', '987654321')
       .replace('synthetic/test-model', 'synthetic/updated-model')
       .concat('WHATSAPP_WEBHOOK_PATH=/whatsapp/updated\n');

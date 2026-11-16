@@ -28,7 +28,7 @@ sudo install -d -m 0700 -o "$USER" -g "$USER" /opt/agent-pilates-prod
 ops init
 ```
 
-`init` crea `prod.env` (porte `55433` e `18190`, solo loopback), le directory e i segreti interni, senza sovrascrivere quelli presenti. Crea inoltre `secrets/whatsapp-teacher-links` privato con `[]` se manca. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-allowed-users`, `whatsapp-home-channel`, `whatsapp-phone-number-id`. Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include.
+`init` crea `prod.env` (porte `55433` e `18190`, solo loopback), le directory e i segreti interni, senza sovrascrivere quelli presenti. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-manager-phone`, `whatsapp-phone-number-id`. Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include.
 
 ```bash
 ops install "$COMMIT"
@@ -36,11 +36,11 @@ ops install "$COMMIT"
 
 `install` rifiuta un progetto che ha già volumi. L'esito non verifica Meta, OpenRouter o la raggiungibilità pubblica.
 
-## Collegamenti degli insegnanti
+## Numero del gestore e anagrafica
 
-Facoltativamente, modificare privatamente `secrets/whatsapp-teacher-links` con un editor locale: contiene un array JSON nel formato di `WHATSAPP_TEACHER_LINKS` in `.env.example`, senza le virgolette esterne della riga `.env`. Ogni numero deve essere in `whatsapp-allowed-users` e può comparire una sola volta; nome e cognome devono corrispondere all'anagrafica, senza distinzione di maiuscole. Più numeri possono indicare lo stesso insegnante. `[]` disabilita tutti i collegamenti. La configurazione non crea insegnanti né cambia i permessi; se l'insegnante non esiste, l'agente chiede il nome.
+`secrets/whatsapp-manager-phone` contiene il solo numero WhatsApp del gestore, su una riga, in forma canonica: `+` seguito da 8–15 cifre, senza spazi. È l'unico numero personale della configurazione; il canale home ne deriva. `install`, `update` e `rollback` verificano formato e permessi prima di qualsiasi operazione, senza mostrare il valore. I file `whatsapp-allowed-users`, `whatsapp-home-channel` e `whatsapp-teacher-links` delle versioni precedenti non sono più fonti di accesso: finché sono presenti in `secrets/` questi comandi si fermano chiedendo di rimuoverli. Rimuoverli privatamente, dopo averne conservato la copia cifrata se serve allo storico, e prima creare `whatsapp-manager-phone`.
 
-Per applicare una modifica usare `ops update "$COMMIT"`: il comando interrompe i turni, salva un backup e ricrea broker e gateway. Il broker valida il file all'avvio senza mostrare i valori; se non è valido l'aggiornamento fallisce e lascia i servizi fermi. Correggere privatamente e ripetere. Le versioni di `ops` che includono US-011 creano il file vuoto se manca, anche per una directory di una versione precedente, ma non sovrascrivono un mapping esistente; un rollback usa l'immagine `ops` della versione scelta, che può non conoscere il file. Il file è montato solo nel broker e va conservato con gli altri segreti; backup e rollback dei volumi non ripristinano la configurazione.
+Gli altri insegnanti non si configurano sul server: dopo l'avvio il gestore scrive all'agente, completa il proprio censimento iniziale e censisce o completa gli insegnanti con `/anagrafica` ([gestione guidata](US-017-gestione.md)). Le persone già presenti restano nelle lezioni ma non accedono finché il gestore non ne completa il telefono; nessuna allowlist o mapping precedente viene importato. Un numero censito non supera i limiti esterni di Meta, come l'elenco dei destinatari del numero di test. Il trasferimento della funzione di gestore a un altro numero richiede di aggiornare insieme `whatsapp-manager-phone` e l'anagrafica con un `update`; la procedura operativa verificata del passaggio dalla versione precedente, del recupero e del trasferimento è oggetto di TEC-043. Un rollback a una versione precedente all'identità unica richiede la configurazione di quella versione.
 
 ## Aggiornamento
 

@@ -1,6 +1,6 @@
 # Per-interlocutor context and compaction
 
-Hermes mantiene una sessione SQLite per ogni chat WhatsApp diretta, quindi per ogni numero autorizzato.
+Hermes mantiene una sessione SQLite per ogni chat WhatsApp diretta, legata all'insegnante che la possiede: una chat precedente al passaggio o di un numero passato a un'altra persona viene azzerata prima del primo turno (`identity`), quindi la compattazione non riassume mai la conversazione di un'altra identità.
 
 ## Soglia
 

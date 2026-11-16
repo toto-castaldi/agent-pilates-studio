@@ -15,8 +15,7 @@ OPENROUTER_API_KEY=synthetic-sensitive-model-token
 WHATSAPP_ACCESS_TOKEN=synthetic-sensitive-access-token
 WHATSAPP_APP_SECRET=synthetic-sensitive-app-secret
 WHATSAPP_VERIFY_TOKEN=synthetic-sensitive-verify-token
-WHATSAPP_ALLOWED_USERS=15555550102
-WHATSAPP_HOME_CHANNEL=15555550102
+PILATES_MANAGER_PHONE=+15555550102
 WHATSAPP_PHONE_NUMBER_ID=123456789
 `;
 
@@ -53,16 +52,22 @@ test('local start validates private configuration, preserves secrets and suppres
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /non corrisponde/);
     assert.equal(await readFile(join(dir, '.local/secrets/db-admin'), 'utf8'), password);
-    await writeFile(join(dir, '.env'), configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS='));
+    await writeFile(join(dir, '.env'), configuration.replace('PILATES_MANAGER_PHONE=+15555550102', 'PILATES_MANAGER_PHONE='));
     result = start();
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /WHATSAPP_ALLOWED_USERS/);
-    for (const value of ['', '15555550103', '1555555010']) {
-      await writeFile(join(dir, '.env'), configuration.replace('WHATSAPP_HOME_CHANNEL=15555550102', `WHATSAPP_HOME_CHANNEL=${value}`));
+    assert.match(result.stderr, /PILATES_MANAGER_PHONE/);
+    for (const value of ['15555550103', '+1555555', '+15555550102,+15555550103']) {
+      await writeFile(join(dir, '.env'), configuration.replace('PILATES_MANAGER_PHONE=+15555550102', `PILATES_MANAGER_PHONE=${value}`));
       result = start();
       assert.notEqual(result.status, 0);
       assert.doesNotMatch(result.stderr, /1555555010/);
     }
+    // The former identity sources are refused by name, never by value.
+    await writeFile(join(dir, '.env'), `${configuration}WHATSAPP_ALLOWED_USERS=15555550102\n`);
+    result = start();
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /WHATSAPP_ALLOWED_USERS/);
+    assert.doesNotMatch(result.stderr, /1555555010/);
     await chmod(join(dir, '.env'), 0o644);
     assert.notEqual(start().status, 0);
   } finally {
