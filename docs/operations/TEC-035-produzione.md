@@ -40,7 +40,30 @@ ops install "$COMMIT"
 
 `secrets/whatsapp-manager-phone` contiene il solo numero WhatsApp del gestore, su una riga, in forma canonica: `+` seguito da 8–15 cifre, senza spazi. È l'unico numero personale della configurazione; il canale home ne deriva. `install`, `update` e `rollback` verificano formato e permessi prima di qualsiasi operazione, senza mostrare il valore. I file `whatsapp-allowed-users`, `whatsapp-home-channel` e `whatsapp-teacher-links` delle versioni precedenti non sono più fonti di accesso: finché sono presenti in `secrets/` questi comandi si fermano chiedendo di rimuoverli. Rimuoverli privatamente, dopo averne conservato la copia cifrata se serve allo storico, e prima creare `whatsapp-manager-phone`.
 
-Gli altri insegnanti non si configurano sul server: dopo l'avvio il gestore scrive all'agente, completa il proprio censimento iniziale e censisce o completa gli insegnanti con `/anagrafica` ([gestione guidata](US-017-gestione.md)). Le persone già presenti restano nelle lezioni ma non accedono finché il gestore non ne completa il telefono; nessuna allowlist o mapping precedente viene importato. Un numero censito non supera i limiti esterni di Meta, come l'elenco dei destinatari del numero di test. Il trasferimento della funzione di gestore a un altro numero richiede di aggiornare insieme `whatsapp-manager-phone` e l'anagrafica con un `update`; la procedura operativa verificata del passaggio dalla versione precedente, del recupero e del trasferimento è oggetto di TEC-043. Un rollback a una versione precedente all'identità unica richiede la configurazione di quella versione.
+Gli altri insegnanti non si configurano sul server: dopo l'avvio il gestore scrive all'agente, completa il proprio censimento iniziale e censisce o completa gli insegnanti con `/anagrafica` ([gestione guidata](US-017-gestione.md)). Le persone già presenti restano nelle lezioni ma non accedono finché il gestore non ne completa il telefono; nessuna allowlist o mapping precedente viene importato, anche se i vecchi file sono ancora sul disco. Un numero censito non supera i limiti esterni di Meta e non preregistra il destinatario sul numero di test. I backup e le cronologie precedenti non diventano anonimi. Un rollback a una versione precedente all'identità unica richiede la configurazione di quella versione.
+
+## Trasferimento e cambio numero del gestore
+
+Sono due operazioni distinte, entrambe intenzionali e riservate all'operatore. Non sono comandi di chat: `/anagrafica` rifiuta la revoca di sé e il cambio del proprio numero, e il database rifiuta le stesse chiamate al broker e al modello. Non è una gestione ordinaria dell'anagrafica e non introduce altri gestori o ruoli.
+
+Prima di entrambe, fermare gateway e broker. I comandi non li fermano e non li avviano: rifiutano se uno dei due è in esecuzione. Creare `secrets/manager-next-phone`, una sola riga canonica (`+` e 8–15 cifre), permessi `0600`. Il valore non va stampato. Il file è consumato al successo e non è una fonte permanente. Finché esistono `whatsapp-allowed-users`, `whatsapp-home-channel` o `whatsapp-teacher-links` i comandi si fermano senza leggere quei file come identità.
+
+In produzione, dalla directory montata e con l'immagine `ops` del commit installato:
+
+```bash
+ops manager-transfer
+ops manager-renumber
+ops manager-recover
+```
+
+In locale lo stesso script è `bash scripts/prod.sh` con `PILATES_HOME` e `PILATES_PROJECT` del progetto isolato. Impostare anche `PILATES_ENV_FILE` al `.env` privato, che deve contenere una sola riga `PILATES_MANAGER_PHONE=`: il comando la allinea, così il successivo `start:local` non ripristina il valore precedente. In produzione non impostare `PILATES_ENV_FILE`.
+
+- **Trasferimento a un'altra persona** (`manager-transfer`). Il destinatario deve essere già un insegnante completo e abilitato, censito in chat. Non si crea una persona e non si cambia il suo telefono. Il vecchio numero perde solo i privilegi gestionali; se resta abilitato continua a usare l'agente come insegnante. La configurazione diventa quel telefono già presente in anagrafica.
+- **Cambio del numero della stessa persona** (`manager-renumber`). Il nuovo numero non deve appartenere a nessuno. L'ID, il nome, le regole e lo storico restano; l'accesso dal numero sostituito cessa. La chat del nuovo numero è vuota e non eredita la conversazione precedente, né tramite i comandi di recupero.
+
+Dopo il comando, ricreare insieme gateway e broker: in produzione `ops update` sul commit già installato, in locale `npm run start:local`. Il canale home deriva dal numero allineato. Non si abilitano cron né avvisi. Un avvio fallito non lascia i due consumatori con numeri diversi: il comando ha già scritto il segreto, e la ricreazione li legge dallo stesso file.
+
+`manager-recover`, sempre con gli scrittori fermi, annulla solo l'ultimo trasferimento o cambio non ancora recuperato e riallinea la configurazione. Il recupero è legato all'identità del gestore precedente, non a chi possiede ora quel numero: se il numero è stato riassegnato, il comando rifiuta e non rende gestore la persona che lo ha ricevuto. Poi ricreare di nuovo i due servizi. Se la scrittura della configurazione fallisce, il comando compensa solo quel recupero e non consuma un cambiamento più vecchio; configurazione e anagrafica restano allineate allo stato precedente, oppure gli scrittori restano fermi con un errore esplicito. Il recupero compensato può essere ripetuto: l'audit resta append-only e non blocca il nuovo tentativo. Non è un sostituto del backup: prima di un aggiornamento resta il backup quiescente di [TEC-005](TEC-005-continuita.md). Un ripristino non rende valida una conferma guidata interrotta, perché il nonce di istanza del broker non è nel dump; i contesti effimeri restano esclusi e le impronte anti-replay restano incluse, con l'attesa già prevista prima di riesporre il webhook.
 
 ## Aggiornamento
 

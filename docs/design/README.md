@@ -42,6 +42,5 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 
 ## Open decisions
 
-- **Prova operativa della transizione all'identità unica (REQ-STUDIO-015–017, [ADR-003](../adr/ADR-003-unified-teacher-identity.md))** — l'attivazione è avvenuta con TEC-042 (`identity`); TEC-043 verifica transizione da un'installazione esistente, installazione nuova e recupero e documenta la procedura operativa di trasferimento o recupero del numero del gestore. Ruoli, fonti dell'identità, isolamento delle chat e mancata importazione del mapping non sono riaperti.
 - **Parti non verificate dell'audit dei log del proxy** — alla chiusura della v0.3.0: accettare come limiti Logpush, Log Explorer della zona e Logpull (non verificati) e i sistemi interni di Cloudflare (non verificabili), oppure verificarli dal dashboard senza Live logs (`proxy-logs`).
 - **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.3.0.

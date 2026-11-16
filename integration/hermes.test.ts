@@ -258,6 +258,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await ownerContext(migrator, broker, '15555550102', { pid: 1, txid: '1' }, '1 hour');
 
     assert.equal(Number((await migrator.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
+    await migrator.query("INSERT INTO studio_private.management_sessions (sender_hash, state) VALUES ($1, $2)", ['a'.repeat(64), '{"instance":"stale-synthetic","state":{"step":"confirm","expires":1}}']);
     // Rehearse persistence across a restart and a same-image container replacement.
     await broker.end();
     broker = undefined;
@@ -313,8 +314,10 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await assert.rejects(restored.query('TRUNCATE studio_private.attendance'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
+    assert.equal((await restored.query('SELECT state FROM studio_private.management_sessions WHERE sender_hash = $1', ['a'.repeat(64)])).rows[0].state.includes('stale-synthetic'), true);
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await restoredAgent.connect();
+    await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.management_sessions'), { code: '42501' });
     assert.equal((await restoredAgent.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
     assert.deepEqual(await readTeacherState(restored), teacherState);
     assert.deepEqual(await readTeacherState(restoredAgent), teacherState);

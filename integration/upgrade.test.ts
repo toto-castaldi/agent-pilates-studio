@@ -53,6 +53,11 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
   let agent: Client | undefined;
   try {
     await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
+    // Former allowlist, home channel and teacher mapping remain on disk. They
+    // are not mounted and must not become phones, names or access.
+    await writeFile(join(directory, 'whatsapp-allowed-users'), '15555550199\n', { mode: 0o600 });
+    await writeFile(join(directory, 'whatsapp-home-channel'), '15555550199\n', { mode: 0o600 });
+    await writeFile(join(directory, 'whatsapp-teacher-links'), '15555550199 History Synthetic\n', { mode: 0o600 });
     const dockerfile = await readFile('hermes/Dockerfile', 'utf8');
     const current = 'nousresearch/hermes-agent:v0.22.7@sha256:e6d81ae52ebf6a43efa529701405509f20054ba818f179ddd748bed4f8af584c';
     const old = 'nousresearch/hermes-agent:v0.22.6@sha256:d27689bc6e8581ec884a7227c9101fdaebf6c853cff8859020dac14f21452b4d';
@@ -166,6 +171,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.equal((await migrator.query("SELECT 'studio_private.teachers'::regclass::oid::text AS oid")).rows[0].oid, teacherStorageOid);
     assert.equal((await migrator.query("SELECT relkind FROM pg_class WHERE oid = 'app.teachers'::regclass")).rows[0].relkind, 'v');
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers WHERE phone IS NOT NULL OR access_enabled OR NOT legacy_identity OR identity_revision <> 1')).rows[0].n, 0);
+    assert.equal((await migrator.query("SELECT count(*)::int AS n FROM studio_private.teachers WHERE phone LIKE '%15555550199%' OR first_name LIKE '%15555550199%' OR last_name LIKE '%15555550199%' OR created_by_name = '15555550199'")).rows[0].n, 0);
+    assert.equal((await migrator.query("SELECT count(*)::int AS n FROM studio_private.teachers WHERE first_name = 'Synthetic' AND last_name = 'Profile'")).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_changes')).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_writes')).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
@@ -217,6 +224,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.notEqual(execFileSync('docker', ['inspect', '--format', '{{.Image}}', newGateway], { encoding: 'utf8' }).trim(), oldGatewayImage);
     stateContains(newGateway, ['synthetic-before-upgrade']);
     await send(newGateway, 'synthetic-after-upgrade');
+    execFileSync('docker', ['exec', newGateway, 'sh', '-c', 'test ! -e /run/secrets/whatsapp_allowed_users && test ! -e /run/secrets/whatsapp_home_channel && test ! -e /run/secrets/whatsapp_teacher_links'], { stdio: 'pipe' });
     stateContains(newGateway, ['synthetic-before-upgrade', 'synthetic-after-upgrade']);
     assert.deepEqual(await readTeacherState(migrator), teachersBefore);
     assert.equal(execFileSync('docker', ['logs', newGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');

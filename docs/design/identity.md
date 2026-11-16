@@ -1,6 +1,6 @@
 # Sender identity and teacher registry
 
-Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md): gateway e broker usano insieme la fonte nel database. Resta aperta la prova operativa della transizione su un'installazione esistente, del recupero e del trasferimento del gestore (TEC-043).
+Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md): gateway e broker usano insieme la fonte nel database. L'aggiornamento non importa allowlist, mapping o nomi WhatsApp. Il completamento delle anagrafiche preesistenti e il recupero del gestore sono procedure operative, non comandi del modello.
 
 ## Ammissione
 
@@ -39,4 +39,4 @@ Il percorso è deterministico e precede il modello ([guida](../operations/US-017
 
 L'unico numero personale configurato è `PILATES_MANAGER_PHONE` (`configuration`), uguale in gateway e broker perché letto dallo stesso file privato; il canale home ne deriva. Allowlist, collegamenti numero–insegnante e canale home separato non esistono: `start:local` e `prod.sh` rifiutano le vecchie chiavi o i vecchi file. Censire un destinatario non supera i limiti esterni di Meta.
 
-Il trasferimento della funzione gestionale a un'altra persona (il vecchio numero perde i soli privilegi gestionali) e il cambio del numero del gestore stesso non sono possibili dal flusso in chat: richiedono una procedura dell'operatore che aggiorni insieme configurazione e anagrafica, documentata e verificata in TEC-043.
+Il trasferimento della funzione gestionale a un'altra persona già censita e abilitata, e il cambio del numero della stessa persona, non sono possibili dal flusso in chat. L'operatore li esegue a scrittori fermi, allineando il file del numero gestore e, nel secondo caso, il telefono della stessa identità; poi ricrea insieme gateway e broker. Il recupero annulla solo l'ultimo cambiamento, solo se l'identità precedente ha ancora quel numero, e riallinea la configurazione. Un errore di scrittura non consuma un cambiamento più vecchio. Dettaglio in [produzione](../operations/TEC-035-produzione.md).

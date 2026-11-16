@@ -3,6 +3,6 @@ RUN apk add --no-cache bash coreutils openssl
 ARG PILATES_RELEASE=
 ENV PILATES_RELEASE=$PILATES_RELEASE
 COPY compose.yaml /release/compose.yaml
-COPY scripts/prod.sh scripts/backup.sh scripts/restore.sh scripts/operations-common.sh /release/scripts/
+COPY scripts/prod.sh scripts/backup.sh scripts/restore.sh scripts/operations-common.sh scripts/manager-phone.sh /release/scripts/
 WORKDIR /release
 ENTRYPOINT ["bash", "/release/scripts/prod.sh"]
