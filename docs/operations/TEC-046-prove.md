@@ -2,6 +2,10 @@
 
 ## State
 
+**Done — chiuso il 2026-11-16 con limiti accettati esplicitamente dall'utente, non con verifica conversazionale totalmente positiva.** Dopo il rapporto Blocked l'utente ha dichiarato: «no. sono soddifsatto, per me si può chiudere». La chiusura applica la deroga per il solo TEC-046 registrata in `AGENTS.md` §8 a `docs/PROCESS.md` §8 e alla procedura `finish-task`, esclusivamente per la parte conversazionale non soddisfatta. Non dichiara risolte le anomalie né dimostrata la stabilità. Dettagli e gate finale nella sezione di chiusura in fondo; nessun esito originale è cambiato.
+
+### Valutazione tecnica prima dell'accettazione utente
+
 **Blocked, non Done.** I cataloghi reali completi restano baseline 46/57 OK e contesto nuovo 49/57 OK, entrambi exit 1. La successiva diagnosi mirata autorizzata ha individuato e corretto un falso negativo del matcher della pianificazione; identità mancante e assenza anticipata non hanno riprodotto l'errore senza modifiche al prompt, senza dimostrare causa o stabilità. La statistica riproduce il controllo negativo dopo una precisazione della skill e passa in una successiva acquisizione diagnostica con lo stesso comportamento: la causa della differenza e la risoluzione non sono dimostrate. Il criterio conversazionale e la Definition of Done non sono soddisfatti.
 
 Decisione tecnica: [ADR-004](../adr/ADR-004-read-only-skills-computed-data.md). Nessuna baseline o catalogo completo è stato ripetuto. Dopo le sette prove mirate descritte sotto non sono stati eseguiti ulteriori tentativi per cercare un esito verde.
@@ -177,7 +181,7 @@ Durante questa estensione un test in memoria ha rilevato che un indicatore di re
 
 Un test in memoria con dati sintetici minimali ha riprodotto l'errore prima della modifica (rosso). Il matcher ora cerca ciascuna associazione in una sezione del giorno corretto, conservando l'associazione cliente/ora nella stessa riga; non concatena sezioni di giorni diversi. Test positivi coprono sezione unica e giorno ripetuto; test negativi mantengono il rifiuto di giorno errato, orari scambiati e giorno mancante. I controlli dei nomi esclusi e tutti gli altri criteri restano invariati. È una correzione di rappresentazione del test, non un allentamento del comportamento richiesto. La singola verifica reale dopo la modifica passa tutti e sette i turni. La causa del falso negativo nella prova mirata è accertata; la medesima causa nell'esecuzione completa originale è compatibile ma non provata, poiché la risposta originale non è conservata.
 
-### Esito della prosecuzione e prossimo passo
+### Esito della prosecuzione e prossimo passo proposto prima dell'accettazione utente
 
 Gate rapido aggiornato: 100/100 test in memoria, lint, typecheck e build positivi; `test:local` 46/46 positivo dopo le modifiche. Le suite di PostgreSQL, gateway, autore, upgrade, immagini e compattazione restano quelle eseguite nell'item sopra: non sono nuove prove di stabilità con il modello reale.
 
@@ -195,6 +199,37 @@ Il caso statistiche è stato riprodotto e poi non riprodotto sullo stesso compor
 | Catalogo reale completo, confronto, regressioni corrette | **Non soddisfatto interamente:** i due cataloghi e il confronto sono completi, ma la statistica ha esiti alterni con risoluzione non dimostrata; le cause originarie dei due casi non riprodotti restano indeterminate |
 | Requisiti, AGENTS, design, README e suite pertinenti | Aggiornati; esiti sintetici distinti dalle prove reali nel rapporto |
 
-Il gate rapido è verde; sono presenti ADR, documentazione, esempi di configurazione senza nuovi segreti e voce CHANGELOG. Questo non sostituisce il criterio conversazionale mancante: non si esegue `backlog done` e non si dichiara conclusa `finish-task`.
+Prima dell'accettazione utente il gate rapido era verde; erano presenti ADR, documentazione, esempi di configurazione senza nuovi segreti e voce CHANGELOG. Ciò non sostituiva il criterio conversazionale mancante: non era stato eseguito `backlog done` né dichiarata conclusa `finish-task`. La tabella conserva questa valutazione tecnica, incluso il criterio non soddisfatto; la successiva chiusura è in deroga, non una modifica retroattiva della valutazione.
 
 Alla verifica dopo le due esecuzioni complete non risultano processi `node scripts/conversation.mjs` né container, volumi o reti con i prefissi delle suite isolate controllate. Le impronte di nucleo, sei skill e catalogo coincidono con quelle d'avvio. Nessun deploy, modifica dello stack operativo, merge o push di `main`.
+
+## Chiusura con limiti accettati dall'utente
+
+Il 2026-11-16, data ricavata dal sistema, `t2q` ha inoltrato la decisione esplicita dell'utente, successiva al rapporto Blocked e ai limiti noti: «no. sono soddifsatto, per me si può chiudere». L'utente rifiuta ulteriore diagnosi e accetta le evidenze già acquisite e il rischio residuo per la chiusura del solo TEC-046. Non sono richiesti o autorizzati da questa decisione altri test reali, diagnosi o nuovi item, e non ne sono stati eseguiti.
+
+La deroga è stata registrata prima della ripresa in `AGENTS.md` §8 e nei remarks del backlog tramite CLI. Il passaggio Blocked → In Progress è stato committato e pubblicato in `909ce8e` prima della procedura di chiusura. La deroga riguarda solo la parte conversazionale non soddisfatta di PROCESS §8 e `finish-task`: tutti gli altri criteri e la DoD restano invariati. Non si estende ad altri item, ai requisiti globali, al gate rapido, alla release, al merge o al deploy, né autorizza push di `main` o rimozioni di clone.
+
+### Rischio residuo accettato, non risoluzione dimostrata
+
+- **Statistiche:** esiti alterni anche sullo stesso comportamento; causa e risoluzione non dimostrate. L'ultimo risultato positivo non sana causalmente i fallimenti precedenti.
+- **Identità mancante e assenza anticipata:** verifiche mirate positive senza modifiche al prompt; cause originali non accertate e stabilità non dimostrata.
+- **Pianificazione:** falso negativo del matcher accertato e corretto con test positivi/negativi e verifica mirata positiva; la stessa causa nell'esecuzione completa originale resta compatibile, non provata.
+
+Le tabelle dei 57 scenari, gli exit 1, la porzione interrotta e i sette esiti mirati restano intatti. Nessuna esclusione lessicale è stata rimossa per ottenere la chiusura; nessun requisito globale è stato riscritto per dichiarare escluse le regressioni. L'accettazione del rischio chiude l'item, non costituisce un'approvazione della release.
+
+### Gate e altri criteri/DoD alla chiusura
+
+Gate finale obbligatorio eseguito il 2026-11-16 dopo la ripresa, senza prove esterne:
+
+| Comando | Esito finale |
+| --- | --- |
+| `npm run lint` | OK, 91 file |
+| `npm run typecheck` | OK |
+| `npm test` | OK, 100/100 test in memoria; nessun fallimento o test saltato |
+| `npm run build` | OK |
+
+- Gli altri criteri restano verificati dalle evidenze concrete della tabella precedente: limite del nucleo, sei skill versionate e sola lettura, blocco gateway senza turni del modello, SQL e privilegi su PostgreSQL reale, coerenza dello schema, identità protetta e documentazione aggiornata. Le suite separate già eseguite durante l'item non sono state sostituite dal gate rapido né dichiarate ripetute in questa chiusura documentale.
+- Test al livello pertinente e regressioni del matcher coperti; l'eccezione riguarda esclusivamente la valutazione conversazionale residua esplicitata sopra.
+- Nessun nuovo segreto, configurazione privata o testo grezzo introdotto; restano invariati esempi senza segreti, requisiti, design, ADR-004 e README già aggiornati durante l'item.
+- Voce `[Unreleased]` di CHANGELOG presente e precisata per segnalare i limiti accettati, senza annunciare stabilità dimostrata.
+- Decisione, deroga e limiti registrati anche nell'outcome di TEC-046 tramite CLI; `backlog check` positivo. Chiusura `Done` con commit e pubblicazione sul solo branch dell'item secondo le shared claims; nessun merge, deploy, push di `main` o rimozione di clone autorizzato o eseguito.
