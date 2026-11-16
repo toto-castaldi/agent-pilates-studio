@@ -49,6 +49,10 @@ La migrazione `20261117000000_unified_sender_identity` completa il contratto ins
 - `studio_private.chat_owners` registra il proprietario della conversazione Hermes di ogni chat (impronta del mittente), con SELECT/INSERT/UPDATE per il broker.
 - `studio_private.session_owners` registra il proprietario immutabile di ogni sessione Hermes (ID sessione), con SELECT/INSERT per il broker e senza UPDATE; elenco e recupero WhatsApp richiedono lo stesso proprietario corrente.
 
+## Operator recovery
+
+`studio_private.operator_manager_change(action, current_phone, next_phone)` e `operator_manager_recover()` sono eseguibili solo da `studio_migrator`. Non sono concesse al broker o al modello e non censiscono persone. `transfer` richiede due identità complete e abilitate distinte e non cambia i telefoni. `renumber` cambia il telefono della persona del numero corrente, conserva l'ID e scrive l'audit `operator_renumber`, distinto dal `change_phone` della chat. Il recupero è LIFO su `studio_private.manager_role_changes`, append-only. `identity_phone_digits()` include anche i telefoni di questo audit, solo per la redazione verso il modello. La chat continua a rifiutare revoca e cambio numero del gestore.
+
 ## Verification
 
 Le prove usano soltanto dati sintetici. Unit test in memoria verificano le politiche pure; `test:db` prova PostgreSQL reale da vuoto e da schema precedente, normalizzazione, vincoli, unicità concorrente, privilegi ed estrazione SQL, falsificazione, bootstrap, gestione e contesti. `test:upgrade` confronta dati e snapshot prima/dopo la migrazione e verifica la compatibilità del runtime precedente. Le prove pertinenti di backup e autore confermano che lo spostamento della tabella non altera relazioni, storico e ripristino. Il gate rapido resta separato.

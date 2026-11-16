@@ -3,6 +3,7 @@
 # Nothing here starts on its own: the operator launches every command.
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/operations-common.sh"
+source "$(dirname -- "${BASH_SOURCE[0]}")/manager-phone.sh"
 
 ROOT_DIR=${PILATES_HOME:-/opt/agent-pilates-prod}
 PROJECT=${PILATES_PROJECT:-agent-pilates-prod}
@@ -15,7 +16,7 @@ readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-sec
 # Former identity sources (ADR-003): they authorize nobody and must be removed.
 readonly OBSOLETE_SECRETS=(whatsapp-allowed-users whatsapp-home-channel whatsapp-teacher-links)
 
-usage() { fail 'Usage: prod.sh init | install <commit> | update <commit> | backup-hot <commit> | rollback <backup-directory> <commit>'; }
+usage() { fail 'Usage: prod.sh init | install <commit> | update <commit> | backup-hot <commit> | rollback <backup-directory> <commit> | manager-transfer | manager-renumber | manager-recover'; }
 step() { printf '%s\n' "$*"; }
 quiet() { "$@" >/dev/null 2>&1; }
 # The backup and restore scripts report failures with fixed "Error:" messages;
@@ -147,6 +148,7 @@ case $command in
   init) [[ $# -eq 1 ]] || usage ;;
   install|update|backup-hot) [[ $# -eq 2 ]] || usage; require_release "$2" ;;
   rollback) [[ $# -eq 3 ]] || usage; require_release "$3" ;;
+  manager-transfer|manager-renumber|manager-recover) [[ $# -eq 1 ]] || usage ;;
   *) usage ;;
 esac
 [[ -d $ROOT_DIR ]] || fail 'The production directory must exist and be mounted at the same path.'
@@ -241,5 +243,8 @@ case $command in
     record_release "$3"
     active=0
     step "Rolled back and healthy on volumes $target. Previous volumes were kept."
+    ;;
+  manager-transfer|manager-renumber|manager-recover)
+    run_manager_phone
     ;;
 esac

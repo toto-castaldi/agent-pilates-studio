@@ -54,6 +54,16 @@ test('production requires one canonical manager number and refuses the former id
     assert.notEqual(upgrade.status, 0);
     assert.match(upgrade.stderr, /No installed release/);
     assert.doesNotMatch(upgrade.stdout + upgrade.stderr, /5555550/);
+    const missingNext = invoke(['manager-transfer']);
+    assert.notEqual(missingNext.status, 0);
+    assert.match(missingNext.stderr, /manager-next-phone file is required/);
+    assert.doesNotMatch(missingNext.stdout + missingNext.stderr, /5555550/);
+    await writeFile(join(root, 'secrets/manager-next-phone'), '+15555550199\n', { mode: 0o644 });
+    const insecureNext = invoke(['manager-renumber']);
+    assert.notEqual(insecureNext.status, 0);
+    assert.match(insecureNext.stderr, /manager-next-phone has insecure permissions/);
+    assert.doesNotMatch(insecureNext.stdout + insecureNext.stderr, /5555550/);
+    await rm(join(root, 'secrets/manager-next-phone'));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -53,8 +53,9 @@ async def chat(request):
     # Record only a boolean, never the request or the synthetic phone itself.
     wire = json.dumps(body, ensure_ascii=False)
     private_phone = any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)
-                        for number in ('15555550102', '15555550103', '15555550107', '15555550901', '15555550902',
-                                       '15555550903', '15555550904', '15555550905', '15555550906'))
+                        for number in ('15555550102', '15555550103', '15555550104', '15555550107', '15555550108',
+                                       '15555550199', '15555550901', '15555550902', '15555550903', '15555550904',
+                                       '15555550905', '15555550906'))
     observations.append({
         'kind': kind, 'model': body.get('model'), 'chars': size, 'last_role': messages[-1].get('role') if messages else None,
         'private_phone': private_phone,

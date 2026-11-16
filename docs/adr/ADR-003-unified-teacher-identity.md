@@ -1,6 +1,6 @@
 # ADR-003 — Identità unica degli insegnanti e accesso dal database
 
-- **State:** Accepted — base dati TEC-041, gestione guidata US-017 e attivazione coordinata TEC-042 implementate; prova operativa della transizione in TEC-043
+- **State:** Accepted — base dati TEC-041, gestione guidata US-017, attivazione TEC-042 e procedura operativa di transizione e recupero TEC-043
 - **Date:** 2026-11-12
 - **Items:** TEC-041 (base dati), US-017 (gestione guidata), TEC-042 (attivazione), TEC-043 (transizione e prove operative)
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-011, REQ-STUDIO-015, REQ-STUDIO-016, REQ-STUDIO-017, REQ-WA-002, REQ-WA-003, REQ-AGENT-006, REQ-AGENT-007, REQ-NFR-005
@@ -96,6 +96,16 @@ Limiti: i messaggi accodati durante un turno in corso seguono il percorso busy d
 La consegna è suddivisa in base dati additiva e funzioni protette (TEC-041), gestione guidata (US-017), attivazione comune dei consumatori dell'identità (TEC-042) e prove operative di transizione (TEC-043), in questo ordine di dipendenza. La base additiva non interrompe il runtime precedente; il passaggio finale non lascia gateway e broker con fonti diverse né richiede sincronizzazioni permanenti. Ogni item verifica la propria parte e documenta quando il nuovo comportamento diventa attivo.
 
 Sono obbligatori PostgreSQL reale per migrazioni e privilegi, webhook firmati per i confini, casi negativi di SQL e falsificazione, revoche e cambi di numero senza riavvio, osservazione delle richieste principali e ausiliarie e della cronologia, prove da database nuovo e con dati, backup/ripristino e isolamento delle chat al riuso del numero. I casi negativi di accesso non devono chiamare il modello. Le regressioni con OpenRouter reale e dati sintetici restano separate dal gate e dalla CI.
+
+## Operational recovery — TEC-043
+
+Il trasferimento della funzione e il cambio del numero della stessa persona restano fuori dalla chat. La procedura nell'immagine `ops` (`manager-transfer`, `manager-renumber`, `manager-recover`) è l'unico ingresso operativo:
+
+- il trasferimento richiede un destinatario già completo e abilitato e cambia solo la configurazione; l'ID e il telefono di entrambi restano;
+- il cambio numero usa una funzione del solo ruolo di migrazione, `operator_manager_change`, che conserva l'ID, incrementa la revisione e scrive un audit distinto da `change_phone`; il broker e il modello non hanno EXECUTE;
+- il recupero è LIFO sull'audit append-only `manager_role_changes` e riallinea il file segreto; non è un secondo censimento.
+
+Si è scartato un comando di anagrafica generale fuori dalla chat e un aggiornamento diretto della riga, che aggirerebbe revisione e audit. I vecchi file di allowlist e mapping non sono letti: la loro presenza blocca il comando. Le prove e i limiti sono in [TEC-043](../operations/TEC-043-prove.md).
 
 ## Consequences
 

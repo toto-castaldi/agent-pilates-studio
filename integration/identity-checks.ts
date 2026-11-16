@@ -84,6 +84,7 @@ export async function checkTeacherIdentities(
     'studio_private.identity_state(studio_private.teachers)', 'studio_private.require_identity_manager(text,text)',
     'studio_private.normalize_identity_phone(text)', 'studio_private.apply_teacher_creation()',
     'studio_private.protect_teacher_identity()',
+    'studio_private.operator_manager_change(text,text,text)', 'studio_private.operator_manager_recover()',
   ]) {
     assert.equal((await migrator.query("SELECT has_function_privilege('studio_broker', $1, 'EXECUTE') AS allowed", [signature])).rows[0].allowed, false);
   }
@@ -102,7 +103,7 @@ export async function checkTeacherIdentities(
   await migrator.query("INSERT INTO studio_private.teacher_identity_writes VALUES (pg_backend_pid(), txid_current(), 'enroll', NULL, NULL, '15555550120', 'Synthetic Guard')");
   await assert.rejects(migrator.query('COMMIT'), { code: '42501' });
   await assertClosed();
-  for (const relation of ['teachers', 'teacher_identity_changes', 'teacher_identity_writes']) {
+  for (const relation of ['teachers', 'teacher_identity_changes', 'teacher_identity_writes', 'manager_role_changes']) {
     for (const role of [agent, broker]) {
       await assert.rejects(role.query(`SELECT * FROM studio_private.${relation}`), { code: '42501' });
       await assert.rejects(role.query(`INSERT INTO studio_private.${relation} DEFAULT VALUES`), { code: '42501' });
@@ -470,4 +471,32 @@ export async function checkTeacherIdentities(
     assert.deepEqual(actual, recorded, 'Every current managed state must match its immutable audit');
   }
   await assertClosed();
+
+  // Operator transfer and renumber are distinct from chat. The broker and the
+  // model cannot invoke them; self revoke and self renumber stay forbidden.
+  const successorPhone = '+15555550123';
+  const managerPhoneNow = '+15555550120';
+  const peopleBefore = (await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers')).rows[0].n;
+  await assert.rejects(broker.query("SELECT studio_private.operator_manager_change('transfer', $1, $2)", [managerPhoneNow, successorPhone]), { code: '42501' });
+  await assert.rejects(agent.query("SELECT studio_private.operator_manager_change('renumber', $1, '+15555550129')", [managerPhoneNow]), { code: '42501' });
+  await assert.rejects(broker.query('SELECT studio_private.operator_manager_recover()'), { code: '42501' });
+  await assert.rejects(broker.query("SELECT * FROM studio_private.manage_teacher_identity($1, $2, 'change_phone', $3, NULL, NULL, '+15555550129')", [managerSender, managerPhoneNow, manager.id]), { code: '42501' });
+  await assert.rejects(broker.query("SELECT * FROM studio_private.manage_teacher_identity($1, $2, 'revoke', $3, NULL, NULL, NULL)", [managerSender, managerPhoneNow, manager.id]), { code: '42501' });
+  await migrator.query('BEGIN');
+  assert.equal((await migrator.query("SELECT studio_private.operator_manager_change('transfer', $1, $2) AS phone", [managerPhoneNow, successorPhone])).rows[0].phone, successorPhone);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers')).rows[0].n, peopleBefore);
+  const beforeRenumber = (await migrator.query('SELECT id, first_name, last_name, created_at, created_by_phone, created_by_name FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0];
+  assert.equal((await migrator.query("SELECT studio_private.operator_manager_change('renumber', $1, '+15555550129') AS phone", [managerPhoneNow])).rows[0].phone, '+15555550129');
+  assert.equal((await migrator.query('SELECT id FROM studio_private.teachers WHERE phone = $1', ['+15555550129'])).rows[0].id, manager.id);
+  assert.equal((await migrator.query("SELECT count(*)::int AS n FROM studio_private.resolve_teacher_identity('15555550120')")).rows[0].n, 0);
+  assert.deepEqual((await migrator.query('SELECT id, first_name, last_name, created_at, created_by_phone, created_by_name FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0], beforeRenumber);
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover() AS phone')).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query("SELECT id FROM studio_private.resolve_teacher_identity('15555550120')")).rows[0].id, manager.id);
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover() AS phone')).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE phone = $1', [successorPhone])).rows[0].phone, successorPhone);
+  await assert.rejects(migrator.query('SELECT studio_private.operator_manager_recover()'), { code: '02000' });
+  await migrator.query('ROLLBACK');
+  await assert.rejects(broker.query('SELECT * FROM studio_private.manager_role_changes'), { code: '42501' });
 }

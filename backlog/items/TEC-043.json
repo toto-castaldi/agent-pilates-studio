@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-043-transizione-operativa-identita-unica",
   "dependencies": [
     "TEC-042"
@@ -65,5 +65,7 @@
   ],
   "remarks": [
     "Quarto e ultimo item del piano concordato il 2026-11-12 per la v0.3.0: TEC-041 → US-017 → TEC-042 → questa verifica operativa. I singoli item mantengono i propri obblighi di test; questo item copre integrazione e recupero complessivi. L'aggiunta documentale non autorizza aggiornamenti della produzione e usa soltanto la deroga esplicita per lasciare .pi/settings.json locale, intatto e fuori dai commit."
-  ]
+  ],
+  "outcome": "Procedura operativa di trasferimento e cambio numero del gestore, con recupero, verificata su stack isolati insieme a snapshot, database vuoto, backup e conferma interrotta. Suite richieste passate; il primo test:author parallelo ha avuto un bootstrap fallito poi rieseguito. Catalogo OpenRouter unico: 49/56 OK, 7 ERRORE di cui due con stato database non conforme, non riclassificati. Meta reale e produzione non verificati.",
+  "closed_at": "2026-11-16"
 }
