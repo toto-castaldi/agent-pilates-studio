@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-042-riconoscimento-unico-del-mittente",
   "dependencies": [
     "TEC-041",
@@ -60,5 +60,7 @@
   ],
   "remarks": [
     "Terzo dei quattro item concordati il 2026-11-12. Dipende dalla base additiva TEC-041 e dal percorso guidato US-017 per evitare un passaggio che lasci il gestore senza modo di completare le identità. La prova operativa completa di aggiornamento/backup è nell'item successivo, senza rimandare i test necessari a questi criteri. La sola aggiunta documentale lascia .pi/settings.json locale e intatto sulla base della deroga esplicita dell'utente."
-  ]
+  ],
+  "outcome": "Attivati gateway e broker sull'anagrafica unica: accesso, nome, io e autore dal database; rifiuti fissi; telefoni fuori dal modello; isolamento di chat e sessioni archiviate; follow-up in coda dopo revoca o cambio numero non raggiungono il modello. Catalogo reale: i casi di identità unica richiesti sono OK; otto scenari lessicali restano ERRORE con database conforme, senza deroga TEC-046. Transizione operativa in TEC-043.",
+  "closed_at": "2026-11-16"
 }

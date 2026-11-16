@@ -46,7 +46,7 @@ Le integrazioni riportate sono separate dal gate rapido; i comandi `node --test`
 | `node --test dist/integration/upgrade.test.js` | 1/1. |
 | `node --test dist/integration/start-local.test.js` | 1/1, compresi ricreazione dei volumi sintetici e cambio della configurazione. |
 | Suite immagini e backup a caldo | 2/2. |
-| `npm run test:author` | 3/3 (autore, gestione e home), nessun test saltato, su `975eef5`; passata anche la ripetizione isolata di `author.test.ts` dopo aver selezionato esplicitamente le richieste principali. Durante la suite home sono comparsi tre dinieghi di lettura di `/proc/*/environ`; nessun valore è stato stampato e la suite è passata. |
+| `npm run test:author` | 4/4 (due test autore, gestione e home), incluso `queued follow-ups do not keep a revoked or reassigned identity`. Durante la suite home sono comparsi tre dinieghi di lettura di `/proc/*/environ`; nessun valore è stato stampato e la suite è passata. |
 
 Pi, pacchetto Pi e Claude Code non sono modificati dall'item e non sono stati rieseguiti qui; tutte le suite restano obbligatorie in CI e alla chiusura di versione.
 
@@ -56,7 +56,14 @@ Pi, pacchetto Pi e Claude Code non sono modificati dall'item e non sono stati ri
 - Prima esecuzione del catalogo interrotta: diversi scenari con insegnanti preparati fallivano sul controllo dello stato iniziale, prima del turno. Il controllo contava soltanto l'identità del mittente e non gli insegnanti censiti dalla fixture. Corretto il conteggio in `e0b4263`, senza modificare le attese dei turni; le esecuzioni fallite restano tali. La stessa correzione rimuove, nella pulizia, anche l'immagine PostgreSQL del singolo progetto casuale.
 - Ripetizione integrale su `e0b4263` conclusa: 48 scenari OK, 8 ERRORE sul contenuto lessicale della risposta, `exit 1`. SOUL SHA-256: `9cb47f31926cd277f008ff11173f7a9d1a6aa4959588b70ca88821a4aa898ae6`; catalogo SHA-256: `321ea338dbc3ebba6470cd15b8b5e8cfa1424bd340706a79312eb0fc28290555`.
 - Casi di identità unica richiesti dal criterio: `insegnanti-io-nome-censito`, `insegnante-sconosciuto-indicazione`, `insegnante-sconosciuto-regola`, `autore-non-dichiarato`, `nessun-profilo-saluto`, `nessun-profilo-richiesta`, `nessun-profilo-nome-assente` — tutti OK, con database e storico confrontati.
-- Fallimenti lessicali, tutti con database e storico conformi: `indicazione-correzione-annullamento` (turno 6), `insegnanti-cognome-e-riconoscimento` (turno 5), `assenza-anticipata-singola-annullamento` (turno 4), `assenze-attesi-presenze` (turno 5), `presenze-data-odierna` (turno 1), `presenze-nomi-duplicato-futuro` (turno 1), `disattivazione-esplicita-storico` (turno 3), `aggiornamento-implicito` (turno 3). Il controllo lessicale non è stato allentato; la causa non è accertata e non si dichiara che le risposte siano semanticamente corrette.
+- Fallimenti lessicali originali, tutti con database e storico conformi; i testi delle risposte non sono conservati dall'harness. Analisi della sola diagnostica già raccolta, senza riesecuzione del catalogo e senza allentare i matcher:
+  - `indicazione-correzione-annullamento` T6: atteso un riconoscimento di assenza di indicazione (`già`/`nessun`/…); diagnostica con nomi e orari, domanda rispettata, insegnante 1 citato.
+  - `insegnanti-cognome-e-riconoscimento` T5: attesa domanda sul cognome; diagnostica breve (30), entrambi gli insegnanti citati, nessuna domanda accessoria.
+  - `assenza-anticipata-singola-annullamento` T4: atteso rifiuto di presenza futura; diagnostica con rifiuto e riferimento temporale riconosciuti.
+  - `assenze-attesi-presenze` T5: attesa domanda su Ada e Bruno; diagnostica con nomi e menzione registrazione, nessuna domanda accessoria.
+  - `presenze-data-odierna` T1 e `presenze-nomi-duplicato-futuro` T1: atteso il riconoscimento di non atteso/extra; diagnostica con nomi, orari e menzione registrazione.
+  - `disattivazione-esplicita-storico` T3 e `aggiornamento-implicito` T3: attesi nomi dell'insegnante e dell'autore nello storico; diagnostica `nomi mancanti`.
+  Nessuno di questi otto è un caso del criterio 9 (nome censito, identità falsa, «io», autore di sistema, insegnante sconosciuto). Quei casi restano OK. Non si dichiara che le otto risposte siano corrette: restano ERRORE.
 - Il confronto completo prima/dopo sul contesto precedente non è stato eseguito. Le prove precedenti documentate in TEC-046 non sono un confronto controllato con lo stesso catalogo aggiornato e non costituiscono una deroga applicabile a questo item.
 
 ## Development failures and corrections
@@ -70,9 +77,10 @@ Pi, pacchetto Pi e Claude Code non sono modificati dall'item e non sono stati ri
 ## Limits and outstanding verification
 
 - Gli adattamenti usano punti interni della versione Hermes fissata: aggiornare l'immagine richiede di ripetere le prove dei confini, dei tool, delle sessioni e delle richieste ausiliarie.
-- I turni già avviati non vengono interrotti da una revoca; il binding delle successive operazioni SQL rifiuta la revisione superata. I percorsi busy/steering nativi non sono coperti da una prova di coda revocata: non si dichiara dimostrata l'assenza di ogni riuso di un messaggio accodato prima della conferma.
+- I turni già avviati non vengono interrotti da una revoca; il binding delle successive operazioni SQL rifiuta la revisione superata. Lo steering nativo inietta testo nel turno in corso senza un nuovo controllo di ammissione: è lo stesso limite dei turni già avviati.
+- Prova mirata `queued follow-ups do not keep a revoked or reassigned identity` in `author.test.ts`: con `busy_input_mode: queue`, un follow-up ammesso durante `skill-probe-busy` e poi revocato o con numero cambiato non compare nelle osservazioni del modello (attesa 20 s dopo la conferma). Non è una prova dello steering in-turno.
 - Una regressione con webhook firmati ha mostrato che `/sessions` elencava il titolo di una sessione del proprietario precedente dopo il riuso del numero: il controllo nativo confronta la chat WhatsApp, non la persona. È stato aggiunto `studio_private.session_owners`, un legame immutabile sessione–insegnante, verificato prima dei turni e per elenco/recupero. La prova copre elenco negato, recupero negato e recupero della propria sessione; gli archivi SQLite non sono cancellati e restano nei backup.
 - La redazione protegge numeri noti al database e prefissi internazionali riconosciuti nelle copie verso il modello; non riconosce ogni codifica arbitraria o dato personale scritto fuori dal percorso gestionale. Volumi, audit e backup restano privati, non anonimi.
 - Le risposte fisse e gestionali sono inviate best effort dopo la decisione committata dal broker; un errore di consegna non riapre la conferma e un retry dello stesso webhook non risponde due volte.
 - La validazione del telefono è strutturale; non certifica l'assegnazione della linea o l'iscrizione sul numero di test Meta. Restano invariati i limiti e il rischio privacy del proxy documentati in TEC-008.
-- Non è ancora attestata la soddisfazione completa della DoD: esecuzione reale in corso, fallimenti conversazionali, confronto precedente/nuovo mancante e limiti delle code/archivi sopra. Nessuna deroga di TEC-046 viene estesa alla TEC-042.
+- Gli otto ERRORE lessicali del catalogo restano tali e non sono riclassificati. Il confronto prima/dopo del catalogo non è stato eseguito. Nessuna deroga di TEC-046 viene estesa alla TEC-042.

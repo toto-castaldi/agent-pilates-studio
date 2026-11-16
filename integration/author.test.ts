@@ -629,3 +629,105 @@ test('database identities admit WhatsApp senders and bind authors through the is
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('queued follow-ups do not keep a revoked or reassigned identity', { timeout: 300_000 }, async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'pilates-author-queue-'));
+  const project = `pilates-q-${randomBytes(8).toString('hex')}`;
+  const secrets: Record<string, string> = {
+    'db-admin': randomBytes(32).toString('hex'),
+    'db-migrator': randomBytes(32).toString('hex'),
+    'db-agent': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'),
+    'bridge-token': randomBytes(32).toString('hex'),
+    'openrouter-key': 'synthetic-model-token',
+    'whatsapp-access-token': 'synthetic-access-token',
+    'whatsapp-app-secret': 'synthetic-app-secret',
+    'whatsapp-verify-token': 'synthetic-verify-token',
+    'whatsapp-manager-phone': '+15555550102',
+    'whatsapp-phone-number-id': '123456789012345',
+  };
+  const override = join(directory, 'override.yaml');
+  const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', PILATES_MODEL: 'synthetic/test-model' };
+  const compose = (...args: string[]) => execFileSync('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, ...args], { env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
+  const clients: Client[] = [];
+  try {
+    await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
+    const config = (await readFile('hermes/config.yaml', 'utf8')).replace('display:\n', 'display:\n  busy_input_mode: queue\n  busy_text_mode: queue\n');
+    await writeFile(join(directory, 'config.yaml'), config);
+    await writeFile(override, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  meta-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/meta_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/meta_stub.py')}:/meta_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\n    volumes:\n      - ${JSON.stringify(`${resolve('scenarios/gateway-launcher.sh')}:/opt/hermes/libexec/hermes:ro`)}\n      - ${JSON.stringify(`${join(directory, 'config.yaml')}:/opt/data/config.yaml:ro`)}\nnetworks:\n  default:\n    internal: true\n`);
+    compose('build', 'hermes');
+    compose('up', '-d', '--wait', 'postgres');
+    compose('run', '--rm', 'db-bootstrap');
+    const address = (service: string) => {
+      const id = compose('ps', '-q', service).trim();
+      const host = execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', id], { encoding: 'utf8' }).trim();
+      assert.ok(host);
+      return host;
+    };
+    const databaseHost = address('postgres');
+    const migrationUrl = new URL(`postgresql://${databaseHost}:5432/studio?schema=public`);
+    migrationUrl.username = 'studio_migrator';
+    migrationUrl.password = secrets['db-migrator'];
+    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'],
+      { env: { ...env, DATABASE_URL: migrationUrl.toString() }, stdio: 'pipe', timeout: 90_000 });
+    const ids = await seedIdentities({ host: databaseHost, password: secrets['db-broker'] },
+      { first: 'alpha', last: 'SyntheticInstructor', phone: '15555550102' },
+      [{ first: 'beta', last: 'SyntheticInstructor', phone: '15555550103' }]);
+    const broker = await (async () => {
+      const client = new Client({ host: address('postgres'), port: 5432, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
+      await client.connect();
+      clients.push(client);
+      return client;
+    })();
+    compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'meta-stub', 'hermes');
+    execFileSync('docker', ['exec', compose('ps', '-q', 'hermes').trim(), '/opt/hermes/.venv/bin/python', '-c',
+      "from pathlib import Path; assert 'busy_input_mode: queue' in Path('/opt/data/config.yaml').read_text()"], { stdio: 'pipe' });
+    const gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
+    const observationsUrl = `http://${address('model-stub')}:8088/v1/observations`;
+    type Observation = { user: string; has_studio_tool: boolean };
+    const body = (sender: string, id: string, text: string) => JSON.stringify({
+      object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
+        metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] }, contacts: [{ wa_id: sender, profile: { name: 'WhatsAppProfile' } }],
+        messages: [{ from: sender, id, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: text } }],
+      } }] }],
+    });
+    const signed = (payload: string) => `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(payload).digest('hex')}`;
+    const gatewayPost = (payload: string) => fetch(gateway, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': signed(payload), Connection: 'close' } });
+    const waitObservation = async (predicate: (entry: Observation) => boolean) => {
+      for (let i = 0; i < 90; i++) {
+        const entries = await (await fetch(observationsUrl)).json() as Observation[];
+        const match = entries.find(predicate);
+        if (match) return match;
+        await delay(1000);
+      }
+      assert.fail('Timed out waiting for synthetic model request');
+    };
+    const manage = (operation: string, id: string | null, phone: string | null) =>
+      broker.query('SELECT * FROM studio_private.manage_teacher_identity($1,$2,$3,$4,$5,$6,$7)',
+        ['15555550102', '+15555550102', operation, id, null, null, phone]);
+    const noneReached = async (marker: string, reason: string) => {
+      const entries = await (await fetch(observationsUrl)).json() as Observation[];
+      assert.ok(entries.every((entry) => !entry.user.includes(marker)), reason);
+    };
+
+    assert.equal((await gatewayPost(body('15555550103', 'synthetic-queue-busy', 'skill-probe-busy hist-beforebusyrevocation'))).status, 200);
+    await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-beforebusyrevocation'));
+    assert.equal((await gatewayPost(body('15555550103', 'synthetic-queue-revoke', 'context-probe hist-stalequeued'))).status, 200);
+    await manage('revoke', ids['15555550103'], null);
+    await delay(20_000);
+    await noneReached('hist-stalequeued', 'a queued message reached the model after revocation');
+
+    await manage('enable', ids['15555550103'], null);
+    assert.equal((await gatewayPost(body('15555550103', 'synthetic-queue-busy-2', 'skill-probe-busy hist-beforebusychange'))).status, 200);
+    await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-beforebusychange'));
+    assert.equal((await gatewayPost(body('15555550103', 'synthetic-queue-change', 'context-probe hist-stalechanged'))).status, 200);
+    await manage('change_phone', ids['15555550103'], '+15555550106');
+    await delay(20_000);
+    await noneReached('hist-stalechanged', 'a queued message reached the model after a number change');
+  } finally {
+    for (const client of clients) await client.end().catch(() => {});
+    try { compose('down', '-v', '--remove-orphans'); } catch { /* best effort */ }
+    try { execFileSync('docker', ['image', 'rm', `${project}-hermes`], { stdio: 'pipe' }); } catch { /* best effort */ }
+    await rm(directory, { recursive: true, force: true });
+  }
+});
