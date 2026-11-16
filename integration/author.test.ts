@@ -36,7 +36,7 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
   const clients: Client[] = [];
   try {
     await Promise.all(Object.entries(secrets).map(([name, value]) => writeFile(join(directory, name), value, { mode: 0o600 })));
-    await writeFile(join(directory, 'config.yaml'), await readFile('hermes/config.yaml'));
+    await writeFile(join(directory, 'config.yaml'), `${await readFile('hermes/config.yaml', 'utf8')}\nquick_commands:\n  synthetic-alias:\n    type: alias\n    target: /studio-presenze\n  synthetic-native:\n    type: alias\n    target: /help\n`);
     const soulPath = join(directory, 'SOUL.md');
     const soul = await readFile('hermes/SOUL.md', 'utf8');
     await writeFile(soulPath, `${soul}\nCONTEXT_VERSION_A\n`);
@@ -63,9 +63,12 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     };
     const migrator = await connect('studio_migrator', secrets['db-migrator']);
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'hermes');
+    const initialGatewayId = compose('ps', '-q', 'hermes').trim();
+    execFileSync('docker', ['exec', initialGatewayId, '/opt/hermes/.venv/bin/python', '-c',
+      "from pathlib import Path; p=Path('/opt/data/skill-bundles'); p.mkdir(exist_ok=True); (p/'synthetic-bundle.yaml').write_text('name: synthetic-bundle\\nskills: [studio-presenze, apple-reminders]\\n')"], { stdio: 'pipe' });
     let gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const observationsUrl = `http://${address('model-stub')}:8088/v1/observations`;
-    type Observation = { user: string; system: string; last_role: string; has_studio_tool: boolean; has_sender_number: boolean; tool_contents: string[] };
+    type Observation = { user: string; system: string; last_role: string; has_studio_tool: boolean; has_sender_number: boolean; tool_contents: string[]; tools: string[] };
     const waitObservation = async (predicate: (entry: Observation) => boolean) => {
       for (let i = 0; i < 90; i++) {
         const entries = await (await fetch(observationsUrl)).json() as Observation[];
@@ -86,6 +89,15 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
     const gatewayPost = (payload: string, signature = signed(payload)) => fetch(gateway, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json', 'X-Hub-Signature-256': signature, Connection: 'close' } });
     const evidence = (payload: string, signature = signed(payload), token = secrets['bridge-token']) => fetch(`${broker}/v1/evidence`, { method: 'POST', body: payload, headers: { 'X-Pilates-Bridge': token, 'X-Hub-Signature-256': signature } });
     const claim = (data: object, token = secrets['bridge-token']) => fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': token }, body: JSON.stringify(data) });
+    // Skill commands must not create a session/model turn, including aliases,
+    // bundled Hermes skills, underscore/Telegram variants and stacked commands.
+    const skillCommands = ['/studio-presenze', '/studio_presenze@synthetic', '/studio-presenze /studio-regole-clienti',
+      '/apple-reminders', '/synthetic-bundle', '/synthetic-alias'];
+    for (const [index, command] of skillCommands.entries()) {
+      assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', `skill-new-${index}`, command))).status, 200);
+    }
+    await delay(3000);
+    assert.deepEqual(await (await fetch(observationsUrl)).json(), [], 'skill command reached a model on a new session');
     // A fresh install must not inject Hermes' opt-in profile-build directive,
     // regardless of the model following SOUL correctly in a particular run.
     const firstContact = body('15555550102', 'Synthetic Alpha', 'synthetic-first-contact', 'context-probe-first-contact +1 (555) 555-0102');
@@ -109,6 +121,31 @@ test('authenticated WhatsApp turns bind authors through the isolated broker', { 
       await delay(2000);
     };
     await sideProbe('warm');
+    for (const command of skillCommands) {
+      assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', `skill-existing-${command}`, command))).status, 200);
+    }
+    await delay(2000);
+    let skillObservations = await (await fetch(observationsUrl)).json() as Observation[];
+    assert.ok(skillObservations.every((entry) => !skillCommands.some((command) => entry.user.includes(command))), 'skill command reached existing session model');
+    assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', 'skill-internal', 'skill-probe-busy'))).status, 200);
+    const skillRequest = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('skill-probe-busy'));
+    assert.deepEqual(skillRequest.tools.sort(), ['skill_view', 'studio_sql_query']);
+    assert.equal(skillRequest.system.includes("fix it with skill_manage"), false);
+    assert.equal(skillRequest.system.includes('offer to save as a skill'), false);
+    assert.ok(skillRequest.system.includes('studio-presenze'));
+    for (const [index, command] of skillCommands.entries()) {
+      assert.equal((await gatewayPost(body('15555550102', 'Synthetic Alpha', `skill-busy-${index}`, command))).status, 200);
+    }
+    const loaded = await waitObservation((entry) => entry.user.includes('skill-probe-busy') && entry.last_role === 'tool');
+    assert.ok(loaded.tool_contents.some((text) => text.includes('Quando comunicano chi era presente')),
+      'internal skill_view did not load the versioned skill');
+    assert.ok(loaded.tool_contents.some((text) => text.includes('"existing"') && text.includes('"teachers"') && !text.includes('"error"')),
+      'lesson functions failed through the real SQL tool with text parameters');
+    assert.ok(loaded.tool_contents.filter((text) => /not permitted|does not exist/i.test(text)).length >= 6,
+      JSON.stringify(loaded.tool_contents.map((text) => text.includes('Quando comunicano chi era presente') ? '[loaded skill]' : text)));
+    await delay(2000);
+    skillObservations = await (await fetch(observationsUrl)).json() as Observation[];
+    assert.ok(skillObservations.every((entry) => !skillCommands.some((command) => entry.user.includes(command))), 'skill command reached busy session model');
     const alpha = body('15555550102', 'Synthetic Alpha', 'synthetic-wamid-alpha', 'alpha');
     const beta = body('15555550103', 'Synthetic Beta', 'synthetic-wamid-beta', 'beta');
     assert.equal((await evidence(alpha, signed(alpha), 'wrong-token')).status, 403);

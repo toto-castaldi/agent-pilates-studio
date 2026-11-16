@@ -169,7 +169,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     ], { encoding: 'utf8', stdio: 'pipe', timeout: 90_000 });
     const tool = JSON.parse(result) as { loaded: boolean; enabled: string[]; untrusted: { error?: string }; model: { default: string; provider: string }; results: Array<{ rows?: Array<Record<string, unknown>>; status?: string; sqlstate?: string }> };
     assert.equal(tool.loaded, true);
-    assert.deepEqual(tool.enabled, ['studio-postgres']);
+    assert.deepEqual(tool.enabled, ['skills', 'studio-postgres']);
     assert.equal(tool.untrusted.error, 'An authenticated WhatsApp turn is required.');
     assert.equal(tool.model.default, env.PILATES_MODEL);
     assert.equal(tool.model.provider, 'openrouter');

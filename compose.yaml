@@ -128,6 +128,11 @@ services:
         target: /opt/data/plugins/pilates-postgres
         image:
           subpath: opt/pilates/release/plugins/pilates-postgres
+      - type: image
+        source: *hermes-image
+        target: /opt/data/skills
+        image:
+          subpath: opt/pilates/release/skills
     tmpfs:
       - /run/pilates-agent:mode=0700
     logging:

@@ -18,6 +18,8 @@ Le fixture storiche (regole dei clienti e degli insegnanti con date sintetiche d
 
 ## Confronti
 
+Per cambiamenti delle fonti di istruzioni si esegue l'intero catalogo sul contesto precedente e su quello nuovo, con lo stesso modello e dati sintetici, registrando revisione, testi, esiti per scenario e instabilità già presenti. Il limite del nucleo e le prove con modello deterministico non sostituiscono questo confronto. Credenziali e ulteriori esecuzioni reali richiedono autorizzazione esterna.
+
 - Dopo ogni turno si confronta l'intero snapshot dei dati applicativi e lo storico, anche se il testo della risposta fallisce: date, autori, associazioni cliente/slot (ammettendo scomposizioni diverse senza mancanze o duplicati), copertura degli intervalli degli insegnanti minuto per minuto, presenze e indicazioni anche annullate, con istanti, annullamento unico e motivo. Lo storico tra turni ammette solo la prima transizione ad annullato e rifiuta riscritture o cancellazioni.
 - Nei turni statistici il launcher di prova intercetta nel processo gateway le sole esecuzioni SQL riuscite e invia al sostituto Meta un marcatore fisso se la query contiene lessicalmente una funzione aggregata; l'harness richiede un incremento per ogni turno indicato. Il controllo non interpreta SQL né dimostra che il risultato sia usato nella risposta.
 - Le risposte sono verificate con indicatori lessicali (domande, orari, conteggi vicini agli indicatori, nome dell'agente, assenza di proposte di profilo), non per significato completo: il comportamento resta dipendente dal modello.

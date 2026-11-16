@@ -1,5 +1,6 @@
 """Deterministic OpenAI-compatible model for isolated author-attribution tests."""
 
+import asyncio
 import json
 import re
 from aiohttp import web
@@ -28,10 +29,24 @@ async def chat(request):
     wire = json.dumps(body, ensure_ascii=False)
     observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None,
                          'has_studio_tool': has_studio_tool,
+                         'tools': [tool.get('function', {}).get('name') for tool in body.get('tools', [])],
                          'has_sender_number': any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)
                                                   for number in ('15555550102', '15555550103', '15555550104', '15555550105')),
-                         'tool_contents': [str(item.get('content', '')) for item in messages if item.get('role') == 'tool'] if 'sender-probe-' in last_user else []})
-    if 'context-probe' in last_user or not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
+                         'tool_contents': [str(item.get('content', '')) for item in messages if item.get('role') == 'tool'] if 'sender-probe-' in last_user or 'skill-probe' in last_user else []})
+    if 'skill-probe-busy' in last_user and messages[-1].get('role') == 'user':
+        await asyncio.sleep(12)
+    if 'skill-probe' in last_user and has_studio_tool and messages[-1].get('role') != 'tool':
+        calls = [{'id': 'skill-read', 'type': 'function', 'function': {'name': 'skill_view',
+                  'arguments': json.dumps({'name': 'studio-presenze'})}}]
+        for i, action in enumerate(('create', 'patch', 'delete', 'write_file', 'install')):
+            calls.append({'id': f'skill-write-{i}', 'type': 'function', 'function': {'name': 'skill_manage',
+                'arguments': json.dumps({'action': action, 'name': 'studio-presenze', 'content': 'TAMPERED'})}})
+        calls.append({'id': 'lesson-functions', 'type': 'function', 'function': {'name': 'studio_sql_query',
+                      'arguments': json.dumps({'query': 'SELECT (SELECT count(*) FROM app.existing_lessons($1::text::date,$2::text::date)) AS existing, (SELECT count(*) FROM app.expected_clients($1::text::date,$2::text::date)) AS expected, (SELECT count(*) FROM app.lesson_teachers($1::text::date,$2::text::date)) AS teachers', 'parameters': ['2026-03-01', '2026-03-31']})}})
+        calls.append({'id': 'skill-install-shell', 'type': 'function', 'function': {'name': 'terminal',
+                      'arguments': json.dumps({'command': 'touch /opt/data/skills/TAMPERED'})}})
+        choice = {'index': 0, 'message': {'role': 'assistant', 'content': None, 'tool_calls': calls}, 'finish_reason': 'tool_calls'}
+    elif 'context-probe' in last_user or not body.get('tools') or (messages and messages[-1].get('role') == 'tool'):
         choice = {'index': 0, 'message': {'role': 'assistant', 'content': 'Completato.'}, 'finish_reason': 'stop'}
     else:
         last = next((str(item.get('content', '')) for item in reversed(messages) if item.get('role') == 'user'), '')

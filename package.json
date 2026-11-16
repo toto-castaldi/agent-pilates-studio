@@ -31,7 +31,7 @@
     "voice:diagnose": "node scripts/voice-diagnose.mjs",
     "voice:setup": "bash scripts/voice-server-setup.sh",
     "proxy:audit": "node scripts/proxy-audit.mjs",
-    "build": "npm run clean --silent && tsc"
+    "build": "npm run clean --silent && tsc && node scripts/embed-agent-context.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5",

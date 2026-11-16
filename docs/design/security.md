@@ -25,6 +25,10 @@ Riassunti e cronologia compattata restano nel volume SQLite di Hermes come le co
 
 I test sintetici non dimostrano l'assenza di ogni possibile fuga.
 
+## Skill interne
+
+Le skill sono testo statico versionato senza dati personali; dopo `skill_view` restano nella cronologia e nei backup SQLite e possono transitare verso OpenRouter. Il mount dall'immagine è in sola lettura, nasconde le skill preinstallate e impedisce sostituzione o aggiunta anche se il processo possiede la directory superiore. Registro e dispatcher escludono gestione, installazione e scrittura delle skill; gli altri toolset restano disabilitati. Il caricatore non-tool è neutralizzato e il gateway rifiuta comandi di skill, varianti, pile, bundle e destinazioni di alias prima del turno del modello, anche nel percorso busy. Non è un filtro di prompt né un limite agli altri comandi nativi; `/refine` e `/review` restano invariati. Gli adattamenti sono specifici della versione Hermes fissata e richiedono prove reali a ogni aggiornamento (ADR-004).
+
 ## Accesso
 
 L'accesso al database è limitato con ruoli distinti (`invariants`); l'integrazione WhatsApp autentica le richieste e applica l'autorizzazione dei mittenti (`webhook-trust`, `identity`).

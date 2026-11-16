@@ -63,7 +63,7 @@ test('stack runs from images alone and each image provides its own read-only rel
     const soul = await readFile('hermes/SOUL.md', 'utf8');
     assert.equal(inContainer(first, 'cat /opt/data/SOUL.md'), soul);
     const mounts = JSON.parse(execFileSync('docker', ['inspect', '--format', '{{json .Mounts}}', first], { encoding: 'utf8' })) as { Type: string; Source?: string; Destination: string; RW: boolean }[];
-    for (const target of ['/opt/data/SOUL.md', '/opt/data/config.yaml', '/opt/data/plugins/pilates-postgres']) {
+    for (const target of ['/opt/data/SOUL.md', '/opt/data/config.yaml', '/opt/data/plugins/pilates-postgres', '/opt/data/skills']) {
       const mount = mounts.find((entry) => entry.Destination === target);
       assert.equal(mount?.Type, 'image', target);
       assert.equal(mount?.RW, false, target);
@@ -72,16 +72,22 @@ test('stack runs from images alone and each image provides its own read-only rel
     assert.deepEqual(mounts.filter((entry) => entry.Type === 'bind' && !entry.Destination.startsWith('/run/secrets/')), []);
     assert.throws(() => inContainer(first, 'echo tampered >> /opt/data/SOUL.md'));
     assert.throws(() => inContainer(first, 'mv /opt/data/SOUL.md /opt/data/SOUL.old'));
+    const skill = await readFile('hermes/skills/studio-presenze/SKILL.md', 'utf8');
+    assert.equal(inContainer(first, 'cat /opt/data/skills/studio-presenze/SKILL.md'), skill);
+    for (const command of ['echo tampered >> /opt/data/skills/studio-presenze/SKILL.md',
+      'touch /opt/data/skills/TAMPERED', 'mv /opt/data/skills /opt/data/old-skills',
+      'rm /opt/data/skills/studio-presenze/SKILL.md']) assert.throws(() => inContainer(first, command));
     inContainer(first, 'echo synthetic-volume-marker > /opt/data/images-probe');
 
     // A new image must reach an existing volume, which keeps its own state.
-    await writeFile(join(directory, 'Dockerfile.updated'), `FROM ${hermes}\nRUN echo SYNTHETIC_UPDATED_SOUL >> /opt/pilates/release/SOUL.md\n`);
+    await writeFile(join(directory, 'Dockerfile.updated'), `FROM ${hermes}\nRUN echo SYNTHETIC_UPDATED_SOUL >> /opt/pilates/release/SOUL.md && echo SYNTHETIC_UPDATED_SKILL >> /opt/pilates/release/skills/studio-presenze/SKILL.md\n`);
     execFileSync('docker', ['build', '-f', join(directory, 'Dockerfile.updated'), '-t', updated, directory], { stdio: 'pipe', timeout: 300_000 });
     compose(updated, 'up', '-d', '--no-build', '--no-deps', '--force-recreate', '--wait', 'hermes');
     const second = compose(updated, 'ps', '-q', 'hermes').trim();
     assert.notEqual(second, first);
     assert.match(inContainer(second, 'cat /opt/data/SOUL.md'), /SYNTHETIC_UPDATED_SOUL/);
     assert.match(inContainer(second, 'cat /opt/data/images-probe'), /synthetic-volume-marker/);
+    assert.match(inContainer(second, 'cat /opt/data/skills/studio-presenze/SKILL.md'), /SYNTHETIC_UPDATED_SKILL/);
   } finally {
     try { compose(hermes, 'down', '--volumes', '--remove-orphans'); } catch { /* best effort */ }
     try { execFileSync('docker', ['image', 'rm', '-f', hermes, postgres, updated], { stdio: 'ignore' }); } catch { /* best effort */ }

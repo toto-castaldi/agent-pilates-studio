@@ -9,6 +9,7 @@ import { Client } from 'pg';
 import { checkAttendance } from './attendance-checks.js';
 import { checkTeacherIdentities } from './identity-checks.js';
 import { checkTeachers } from './teacher-checks.js';
+import { checkLessonFunctions } from './lesson-checks.js';
 
 test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-db-test-'));
@@ -158,6 +159,13 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       await assert.rejects(otherAgent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'OtherConnection')"), { code: '42501' });
     } finally { await otherAgent.end(); }
     await agent.query('COMMIT');
+    const lessonAdmin = new Client({ ...connection, user: 'studio_admin', password: passwords.admin });
+    await lessonAdmin.connect();
+    try {
+      await checkLessonFunctions(lessonAdmin);
+    } finally {
+      await lessonAdmin.end();
+    }
     await checkAttendance(agent, migrator, client.rows[0].id as string);
     await checkTeachers(agent, migrator, { ...connection, user: 'studio_agent', password: passwords.agent });
     // The lookup is available only to the broker; the agent receives an ID

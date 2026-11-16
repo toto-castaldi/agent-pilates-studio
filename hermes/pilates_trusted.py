@@ -96,6 +96,8 @@ async def send_evidence(request):
 
 
 def install():
+    from pilates_skills import install as install_skills
+    install_skills()
     from gateway.config import Platform
     from gateway.run_turn_runner import TurnRunner
     from gateway.session_api_turn import api_execution
@@ -191,7 +193,7 @@ def install():
     original_resolve = executor._resolve_sequential_dispatch
 
     def resolve(agent, ref, messages):
-        if ref.name != 'studio_sql_query':
+        if ref.name not in ('studio_sql_query', 'skill_view'):
             return executor._SequentialDispatch(lambda args: '{"error":"Tool not permitted."}')
         return original_resolve(agent, ref, messages)
 
@@ -199,7 +201,7 @@ def install():
     original_worker = executor._ConcurrentBatch._dispatch_worker
 
     def worker(batch, index, ref, scope_block, start_gate):
-        if ref.name != 'studio_sql_query':
+        if ref.name not in ('studio_sql_query', 'skill_view'):
             start_gate.advance()
             return executor._ToolOutcome(ref, '{"error":"Tool not permitted."}', 0.0, True, False)
         return original_worker(batch, index, ref, scope_block, start_gate)

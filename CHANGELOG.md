@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
+- Contesto dell'assistente suddiviso in un nucleo `SOUL.md` entro 15.000 caratteri e sei skill interne versionate di sola lettura, con ricostruzioni delle lezioni affidate a funzioni SQL. Le skill si caricano solo tramite `skill_view`: i comandi WhatsApp di caricamento e le relative varianti sono rifiutati dal gateway, senza cambiare gli altri comandi slash (TEC-046).
 - Consultazioni conversazionali per insegnante: chi ha tenuto o terrà una lezione distinguendo insegnante atteso, indicazione e sostituzione, lezioni tenute, in sostituzione e sostituite da altri con i presenti e conteggi dal database, lezioni senza insegnante, regole attive e storico, verificate con scenari sintetici e fixture storiche (US-015).
 - Audit privacy ripetibile dei log del proxy con `npm run proxy:audit`: marcatori sintetici su produzione e sviluppo, controlli in sola lettura di tunnel, journal e syslog e metadati Cloudflare in sola lettura. È documentato che Cloudflare conserva per 31-32 giorni la query string, compreso il verify token delle verifiche Meta, insieme ai limiti residui; adottata la procedura del verify token monouso per le verifiche future (TEC-008).
 - Manifest `.pi/workflow.json` e launcher `node scripts/start-pi.mjs` per Pi e futuri worker: settings locale persistente con modello, thinking, temi e preferenze preservati, transizione privata e verifiche sintetiche (TEC-045).

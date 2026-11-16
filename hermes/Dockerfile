@@ -6,12 +6,13 @@ COPY --chmod=0755 hermes/entrypoint.sh /opt/pilates/entrypoint.sh
 COPY --chmod=0755 hermes/broker-entrypoint.sh /opt/pilates/broker-entrypoint.sh
 COPY --chmod=0644 hermes/author_broker.py hermes/identity_management.py hermes/identity-flow-runner.mjs /opt/pilates/
 COPY --chmod=0644 src/identity-flow.ts src/teacher-identity.ts /opt/pilates/
-COPY --chmod=0644 hermes/pilates_trusted.py /opt/hermes/pilates_trusted.py
+COPY --chmod=0644 hermes/pilates_trusted.py hermes/pilates_skills.py /opt/hermes/
 COPY --chmod=0644 scripts/compaction-policy.mjs /opt/pilates/compaction-policy.mjs
 COPY --chmod=0644 hermes/compaction-settings.mjs /opt/pilates/compaction-settings.mjs
 # Created first: COPY --chmod would also apply to directories it creates.
 RUN mkdir -p /opt/pilates/release
 COPY --chmod=0644 hermes/SOUL.md hermes/config.yaml /opt/pilates/release/
 COPY hermes/plugins/pilates-postgres /opt/pilates/release/plugins/pilates-postgres
+COPY hermes/skills /opt/pilates/release/skills
 ENTRYPOINT ["/opt/pilates/entrypoint.sh"]
 CMD ["gateway", "run"]
