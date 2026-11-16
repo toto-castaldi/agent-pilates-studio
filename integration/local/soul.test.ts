@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { parse } from 'yaml';
 
@@ -58,6 +58,39 @@ test('studio context is mounted read-only and matches the versioned schema witho
   assert.match(soul, /studio_private\.teachers.*inaccessibile/);
   assert.match(soul, /nuovo riconoscimento e il percorso guidato non sono ancora attivati/);
   assert.match(soul, /numeri degli autori storici.*passaggio comune/);
+  const skillNames = await readdir('hermes/skills');
+  const contexts = [soul, ...await Promise.all(skillNames.map((name) => readFile(`hermes/skills/${name}/SKILL.md`, 'utf8')))];
+  const functions = await readFile('prisma/migrations/20261116000000_lesson_functions/migration.sql', 'utf8');
+  for (const context of contexts) {
+    for (const match of context.matchAll(/(?:FROM|JOIN|UPDATE|INTO)\s+app\.([a-z_]+)(?!\w|\s*\()/gi)) {
+      assert.ok(expected[match[1]], `Unknown table in context: ${match[1]}`);
+    }
+    for (const match of context.matchAll(/INSERT INTO app\.([a-z_]+)\s*\(([^)]+)\)/g)) {
+      for (const column of match[2].split(',').map((value) => value.trim())) {
+        assert.ok(expected[match[1]]?.includes(column), `Unknown insert column ${match[1]}.${column}`);
+      }
+    }
+    for (const block of context.matchAll(/```sql\n([\s\S]*?)```/g)) {
+      const aliases = new Map<string, string>();
+      for (const match of block[1].matchAll(/(?:FROM|JOIN)\s+app\.([a-z_]+)\s+(?:AS\s+)?([a-z_]+)/gi)) {
+        if (expected[match[1]] && !['where', 'on', 'order', 'group'].includes(match[2].toLowerCase())) {
+          aliases.set(match[2], match[1]);
+        }
+      }
+      for (const match of block[1].matchAll(/\b([a-z_]+)\.([a-z_]+)\b/g)) {
+        const table = aliases.get(match[1]);
+        if (table) assert.ok(expected[table].includes(match[2]), `Unknown SQL column ${table}.${match[2]}`);
+      }
+    }
+    for (const match of context.matchAll(/app\.(existing_lessons|expected_clients|lesson_teachers)\(/g)) {
+      assert.ok(functions.includes(`CREATE FUNCTION app.${match[1]}(first_day date, last_day date)`));
+    }
+    assert.doesNotMatch(context, /(?:sk-or-v1-|sk-proj-|ghp_|xox[baprs]-)[a-z0-9-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b\d{10,15}\b/i);
+  }
+  assert.deepEqual(config.platform_toolsets.whatsapp_cloud, ['studio-postgres', 'skills']);
+  assert.equal(config.auxiliary.background_review.enabled, false);
+  const skillMount = compose.services.hermes.volumes.find((entry) => typeof entry !== 'string' && entry.target === '/opt/data/skills');
+  assert.deepEqual(typeof skillMount === 'object' && [skillMount.type, skillMount.image?.subpath], ['image', 'opt/pilates/release/skills']);
   assert.doesNotMatch(soul, /(?:sk-or-v1-|sk-proj-|ghp_|xox[baprs]-)[a-z0-9-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b\d{10,15}\b/i);
   assert.doesNotMatch(soul, /(?:password|api[_ -]?key|token|secret)\s*[:=]\s*["']?[^\s"']{8,}/i);
   for (const file of ['hermes/config.yaml', 'hermes/pilates_trusted.py']) {

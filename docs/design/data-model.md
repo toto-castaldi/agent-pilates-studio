@@ -43,6 +43,12 @@ Funzioni private, con EXECUTE per il solo broker e nessun DML diretto su persone
 
 Le funzioni nuove creano solo persone complete. Finché la transizione all'identità unica non è attiva, il runtime precedente può ancora creare righe incomplete (`legacy_identity = true`, telefono NULL, accesso falso), salvo nell'assetto gestionale configurato (`identity`); alla transizione questo inserimento e il default transitorio sono rimossi e solo le righe preesistenti possono restare incomplete. Nessuna importazione di allowlist, mapping o nomi WhatsApp e nessuna riscrittura di autori o di altre entità.
 
+## Funzioni di lettura delle lezioni
+
+`app.existing_lessons(first_day date, last_day date)` ricostruisce date e inizi delle lezioni da regole dei clienti valide all'inizio, registrazioni valide e indicazioni valide. `app.expected_clients` restituisce i clienti attesi deduplicati per lezione; `app.lesson_teachers` aggiunge ID atteso, ID indicato, ID effettivo e nomi. Il tool SQL trasmette stringhe come `text`: le istruzioni impongono i cast `$1::text::date` e `$2::text::date` nelle chiamate, senza affidarsi alla risoluzione implicita di PostgreSQL. I due limiti sono inclusivi; gli orari inesistenti sono esclusi e l'ora ripetuta conta una volta. Le regole degli insegnanti non creano lezioni e per il passato valgono gli istanti storici, non `is_active`.
+
+Sono funzioni SQL `STABLE`, con diritti dell'invocante e nomi qualificati, senza clausole `SET`; non scrivono, non restituiscono telefoni e non accedono allo schema privato. `EXECUTE` è revocato a PUBLIC e concesso al ruolo agente. Filtri, join e aggregazioni restano possibili in una sola istruzione. Conferme, chiarimenti e modalità dei resoconti restano nelle fonti di istruzioni, non nel codice SQL ([ADR-004](../adr/ADR-004-read-only-skills-computed-data.md)).
+
 ## Dati privati del broker
 
 - `studio_private.author_context`: contesto autore per PID e ID di transazione (`webhook-trust`), inaccessibile all'agente ed escluso dai backup.

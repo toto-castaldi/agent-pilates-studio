@@ -191,6 +191,13 @@ test('responses support optional times, alternatives and forbidden phrases', () 
   assert.ok(responseMatches('Lunedì\n09:00 Antonio\nVenerdì\n10:00 Lucia', days));
   assert.equal(responseMatches('Lunedì\n10:00 Lucia\nVenerdì\n09:00 Antonio', days), false);
   assert.equal(responseMatches('09:00 Antonio\n10:00 Lucia', days), false);
+  const repeatedDay = { contains: [], dayGroups: [{ day: 'venerdì', groups: [
+    { time: '09:00', contains: ['Antonio'] }, { time: '10:00', contains: ['Lucia'] },
+  ] }] };
+  assert.ok(responseMatches('Venerdì 09:00 Antonio\nVenerdì 10:00 Lucia', repeatedDay));
+  assert.ok(responseMatches('Venerdì\n09:00 Antonio\n10:00 Lucia', repeatedDay));
+  assert.equal(responseMatches('Venerdì 09:00 Antonio\nLunedì 10:00 Lucia', repeatedDay), false);
+  assert.equal(responseMatches('Venerdì 10:00 Antonio\nVenerdì 09:00 Lucia', repeatedDay), false);
   assert.ok(responseMatches('Inserita il 07/11/2026', { contains: [], date: true }));
   assert.ok(responseMatches('Disattivata il 7 novembre 2026', { contains: [], date: true }));
   assert.equal(responseMatches('Inserita il 07/11', { contains: [], date: true }), false);

@@ -17,6 +17,7 @@ plugins:
 platform_toolsets:
   whatsapp_cloud:
     - studio-postgres
+    - skills
 tools:
   tool_search:
     enabled: "off"
@@ -26,11 +27,17 @@ agent:
     - file
     - code_execution
     - browser
-    - skills
     - delegation
     - cronjob
     - computer_use
     - connections
+skills:
+  template_vars: false
+  inline_shell: false
+  project_discovery: false
+  creation_nudge_interval: 0
+curator:
+  enabled: false
 compression:
   enabled: true
   # Computed at container start from the configured model (40% of its window).
@@ -42,6 +49,8 @@ compression:
   abort_on_summary_failure: true
   progress_notices: false
 auxiliary:
+  background_review:
+    enabled: false
   # Summaries use the configured model ("auto"). Hermes' OpenRouter fallback lane
   # would otherwise retry with a different model; pin it to the same one.
   openrouter_model: "${PILATES_MODEL}"

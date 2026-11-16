@@ -1,0 +1,36 @@
+---
+name: studio-presenze
+description: Registrare e correggere presenze e assenze
+---
+
+## Presenze alle lezioni
+
+Quando comunicano chi era presente a una lezione identifica data e ora d'inizio nel fuso Europe/Rome; se mancano o sono ambigue chiedi chiarimenti. Rifiuta lezioni non ancora iniziate e orari locali inesistenti, senza creare clienti o registrazioni. Per ogni persona risolvi l'anagrafica come sopra; registra `present` in `app.attendance` senza dichiarare autore o data di registrazione e riepiloga solo le operazioni confermate dal tool. Se i presenti sono nominati esplicitamente, registra anche quando non esiste alcuna regola per la lezione: l'assenza di attesi non richiede conferma e va segnalata nel riepilogo. Se una registrazione valida esiste già per quel cliente e lezione, non crearne un'altra e segnalalo; non modificare né annullare quella esistente per una comunicazione duplicata, salvo il conflitto con un'assenza anticipata descritto sotto.
+
+Per «c'erano tutti» e «tutti tranne» cerca i clienti attesi alla data e ora della lezione, usando giorno ISO e ora dello slot e confrontando l'istante della lezione in Europe/Rome con inserimento e disattivazione delle regole, non semplicemente con le regole attive ora. Solo per queste espressioni collettive, se non ci sono attesi o la lezione non è identificabile chiedi chiarimenti e non registrare; altrimenti registra senza chiedere conferma, escludendo le persone indicate e applicando la gestione dei conflitti anticipati sotto. Un presente non atteso è comunque registrato e nel riepilogo indica esplicitamente «non atteso» accanto al nome, anche quando per quell'orario non esiste alcuna regola. Non creare, modificare o disattivare regole di allenamento per registrare presenze o assenze.
+
+## Assenze alle lezioni
+
+Quando comunicano un'assenza identifica cliente, data e ora della lezione come per una presenza. Se l'utilizzatore dice che il cliente aveva avvisato, registra `excused_absence`; se dice che non aveva avvisato, registra `unexcused_absence`. Se il tipo non è chiaro chiedi se l'assenza è giustificata o non giustificata e non registrarla fino alla risposta. Non inventare il tipo. Per lezioni non ancora iniziate applica le regole sulle assenze anticipate sotto; rifiuta assenze non giustificate future. Rispetta l'unicità tra presenza e assenza: se esiste già una registrazione valida, segnalala senza modificarla o annullarla, salvo le eccezioni esplicite sotto. Riepiloga solo le operazioni confermate dal tool e lascia l'autore al sistema.
+
+Quando comunicano le presenze, anche con «tutti tranne», cerca sempre i clienti attesi per la lezione secondo le regole valide a quell'istante. Registra subito i presenti comunicati; per ogni atteso non citato né come presente né come assente e ancora privo di registrazione valida, chiedi se era assente e se l'assenza era giustificata. Non registrare assenze né dedurne il tipo dai nomi mancanti: se l'utilizzatore non risponde, non registrare nulla per loro. Una risposta successiva si riferisce alla lezione e alle persone chiarite nel contesto; registra soltanto le assenze e i tipi esplicitamente comunicati. Un recupero non è collegato all'assenza che compensa.
+
+## Assenze annunciate in anticipo
+
+Quando un utilizzatore avvisa prima dell'inizio che un cliente non potrà partecipare, l'assenza è sempre `excused_absence`: non chiedere il tipo e non imporre limiti di anticipo. Cerca cliente e slot nelle regole attive (`deactivated_at IS NULL`), nel fuso Europe/Rome. Se il giorno è indicato senza orario e c'è un solo slot atteso, usalo; con più slot o lezione non identificabile chiedi chiarimenti senza registrare. Se l'orario indicato non corrisponde a uno slot atteso, segnalalo e chiedi conferma prima di registrare: senza conferma non registrare. Rispetta l'unicità e segnala i duplicati. Riepiloga cliente, data e ora salvati.
+
+Per un periodo o più lezioni, ricava dalle regole attive tutte le lezioni attese nel periodo richiesto, elencale con date e orari e chiedi conferma dell'elenco; senza conferma non registrare nulla. Se non ci sono lezioni attese nel periodo, dillo esplicitamente. Dopo conferma registra ciascuna assenza giustificata, senza alterare le regole.
+
+Se prima della lezione l'utilizzatore dice che il cliente verrà, identifica l'assenza anticipata valida e annullala con `cancelled_at` e `cancellation_reason`, senza registrare una presenza futura. Comunica l'annullamento; se non è identificabile chiedi chiarimenti.
+
+Dopo l'inizio, quando comunicano presenze esplicite, «c'erano tutti» o «tutti tranne», verifica per ogni cliente pertinente se esiste un'assenza anticipata valida: registra subito le altre presenze, segnala il conflitto e chiedi se quel cliente era presente, anche se indicato tra gli esclusi. Solo dopo conferma della presenza annulla l'assenza con motivo e registra `present`, comunicando entrambe le operazioni. Se rispondono che era assente, non confermano o non rispondono, mantieni l'assenza. Non annullare automaticamente una registrazione per una comunicazione duplicata.
+
+## Correzioni e storico delle presenze
+
+Una comunicazione esplicitamente correttiva non è un duplicato: identifica univocamente cliente, data, ora e registrazione valida da correggere. Se la comunicazione delle presenze riguarda un'assenza anticipata valida dopo l'inizio, applica prima la richiesta di conferma descritta nella sezione precedente, anche quando sembra correggerla. Se mancano informazioni, ci sono più corrispondenze o non è chiaro cosa annullare o quale esito sostituire, chiedi chiarimenti e non annullare nulla. Per un'assenza sostitutiva chiedi il tipo se non è chiaro, prima di annullare. Non creare un cliente per correggere una registrazione inesistente.
+
+Quando la correzione è chiara annulla solo la registrazione valida individuata impostando `cancelled_at` e un `cancellation_reason` non vuoto che descriva l'errore o la richiesta; l'autore è impostato dal sistema. Per una semplice richiesta di togliere la registrazione fermati qui; per cambiare presenza in assenza o tipo di assenza inserisci una nuova riga per lo stesso cliente e la stessa lezione con l'esito corretto. Non aggiornare l'esito della riga precedente. Comunica cosa hai annullato e, se applicabile, cosa hai registrato, solo dopo conferma del tool. Se una delle operazioni fallisce, segnala esattamente ciò che è riuscito e ciò che non è riuscito, senza affermare che la correzione sia completa. Una comunicazione ordinaria duplicata, senza richiesta correttiva, non annulla nulla.
+
+Su richiesta dello storico di una lezione o di un cliente, consulta anche le righe annullate e distingui quelle valide da quelle annullate; indica data e autore della registrazione e, per quelle annullate, data, autore e motivo dell'annullamento. Non mostrare numeri di telefono se non richiesti. Le consultazioni ordinarie escludono le righe annullate. Non cancellare, riscrivere o annullare nuovamente una riga annullata.
+
+Quando comunicano soltanto presenze o assenze, senza nominare un insegnante, **non chiedere chi ha tenuto la lezione e non registrare alcuna indicazione**, anche se il mittente è collegato a un insegnante. L'insegnante atteso deriva dalle sue regole senza richiedere un'indicazione puntuale.
