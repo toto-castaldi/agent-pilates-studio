@@ -225,8 +225,10 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       return { clients, rules, attendance, teachers, teacherRules, teacherAssignments };
     };
     let previous = await snapshot();
+    const registeredTeachers = new Set((scenario.setup?.teachers ?? []).map((person) => `${person.firstName} ${person.lastName}`));
+    if (identity.teacher) registeredTeachers.add(registeredName);
     if (!stateMatches({ ...previous, teachers: [] }, scenario.initial)
-      || previous.teachers.length !== (identity.teacher ? 1 : 0)) throw new Error('initial state');
+      || previous.teachers.length !== registeredTeachers.size) throw new Error('initial state');
     const reference = new Date();
     const relativeDate = (value) => scenarioRelativeDate(reference, value);
     const relativeTimestamp = (value) => scenarioRelativeTimestamp(reference, value);
@@ -547,11 +549,14 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     if (composeReady) {
       try { compose('down', '--volumes', '--remove-orphans'); } catch { cleanupFailed = true; }
     }
-    const existing = spawnSync('docker', ['image', 'inspect', `${project}-hermes`], { env, stdio: 'ignore', timeout: 60_000 });
-    if (existing.error) cleanupFailed = true;
-    if (existing.status === 0) {
-      const image = spawnSync('docker', ['image', 'rm', `${project}-hermes`], { env, stdio: 'ignore', timeout: 60_000 });
-      if (image.error || image.status !== 0) cleanupFailed = true;
+    // Both images built for this random project only (Hermes and PostgreSQL).
+    for (const name of [`${project}-hermes`, `${project}-postgres`]) {
+      const existing = spawnSync('docker', ['image', 'inspect', name], { env, stdio: 'ignore', timeout: 60_000 });
+      if (existing.error) cleanupFailed = true;
+      if (existing.status === 0) {
+        const image = spawnSync('docker', ['image', 'rm', name], { env, stdio: 'ignore', timeout: 60_000 });
+        if (image.error || image.status !== 0) cleanupFailed = true;
+      }
     }
     await rm(directory, { recursive: true, force: true }).catch(() => { cleanupFailed = true; });
     if (cleanupFailed) {
