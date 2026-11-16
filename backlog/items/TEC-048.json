@@ -15,10 +15,11 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "PROCESS §4.4",
+    "process/backlog §3",
+    "process/docs",
     "PROCESS §5",
+    "process/git",
     "PROCESS §6",
-    "PROCESS §8",
     "PROCESS-PARALLEL §2",
     "AGENTS §10",
     "design/process-tooling",

@@ -39,8 +39,13 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
     const configured = /^- \*\*Worker agent command:\*\* `([^`]+)`$/m.exec(agents)?.[1];
     assert.equal(configured, 'node scripts/start-pi.mjs --approve');
     const skill = readFileSync('.agents/skills/orchestrate/SKILL.md', 'utf8');
-    const template = /```bash\n\s*(hc run --bg --json --no-parent[\s\S]*?)\n\s*```/.exec(skill)?.[1];
+    const herdrGuide = readFileSync('.agents/skills/orchestrate/herdr.md', 'utf8');
+    const manualGuide = readFileSync('.agents/skills/orchestrate/manual.md', 'utf8');
+    const template = /```bash\n\s*(hc run --bg --json --no-parent[\s\S]*?)\n\s*```/.exec(herdrGuide)?.[1];
     assert.ok(template, 'actual Herdr launch command missing');
+    assert.ok(herdrGuide.includes('`<repo>-<id>`'));
+    assert.ok(herdrGuide.includes('at most 32 characters'));
+    assert.ok(herdrGuide.includes('every character other than `a-z 0-9 - _` replaced by `-`'));
     const task = 'Synthetic task with spaces';
     for (const command of [configured, `${configured} --no-session`]) {
       const commandArgs = command.split(' ').slice(1);
@@ -61,7 +66,7 @@ test('Herdr and manual launch preserve the configured worker arguments', () => {
       assert.deepEqual(args.slice(0, 4), ['run', '--bg', '--json', '--no-parent']);
       assert.deepEqual(args.slice(-commandArgs.length - 2), ['node', ...commandArgs, task]);
       // Manual mode uses the same configured command with the task as one shell argument.
-      assert.ok(skill.includes('&& <worker command> "<task>"'));
+      assert.ok(manualGuide.includes('&& <worker command> "<task>"'));
       // Outside Claude Code the worker command is the configured one.
       assert.ok(skill.includes('otherwise it is `Worker agent command`'));
       run(`cd ${project} && ${command} "${task}"`);

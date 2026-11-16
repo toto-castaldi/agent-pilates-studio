@@ -24,7 +24,8 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "PROCESS §6",
+    "PROCESS §5",
+    "process/git",
     "PROCESS-PARALLEL §1",
     "PROCESS-PARALLEL §2",
     "design/test-strategy",

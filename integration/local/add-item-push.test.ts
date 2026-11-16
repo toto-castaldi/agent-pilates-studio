@@ -157,7 +157,7 @@ test('adopted instructions contain publication safeguards and recovery', () => {
     'No quality gate is needed', 'Skip the push if there is no upstream', 'git pull --rebase',
     'backlog check', 'git rebase --abort', 'keep the local commit', 'Any other push failure',
   ]) assert.ok(skill.includes(phrase), phrase);
-  const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
+  const processDoc = readFileSync('docs/process/git.md', 'utf8');
   assert.ok(processDoc.includes('This is the only automatic push of `main`'));
   const agents = readFileSync('AGENTS.md', 'utf8');
   assert.ok(agents.includes('il push del solo commit documentale di aggiunta di un item non richiede il gate'));

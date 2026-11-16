@@ -4,7 +4,7 @@
 
 **State:** baseline
 
-Il *cosa* del progetto, un file per requisito (`docs/PROCESS.md` §5.1). Il *come* è in `docs/design/`. Ogni cambiamento di scope o di comportamento si registra qui prima di aggiornare backlog e implementazione (`docs/PROCESS.md` §3, §5). L'elenco dei requisiti si ottiene con `python3 .agents/tools/backlog.py docs`; leggere solo i file necessari.
+Il *cosa* del progetto, un file per requisito (`docs/process/docs.md` §1). Il *come* è in `docs/design/`. Ogni cambiamento di scope o di comportamento si registra qui prima di aggiornare backlog e implementazione (`docs/PROCESS.md` §3, `docs/process/docs.md`). L'elenco dei requisiti si ottiene con `python3 .agents/tools/backlog.py docs`; `docs --for <ID>` elenca i file necessari per un item.
 
 | File | Contenuto |
 | --- | --- |

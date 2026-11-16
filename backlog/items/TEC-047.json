@@ -16,9 +16,9 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "PROCESS §4.4",
-    "PROCESS §5",
-    "PROCESS §9",
+    "process/backlog §3",
+    "process/docs",
+    "process/release",
     "PROCESS-PARALLEL §2",
     "AGENTS §1",
     "AGENTS §3",

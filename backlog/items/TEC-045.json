@@ -18,7 +18,8 @@
   "design_references": [
     "design/test-strategy",
     "design/configuration",
-    "PROCESS §6",
+    "PROCESS §5",
+    "process/git",
     "AGENTS §9",
     "AGENTS §10"
   ],

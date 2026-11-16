@@ -8,19 +8,26 @@ function blob(text: string): string {
   return createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 }
 
-test('shared resources match the pinned v3.0.0 blobs, with only the agreed Pi refresh adaptation', () => {
-  // Public template commit c880d61848bb665cd96f270895c4f083ca4c004d (tag v3.0.0), verified for TEC-047.
+test('shared resources match the pinned v4.0.0 blobs, with only the agreed Pi refresh adaptation', () => {
+  // Public template commit b642da351cc848df6af89242fd31872b80c38a66 (tag v4.0.0), verified for TEC-048.
   const hashes: Record<string, string> = {
-    'docs/PROCESS.md': '49ada5d12c7f35d9fc89c4909a889bd284677dd8',
-    'docs/PROCESS-PARALLEL.md': 'bb5d94da8777a26aa6bc01d8ad14d3b0399b1b36',
-    '.agents/tools/backlog.py': '64f83cdf4506aec2c0b776b1ef981eb17b717e0b',
-    '.agents/skills/orchestrate/SKILL.md': 'c5acf4b53278b7c6a3004e438c2df16a7133321f',
-    '.agents/skills/add-item/SKILL.md': '98b5e183b1713197e36c1afad7f28fabab924472',
-    '.agents/skills/start-task/SKILL.md': '4b85caafccf11a207e0e05376df0c5817fa63b2d',
-    '.agents/skills/finish-task/SKILL.md': 'f477085f7a8259cd6851d5d1f6fe6a15a63809fa',
-    '.agents/skills/close-version/SKILL.md': '5aaa5419f974452f0d8645795634c496e5a049fc',
-    '.agents/skills/kickoff/SKILL.md': 'f8ec1c080724f2548e423b153daf8ad18e1f27e1',
-    '.agents/skills/merge-task/SKILL.md': '4bb3cda765cb41d5e18da12d29cacbdd4af4ba78',
+    'docs/PROCESS.md': 'f72bb6ccd438d174f0d6e14c3b91d2bb2aee15e3',
+    'docs/PROCESS-PARALLEL.md': 'a59075dc9503ce1e11685be88511478b494153f5',
+    'docs/process/backlog.md': '2b7042d43533b3a5f6540ecebc696bfe5d437860',
+    'docs/process/docs.md': '8eeeade8783a51c1b9e778a904ce4b4473a27d4d',
+    'docs/process/git.md': '568dd279891ada8c39dbcc581f962f14927563af',
+    'docs/process/release.md': '583edc900552e6b2feaa3d8e2e03e9d9bd7259ae',
+    '.agents/tools/backlog.py': '0392a6588f98d5bfe292751326f7f498788bf289',
+    '.agents/skills/orchestrate/SKILL.md': '1c5907180bd22820fe769d7f67fa2d9496455f56',
+    '.agents/skills/orchestrate/herdr.md': 'f3de0e9afa2a1341db4b42e9f68cb9eddbb1e1ca',
+    '.agents/skills/orchestrate/claude-code.md': 'b5ec4ae987c1c75ac829a8c3382970a71cfb12e3',
+    '.agents/skills/orchestrate/manual.md': '62431d3d14b222ff0dc0ce568782a4ef5ca70403',
+    '.agents/skills/add-item/SKILL.md': '624ad3dc8ed0fd99282cc83179dcfddb6f01569b',
+    '.agents/skills/start-task/SKILL.md': 'de4a8c4d813c12e38b73caa8b21a44aca0d24674',
+    '.agents/skills/finish-task/SKILL.md': '0ab08b54fcc6e707a3aba733c792e5c204a18b6d',
+    '.agents/skills/close-version/SKILL.md': '9d18f99043a69d23065fca81ccacd8940b19dbc8',
+    '.agents/skills/kickoff/SKILL.md': '58305fd176b81f3a29877b476f1673a76ece5783',
+    '.agents/skills/merge-task/SKILL.md': 'f448f5fe952f6d5320f29c20422dbd5d19eba47f',
     'docs/requirements/_TEMPLATE.md': '0a0a56f9453428e7e350baa7a4392609d6693a3d',
     'docs/design/_TEMPLATE.md': 'f166771727b13bb74dfdd78d2805ea9930862838',
     '.agents/skills/backlog-overlay/.claude-plugin/plugin.json': '0953298a0c504bbfc7c3bb4ab5757b566c08f77c',
@@ -32,7 +39,7 @@ test('shared resources match the pinned v3.0.0 blobs, with only the agreed Pi re
   const pi = readFileSync('.pi/extensions/backlog/index.ts', 'utf8');
   const adapted = '\t\t// Never break the overlay: it keeps showing what it has and reports the failure.\n\t\tif (!isClosed()) overlay.setFetchState("failed");';
   assert.equal(pi.split(adapted).length, 2);
-  assert.equal(blob(pi.replace(adapted, '\t\t// Never break the overlay: it keeps showing what it has.')), '8d8a4f07a5abff499ca10323c74529c53a21e308');
+  assert.equal(blob(pi.replace(adapted, '\t\t// Never break the overlay: it keeps showing what it has.')), 'db6b75e5c9bc4af9c99e0e435af3454a50b24cfc');
 });
 
 test('Claude backlog is a project plugin, not a new skill, and both viewers only delegate Git resolution to the CLI', () => {
