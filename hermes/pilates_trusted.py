@@ -27,6 +27,7 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.web_app import Application
 
 current_turn = contextvars.ContextVar('pilates_trusted_turn', default=None)
+current_message = contextvars.ContextVar('pilates_trusted_message', default=None)
 BROKER_URL = 'http://author-broker:8091'
 TOKEN_PATH = '/run/pilates-agent/bridge_token'
 ADMISSION_LIFETIME = 900
@@ -36,7 +37,7 @@ ACCESS_REFUSAL = 'Accesso non abilitato. Per usare l’assistente dello studio r
 # message ID -> (sender digits, teacher ID, monotonic expiry), filled only from broker decisions.
 admissions = OrderedDict()
 # Digits of every identity and author number known to the database (broker-provided).
-known_numbers = set()
+known_numbers = frozenset()
 sender_locks = {}
 # Turns run in worker threads; the event loop records admissions.
 admissions_lock = threading.Lock()
@@ -147,6 +148,32 @@ async def broker_turn(message_id, sender, bind):
                 return verdict if isinstance(verdict, dict) and isinstance(verdict.get('reset'), bool) else None
     except Exception:
         return None
+
+
+async def session_allowed(message_id, sender, session_id):
+    try:
+        async with ClientSession(timeout=ClientTimeout(total=8), trust_env=False) as session:
+            async with session.post(BROKER_URL + '/v1/session',
+                                    json={'message_id': message_id, 'sender': sender, 'session_id': session_id, 'bind': False},
+                                    headers={'X-Pilates-Bridge': bridge_token()}) as response:
+                await response.read()
+                return response.status == 204
+    except Exception:
+        return False
+
+
+def bind_session(message_id, sender, session_id):
+    # TurnRunner runs off the event loop. Recheck the receipt here as well: a
+    # queued turn or a restored session must not start with a stale identity.
+    try:
+        import httpx
+        with httpx.Client(timeout=8, trust_env=False) as client:
+            response = client.post(BROKER_URL + '/v1/session',
+                                   json={'message_id': message_id, 'sender': sender, 'session_id': session_id, 'bind': True},
+                                   headers={'X-Pilates-Bridge': bridge_token()})
+        return response.status_code == 204
+    except Exception:
+        return False
 
 
 def install():
@@ -300,6 +327,7 @@ def install():
     original_handle = Application._handle
 
     async def handle(app, request):
+        global known_numbers
         if request.method == 'POST' and request.path == os.environ.get('WHATSAPP_CLOUD_WEBHOOK_PATH', '/whatsapp/webhook'):
             # This path precedes the adapter, its slash commands, SQLite, titles
             # and model turns. Never fall through on broker failure.
@@ -316,8 +344,9 @@ def install():
                         decision = await response.json()
                 admit(decision['admitted'])
                 if decision['admitted']:
-                    known_numbers.clear()
-                    known_numbers.update(number for number in decision['redact'] if isinstance(number, str))
+                    # Immutable snapshot: worker threads can never observe a
+                    # cleared/partially updated set during request assembly.
+                    known_numbers = frozenset(number for number in decision['redact'] if isinstance(number, str))
                 import httpx
                 async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
                     for reply in decision['replies']:
@@ -374,6 +403,21 @@ def install():
 
     GatewayAuthorizationMixin._principal_authorized = principal_authorized
 
+    # Native resume/list ownership uses the WhatsApp chat ID, which survives a
+    # number reassignment. Also require the session's immutable database owner.
+    original_resume_allowed = GatewaySlashCommandsMixin._resume_target_allowed
+
+    async def resume_allowed(self, source, target_id, allow_override=False):
+        if getattr(source, 'platform', None) == Platform.WHATSAPP_CLOUD:
+            receipt = current_message.get()
+            if receipt is None or receipt[1] != str(source.user_id or ''):
+                return False
+            if not await session_allowed(receipt[0], receipt[1], target_id):
+                return False
+        return await original_resume_allowed(self, source, target_id, allow_override)
+
+    GatewaySlashCommandsMixin._resume_target_allowed = resume_allowed
+
     # Before session creation, busy handling and the model: the admitted
     # identity must still be current, and the chat's Hermes conversation must
     # belong to it. A pre-transition chat, or a number now registered to another
@@ -402,6 +446,11 @@ def install():
                     verdict = await broker_turn(event.message_id, sender, True)
                     if verdict is None or verdict['reset']:
                         return ACCESS_REFUSAL
+            token = current_message.set((event.message_id, sender))
+            try:
+                return await original_message(self, event)
+            finally:
+                current_message.reset(token)
         return await original_message(self, event)
 
     GatewayInboundMixin._handle_message = handle_message
@@ -417,6 +466,8 @@ def install():
                 and not ctx.persist_user_display_kind and ctx.inbound_message_id and source.user_id
                 and admitted(str(ctx.inbound_message_id), str(source.user_id)) is not None):
             identity = (str(ctx.inbound_message_id), str(source.user_id), secrets.token_hex(32))
+            if not ctx.session_id or not bind_session(identity[0], identity[1], ctx.session_id):
+                return {'final_response': ACCESS_REFUSAL, 'messages': agent_history, 'completed': True}
         from gateway.run import _last_transcript_timestamp
         last = transcript_epoch(_last_transcript_timestamp(getattr(ctx, 'history', None)))
         agent._pilates_idle_resume = last is not None and time.time() - last >= idle_seconds()

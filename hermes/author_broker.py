@@ -225,6 +225,37 @@ class Broker:
         except (ValueError, TypeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
             return web.Response(status=400)
 
+    async def session(self, request):
+        """Bind a Hermes session once, or verify its immutable person before resume/list."""
+        if not self.authorized(request):
+            return web.Response(status=403)
+        try:
+            data = await request.json()
+            if not isinstance(data, dict) or set(data) != {'message_id', 'sender', 'session_id', 'bind'}:
+                raise ValueError('Invalid request')
+            message_id, sender = data['message_id'], data['sender']
+            session_id, bind = data['session_id'], data['bind']
+            if (not isinstance(message_id, str) or not isinstance(sender, str)
+                    or not isinstance(session_id, str) or not 1 <= len(session_id) <= 128
+                    or not isinstance(bind, bool)):
+                raise ValueError('Invalid request')
+            receipt = self.current_receipt(message_id, sender)
+            if receipt is None:
+                return web.Response(status=403)
+            async with self.pool.acquire(timeout=5) as connection:
+                async with connection.transaction():
+                    if not await self.receipt_current(connection, receipt):
+                        return web.Response(status=403)
+                    if bind:
+                        await connection.execute(
+                            'INSERT INTO studio_private.session_owners (session_id, teacher_id) VALUES ($1, $2) '
+                            'ON CONFLICT DO NOTHING', session_id, receipt['teacher'], timeout=5)
+                    owner = await connection.fetchval(
+                        'SELECT teacher_id FROM studio_private.session_owners WHERE session_id = $1', session_id, timeout=5)
+            return web.Response(status=204 if owner is not None and int(owner) == receipt['teacher'] else 403)
+        except (ValueError, TypeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
+            return web.Response(status=400)
+
     async def context(self, request):
         if not self.authorized(request):
             return web.Response(status=403)
@@ -332,6 +363,7 @@ def main():
     broker.management = IdentityManagement(broker)
     app.router.add_post('/v1/admission', broker.admission)
     app.router.add_post('/v1/turn', broker.turn)
+    app.router.add_post('/v1/session', broker.session)
     app.router.add_post('/v1/context', broker.context)
     app.router.add_post('/v1/release', broker.release)
     app.router.add_get('/health', broker.health)

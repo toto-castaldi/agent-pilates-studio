@@ -1,6 +1,6 @@
 # Sender identity and teacher registry
 
-Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md) ed è attivo dalla TEC-042: gateway e broker sono passati insieme alla fonte nel database. La prova operativa della transizione su un'installazione esistente, del recupero e del trasferimento del gestore è TEC-043.
+Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md): gateway e broker usano insieme la fonte nel database. Resta aperta la prova operativa della transizione su un'installazione esistente, del recupero e del trasferimento del gestore (TEC-043).
 
 ## Ammissione
 
@@ -21,8 +21,9 @@ Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teac
 ## Chat per identità
 
 - `studio_private.chat_owners` registra, per impronta del mittente, l'insegnante proprietario della conversazione Hermes di quella chat. Non è una fonte di identità o di accesso.
-- Al primo turno di una chat senza proprietario, cioè precedente al passaggio, o il cui proprietario è un'altra persona, il gateway azzera la sessione Hermes con il reset nativo prima di elaborare il messaggio e solo dopo registra il nuovo proprietario. La cronologia precedente, con nomi di profilo e testi, non è più inviata al modello né ai riassunti; resta nel volume e nei backup e non è dichiarata anonima (decisione dell'utente del 2026-11-16: azzerare le sessioni preesistenti).
-- Un cambio di numero apre la chat del nuovo numero, vuota; un numero assegnato a un'altra persona non eredita la conversazione. Correzione del nome e riabilitazione conservano la chat. I dati dello studio non cambiano.
+- Al primo turno di una chat senza proprietario, cioè precedente al passaggio, o il cui proprietario è un'altra persona, il gateway azzera la sessione Hermes con il reset nativo prima di elaborare il messaggio e solo dopo registra il nuovo proprietario. La cronologia precedente, con nomi di profilo e testi, non è più usata come contesto attivo del modello o dei riassunti; resta nel volume e nei backup e non è dichiarata anonima.
+- Ogni sessione Hermes usata da un turno ordinario è legata una sola volta all'insegnante in `studio_private.session_owners`. Prima del modello il broker ricontrolla la ricevuta e registra o verifica il proprietario della sessione; un legame esistente non si riassegna. Il recupero e l'elenco delle sessioni richiedono sia il controllo nativo della chat sia lo stesso proprietario corrente nel broker; una sessione senza legame, inclusa una precedente al passaggio, non è recuperabile da WhatsApp. Non si disabilitano i comandi: restano disponibili per le sessioni della stessa identità.
+- Un cambio di numero apre la chat del nuovo numero, vuota; un numero assegnato a un'altra persona non eredita la conversazione, neppure tramite i comandi di recupero. Correzione del nome e riabilitazione conservano la chat. I dati dello studio non cambiano.
 - I messaggi che arrivano mentre un turno è in corso seguono il percorso busy di Hermes: sono ammessi dal broker alla ricezione; una revoca confermata nel frattempo blocca le operazioni sui dati, ma non interrompe il turno già avviato.
 
 ## Gestione guidata

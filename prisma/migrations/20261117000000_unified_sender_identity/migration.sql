@@ -209,6 +209,16 @@ CREATE TABLE studio_private.chat_owners (
 REVOKE ALL ON studio_private.chat_owners FROM PUBLIC, studio_agent, studio_broker;
 GRANT SELECT, INSERT, UPDATE ON studio_private.chat_owners TO studio_broker;
 
+-- Archived Hermes sessions retain their original person even if the WhatsApp
+-- number is later reassigned. No caller may reassign an existing session.
+CREATE TABLE studio_private.session_owners (
+  session_id text PRIMARY KEY CHECK (length(session_id) BETWEEN 1 AND 128),
+  teacher_id bigint NOT NULL REFERENCES studio_private.teachers(id),
+  bound_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+REVOKE ALL ON studio_private.session_owners FROM PUBLIC, studio_agent, studio_broker;
+GRANT SELECT, INSERT ON studio_private.session_owners TO studio_broker;
+
 REVOKE ALL ON FUNCTION studio_private.bind_teacher_identity(integer, bigint, text, bigint, bigint),
   studio_private.identity_phone_digits() FROM PUBLIC, studio_agent;
 GRANT EXECUTE ON FUNCTION studio_private.bind_teacher_identity(integer, bigint, text, bigint, bigint),

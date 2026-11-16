@@ -554,6 +554,12 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.ok(corrected.system.includes('beta CorrectedInstructor') && !corrected.system.includes(BETA));
     assert.ok(corrected.history.includes('hist-enabled'), 'a correction keeps the same chat');
     await delay(2000);
+    // Give the old chat a deterministic title, so its archived session can
+    // never be exposed to the next person who receives this phone number.
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-old-title', '/title hist-private-previous-owner'))).status, 200);
+    await waitReply(before, '15555550103', /hist-private-previous-owner/u);
+    await delay(2000);
     // The same person on a new number starts an empty chat; the old number is refused.
     await manage('change_phone', ids['15555550103'], null, null, '+15555550106');
     before = (await replies()).length;
@@ -572,6 +578,40 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.ok(reused.system.includes('epsilon SyntheticInstructor'), 'the reused chat has no current registered name');
     assert.ok(!reused.system.includes('beta '), 'the reused chat exposes the previous owner in its system prompt');
     assert.equal(String((await migrator.query('SELECT teacher_id FROM studio_private.chat_owners WHERE sender_hash = encode(sha256(convert_to($1, \'UTF8\')), \'hex\')', ['15555550103'])).rows[0].teacher_id), epsilon);
+    await delay(2000);
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-reused-sessions', '/sessions'))).status, 200);
+    const archived = await waitReply(before, '15555550103', /\S/u);
+    assert.ok(archived.every((entry) => !entry.text.includes('hist-private-previous-owner')),
+      'a reused number can enumerate the previous owner’s archived session');
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-reused-resume-denied', '/resume hist-private-previous-owner'))).status, 200);
+    await waitReply(before, '15555550103', /\S/u);
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-after-denied-resume', 'context-probe hist-deniedresume'))).status, 200);
+    const deniedResume = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-deniedresume'));
+    assert.ok(!deniedResume.history.includes('hist-enabled') && !deniedResume.history.includes('hist-corrected'),
+      'a reused number resumed the previous owner’s archived session');
+    // The same commands still recover the current person's own archive.
+    await delay(2000);
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-own-title', '/title hist-current-owner-private'))).status, 200);
+    await waitReply(before, '15555550103', /hist-current-owner-private/u);
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-own-new', '/new'))).status, 200);
+    // Native reset notices are deliberately not delivered to WhatsApp.
+    await delay(2000);
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-own-sessions', '/sessions'))).status, 200);
+    await waitReply(before, '15555550103', /hist-current-owner-private/u);
+    before = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-own-resume', '/resume hist-current-owner-private'))).status, 200);
+    await waitReply(before, '15555550103', /hist-current-owner-private/u);
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-own-resumed', 'context-probe hist-ownresumed'))).status, 200);
+    const ownResumed = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-ownresumed'));
+    assert.ok(ownResumed.history.includes('hist-reused') && ownResumed.history.includes('hist-deniedresume'),
+      'the same person could not resume their own session');
+    assert.ok(!ownResumed.history.includes('hist-corrected'), 'resuming an own session exposed another person');
     await delay(2000);
     // History and author snapshots are untouched by every identity change.
     assert.deepEqual((await migrator.query("SELECT created_by_phone, created_by_name FROM studio_private.clients WHERE first_name = 'beta'")).rows, [{ created_by_phone: '15555550103', created_by_name: BETA }]);

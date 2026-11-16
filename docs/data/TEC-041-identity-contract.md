@@ -47,6 +47,7 @@ La migrazione `20261117000000_unified_sender_identity` completa il contratto ins
 - `bind_teacher_identity(backend, transaction, sender, expected_teacher, expected_revision)` sostituisce la versione a tre argomenti e rifiuta un'identità diversa da quella ammessa con il messaggio.
 - `identity_phone_digits()`, riservata al broker, restituisce le cifre dei numeri dell'anagrafica, dell'audit e degli autori per la sola redazione delle copie verso il modello.
 - `studio_private.chat_owners` registra il proprietario della conversazione Hermes di ogni chat (impronta del mittente), con SELECT/INSERT/UPDATE per il broker.
+- `studio_private.session_owners` registra il proprietario immutabile di ogni sessione Hermes (ID sessione), con SELECT/INSERT per il broker e senza UPDATE; elenco e recupero WhatsApp richiedono lo stesso proprietario corrente.
 
 ## Verification
 

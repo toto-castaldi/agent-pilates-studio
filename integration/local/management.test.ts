@@ -24,7 +24,7 @@ test('guided management and database admission are active together in gateway an
   const broker = await readFile('hermes/broker-entrypoint.sh', 'utf8');
   assert.ok(broker.includes('whatsapp_manager_phone') && !broker.includes('whatsapp_allowed_users'));
   const trusted = await readFile('hermes/pilates_trusted.py', 'utf8');
-  assert.ok(trusted.includes("'/v1/admission'") && trusted.includes("'/v1/turn'"));
+  assert.ok(trusted.includes("'/v1/admission'") && trusted.includes("'/v1/turn'") && trusted.includes("'/v1/session'"));
   assert.doesNotMatch(trusted, /WHATSAPP_CLOUD_ALLOWED_USERS|send_evidence/u);
   const soul = await readFile('hermes/SOUL.md', 'utf8');
   const guide = await readFile('docs/operations/US-017-gestione.md', 'utf8');
@@ -35,5 +35,6 @@ test('guided management and database admission are active together in gateway an
   assert.match(sql, /REVOKE ALL ON studio_private.management_sessions FROM PUBLIC, studio_agent/u);
   const activation = await readFile('prisma/migrations/20261117000000_unified_sender_identity/migration.sql', 'utf8');
   for (const pattern of [/DROP FUNCTION studio_private\.insert_legacy_teacher\(\)/u, /DROP COLUMN management_only_enrollment/u,
-    /ALTER COLUMN identity_revision SET NOT NULL/u, /DROP FUNCTION studio_private\.configured_teacher_id/u]) assert.match(activation, pattern);
+    /ALTER COLUMN identity_revision SET NOT NULL/u, /DROP FUNCTION studio_private\.configured_teacher_id/u,
+    /CREATE TABLE studio_private\.session_owners/u]) assert.match(activation, pattern);
 });

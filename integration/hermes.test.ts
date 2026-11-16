@@ -321,6 +321,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.deepEqual(await readIdentityState(restored), identityState);
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teachers'), { code: '42501' });
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teacher_identity_changes'), { code: '42501' });
+    await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.session_owners'), { code: '42501' });
     restoredBroker = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
     await restoredBroker.connect();
     const recoveredIdentities = (await restoredBroker.query("SELECT * FROM studio_private.list_teacher_identities('15555550120', '+15555550120')")).rows;

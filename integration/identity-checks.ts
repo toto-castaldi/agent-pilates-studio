@@ -253,9 +253,12 @@ export async function checkTeacherIdentities(
   }
   assert.ok(authorNumbers.includes('15555550102') && authorNumbers.includes(managerSender));
   for (const sql of ['SELECT * FROM studio_private.identity_phone_digits()', 'SELECT * FROM studio_private.chat_owners',
+    'SELECT * FROM studio_private.session_owners',
     "SELECT studio_private.bind_teacher_identity(pg_backend_pid(), txid_current(), '15555550120', 1, 1)"]) {
     await assert.rejects(agent.query(sql), { code: '42501' });
   }
+  for (const sql of ['UPDATE studio_private.session_owners SET teacher_id = 1', 'DELETE FROM studio_private.session_owners',
+    'TRUNCATE studio_private.session_owners']) await assert.rejects(broker.query(sql), { code: '42501' });
   for (const sql of [
     "UPDATE app.teachers SET first_name = 'Forged' WHERE id = $1",
     'DELETE FROM app.teachers WHERE id = $1',
