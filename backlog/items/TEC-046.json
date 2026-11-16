@@ -17,6 +17,7 @@
     "REQ-DB-002",
     "REQ-STUDIO-003",
     "REQ-NFR-002",
+    "REQ-NFR-005",
     "REQ-NFR-006"
   ],
   "design_references": [
@@ -32,9 +33,13 @@
   "acceptance_criteria": [
     "hermes/SOUL.md non supera 15.000 caratteri, verificato da un test in memoria, e contiene identità e nome, principi generali, protezioni, limiti delle fasce orarie e indicazioni su quando usare le skill.",
     "Le skill sono versionate nel progetto, incluse nelle immagini e montate in sola lettura; il modello non può crearle, modificarle o installarne altre, verificato con prove su gateway reale che includono tentativi del modello; restano disabilitati gli altri toolset.",
+    "Le skill sono caricate soltanto dall'agente con skill_view. Il sistema rifiuta nel gateway, non solo nel prompt e senza aprire un turno del modello, i comandi WhatsApp di caricamento delle skill: /<nome-skill> e varianti, skill incluse in Hermes, raggruppamenti di skill, alias e percorsi equivalenti. Prove sul gateway reale verificano il rifiuto al primo messaggio di una sessione nuova, in una sessione esistente e durante un turno in corso, e che skill_view interno continui a funzionare. Gli altri comandi slash non sono modificati.",
     "Eventuali viste o funzioni sono introdotte con migrazioni e verificate su PostgreSQL reale per risultati, privilegi senza DDL per l'agente e protezione dei numeri; eventuali tool del plugin hanno test e rispettano l'allowlist e l'attribuzione dell'autore dal sistema.",
     "test:local verifica la coerenza delle colonne citate in SOUL.md e nelle skill con le migrazioni; nessuna regola di comportamento è duplicata nel codice.",
     "L'intero catalogo test:conversation è eseguito con il modello reale con esito registrato e confrontato con quello precedente; regressioni attribuibili alla riduzione sono corrette e gli scenari già instabili sono documentati.",
     "Requisiti, AGENTS.md §5, design e README descrivono la nuova fonte delle regole (SOUL.md e skill) e il limite; le suite di integrazione pertinenti (test:db, test:author, test:hermes, test:upgrade, test:images se cambiano immagini o mount) sono eseguite durante l'item."
+  ],
+  "remarks": [
+    "Decisioni dell'utente del 2026-11-16, prima dell'implementazione: meccanismo V2c di SPIKE-003 da registrare in ADR-004; i comandi delle skill non sono disponibili agli utilizzatori WhatsApp e il blocco è imposto dal sistema nel gateway, senza bypass tramite skill incluse in Hermes, alias o percorsi equivalenti; il blocco non si estende agli altri comandi slash (/refine, /review e simili), fuori da questa decisione. Confermate le sei skill proposte dal rapporto con le regole condivise nel nucleo di SOUL.md, la correzione del rinvio di REQ-AGENT-008 da REQ-NFR-006 a REQ-NFR-005 e l'incorporazione dei testi di SOUL.md e delle skill durante la build per il test in memoria. Autorizzate due esecuzioni complete di test:conversation (57 scenari ciascuna: contesto precedente come base e nuovo contesto) con openai/gpt-6.1-terra e la credenziale già presente nell'ambiente del worker, senza mostrarla né copiarla; solo ambienti di prova isolati e dati sintetici."
   ]
 }
