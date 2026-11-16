@@ -11,6 +11,7 @@ import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
 import { assignmentScenarioMatches, attendanceScenarioMatches, fixtureCancellationReason, fixtureRuleDeactivationReason, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, seededTeacherFixturesMatch, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
 import { parseTeacherLinks } from './teacher-links.mjs';
+import { diagnoseModelRequest, diagnoseResponse } from '../dist/src/conversation-diagnostics.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 if (!apiKey) {
@@ -39,6 +40,12 @@ process.on('SIGTERM', () => { interrupted = true; });
 const safeEnv = Object.fromEntries(['PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_CONFIG', 'XDG_RUNTIME_DIR', 'TMPDIR', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'NO_PROXY', 'HTTPS_PROXY', 'HTTP_PROXY'].filter((key) => process.env[key]).map((key) => [key, process.env[key]]));
 let failed = false;
 const selectedId = process.env.CONVERSATION_SCENARIO;
+const diagnostics = process.env.CONVERSATION_DIAGNOSTICS === '1';
+if (diagnostics && !['indicazione-mittente-collegato-inesistente', 'consultazione-presenze-statistiche',
+  'assenza-anticipata-singola-annullamento', 'consultazione-pianificazione'].includes(selectedId)) {
+  console.error('Diagnostica mirata ammessa solo per uno dei quattro scenari autorizzati.');
+  process.exit(1);
+}
 if (selectedId && !catalog.scenarios.some((scenario) => scenario.id === selectedId)) {
   console.error('Scenario richiesto non presente nel catalogo.');
   process.exit(1);
@@ -82,6 +89,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
   let client;
   let proxy;
   const proxyStats = { requests: 0, denied: 0, completed: 0, failures: 0, status: 0 };
+  let diagnosticModelEvents = [];
   let stage = 'preparazione';
   let cleanupFailed = false;
   let composeReady = false;
@@ -130,6 +138,17 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       upstream.on('timeout', () => upstream.destroy());
       upstream.on('error', () => { proxyStats.failures++; if (!outgoing.headersSent) outgoing.writeHead(502); outgoing.end(); });
       incoming.on('error', () => upstream.destroy());
+      if (diagnostics && incoming.method === 'POST') {
+        let chunks = []; let size = 0;
+        incoming.on('data', (chunk) => { size += chunk.length; if (size <= 4_000_000) chunks.push(chunk); else chunks = []; });
+        incoming.on('end', () => {
+          try {
+            const request = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+            if (Array.isArray(request.tools) && request.tools.length) diagnosticModelEvents = diagnoseModelRequest(request);
+          } catch { /* diagnostics never affect relay delivery or echo a payload */ }
+          chunks = [];
+        });
+      }
       incoming.pipe(upstream);
     });
     await new Promise((resolveListen, reject) => {
@@ -388,6 +407,9 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       // fails. Diagnostics contain only booleans and synthetic record counts.
       stage = `turno ${index + 1}: lettura database`;
       const current = await snapshot();
+      if (diagnostics) {
+        console.error(`Diagnostica mirata turno ${index + 1}: ${JSON.stringify({ model: diagnosticModelEvents, response: diagnoseResponse(text, expectedResponse) })}`);
+      }
       const historyOk = historyPreserved(previous, current);
       const stateOk = assignmentExpected ? !!seededSnapshot && assignmentScenarioMatches(seededSnapshot, current, assignmentExpected)
         : turn.teacherExpected ? teacherScenarioMatches(current, turn.teacherExpected, scenario.sender, scenario.profile ?? null)

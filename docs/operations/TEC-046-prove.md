@@ -2,9 +2,9 @@
 
 ## State
 
-**Blocked, non Done.** Entrambi i cataloghi reali di 57 scenari sono terminati: baseline 46/57 OK, contesto nuovo corretto 49/57 OK, entrambi con exit 1. Quattro scenari passano nella baseline e falliscono sul contesto nuovo: sono possibili regressioni non risolte, non liquidate come instabilità. Il miglioramento di altri sette scenari non le compensa. La verifica secondo `finish-task` non soddisfa il criterio conversazionale né la Definition of Done.
+**Blocked, non Done.** I cataloghi reali completi restano baseline 46/57 OK e contesto nuovo 49/57 OK, entrambi exit 1. La successiva diagnosi mirata autorizzata ha individuato e corretto un falso negativo del matcher della pianificazione; identità mancante e assenza anticipata non hanno riprodotto l'errore senza modifiche al prompt, senza dimostrare causa o stabilità. La statistica riproduce il controllo negativo dopo una precisazione della skill e passa in una successiva acquisizione diagnostica con lo stesso comportamento: la causa della differenza e la risoluzione non sono dimostrate. Il criterio conversazionale e la Definition of Done non sono soddisfatti.
 
-Decisione tecnica: [ADR-004](../adr/ADR-004-read-only-skills-computed-data.md). Nessun ulteriore test reale è stato avviato dopo il confronto autorizzato; nuove ripetizioni richiedono autorizzazione esplicita.
+Decisione tecnica: [ADR-004](../adr/ADR-004-read-only-skills-computed-data.md). Nessuna baseline o catalogo completo è stato ripetuto. Dopo le sette prove mirate descritte sotto non sono stati eseguiti ulteriori tentativi per cercare un esito verde.
 
 ## Ambiente e contenuti
 
@@ -21,7 +21,7 @@ Queste prove usano PostgreSQL e gateway reali, ma sostituiscono il modello e/o M
 
 | Prova | Risultato acquisito | Evidenza |
 | --- | --- | --- |
-| Gate rapido | lint, typecheck, 98/98 test in memoria, build riusciti, anche nella verifica finale | Il modulo dei testi è prodotto dalla build; i test non leggono file né avviano processi |
+| Gate rapido | lint, typecheck, 98/98 test in memoria, build riusciti nella prima valutazione | Il modulo dei testi è prodotto dalla build; i test non leggono file né avviano processi |
 | `test:local` | 46/46 riusciti | Nucleo, configurazione, mount, colonne e funzioni confrontati con le migrazioni; controllo aggiuntivo delle colonne SQL negli esempi riuscito |
 | `test:db` | riuscito su PostgreSQL reale | Confronto con la query congelata del vecchio SOUL, confini stretti di creazione/disattivazione, regole sovrapposte, annullamenti, ora legale, invoker, EXECUTE senza PUBLIC, rifiuto DDL e assenza di telefoni |
 | `test:author` | 3/3 riusciti | Webhook firmati: comandi di skill rifiutati senza richieste al modello in sessioni nuove, esistenti e busy; varianti, pila, skill inclusa in Hermes, bundle e alias; caricamento interno e chiamate SQL delle funzioni con parametri testuali riusciti |
@@ -131,7 +131,57 @@ Le quattro differenze baseline OK / nuovo errore richiedono diagnosi e una verif
 
 I quattro errori comuni sono `indicazione-correzione-annullamento`, `insegnanti-cognome-e-riconoscimento`, `assenze-attesi-presenze` e `presenze-data-odierna`. Negli ultimi tre il turno fallito coincide; per le correzioni la baseline si arresta già al turno 1, il nuovo contesto arriva al turno 6. Quest'ultimo non dimostra né la stessa causa né la regressione di un turno mai raggiunto dalla baseline. Sul nuovo contesto, in tutti e quattro i casi il database risulta conforme e lo storico conservato. Anche questi esiti restano registrati, non trasformati in successi.
 
-Nessuna causa radice dei quattro scostamenti bloccanti è provata dagli indicatori disponibili. Non sono state introdotte modifiche speculative al prompt dopo il confronto, né allentati i controlli del catalogo. Per proseguire serve concordare diagnosi mirata e autorizzazione per le necessarie nuove prove reali; non occorre creare automaticamente un altro item sul branch.
+Al termine del confronto completo nessuna causa radice dei quattro scostamenti era provata dagli indicatori disponibili. La prosecuzione mirata e le sue modifiche sono registrate separatamente qui sotto; gli esiti originali sopra non sono ricalcolati, cancellati o trasformati in successi.
+
+## Prosecuzione mirata autorizzata
+
+L'utente, tramite `t2q`, ha autorizzato diagnosi ed eventuali correzioni dei soli quattro casi, con `openai/gpt-6.1-terra`, senza ripetere baseline o catalogo completo e senza cicli di tentativi fino al verde. Autorizzazione e ripresa da Blocked a In Progress sono registrate nel commit `77d7e28`, pubblicato prima di proseguire. Ogni prima prova ha usato gli stessi testi del confronto completo: nessuna correzione preventiva del comportamento.
+
+### Diagnostica minima e privacy
+
+`CONVERSATION_DIAGNOSTICS=1`, disabilitato per default e accettato solo con uno dei quattro ID selezionati, aggiunge diagnostica dell'harness. La copia della richiesta transitata nel relay è elaborata soltanto in memoria, con limite di quattro MB, ed eliminata; non viene salvata. `conversation-diagnostics` restituisce solo categorie a elenco chiuso: SQL/skill/altro, operazioni e tabelle note, presenza della funzione del mittente, numero di righe, errore booleano/SQLSTATE e indicatori di risposta. Non emette query, parametri, contenuti delle skill, errori arbitrari, ID delle chiamate, messaggi, risposte, nomi, telefoni o credenziali. I test in memoria verificano esplicitamente che valori sorgente ostili non siano restituiti.
+
+Gli indicatori testuali sono ancora lessicali: la categoria inizialmente chiamata `explicitNonparticipant` è stata rinominata `nonparticipantOrCancellationContext` perché riconosce negazioni **oppure** riferimenti ad annullamenti, non prova da sola una classificazione semantica completa. Analogamente `validAttendanceFilter` attesta soltanto la presenza lessicale di `cancelled_at IS NULL`, non che si applichi a ogni ramo della query. Queste cautele evitano di trasformare indizi in cause accertate.
+
+### Registro delle sette prove reali mirate
+
+Tutte il 2026-11-16, fuso Europe/Rome; stack nuovi isolati e dati sintetici, modello OpenRouter reale e Meta sostituita localmente. Le prime quattro sono state eseguite nell'ordine richiesto. La quinta e sesta sono singole verifiche dopo correzioni specifiche. La settima è un'acquisizione diagnostica aggiuntiva, senza cambiare comportamento o controlli, motivata dalla necessità di distinguere negazione, annullamento, appartenenza agli elenchi ed esclusione esplicita: è stata estesa la sola diagnostica con indicatori separati. Non ne sono seguite altre per cercare successi. Log locali ignorati `tmp/targeted-<nome>.log` e timestamp `.start` (eccetto l'avvio della settima, non annotato); nessuna risposta grezza nei log o in questo documento.
+
+| Prova | Orario | Esito | Modifiche rispetto al confronto completo |
+| --- | --- | --- | --- |
+| `identity` — indicazione-mittente-collegato-inesistente | 13:13:22 → 13:14:44 | OK, due turni, exit 0 | Solo diagnostica; nessun cambio al prompt o al catalogo |
+| `stats` — consultazione-presenze-statistiche | 13:14:51 → 13:15:52 | ERRORE T1 testo, exit 1 | Solo diagnostica |
+| `absence` — assenza-anticipata-singola-annullamento | 13:16:23 → 13:18:14 | OK, quattro turni, exit 0 | Solo diagnostica |
+| `planning` — consultazione-pianificazione | 13:18:21 → 13:20:36 | ERRORE T7 testo, exit 1 | Solo diagnostica |
+| `stats-corrected` | 13:23:22 → 13:24:22 | ERRORE T1 testo, exit 1 | Precisazione della skill sulle sole righe valide e sullo storico richiesto; matcher delle esclusioni invariato |
+| `planning-corrected` | 13:24:35 → 13:27:17 | OK, sette turni, exit 0 | Correzione del matcher per il giorno ripetuto su più righe; nessuna modifica alla skill della pianificazione |
+| `stats-semantic` | Avvio non annotato → 13:33:48 | OK, otto turni, exit 0 | Solo estensione diagnostica con indicatori separati; comportamento e controlli identici a `stats-corrected` |
+
+### Cause, ipotesi e modifiche
+
+**Identità mancante.** Nel primo turno la funzione fidata del mittente ha restituito zero righe e il modello ha chiesto il chiarimento; nel secondo ha cercato l'anagrafica, inserito l'insegnante e l'indicazione, con una riga per ciascuna operazione e senza errori SQL o di contesto osservati. Stato e risposta sono conformi. Questo prova il funzionamento del percorso in questa esecuzione, non la causa dell'omissione originale né la stabilità futura. Non sono stati modificati prompt o controlli e non è stata ripetuta la prova per cercare altre conferme.
+
+**Statistiche.** La prima prova riproduce la menzione della persona esclusa dal catalogo, in una frase con negazione o riferimento all'annullamento; il database è conforme e lo storico conservato. Non ci sono errori degli strumenti osservati. Il segnale non dimostra che la persona sia presentata come partecipante, ma nemmeno autorizza a ignorare l'esclusione. REQ-STUDIO-009 limita le consultazioni ordinarie alle registrazioni valide e ammette le annullate su richiesta: il controllo non viene allentato.
+
+La partizione teneva l'istruzione esplicita dello storico su richiesta nella skill di registrazione/correzione, separata dalla skill di consultazione. Quest'ultima imponeva già `cancelled_at IS NULL`, ma non esplicitava il limite alle note aggiuntive. È stata precisata: nessuna nota negativa con nomi ricavati soltanto da righe annullate; storico solo su richiesta, con data, autore e motivo. Si rende autosufficiente la skill consultata, senza introdurre nuovi comportamenti nel codice o cambiare il requisito. È una correzione motivata della partizione, **non una causa radice provata** dell'errore originale.
+
+L'unica verifica dopo questa precisazione fallisce ancora T1: skill caricata, query riuscita con presenza lessicale del filtro sui record validi, persona esclusa ancora menzionata in contesto negativo/annullamento, database invariato. Non è dimostrato un guasto SQL; non è dimostrato nemmeno che l'intera risposta sia un falso negativo. La precisazione non ha risolto il problema nel tentativo osservato.
+
+Una sola ulteriore acquisizione, con indicatori separati per presenza, assenza, annullamento, negazione, registrazione mancante, attesi ed esclusione esplicita, ha invece completato tutti e otto i turni con esito OK e senza menzionare il nome escluso. Non riproducendo la frase negativa, non permette di completarne retroattivamente la diagnosi semantica. Non è stata cambiata nuovamente la skill e il controllo delle esclusioni è identico: è osservata variabilità sullo stesso comportamento, non dimostrata causalità o stabilità. Non sono seguiti altri tentativi.
+
+Durante questa estensione un test in memoria ha rilevato che un indicatore di registrazione mancante attraversava parole intermedie e confondeva una negazione della presenza con la mancanza di registrazioni. Il pattern diagnostico è stato ristretto prima della verifica finale dei test; non è un controllo del catalogo e non ha cambiato esiti, prompt o operazioni delle prove reali. L'avvio della settima prova non è stato annotato perché il comando preparatorio si era arrestato sull'asserzione; la prova è partita dal comando successivo della shell. Si conserva l'ora di conclusione senza inventare quella d'inizio.
+
+**Assenza anticipata.** Tutti e quattro i turni passano senza cambiare prompt o controlli. Nel quarto non sono osservati nuovi INSERT dopo la richiesta di presenza futura; il database resta conforme, la risposta contiene rifiuto, formulazione temporale riconosciuta e condizione legata all'inizio della lezione. È prova del rifiuto corretto in questo caso, non permette di ricostruire il significato della risposta originale non conservata. Nessuna causa radice o stabilità viene dedotta dal singolo risultato positivo.
+
+**Pianificazione: falso negativo accertato del matcher.** Alla prima prova mirata tutte le singole associazioni richieste di giorno, orario e cliente passano, ma il raggruppamento completo di uno stesso giorno fallisce. Il matcher richiedeva che tutte le righe fossero sotto una sola occorrenza del nome del giorno: una risposta con il giorno ripetuto su ogni riga, pur associando correttamente ciascuna persona e ora, falliva.
+
+Un test in memoria con dati sintetici minimali ha riprodotto l'errore prima della modifica (rosso). Il matcher ora cerca ciascuna associazione in una sezione del giorno corretto, conservando l'associazione cliente/ora nella stessa riga; non concatena sezioni di giorni diversi. Test positivi coprono sezione unica e giorno ripetuto; test negativi mantengono il rifiuto di giorno errato, orari scambiati e giorno mancante. I controlli dei nomi esclusi e tutti gli altri criteri restano invariati. È una correzione di rappresentazione del test, non un allentamento del comportamento richiesto. La singola verifica reale dopo la modifica passa tutti e sette i turni. La causa del falso negativo nella prova mirata è accertata; la medesima causa nell'esecuzione completa originale è compatibile ma non provata, poiché la risposta originale non è conservata.
+
+### Esito della prosecuzione e prossimo passo
+
+Gate rapido aggiornato: 100/100 test in memoria, lint, typecheck e build positivi; `test:local` 46/46 positivo dopo le modifiche. Le suite di PostgreSQL, gateway, autore, upgrade, immagini e compattazione restano quelle eseguite nell'item sopra: non sono nuove prove di stabilità con il modello reale.
+
+Il caso statistiche è stato riprodotto e poi non riprodotto sullo stesso comportamento; la risoluzione non è dimostrata. Identità e assenza hanno un esito mirato positivo senza causa originale accertata; non sono dichiarati stabili né retroattivamente corretti. Il prossimo passo necessario è una diagnosi semantica più discriminante della sola risposta statistica e della selezione dei dati (per esempio indicatori separati per appartenenza agli elenchi validi e nota sullo storico), mantenendo i divieti di testo grezzo nei log e senza rimuovere l'esclusione. Serve concordare questa prova ulteriore prima di avviare altre chiamate, non una nuova ripetizione generale. Nessun catalogo o baseline è stato ripetuto e non è stata dichiarata conclusa `finish-task`.
 
 ## Verifica dei criteri e della DoD
 
@@ -142,7 +192,7 @@ Nessuna causa radice dei quattro scostamenti bloccanti è provata dagli indicato
 | Solo caricamento interno; blocco di comandi e varianti anche a sessione nuova e busy | Prova author positiva, senza richiesta al modello per i comandi rifiutati; `skill_view` interno riuscito |
 | Risultati e privilegi SQL, protezione numeri e attribuzione | Prove DB, author e upgrade positive su PostgreSQL reale; nessuna nuova fonte d'identità |
 | Coerenza schema e assenza di regole di comportamento nel codice | `test:local` positivo; codice SQL limitato alla ricostruzione dei dati, istruzioni nel nucleo e nelle skill |
-| Catalogo reale completo, confronto, regressioni corrette | **Non soddisfatto interamente:** i due cataloghi e il confronto sono completi, ma quattro possibili regressioni restano non risolte |
+| Catalogo reale completo, confronto, regressioni corrette | **Non soddisfatto interamente:** i due cataloghi e il confronto sono completi, ma la statistica ha esiti alterni con risoluzione non dimostrata; le cause originarie dei due casi non riprodotti restano indeterminate |
 | Requisiti, AGENTS, design, README e suite pertinenti | Aggiornati; esiti sintetici distinti dalle prove reali nel rapporto |
 
 Il gate rapido è verde; sono presenti ADR, documentazione, esempi di configurazione senza nuovi segreti e voce CHANGELOG. Questo non sostituisce il criterio conversazionale mancante: non si esegue `backlog done` e non si dichiara conclusa `finish-task`.

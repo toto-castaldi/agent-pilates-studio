@@ -220,8 +220,16 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
   if (expected.dayGroups?.length) {
     const days = [...value.matchAll(/luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica/g)];
     const fold = (day: string) => day.normalize('NFD').replace(/\p{M}/gu, '');
-    if (!expected.dayGroups.every((expectedDay) => days.some((day, index) => fold(day[0]) === fold(normalized(expectedDay.day))
-      && responseMatches(value.slice(day.index, days[index + 1]?.index), { contains: [], groups: expectedDay.groups, times: expectedDay.times })))) return false;
+    if (!expected.dayGroups.every((expectedDay) => {
+      const sections = days.flatMap((day, index) => fold(day[0]) === fold(normalized(expectedDay.day))
+        ? [value.slice(day.index, days[index + 1]?.index)] : []);
+      // A weekday may head a whole section or be repeated on each row. Keep
+      // each client/time association within ONE section of the correct day;
+      // do not require all rows to follow a single occurrence of its name.
+      return sections.length > 0
+        && (expectedDay.groups ?? []).every((group) => sections.some((section) => responseMatches(section, { contains: [], groups: [group] })))
+        && (expectedDay.times ?? []).every((time) => sections.some((section) => responseMatches(section, { contains: [], times: [time] })));
+    })) return false;
   }
   const dateText = value.replace(/[*_`~]/g, '');
   if (expected.date && !/\b(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[°º]?\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+\d{4})\b/i.test(dateText)) return false;
