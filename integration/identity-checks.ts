@@ -523,13 +523,23 @@ export async function checkTeacherIdentities(
   assert.equal(only.previous_teacher_id, manager.id);
   assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover()')).rows[0].operator_manager_recover, managerPhoneNow);
   assert.equal((await migrator.query('SELECT studio_private.operator_manager_compensate()')).rows[0].operator_manager_compensate, successorPhone);
-  assert.equal((await migrator.query("SELECT count(*)::int AS n FROM studio_private.manager_role_changes WHERE operation = 'recover' AND NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes k WHERE k.reverses = manager_role_changes.id)")).rows[0].n, 0);
+  // A compensated recovery must be retryable. Counting open changes is not enough.
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover()')).rows[0].operator_manager_recover, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_compensate()')).rows[0].operator_manager_compensate, successorPhone);
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover()')).rows[0].operator_manager_recover, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
   await migrator.query('ROLLBACK');
   await migrator.query('BEGIN');
   assert.equal((await migrator.query("SELECT studio_private.operator_manager_change('renumber', $1, '+15555550132') AS phone", [managerPhoneNow])).rows[0].phone, '+15555550132');
   assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover() AS phone')).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
   assert.equal((await migrator.query('SELECT studio_private.operator_manager_compensate() AS phone')).rows[0].phone, '+15555550132');
-  assert.equal((await migrator.query('SELECT id, phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, '+15555550132');
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, '+15555550132');
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover() AS phone')).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_compensate() AS phone')).rows[0].phone, '+15555550132');
+  assert.equal((await migrator.query('SELECT studio_private.operator_manager_recover() AS phone')).rows[0].phone, managerPhoneNow);
+  assert.equal((await migrator.query('SELECT id FROM studio_private.teachers WHERE phone = $1', [managerPhoneNow])).rows[0].id, manager.id);
   await migrator.query('ROLLBACK');
   assert.equal((await migrator.query('SELECT phone FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0].phone, managerPhoneNow);
 

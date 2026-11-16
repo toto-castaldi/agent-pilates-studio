@@ -14,7 +14,9 @@ CREATE TABLE studio_private.manager_role_changes (
   previous_phone text NOT NULL,
   next_phone text NOT NULL,
   changed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  reverses bigint UNIQUE REFERENCES studio_private.manager_role_changes(id),
+  -- Not unique: a compensated recovery must be retryable. An open recovery is
+  -- still singular, enforced by the insert trigger below.
+  reverses bigint REFERENCES studio_private.manager_role_changes(id),
   CHECK (
     (operation IN ('transfer', 'renumber') AND reverses IS NULL)
     OR (operation IN ('recover', 'compensate') AND reverses IS NOT NULL)
@@ -26,6 +28,39 @@ CREATE TRIGGER manager_role_changes_immutable BEFORE UPDATE OR DELETE ON studio_
 FOR EACH STATEMENT EXECUTE FUNCTION studio_private.prevent_teacher_history_change();
 CREATE TRIGGER manager_role_changes_no_truncate BEFORE TRUNCATE ON studio_private.manager_role_changes
 FOR EACH STATEMENT EXECUTE FUNCTION studio_private.prevent_teacher_history_change();
+CREATE INDEX manager_role_changes_reverses ON studio_private.manager_role_changes (reverses);
+
+-- Append-only audit may record several recoveries of the same change, but only
+-- after the previous recovery was compensated. A second open recovery is refused.
+CREATE FUNCTION studio_private.protect_manager_role_change() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog
+AS $$
+BEGIN
+  IF NEW.operation = 'recover' THEN
+    IF NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes t
+                    WHERE t.id = NEW.reverses AND t.operation IN ('transfer', 'renumber'))
+       OR EXISTS (
+         SELECT 1 FROM studio_private.manager_role_changes r
+          WHERE r.reverses = NEW.reverses AND r.operation = 'recover'
+            AND NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes k
+                             WHERE k.reverses = r.id AND k.operation = 'compensate')
+       ) THEN
+      RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.operation = 'compensate' THEN
+    IF NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes t
+                    WHERE t.id = NEW.reverses AND t.operation = 'recover')
+       OR EXISTS (SELECT 1 FROM studio_private.manager_role_changes k
+                   WHERE k.reverses = NEW.reverses AND k.operation = 'compensate') THEN
+      RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION studio_private.protect_manager_role_change() FROM PUBLIC, studio_agent, studio_broker;
+CREATE TRIGGER manager_role_changes_retry BEFORE INSERT ON studio_private.manager_role_changes
+FOR EACH ROW EXECUTE FUNCTION studio_private.protect_manager_role_change();
 
 ALTER TABLE studio_private.teacher_identity_changes
   DROP CONSTRAINT teacher_identity_changes_operation_check,
