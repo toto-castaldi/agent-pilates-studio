@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Blocked",
   "branch": "task/TEC-046-riduzione-soul-skill-dati-calcolati",
   "dependencies": [
     "SPIKE-003"
@@ -43,5 +43,6 @@
   "remarks": [
     "Decisioni dell'utente del 2026-11-16, prima dell'implementazione: meccanismo V2c di SPIKE-003 da registrare in ADR-004; i comandi delle skill non sono disponibili agli utilizzatori WhatsApp e il blocco è imposto dal sistema nel gateway, senza bypass tramite skill incluse in Hermes, alias o percorsi equivalenti; il blocco non si estende agli altri comandi slash (/refine, /review e simili), fuori da questa decisione. Confermate le sei skill proposte dal rapporto con le regole condivise nel nucleo di SOUL.md, la correzione del rinvio di REQ-AGENT-008 da REQ-NFR-006 a REQ-NFR-005 e l'incorporazione dei testi di SOUL.md e delle skill durante la build per il test in memoria. Autorizzate due esecuzioni complete di test:conversation (57 scenari ciascuna: contesto precedente come base e nuovo contesto) con openai/gpt-6.1-terra e la credenziale già presente nell'ambiente del worker, senza mostrarla né copiarla; solo ambienti di prova isolati e dati sintetici.",
     "Autorizzazione esplicita dell'utente inoltrata da t2q il 2026-11-16: riavviare UN confronto completo dei 57 scenari sul contesto nuovo corretto con openai/gpt-6.1-terra, oltre alle 17 richieste già consumate nella porzione interrotta. Non ripetere la baseline già avviata: acquisirne il solo esito. Conservare e distinguere evidenze sintetiche, porzione interrotta e confronto reale completo; nessuna ulteriore esecuzione reale senza nuova autorizzazione. Ripresa da Blocked a In Progress prima del riavvio; nessuno stack operativo, merge o push main."
-  ]
+  ],
+  "blocked_by": "Confronti autorizzati completati senza ripetere la baseline: precedente 46/57 OK, nuovo corretto 49/57 OK (entrambi exit 1). Quattro casi baseline OK/nuovo ERRORE non risolti: indicazione-mittente-collegato-inesistente (turno 2, stato database), consultazione-presenze-statistiche (turno 1, testo), assenza-anticipata-singola-annullamento (turno 4, testo), consultazione-pianificazione (turno 7, testo). Cause non determinate; l'instabilità storica non esclude regressioni. Rapporto completo con 57 esiti, porzione interrotta da 17 richieste ed evidenze sintetiche separate in docs/operations/TEC-046-prove.md. Gate 98/98 e suite pertinenti verdi, ma criterio conversazionale e DoD non soddisfatti: niente Done. Necessarie diagnosi mirata ed esplicita autorizzazione prima di ulteriori prove reali; nessun altro avvio effettuato."
 }
