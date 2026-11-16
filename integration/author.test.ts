@@ -302,7 +302,10 @@ test('database identities admit WhatsApp senders and bind authors through the is
       const observation = await waitObservation((entry) => entry.user.includes(marker) && entry.last_role === 'tool' && entry.tool_contents.length >= 8);
       assert.equal(observation.has_sender_number, false, 'a sender number reached the synthetic model');
       const results = observation.tool_contents.map((content) => {
-        try { return JSON.parse(content) as { rows?: Record<string, string>[]; sqlstate?: string }; } catch { return {}; }
+        // Hermes appends native loop guidance after repeated failed SQL
+        // calls; the PostgreSQL result remains the leading JSON object.
+        const json = content.split(/\n\n\[Tool loop (?:warning|hard stop):/u, 1)[0];
+        try { return JSON.parse(json) as { rows?: Record<string, string>[]; sqlstate?: string }; } catch { return {}; }
       });
       const own = results.find((result) => Array.isArray(result.rows) && result.rows[0]?.first_name !== undefined)?.rows;
       assert.deepEqual(own?.map((row) => row.first_name), [expected]);
@@ -536,7 +539,7 @@ test('database identities admit WhatsApp senders and bind authors through the is
     await waitReply(before, '15555550103', REFUSAL);
     await manage('enable', ids['15555550103'], null, null, null);
     assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-after-enable', 'context-probe hist-enabled'))).status, 200);
-    const enabled = await waitObservation((entry) => entry.user.includes('hist-enabled'));
+    const enabled = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-enabled'));
     assert.ok(enabled.history.includes('hist-enabled') && !enabled.history.includes('hist-revoked'));
     assert.ok(enabled.system.includes(BETA));
     await delay(2000);
@@ -547,7 +550,7 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.equal((await claim({ ...target, message_id: 'synthetic-before-correct', sender: '15555550103', turn: randomBytes(32).toString('hex') })).status, 400);
     await agent1.query('ROLLBACK');
     assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-after-correct', 'context-probe hist-corrected'))).status, 200);
-    const corrected = await waitObservation((entry) => entry.user.includes('hist-corrected'));
+    const corrected = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-corrected'));
     assert.ok(corrected.system.includes('beta CorrectedInstructor') && !corrected.system.includes(BETA));
     assert.ok(corrected.history.includes('hist-enabled'), 'a correction keeps the same chat');
     await delay(2000);
@@ -557,16 +560,17 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-old-number', 'context-probe hist-oldnumber'))).status, 200);
     await waitReply(before, '15555550103', REFUSAL);
     assert.equal((await gatewayPost(body('15555550106', 'WhatsAppProfile Beta', 'synthetic-new-number', 'context-probe hist-newnumber'))).status, 200);
-    const moved = await waitObservation((entry) => entry.user.includes('hist-newnumber'));
+    const moved = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-newnumber'));
     assert.deepEqual(moved.history, ['hist-newnumber'], 'the new number inherited a conversation');
     assert.ok(moved.system.includes('beta CorrectedInstructor'));
     await delay(2000);
     // A number registered to another person does not inherit the previous chat.
     const epsilon = (await manage('enroll', null, 'epsilon', 'SyntheticInstructor', '+15555550103')).rows[0].id as string;
     assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-reused-number', 'context-probe hist-reused'))).status, 200);
-    const reused = await waitObservation((entry) => entry.user.includes('hist-reused'));
+    const reused = await waitObservation((entry) => entry.has_studio_tool && entry.user.includes('hist-reused'));
     assert.deepEqual(reused.history, ['hist-reused'], 'a reused number inherited the previous chat');
-    assert.ok(reused.system.includes('epsilon SyntheticInstructor') && !reused.system.includes('beta '));
+    assert.ok(reused.system.includes('epsilon SyntheticInstructor'), 'the reused chat has no current registered name');
+    assert.ok(!reused.system.includes('beta '), 'the reused chat exposes the previous owner in its system prompt');
     assert.equal(String((await migrator.query('SELECT teacher_id FROM studio_private.chat_owners WHERE sender_hash = encode(sha256(convert_to($1, \'UTF8\')), \'hex\')', ['15555550103'])).rows[0].teacher_id), epsilon);
     await delay(2000);
     // History and author snapshots are untouched by every identity change.
