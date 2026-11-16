@@ -2,9 +2,11 @@
 
 Processo, regole parallele, skill e CLI provengono dal template di origine e sono identici alla versione adottata, indicata da `Process version` in `docs/PROCESS.md`. Provenienza, basi, risorse adottate e divergenze sono registrate in `docs/TEMPLATE-ORIGIN.md` (REQ-NFR-013); ogni aggiornamento è un'attività di processo con confronto e decisione espliciti, senza merge o sovrascritture automatiche.
 
+Il nucleo `docs/PROCESS.md` rimanda alle guide lette su richiesta in `docs/process/`: backlog, documentazione, Git e release. Le regole specifiche e le deroghe dello studio restano in `AGENTS.md`.
+
 ## Backlog
 
-- `backlog/` contiene un file JSON per record ed è letto e modificato solo con `.agents/tools/backlog.py` (Python 3.10+, sola libreria standard); lo stato è calcolato su richiesta. `backlog docs` elenca requisiti e argomenti del design e `backlog check` verifica anche l'esistenza dei file referenziati.
+- `backlog/` contiene un file JSON per record ed è letto e modificato solo con `.agents/tools/backlog.py` (Python 3.10+, sola libreria standard); lo stato è calcolato su richiesta. `backlog docs` elenca requisiti e argomenti del design e `backlog check` verifica anche l'esistenza dei file referenziati e delle sezioni `PROCESS §N` e `process/<nome> §N`. `backlog docs --for <ID>` (anche `--json`) elenca requisiti, design, ADR, sezioni del processo e di AGENTS e voce del modulo, segnalando i riferimenti non risolti.
 - La CLI è l'unica implementazione della risoluzione degli stati dai branch per le viste `status`, `list`, `ready`, `show` ed `export` (`docs/PROCESS-PARALLEL.md` §1). Provenienza e branch concorrenti sono nel `show` testuale e nell'`export` JSON; `show --json` restituisce il solo record. Il fetch non richiede input, ha timeout di 10 secondi e si salta con `--no-fetch`; se fallisce si usano gli ultimi riferimenti disponibili.
 
 ## Visualizzatori
@@ -14,9 +16,9 @@ Processo, regole parallele, skill e CLI provengono dal template di origine e son
 
 ## Lavoro parallelo
 
-Shared claims e lavoro parallelo sono attivi (`AGENTS.md` §10), con un clone per item sotto `../agent-pilates-studio-work`. La skill `orchestrate` si usa solo su richiesta esplicita e sceglie la modalità:
+Shared claims e lavoro parallelo sono attivi (`AGENTS.md` §10), con un clone per item sotto `../agent-pilates-studio-work`. La skill `orchestrate` si usa solo su richiesta esplicita: i passi comuni sono in `SKILL.md` e si legge soltanto la guida della modalità scelta (`herdr.md`, `claude-code.md` o `manual.md`):
 
-- **Herdr**, se l'orchestratore gira in un terminale `hc`: un tab per worker, lanciato senza genitore (`--no-parent`) tramite il wrapper `"$SHELL" -ic` nello spazio Herdr dell'orchestratore; rapporti e controllo a inizio turno sostituiscono le notifiche dei figli e l'attesa esplicita riguarda un worker per nome;
+- **Herdr**, se l'orchestratore gira in un terminale `hc`: un tab per worker con nome `<repo>-<id>` normalizzato e limitato a 32 caratteri, lanciato senza genitore (`--no-parent`) tramite il wrapper `"$SHELL" -ic` nello spazio Herdr dell'orchestratore; rapporti e controllo a inizio turno sostituiscono le notifiche dei figli e l'attesa esplicita riguarda un worker per nome;
 - **Claude Code**, se l'orchestratore gira in Claude Code: i worker sono sessioni headless `claude -p --dangerously-skip-permissions`, un turno alla volta, con sessione e log in `.git/` del clone;
 - **manuale** negli altri casi.
 

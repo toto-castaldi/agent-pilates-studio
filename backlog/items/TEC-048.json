@@ -5,7 +5,8 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P0",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-048-allineamento-template-v4-0-0",
   "dependencies": [
     "TEC-047"
   ],
@@ -14,10 +15,11 @@
   ],
   "design_references": [
     "PROCESS §3",
-    "PROCESS §4.4",
+    "process/backlog §3",
+    "process/docs",
     "PROCESS §5",
+    "process/git",
     "PROCESS §6",
-    "PROCESS §8",
     "PROCESS-PARALLEL §2",
     "AGENTS §10",
     "design/process-tooling",
@@ -33,5 +35,7 @@
   ],
   "remarks": [
     "Utente: confermata aggiunta e implementazione in questa sessione, P0 EPIC-001 v0.3.0 come cambio di scope, senza worker, deploy o merge."
-  ]
+  ],
+  "outcome": "Adottato template v4.0.0 b642da351cc848df6af89242fd31872b80c38a66 con tag annotato e commit verificati nel clone pubblico isolato, incluse v3.0.1 (1ef003a1806ff2b0362fe19832b7a275d3627600) e v3.1.0 (2334f9c337b0a4202341d18e04404ea098a2c13a). Basi condivise verificate identiche alla v3.0.0 prima della copia; diff completo 26 file. Core Process version 4.0.0, quattro guide docs/process, processo parallelo, CLI, sette skill e tre guide orchestrate identici al target; visualizzatore Pi aggiornato con la sola divergenza del refresh concordata. migrate-process prima dry run senza scritture poi una sola applicazione, sei item migrati; normalizzato via edit anche il riferimento composto storico di TEC-015. Preservati store, descrizioni, criteri e outcome storici; nessun seed adottato. AGENTS, CLAUDE, README, indici, design e riferimenti attuali aggiornati; deroghe e protezioni conservate. Provenienza e limiti in docs/TEMPLATE-ORIGIN.md e CHANGELOG. Nuove prove sintetiche di docs --for (requisiti, design, ADR, sezioni, modulo e riferimenti liberi non risolti), sezioni/file mancanti, migrazione con preservazione campi, sezioni ignote e rifiuto della ripetizione. Superati lint, typecheck, 100 test unitari, build, test:local 50, test:pi 7 con Pi 1.5.0 e test:claude 2 con Claude Code 2.1.323 in PATH temporaneo; corrette due fixture iniziali rifiutate correttamente dalla CLI. Herdr e Claude Code headless simulati, nessun modello o worker reale; limite strict del plugin upstream invariato. Suite Docker, test:pi-package e servizi Meta/OpenRouter non pertinenti. Nessuna lettura o modifica della configurazione privata, dello stack o della produzione; nessun merge o push implementativo su main.",
+  "closed_at": "2026-11-16"
 }

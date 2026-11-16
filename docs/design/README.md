@@ -2,7 +2,7 @@
 
 **Target version:** v0.3.0
 
-Il *come* del progetto, un file per argomento (`docs/PROCESS.md` §5.2). I requisiti sono in `docs/requirements/`. Gli item citano un argomento come `design/<topic>` (il file `docs/design/<topic>.md`); le decisioni con alternative rilevanti sono in `docs/adr/`. L'elenco degli argomenti si ottiene con `python3 .agents/tools/backlog.py docs`; leggere solo i file necessari.
+Il *come* del progetto, un file per argomento (`docs/process/docs.md` §2). I requisiti sono in `docs/requirements/`. Gli item citano un argomento come `design/<topic>` (il file `docs/design/<topic>.md`); le decisioni con alternative rilevanti sono in `docs/adr/`. L'elenco degli argomenti si ottiene con `python3 .agents/tools/backlog.py docs`; `docs --for <ID>` elenca i file necessari per un item.
 
 Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case minuscolo); dividere un argomento che tratta più soggetti.
 

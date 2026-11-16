@@ -5,7 +5,7 @@ description: Complete the backlog item of the current branch - verify acceptance
 
 # Finish an item
 
-Rules: `docs/PROCESS.md` §7, §8 and the quality gate and DoD additions in `AGENTS.md`. The item is the one of the current branch, or the one given in the user's arguments. `backlog` is `python3 .agents/tools/backlog.py`.
+Rules: `docs/PROCESS.md` §4.2, §6 and the quality gate and DoD additions in `AGENTS.md`. The item is the one of the current branch, or the one given in the user's arguments. `backlog` is `python3 .agents/tools/backlog.py`.
 
 ## 1. Checks
 
@@ -15,18 +15,14 @@ Rules: `docs/PROCESS.md` §7, §8 and the quality gate and DoD additions in `AGE
 ## 2. Verify
 
 1. For every acceptance criterion, collect concrete evidence (test names, command output, manual verification performed). List any criterion that is not satisfied.
-2. Run the closing quality gate from `AGENTS.md` §6: lint, typecheck, build and in-memory unit tests only. Install dependencies beforehand if needed. Run integration and end-to-end suites separately during the item whenever needed to prove acceptance criteria or project-specific DoD; they are not part of the closing gate. Report failures with their output; do not hide or skip required evidence.
-3. Walk through the Definition of Done (`docs/PROCESS.md` §8 and `AGENTS.md` §7):
-   - tests at the right level, regression test for bugs;
-   - no secrets in files, commits or logs;
-   - requirements, technical design, ADRs, configuration examples, README updated where needed; requirement and design files describe the current state, without item history (`docs/PROCESS.md` §5.3);
-   - for spikes: report in `docs/spikes/` answers every question, index updated.
+2. Run the closing gate of `AGENTS.md` §6 (`docs/PROCESS.md` §6), after its preparation command if needed, and the integration or end-to-end suites needed to prove the criteria or the DoD additions. Report failures with their output; do not hide or skip required evidence.
+3. Walk through every point of the Definition of Done (`docs/PROCESS.md` §6 and `AGENTS.md` §7). For spikes, the report in `docs/spikes/` answers every question and the index is updated.
 
 If anything is not satisfied, the item is **not** `Done`: report what is missing and either keep working, or with the user's agreement mark it `Blocked` (with shared claims on, push the item branch after that commit, as in step 4) or split it into a new item. To add that item, preserve the current work and ask the user to return to a clean `main` before using `add-item`.
 
 ## 3. Update records
 
-The date in `CHANGELOG.md`, if any, is today's date from `date +%F` (`docs/PROCESS.md` §4.4).
+The date in `CHANGELOG.md`, if any, is today's date from `date +%F` (`docs/PROCESS.md` §4.2).
 
 1. `CHANGELOG.md`: for user-visible changes, add a line under `[Unreleased]` in the right subsection (`Added`, `Changed`, `Fixed`, `Removed`), in the project language, ending with the item ID.
 2. `backlog done <ID> --outcome "<what was delivered and verified>"`: it sets the state and the closing date.

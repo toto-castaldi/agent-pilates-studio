@@ -14,9 +14,11 @@
     "REQ-NFR-008"
   ],
   "design_references": [
-    "PROCESS §8",
-    "§9; AGENTS §6",
-    "§7; design/test-strategy"
+    "PROCESS §6",
+    "process/release",
+    "AGENTS §6",
+    "AGENTS §7",
+    "design/test-strategy"
   ],
   "description": "Rendere rapidi i gate di chiusura (`finish-task`, `merge-task` e push su `main`) limitandoli a test di unità in memoria, in ottica TDD. I test di integrazione ed end-to-end restano, ma si eseguono solo quando servono, item per item, nella chiusura di una versione e nella CI GitHub. Dopo questo item la stessa modifica va riportata, separatamente e senza altri allineamenti, nel template `agile-project-template`.",
   "acceptance_criteria": [

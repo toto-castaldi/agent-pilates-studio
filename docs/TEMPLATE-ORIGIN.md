@@ -1,6 +1,6 @@
 # Origine e confronto del template
 
-Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0, TEC-028 processo e skill alla v1.6.1, TEC-029 alla v1.7.0, TEC-030 alla v1.7.1, TEC-031 alla v2.0.0, TEC-038 alla v2.1.0, TEC-044 alla v2.2.1 e TEC-047 alla v3.0.0, passando per la v2.3.0.
+Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0, TEC-028 processo e skill alla v1.6.1, TEC-029 alla v1.7.0, TEC-030 alla v1.7.1, TEC-031 alla v2.0.0, TEC-038 alla v2.1.0, TEC-044 alla v2.2.1 e TEC-047 alla v3.0.0, passando per la v2.3.0; TEC-048 adotta la v4.0.0, incluse le modifiche v3.0.1 e v3.1.0. Nei resoconti precedenti le sezioni del processo conservano la numerazione storica della versione descritta.
 
 ## Personalizzazione Pi dopo TEC-045
 
@@ -100,6 +100,27 @@ Ambiente esercitato il **2026-11-14**: Node.js e npm del progetto, Python 3, Pi 
 | Migrazione dei documenti | `migrate-docs --dry-run` senza problemi, poi esecuzione e `backlog check` positivo; `backlog docs` elenca 61 requisiti (9 `Withdrawn`) e 18 argomenti. Verificata l'assenza di link Markdown interni non risolti; i test che leggevano il nome dell'agente usano `REQ-AGENT-005.md`. |
 | Orchestrazione | `parallel-work.test.ts` e `worker-command.test.ts` verificano il nuovo segnaposto del comando, la modalità Claude Code documentata e le protezioni in `AGENTS.md`. **Non è una prova di Herdr reale, di Claude Code headless o del comportamento di un modello.** Nessun worker avviato. |
 | Gate e suite | Gate invariato; `test:local` (46), `test:pi` (7) e `test:claude` (2) superati. Le suite Docker, `test:pi-package` e le prove reali Meta/OpenRouter non sono pertinenti e restano richieste alla chiusura di versione. |
+
+## Inventario dopo TEC-048
+
+Riferimenti verificati il **2026-11-16** nel clone pubblico temporaneo isolato: tag annotati `v3.0.1` → `1ef003a1806ff2b0362fe19832b7a275d3627600`, `v3.1.0` → `2334f9c337b0a4202341d18e04404ea098a2c13a`, `v4.0.0` → `b642da351cc848df6af89242fd31872b80c38a66`. L'ultima release pubblicata e `main` del template indicavano la v4.0.0. Verificati tipo dei tag, commit completi e diff completo dei 26 file dalla v3.0.0; non è una verifica di firma crittografica.
+
+| Risorsa | Base adottata dimostrata prima di TEC-048 | Confronto e adozione |
+| --- | --- | --- |
+| Core, processo parallelo, CLI e sette `SKILL.md` | Basi dell'inventario TEC-047 (per merge-task quella precedente); tutti i blob verificati identici alla v3.0.0 prima della copia | Adottati v4.0.0 senza divergenze; Process version 4.0.0, `docs --for`, validazione sezioni e `migrate-process`; regole comuni del gate nella DoD del core. |
+| `docs/process/{backlog,docs,git,release}.md`, tre guide `orchestrate/{herdr,claude-code,manual}.md` | Assenti nella base v3.0.0 | Aggiunti v4.0.0 senza divergenze; guide su richiesta e nomi Herdr `<repo>-<id>`, normalizzati e limitati a 32 caratteri. |
+| Visualizzatore Pi | v2.2.1 con unica divergenza TEC-031, invariato fino alla v3.0.0 | Adottato v4.0.0: cambia soltanto il commento con le sezioni dei filtri, conservato il solo adattamento concordato del catch del refresh. |
+| Plugin Claude, attributi, ignore, symlink e quattro `_TEMPLATE.md` | Basi già dimostrate dagli inventari precedenti | Invariati fra v3.0.0 e target; nessuna nuova base adottata per il solo confronto. |
+| `CLAUDE.md` | Contenuto iniziale verificato, invariato fino alla v3.0.0 | Adottato il testo v4.0.0: rimando anche a `docs/process/`, nessun import indiscriminato delle guide. |
+| AGENTS, README, indici ADR/spike, requisiti e design | Personalizzati | Riportati a mano i rimandi pertinenti, mantenute tutte le protezioni e deroghe, compresi gate e istruzioni specifiche dei clone. Non sostituiti dai file generici. |
+| `backlog/` | Store dello studio | Migrati via CLI i riferimenti di sei item: prima dry run senza scritture, poi una sola esecuzione. Corretto via `edit` anche il riferimento composto storico di TEC-015, che lasciava isolato `§9; AGENTS §6, §7; design/test-strategy`. Nessun seed adottato o storico riscritto; descrizioni, criteri e outcome precedenti conservano la numerazione storica. |
+| Configurazione privata, stack, produzione e altre risorse | Sconosciuta o non applicabile | Non letti o modificati; nessun worker reale avviato, interrotto o rilanciato. |
+
+I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`. `docs --for` non risolve i riferimenti liberi come `PROCESS-PARALLEL §2` e `docs/TEMPLATE-ORIGIN.md`: la CLI li segnala, non si dichiara che ogni riferimento arbitrario sia risolvibile. Restano da leggere esplicitamente se citati dall'item. La migrazione non va ripetuta: rifiuta record che contengono già `process/`.
+
+## Verifica di TEC-048
+
+Le prove `integration/local/process-docs.test.ts` usano una CLI reale e file sintetici per risoluzione dei documenti, sezioni inesistenti, dry run senza scritture, mapping, preservazione dei record e rifiuto della migrazione ripetuta. I controlli delle guide e del wrapper usano sostituti di `hc` e Pi: **non dimostrano Herdr reale, Claude Code headless o il comportamento di un modello**. Nessun worker avviato. Ambiente del **2026-11-16**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**; Pi **1.5.0** e Claude Code **2.1.323** selezionati con PATH temporaneo, senza cambiare i runtime personali. Superati lint, typecheck, **100 test unitari**, build, `test:local` (**50**), `test:pi` (**7**) e `test:claude` (**2**). Le prime due nuove prove avevano fixture non valide (README mancante e sezioni volutamente inesistenti già all'aggiunta, rifiutate correttamente dalla CLI); corrette predisponendo documenti validi prima dell'aggiunta e alterando poi soltanto i documenti sintetici per verificare il rifiuto. Nessuna modifica agli strumenti upstream per far passare i test. Resta il limite del validatore Claude `--strict` già documentato per il plugin originale (autore mancante), non modificato dall'aggiornamento. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti a questo aggiornamento e restano richieste alla chiusura della versione.
 
 ## Procedura manuale per un nuovo confronto
 

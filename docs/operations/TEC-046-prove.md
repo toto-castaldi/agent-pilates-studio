@@ -2,7 +2,7 @@
 
 ## State
 
-**Done — chiuso il 2026-11-16 con limiti accettati esplicitamente dall'utente, non con verifica conversazionale totalmente positiva.** Dopo il rapporto Blocked l'utente ha dichiarato: «no. sono soddifsatto, per me si può chiudere». La chiusura applica la deroga per il solo TEC-046 registrata in `AGENTS.md` §8 a `docs/PROCESS.md` §8 e alla procedura `finish-task`, esclusivamente per la parte conversazionale non soddisfatta. Non dichiara risolte le anomalie né dimostrata la stabilità. Dettagli e gate finale nella sezione di chiusura in fondo; nessun esito originale è cambiato.
+**Done — chiuso il 2026-11-16 con limiti accettati esplicitamente dall'utente, non con verifica conversazionale totalmente positiva.** Dopo il rapporto Blocked l'utente ha dichiarato: «no. sono soddifsatto, per me si può chiudere». La chiusura applica la deroga per il solo TEC-046 registrata in `AGENTS.md` §8 a `docs/PROCESS.md` §6 (allora §8 nella numerazione 3.x) e alla procedura `finish-task`, esclusivamente per la parte conversazionale non soddisfatta. Non dichiara risolte le anomalie né dimostrata la stabilità. Dettagli e gate finale nella sezione di chiusura in fondo; nessun esito originale è cambiato.
 
 ### Valutazione tecnica prima dell'accettazione utente
 
@@ -207,7 +207,7 @@ Alla verifica dopo le due esecuzioni complete non risultano processi `node scrip
 
 Il 2026-11-16, data ricavata dal sistema, `t2q` ha inoltrato la decisione esplicita dell'utente, successiva al rapporto Blocked e ai limiti noti: «no. sono soddifsatto, per me si può chiudere». L'utente rifiuta ulteriore diagnosi e accetta le evidenze già acquisite e il rischio residuo per la chiusura del solo TEC-046. Non sono richiesti o autorizzati da questa decisione altri test reali, diagnosi o nuovi item, e non ne sono stati eseguiti.
 
-La deroga è stata registrata prima della ripresa in `AGENTS.md` §8 e nei remarks del backlog tramite CLI. Il passaggio Blocked → In Progress è stato committato e pubblicato in `909ce8e` prima della procedura di chiusura. La deroga riguarda solo la parte conversazionale non soddisfatta di PROCESS §8 e `finish-task`: tutti gli altri criteri e la DoD restano invariati. Non si estende ad altri item, ai requisiti globali, al gate rapido, alla release, al merge o al deploy, né autorizza push di `main` o rimozioni di clone.
+La deroga è stata registrata prima della ripresa in `AGENTS.md` §8 e nei remarks del backlog tramite CLI. Il passaggio Blocked → In Progress è stato committato e pubblicato in `909ce8e` prima della procedura di chiusura. La deroga riguarda solo la parte conversazionale non soddisfatta di PROCESS §6 (allora §8 nella numerazione 3.x) e `finish-task`: tutti gli altri criteri e la DoD restano invariati. Non si estende ad altri item, ai requisiti globali, al gate rapido, alla release, al merge o al deploy, né autorizza push di `main` o rimozioni di clone.
 
 ### Rischio residuo accettato, non risoluzione dimostrata
 
