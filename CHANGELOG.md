@@ -8,7 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Added
 
-- Procedura operativa per trasferire la funzione di gestore a un'altra persona già censita o per cambiare il numero della stessa persona, con recupero verificabile e allineamento di configurazione e anagrafica. I tentativi equivalenti in chat restano vietati. L'aggiornamento non importa allowlist, mapping o nomi WhatsApp; censire un destinatario non lo preregistra sul numero di test Meta e i backup precedenti non diventano anonimi (TEC-043).
+- Procedura operativa per trasferire la funzione di gestore a un'altra persona già censita o per cambiare il numero della stessa persona, con recupero verificabile e allineamento di configurazione e anagrafica. Il recupero segue l'identità precedente e non chi ha riutilizzato il numero; un errore di scrittura non annulla un cambiamento più vecchio. I tentativi equivalenti in chat restano vietati. L'aggiornamento non importa allowlist, mapping o nomi WhatsApp; censire un destinatario non lo preregistra sul numero di test Meta e i backup precedenti non diventano anonimi (TEC-043).
 
 - Riconoscimento unico del mittente dal database: solo gli insegnanti censiti e abilitati accedono all'agente, con nome e cognome censiti al posto del nome WhatsApp anche per «io» e per l'autore delle nuove operazioni; i numeri non abilitati ricevono un rifiuto fisso senza modello. Il gestore mantiene l'anagrafica in chat con `/anagrafica`; censimenti, revoche e cambi di numero hanno effetto senza riavvio, con chat vuota per un nuovo numero o un numero riassegnato e sessioni precedenti azzerate. Telefoni dell'anagrafica e numeri degli autori non sono più leggibili dal modello e l'agente non crea insegnanti (TEC-042).
 

@@ -46,10 +46,10 @@ Solo identità, numeri e dati sintetici, in progetti Docker separati. Nessun avv
 
 | Comando | Esito |
 | --- | --- |
-| `npm run test:local` | 50/50 |
+| `npm run test:local` | 51/51 dopo la correzione, inclusa l'iniezione del fallimento di allineamento e di scrittura del segreto |
 | `npm run test:pi` con Pi 1.5.0 nel `PATH` temporaneo | 7/7. La prima esecuzione, col `pi` 1.5.2 dell'utente, è fallita sul controllo di versione e non conta come successo. |
 | `npm run test:pi-package` | 1/1 |
-| `npm run test:db` | 1/1, inclusa la procedura operatore nel database e il rifiuto di chat/broker/agente |
+| `npm run test:db` | 2/2 dopo la correzione: privilegi, rifiuto del recupero su numero riassegnato, e recupero `ops` che compensa solo l'ultimo cambiamento |
 | `npm run test:hermes` | 1/1 |
 | `npm run test:author` | Prima esecuzione parallela: `management.test.ts` fallito con `Database role setup failed.` dopo 12 secondi, gli altri quattro test passati, exit 1. Riesecuzione isolata di quel file: passata. Suite completa ripetuta: 5/5. Dopo l'aggiunta del database vuoto, suite finale 6/6. Il primo fallimento resta registrato e non è stato riclassificato. |
 | `npm run test:compaction` | 1/1 |
@@ -74,6 +74,15 @@ Errori originali, non riclassificati:
   - `aggiornamento-implicito` T1: diagnostica con un cliente e una regola cliente, nessuna domanda, conferma o errore riconosciuti nella risposta.
 
 Non si dichiara che questi sette casi siano corretti, né che i due stati difformi abbiano la stessa causa dei fallimenti lessicali di TEC-042. Non è stato eseguito un confronto controllato prima/dopo con lo stesso catalogo. Le prove TEC-046 non sono una deroga applicabile qui.
+
+## Review corrections
+
+Due difetti della prima consegna, riprodotti su PostgreSQL 17.10 isolato, sono stati corretti senza riscrivere `aa075a5`:
+
+- Il recupero di un trasferimento cercava il gestore precedente dal numero. Dopo un cambio legittimo e la riassegnazione di quel numero, il recupero avrebbe reso gestore chi lo aveva ricevuto. L'audit ora conserva `previous_teacher_id`. Il recupero rifiuta con `23514` se quell'identità non ha più il numero, senza scrivere un recupero. Coperto da `identity-checks.ts` in `test:db`.
+- Un errore di allineamento durante `manager-recover` richiamava di nuovo il recupero e consumava anche il trasferimento precedente. Ora compensa solo il recupero corrente. `integration/local/manager-phone.test.ts` inietta il fallimento di `mv` sulla configurazione e sul segreto, anche senza altri cambi da recuperare. `manager-recovery.test.ts` ripete il caso sull'immagine `ops` e su PostgreSQL reale: due trasferimenti, un solo recupero compensato, configurazione e anagrafica allineate al gestore corrente.
+
+Il catalogo OpenRouter non è stato rieseguito. Restano i risultati originali: 49 OK, 7 ERRORE, exit 1, SOUL `2c0467ce707e366a926ff3436b198dd9c4f737a339e6998ff2c679781871a864`, catalogo `321ea338dbc3ebba6470cd15b8b5e8cfa1424bd340706a79312eb0fc28290555`. Meta reale e produzione non sono stati usati.
 
 ## Limits
 

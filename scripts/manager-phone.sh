@@ -50,11 +50,50 @@ manager_sql() {
       rm -f -- "$err"
       fail 'No manager change to recover.'
     fi
+    if grep -q 'No manager recovery to compensate' "$err"; then
+      rm -f -- "$err"
+      fail 'No manager recovery to compensate.'
+    fi
     rm -f -- "$err"
     return 1
   fi
   rm -f -- "$err"
   printf '%s' "$output"
+}
+
+# A failed recovery must undo that recovery only. Calling recover again would
+# consume an older transfer or renumber.
+undo_applied_change() {
+  if [[ $command == manager-recover ]]; then
+    manager_sql "SELECT studio_private.operator_manager_compensate()"
+  else
+    manager_sql "SELECT studio_private.operator_manager_recover()"
+  fi
+}
+
+realign_after_undo() {
+  local phone=$1
+  phone=${phone//$'\r'/}
+  phone=${phone##*$'\n'}
+  read -r phone <<< "$phone"
+  [[ $phone =~ ^\+[1-9][0-9]{7,14}$ ]] || return 1
+  write_manager_secret "$phone" || return 1
+  align_env_file "$phone" || return 1
+}
+
+fail_undo() {
+  local undone
+  undone=$(undo_applied_change) || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
+  if ! realign_after_undo "$undone"; then
+    if [[ $command == manager-recover ]]; then
+      fail 'Manager recovery was compensated in the database but configuration could not be aligned. Gateway and broker remain stopped.'
+    fi
+    fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
+  fi
+  if [[ $command == manager-recover ]]; then
+    fail 'Manager recovery was compensated. Configuration matches the registry. No earlier change was consumed.'
+  fi
+  fail 'Manager change was rejected and reversed.'
 }
 
 run_manager_phone() {
@@ -87,19 +126,13 @@ run_manager_phone() {
   applied=${applied##*$'\n'}
   read -r applied <<< "$applied"
   if [[ ! $applied =~ ^\+[1-9][0-9]{7,14}$ ]]; then
-    manager_sql "SELECT studio_private.operator_manager_recover()" >/dev/null || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
-    fail "Manager change result was not a canonical phone (${#applied} characters) and was reversed."
+    fail_undo
   fi
   if ! write_manager_secret "$applied"; then
-    recovered=$(manager_sql "SELECT studio_private.operator_manager_recover()") || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
-    fail 'Manager secret update failed and was reversed.'
+    fail_undo
   fi
   if ! align_env_file "$applied"; then
-    recovered=$(manager_sql "SELECT studio_private.operator_manager_recover()") || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
-    recovered=${recovered//$'\n'/}
-    write_manager_secret "$recovered" || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
-    align_env_file "$recovered" || fail 'Manager change applied in the database but configuration was not updated; recovery failed. Gateway and broker remain stopped.'
-    fail 'Manager change was rejected and reversed.'
+    fail_undo
   fi
   [[ $command == manager-recover ]] || rm -f -- "$next_file"
   step 'Manager configuration aligned. Recreate gateway and broker together before exposing the webhook. Recovery reverses only the latest change and requires both writers to stay stopped.'

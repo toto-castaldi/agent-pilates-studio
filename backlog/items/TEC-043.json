@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-043-transizione-operativa-identita-unica",
   "dependencies": [
     "TEC-042"
@@ -65,5 +65,7 @@
   ],
   "remarks": [
     "Quarto e ultimo item del piano concordato il 2026-11-12 per la v0.3.0: TEC-041 → US-017 → TEC-042 → questa verifica operativa. I singoli item mantengono i propri obblighi di test; questo item copre integrazione e recupero complessivi. L'aggiunta documentale non autorizza aggiornamenti della produzione e usa soltanto la deroga esplicita per lasciare .pi/settings.json locale, intatto e fuori dai commit."
-  ]
+  ],
+  "outcome": "Corretti i due rilievi di revisione: il recupero rifiuta un numero riassegnato senza attribuirlo a chi lo ha ricevuto; un errore di scrittura compensa solo l'ultimo recupero. Prove su PostgreSQL reale e sull'immagine ops. Catalogo OpenRouter non rieseguito: restano 49/56 OK e 7 ERRORE. Meta reale e produzione non verificati.",
+  "closed_at": "2026-11-16"
 }

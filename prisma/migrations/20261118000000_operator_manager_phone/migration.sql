@@ -8,13 +8,16 @@ CREATE TABLE studio_private.manager_role_changes (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   operation text NOT NULL,
   teacher_id bigint NOT NULL REFERENCES studio_private.teachers(id),
+  -- The manager identity before the change. Recovery must use this id, never
+  -- whoever currently holds the previous phone.
+  previous_teacher_id bigint NOT NULL REFERENCES studio_private.teachers(id),
   previous_phone text NOT NULL,
   next_phone text NOT NULL,
   changed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   reverses bigint UNIQUE REFERENCES studio_private.manager_role_changes(id),
   CHECK (
     (operation IN ('transfer', 'renumber') AND reverses IS NULL)
-    OR (operation = 'recover' AND reverses IS NOT NULL)
+    OR (operation IN ('recover', 'compensate') AND reverses IS NOT NULL)
   )
 );
 REVOKE ALL ON studio_private.manager_role_changes FROM PUBLIC, studio_agent, studio_broker;
@@ -108,8 +111,9 @@ BEGIN
     IF NOT FOUND OR NOT next_person.access_enabled OR next_person.id = current_person.id THEN
       RAISE EXCEPTION 'Enabled successor identity is required' USING ERRCODE = '42501';
     END IF;
-    INSERT INTO studio_private.manager_role_changes (operation, teacher_id, previous_phone, next_phone)
-      VALUES ('transfer', next_person.id, current_canonical, next_canonical);
+    INSERT INTO studio_private.manager_role_changes
+      (operation, teacher_id, previous_teacher_id, previous_phone, next_phone)
+      VALUES ('transfer', next_person.id, current_person.id, current_canonical, next_canonical);
     RETURN next_canonical;
   END IF;
   IF EXISTS (SELECT 1 FROM studio_private.teachers WHERE phone = next_canonical) THEN
@@ -125,8 +129,9 @@ BEGIN
     VALUES (next_person.id, 'operator_renumber', current_person.id, ltrim(current_canonical, '+'),
             current_person.first_name || ' ' || current_person.last_name,
             studio_private.identity_state(current_person), studio_private.identity_state(next_person));
-  INSERT INTO studio_private.manager_role_changes (operation, teacher_id, previous_phone, next_phone)
-    VALUES ('renumber', next_person.id, current_canonical, next_canonical);
+  INSERT INTO studio_private.manager_role_changes
+    (operation, teacher_id, previous_teacher_id, previous_phone, next_phone)
+    VALUES ('renumber', next_person.id, current_person.id, current_canonical, next_canonical);
   DELETE FROM studio_private.teacher_identity_writes
    WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current();
   RETURN next_canonical;
@@ -149,21 +154,27 @@ BEGIN
   END IF;
   SELECT * INTO change FROM studio_private.manager_role_changes c
    WHERE c.operation IN ('transfer', 'renumber')
-     AND NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes r WHERE r.reverses = c.id)
+     AND NOT EXISTS (
+       SELECT 1 FROM studio_private.manager_role_changes r
+        WHERE r.reverses = c.id AND r.operation = 'recover'
+          AND NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes k
+                           WHERE k.reverses = r.id AND k.operation = 'compensate')
+     )
    ORDER BY c.id DESC LIMIT 1 FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'No manager change to recover' USING ERRCODE = '02000';
   END IF;
   IF change.operation = 'transfer' THEN
-    SELECT * INTO person FROM studio_private.teachers WHERE phone = change.previous_phone FOR UPDATE;
-    IF NOT FOUND OR NOT person.access_enabled
+    -- The previous manager is an identity, not the current holder of a number.
+    SELECT * INTO person FROM studio_private.teachers WHERE id = change.previous_teacher_id FOR UPDATE;
+    IF NOT FOUND OR NOT person.access_enabled OR person.phone IS DISTINCT FROM change.previous_phone
        OR NOT EXISTS (SELECT 1 FROM studio_private.teachers t
                        WHERE t.id = change.teacher_id AND t.phone = change.next_phone AND t.access_enabled) THEN
       RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
     END IF;
     INSERT INTO studio_private.manager_role_changes
-      (operation, teacher_id, previous_phone, next_phone, reverses)
-      VALUES ('recover', person.id, change.next_phone, change.previous_phone, change.id);
+      (operation, teacher_id, previous_teacher_id, previous_phone, next_phone, reverses)
+      VALUES ('recover', person.id, change.previous_teacher_id, change.next_phone, change.previous_phone, change.id);
     RETURN change.previous_phone;
   END IF;
   SELECT * INTO person FROM studio_private.teachers WHERE id = change.teacher_id FOR UPDATE;
@@ -186,16 +197,78 @@ BEGIN
   DELETE FROM studio_private.teacher_identity_writes
    WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current();
   INSERT INTO studio_private.manager_role_changes
-    (operation, teacher_id, previous_phone, next_phone, reverses)
-    VALUES ('recover', restored.id, change.next_phone, change.previous_phone, change.id);
+    (operation, teacher_id, previous_teacher_id, previous_phone, next_phone, reverses)
+    VALUES ('recover', restored.id, change.previous_teacher_id, change.next_phone, change.previous_phone, change.id);
   RETURN change.previous_phone;
 EXCEPTION WHEN unique_violation THEN
   RAISE EXCEPTION 'Manager phone is already assigned' USING ERRCODE = '23505';
 END;
 $$;
 
+-- Undoes only the latest recovery. It must not recover an older change.
+CREATE FUNCTION studio_private.operator_manager_compensate()
+RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog
+AS $$
+DECLARE
+  recovery studio_private.manager_role_changes%ROWTYPE;
+  change studio_private.manager_role_changes%ROWTYPE;
+  person studio_private.teachers%ROWTYPE;
+  restored studio_private.teachers%ROWTYPE;
+BEGIN
+  IF session_user <> 'studio_migrator' THEN
+    RAISE EXCEPTION 'Operator manager change is required' USING ERRCODE = '42501';
+  END IF;
+  SELECT * INTO recovery FROM studio_private.manager_role_changes r
+   WHERE r.operation = 'recover'
+     AND NOT EXISTS (SELECT 1 FROM studio_private.manager_role_changes k WHERE k.reverses = r.id)
+   ORDER BY r.id DESC LIMIT 1 FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No manager recovery to compensate' USING ERRCODE = '02000';
+  END IF;
+  SELECT * INTO change FROM studio_private.manager_role_changes WHERE id = recovery.reverses FOR UPDATE;
+  IF NOT FOUND OR change.operation NOT IN ('transfer', 'renumber') THEN
+    RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
+  END IF;
+  IF change.operation = 'renumber' THEN
+    SELECT * INTO person FROM studio_private.teachers WHERE id = change.teacher_id FOR UPDATE;
+    IF NOT FOUND OR NOT person.access_enabled OR person.phone IS DISTINCT FROM change.previous_phone
+       OR EXISTS (SELECT 1 FROM studio_private.teachers WHERE phone = change.next_phone) THEN
+      RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
+    END IF;
+    INSERT INTO studio_private.teacher_identity_writes
+      VALUES (pg_backend_pid(), txid_current(), 'operator_renumber', person.id, person.id,
+              ltrim(person.phone, '+'), person.first_name || ' ' || person.last_name);
+    UPDATE studio_private.teachers SET phone = change.next_phone
+     WHERE id = person.id RETURNING * INTO restored;
+    INSERT INTO studio_private.teacher_identity_changes
+      (teacher_id, operation, actor_teacher_id, actor_phone, actor_name, before_state, after_state)
+      VALUES (restored.id, 'operator_renumber', person.id, ltrim(person.phone, '+'),
+              person.first_name || ' ' || person.last_name,
+              studio_private.identity_state(person), studio_private.identity_state(restored));
+    DELETE FROM studio_private.teacher_identity_writes
+     WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current();
+  ELSE
+    SELECT * INTO person FROM studio_private.teachers WHERE id = change.previous_teacher_id FOR UPDATE;
+    IF NOT FOUND OR person.phone IS DISTINCT FROM change.previous_phone
+       OR NOT EXISTS (SELECT 1 FROM studio_private.teachers t
+                       WHERE t.id = change.teacher_id AND t.phone = change.next_phone) THEN
+      RAISE EXCEPTION 'Manager recovery does not match the current identity' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  INSERT INTO studio_private.manager_role_changes
+    (operation, teacher_id, previous_teacher_id, previous_phone, next_phone, reverses)
+    VALUES ('compensate', change.teacher_id, change.previous_teacher_id,
+            recovery.next_phone, recovery.previous_phone, recovery.id);
+  RETURN recovery.previous_phone;
+EXCEPTION WHEN unique_violation THEN
+  RAISE EXCEPTION 'Manager phone is already assigned' USING ERRCODE = '23505';
+END;
+$$;
+
 REVOKE ALL ON FUNCTION studio_private.operator_manager_change(text, text, text),
-  studio_private.operator_manager_recover() FROM PUBLIC, studio_agent, studio_broker;
+  studio_private.operator_manager_recover(), studio_private.operator_manager_compensate()
+  FROM PUBLIC, studio_agent, studio_broker;
 
 -- Redaction must also cover phones recorded only in the operator audit.
 CREATE OR REPLACE FUNCTION studio_private.identity_phone_digits() RETURNS SETOF text
