@@ -1,32 +1,36 @@
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client, type ClientConfig } from 'pg';
+import { bindAgent, ownerContext } from './identity-seed.js';
 import { checkTeacherHistoryProtection, readTeacherState } from './teacher-fixtures.js';
 
-// Direct trusted contexts are fixtures only. author.test.ts separately proves
-// that gateway, plugin and broker establish them from signed WhatsApp messages.
-export async function checkTeachers(agent: Client, migrator: Client, agentConfig: ClientConfig): Promise<void> {
-  const bind = async (connection: Client, phone = '15555550102', name: string | null = 'Synthetic Alpha') => {
+// Contexts are bound through the trusted broker login as for a turn; the owner
+// fixture is used only for negative checks of the migration role.
+// author.test.ts separately proves the signed WhatsApp path.
+export async function checkTeachers(agent: Client, migrator: Client, broker: Client, agentConfig: ClientConfig,
+  teachers: { one: string; two: string }): Promise<void> {
+  const bind = async (connection: Client, phone = '15555550102') => {
+    if (connection !== migrator) return bindAgent(connection, broker, phone);
     await connection.query('BEGIN');
-    const row = (await connection.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, $3, $4, clock_timestamp() + interval '1 minute')", [row.pid, row.txid, phone, name]);
-    return row.pid as number;
+    await ownerContext(connection, broker, phone);
+    return 0;
   };
+  const authors = async (table: string, id: string) => (await migrator.query(`SELECT * FROM studio_private.${table} WHERE id = $1`, [id])).rows[0];
   const reject = async (connection: Client, sql: string, code: string, parameters: unknown[] = []) => {
     await connection.query('SAVEPOINT invalid_teacher_data');
     await assert.rejects(connection.query(sql, parameters), { code });
     await connection.query('ROLLBACK TO SAVEPOINT invalid_teacher_data');
     await connection.query('RELEASE SAVEPOINT invalid_teacher_data');
   };
-  const insertTeacher = "INSERT INTO app.teachers (first_name, last_name, created_at, created_by_phone, created_by_name) VALUES ('Synthetic', 'InstructorOne', '1900-01-01', 'forged', 'forged') RETURNING *";
+  const insertTeacher = "INSERT INTO app.teachers (first_name, last_name, created_at, created_by_name) VALUES ('Synthetic', 'Unregistered', '1900-01-01', 'forged') RETURNING *";
   const insertRule = `WITH rule AS (
-    INSERT INTO app.teacher_rules (teacher_id, rule_text, created_at, created_by_phone, created_by_name)
-    VALUES ($1, $2, '1900-01-01', 'forged', 'forged') RETURNING *
+    INSERT INTO app.teacher_rules (teacher_id, rule_text, created_at, created_by_name)
+    VALUES ($1, $2, '1900-01-01', 'forged') RETURNING *
   ), intervals AS (
     INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max, is_active)
     SELECT id, $3::smallint, $4::time, $5::time, false FROM rule RETURNING rule_id
   ) SELECT rule.* FROM rule JOIN intervals ON rule.id = intervals.rule_id`;
-  const insertAssignment = "INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, '1900-01-01', 'forged', 'forged') RETURNING *";
+  const insertAssignment = "INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_name) VALUES ($1, $2, $3, '1900-01-01', 'forged') RETURNING *";
   const untrustedInserts = [
     insertTeacher,
     "INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES (0, 'Synthetic no context')",
@@ -36,8 +40,8 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await agent.query("SELECT set_config('studio.author', 'forged', false)");
   for (const sql of untrustedInserts) await assert.rejects(agent.query(sql), { code: '42501' });
   await agent.query('BEGIN');
-  const expired = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-  await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', NULL, clock_timestamp() - interval '1 second')", [expired.pid, expired.txid]);
+  const expired = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current()::text AS txid')).rows[0];
+  await ownerContext(migrator, broker, '15555550102', expired, '-1 second');
   for (const sql of untrustedInserts) await reject(agent, sql, '42501');
   await agent.query('ROLLBACK');
   for (const table of ['author_context', 'teacher_rule_builds']) {
@@ -48,18 +52,15 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
 
   await bind(agent);
   const before = (await agent.query('SELECT clock_timestamp() AS now')).rows[0].now as Date;
-  const teacher = (await agent.query(insertTeacher)).rows[0];
-  const teacherId = teacher.id as string;
-  assert.equal(teacher.created_by_phone, '15555550102');
-  assert.equal(teacher.created_by_name, 'Synthetic Alpha');
-  assert.ok((teacher.created_at as Date).getTime() >= before.getTime());
+  // Even with a valid context, only the guided management creates teachers.
+  await reject(agent, insertTeacher, '42501');
+  await reject(agent, "INSERT INTO app.teachers (first_name, last_name) VALUES ('Synthetic', 'InstructorThree')", '42501');
+  const teacherId = teachers.one;
+  const otherTeacherId = teachers.two;
+  assert.deepEqual(Object.keys((await agent.query('SELECT * FROM app.teachers WHERE id = $1', [teacherId])).rows[0]).sort(),
+    ['created_at', 'created_by_name', 'first_name', 'id', 'last_name']);
   // The name namespace is independent of clients.
   await agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Synthetic', 'InstructorOne')");
-  const otherTeacherId = (await agent.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('Synthetic', 'InstructorTwo') RETURNING id")).rows[0].id as string;
-  await reject(agent, "INSERT INTO app.teachers (first_name, last_name) VALUES ('SYNTHETIC', 'instructorone')", '23505');
-  for (const [first, last] of [['', 'Synthetic'], ['  ', 'Synthetic'], ['Synthetic', ''], [' Synthetic', 'Trim'], ['Synthetic', 'Trim ']]) {
-    await reject(agent, 'INSERT INTO app.teachers (first_name, last_name) VALUES ($1, $2)', '23514', [first, last]);
-  }
 
   for (const [weekday, min, max] of [[0, '09:00', '10:00'], [8, '09:00', '10:00'], [1, '10:01', '10:00'], [1, '09:00:01', '10:00'], [1, '09:00', '10:00:00.5'], [1, '24:00', '24:00'], [1, '09:00', '24:00']] as const) {
     await reject(agent, insertRule, '23514', [teacherId, 'Synthetic invalid interval', weekday, min, max]);
@@ -68,14 +69,15 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
     await reject(agent, insertRule, '23514', [teacherId, text, 1, '09:00', '10:00']);
   }
   await reject(agent, insertRule, '23503', ['999999999', 'Synthetic missing teacher', 1, '09:00', '10:00']);
-  for (const state of ["deactivated_at = clock_timestamp()", "deactivated_by_phone = 'forged'", "deactivated_by_name = 'forged'", "deactivation_reason = 'synthetic'"]) {
+  await reject(agent, "INSERT INTO app.teacher_rules (teacher_id, rule_text, deactivated_by_phone) VALUES ($1, 'Synthetic invalid state', 'forged')", '42703', [teacherId]);
+  for (const state of ["deactivated_at = clock_timestamp()", "deactivated_by_name = 'forged'", "deactivation_reason = 'synthetic'"]) {
     const [column, value] = state.split(' = ');
     await reject(agent, `INSERT INTO app.teacher_rules (teacher_id, rule_text, ${column}) VALUES ($1, 'Synthetic invalid state', ${value})`, '23514', [teacherId]);
   }
 
   const firstRule = (await agent.query(insertRule, [teacherId, 'Synthetic Monday rule', 1, '09:00', '10:00'])).rows[0];
-  assert.equal(firstRule.created_by_phone, '15555550102');
-  assert.equal(firstRule.created_by_name, 'Synthetic Alpha');
+  assert.equal('created_by_phone' in firstRule, false);
+  assert.equal(firstRule.created_by_name, 'Synthetic Profile');
   assert.ok((firstRule.created_at as Date).getTime() >= before.getTime());
   assert.equal((await agent.query('SELECT is_active FROM app.teacher_rule_intervals WHERE rule_id = $1', [firstRule.id])).rows[0].is_active, true);
   for (const targetTeacher of [teacherId, otherTeacherId]) {
@@ -100,8 +102,8 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await agent.query('SET CONSTRAINTS ALL DEFERRED');
 
   const assignment = (await agent.query(insertAssignment, [teacherId, '2020-01-01', '09:00'])).rows[0];
-  assert.equal(assignment.created_by_phone, '15555550102');
-  assert.equal(assignment.created_by_name, 'Synthetic Alpha');
+  assert.equal('created_by_phone' in assignment, false);
+  assert.equal(assignment.created_by_name, 'Synthetic Profile');
   assert.ok((assignment.created_at as Date).getTime() >= before.getTime());
   const future = (await agent.query(insertAssignment, [teacherId, '2099-01-01', '09:00'])).rows[0];
   await agent.query(insertAssignment, [teacherId, '2020-01-01', '09:01']);
@@ -116,7 +118,8 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
     await reject(agent, insertAssignment, '23514', [teacherId, date, time]);
   }
   await reject(agent, insertAssignment, '23503', ['999999999', '2020-01-01', '10:00']);
-  for (const state of ["cancelled_at = clock_timestamp()", "cancelled_by_phone = 'forged'", "cancelled_by_name = 'forged'", "cancellation_reason = 'synthetic'"]) {
+  await reject(agent, "INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, cancelled_by_phone) VALUES ($1, '2020-01-01', '10:00', 'forged')", '42703', [teacherId]);
+  for (const state of ["cancelled_at = clock_timestamp()", "cancelled_by_name = 'forged'", "cancellation_reason = 'synthetic'"]) {
     const [column, value] = state.split(' = ');
     await reject(agent, `INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, ${column}) VALUES ($1, '2020-01-01', '10:00', ${value})`, '23514', [teacherId]);
   }
@@ -130,6 +133,11 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   }
   await agent.query('COMMIT');
   assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
+  for (const [table, id] of [['teacher_rules', firstRule.id], ['teacher_assignments', assignment.id]]) {
+    const row = await authors(table, id);
+    assert.deepEqual([row.created_by_phone, row.created_by_name], ['15555550102', 'Synthetic Profile']);
+    assert.ok((row.created_at as Date).getTime() >= before.getTime());
+  }
 
   // Incomplete rules fail at commit, not only when the application remembers to check.
   await bind(agent);
@@ -148,14 +156,15 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await reject(agent, "INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, 6, '09:00', '10:00')", '42501', [firstRule.id]);
   await reject(agent, 'UPDATE app.teacher_rule_intervals SET is_active = false WHERE rule_id = $1', '42501', [firstRule.id]);
   await reject(agent, "UPDATE app.teachers SET first_name = 'Rewritten' WHERE id = $1", '42501', [teacherId]);
-  await reject(agent, "UPDATE app.teachers SET created_by_phone = 'forged' WHERE id = $1", '42501', [teacherId]);
+  await reject(agent, "UPDATE app.teachers SET created_by_name = 'forged' WHERE id = $1", '42501', [teacherId]);
   await reject(agent, "UPDATE app.teacher_rules SET rule_text = 'Rewritten', deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic' WHERE id = $1", '42501', [firstRule.id]);
   await reject(agent, 'UPDATE app.teacher_rules SET teacher_id = $1 WHERE id = $2', '42501', [otherTeacherId, firstRule.id]);
   await reject(agent, "UPDATE app.teacher_assignments SET lesson_date = '2020-01-02' WHERE id = $1", '42501', [assignment.id]);
   await agent.query('COMMIT');
   await bind(migrator);
-  await reject(migrator, "UPDATE app.teachers SET created_by_phone = 'forged' WHERE id = $1", '42501', [teacherId]);
-  await reject(migrator, "UPDATE app.teachers SET first_name = 'Rewritten' WHERE id = $1", '42501', [teacherId]);
+  await reject(migrator, "UPDATE studio_private.teachers SET created_by_phone = 'forged' WHERE id = $1", '42501', [teacherId]);
+  await reject(migrator, "UPDATE studio_private.teachers SET first_name = 'Rewritten' WHERE id = $1", '42501', [teacherId]);
+  await reject(migrator, "UPDATE studio_private.teacher_rules SET created_by_phone = 'forged', deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic' WHERE id = $1", '42501', [firstRule.id]);
   await reject(migrator, "UPDATE app.teacher_rules SET rule_text = 'Rewritten', deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic' WHERE id = $1", '42501', [firstRule.id]);
   await reject(migrator, 'UPDATE app.teacher_rule_intervals SET is_active = false WHERE rule_id = $1', '42501', [firstRule.id]);
   await reject(migrator, "UPDATE app.teacher_rule_intervals SET start_time_max = '10:01' WHERE rule_id = $1", '42501', [firstRule.id]);
@@ -169,10 +178,9 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await checkTeacherHistoryProtection(agent, migrator);
   assert.deepEqual(await readTeacherState(agent), originalState);
 
-  await bind(agent, '15555550103', null);
-  const deactivated = (await agent.query("UPDATE app.teacher_rules SET deactivated_at = '1900-01-01', deactivated_by_phone = 'forged', deactivated_by_name = 'forged', deactivation_reason = 'synthetic replacement' WHERE id = $1 RETURNING *", [firstRule.id])).rows[0];
-  assert.equal(deactivated.deactivated_by_phone, '15555550103');
-  assert.equal(deactivated.deactivated_by_name, null);
+  await bind(agent, '15555550103');
+  const deactivated = (await agent.query("UPDATE app.teacher_rules SET deactivated_at = '1900-01-01', deactivated_by_name = 'forged', deactivation_reason = 'synthetic replacement' WHERE id = $1 RETURNING *", [firstRule.id])).rows[0];
+  assert.equal(deactivated.deactivated_by_name, 'Synthetic Second');
   assert.ok((deactivated.deactivated_at as Date).getTime() >= (deactivated.created_at as Date).getTime());
   assert.deepEqual((await agent.query('SELECT is_active FROM app.teacher_rule_intervals WHERE rule_id = $1', [firstRule.id])).rows, [{ is_active: false }]);
   await reject(agent, "UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'again' WHERE id = $1", '23514', [firstRule.id]);
@@ -180,13 +188,11 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await reject(agent, "UPDATE app.teacher_rules SET deactivation_reason = 'rewritten' WHERE id = $1", '23514', [firstRule.id]);
   await reject(agent, "INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, 6, '09:00', '10:00')", '23514', [firstRule.id]);
   const replacement = (await agent.query(insertRule, [otherTeacherId, 'Synthetic replacement rule', 1, '09:00', '10:00'])).rows[0];
-  assert.equal(replacement.created_by_phone, '15555550103');
-  assert.equal(replacement.created_by_name, null);
-  const cancelled = (await agent.query("UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_phone = 'forged', cancelled_by_name = 'forged', cancellation_reason = 'synthetic correction' WHERE id = $1 RETURNING *", [assignment.id])).rows[0];
-  assert.equal(cancelled.cancelled_by_phone, '15555550103');
-  assert.equal(cancelled.cancelled_by_name, null);
+  assert.equal(replacement.created_by_name, 'Synthetic Second');
+  const cancelled = (await agent.query("UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_name = 'forged', cancellation_reason = 'synthetic correction' WHERE id = $1 RETURNING *", [assignment.id])).rows[0];
+  assert.equal(cancelled.cancelled_by_name, 'Synthetic Second');
   assert.ok((cancelled.cancelled_at as Date).getTime() >= (cancelled.created_at as Date).getTime());
-  assert.equal(cancelled.created_by_phone, assignment.created_by_phone);
+  assert.equal(cancelled.created_by_name, assignment.created_by_name);
   await reject(agent, "UPDATE app.teacher_assignments SET cancellation_reason = 'rewritten' WHERE id = $1", '23514', [assignment.id]);
   await reject(agent, 'UPDATE app.teacher_assignments SET cancelled_at = NULL WHERE id = $1', '23514', [assignment.id]);
   await agent.query(insertAssignment, [otherTeacherId, '2020-01-01', '09:00']);
@@ -194,9 +200,10 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
   await agent.query("UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic future correction' WHERE id = $1", [future.id]);
   await reject(agent, "UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'again' WHERE id = $1", '23514', [future.id]);
   await agent.query(insertAssignment, [otherTeacherId, '2099-01-01', '09:00']);
-  const unnamed = (await agent.query("INSERT INTO app.teachers (first_name, last_name, created_by_name) VALUES ('Unnamed', 'Synthetic', 'forged') RETURNING created_by_name")).rows[0];
-  assert.equal(unnamed.created_by_name, null);
   await agent.query('COMMIT');
+  const private_ = await authors('teacher_assignments', assignment.id);
+  assert.deepEqual([private_.created_by_phone, private_.cancelled_by_phone], ['15555550102', '15555550103']);
+  assert.equal((await authors('teacher_rules', firstRule.id)).deactivated_by_phone, '15555550103');
   await bind(migrator);
   await reject(migrator, 'UPDATE app.teacher_rule_intervals SET is_active = true WHERE rule_id = $1', '42501', [firstRule.id]);
   await reject(migrator, "UPDATE app.teacher_rules SET deactivation_reason = 'rewritten' WHERE id = $1", '23514', [firstRule.id]);
@@ -218,9 +225,9 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
     await bind(agent);
     // This connection cannot borrow the first backend's trusted author window.
     await concurrent.query('BEGIN');
-    await assert.rejects(concurrent.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('OtherBackend', 'Synthetic')"), { code: '42501' });
+    await assert.rejects(concurrent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('OtherBackend', 'Synthetic')"), { code: '42501' });
     await concurrent.query('ROLLBACK');
-    const secondPid = await bind(concurrent, '15555550103', 'Synthetic Beta');
+    const secondPid = await bind(concurrent, '15555550103');
     await concurrent.query("SET LOCAL statement_timeout = '10s'");
     const raceRule = (await agent.query(insertRule, [teacherId, 'Synthetic concurrent first', 4, '12:00', '13:00'])).rows[0];
     const overlap = concurrent.query(insertRule, [otherTeacherId, 'Synthetic concurrent conflict', 4, '13:00', '14:00']).then(
@@ -232,7 +239,7 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
     await concurrent.query('ROLLBACK');
 
     await bind(agent);
-    const replacementPid = await bind(concurrent, '15555550103', 'Synthetic Beta');
+    const replacementPid = await bind(concurrent, '15555550103');
     await concurrent.query("SET LOCAL statement_timeout = '10s'");
     await agent.query("UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic concurrent replacement' WHERE id = $1", [raceRule.id]);
     const pending = concurrent.query(insertRule, [otherTeacherId, 'Synthetic concurrent replacement', 4, '12:00', '13:00']).then(
@@ -242,11 +249,11 @@ export async function checkTeachers(agent: Client, migrator: Client, agentConfig
     await agent.query('COMMIT');
     const accepted = await pending;
     assert.equal(accepted.code, null);
-    assert.equal(accepted.result?.rows[0].created_by_phone, '15555550103');
+    assert.equal(accepted.result?.rows[0].created_by_name, 'Synthetic Second');
     await concurrent.query('COMMIT');
 
     await bind(agent);
-    const assignmentPid = await bind(concurrent, '15555550103', 'Synthetic Beta');
+    const assignmentPid = await bind(concurrent, '15555550103');
     await concurrent.query("SET LOCAL statement_timeout = '10s'");
     await agent.query(insertAssignment, [teacherId, '2099-01-02', '09:00']);
     const duplicate = concurrent.query(insertAssignment, [otherTeacherId, '2099-01-02', '09:00']).then(

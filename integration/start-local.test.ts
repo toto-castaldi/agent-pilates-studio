@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
+import { seedIdentities } from './identity-seed.js';
 
 async function freePort(): Promise<number> {
   const server = createServer();
@@ -27,7 +28,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nWHATSAPP_ALLOWED_USERS=15555550102\nWHATSAPP_HOME_CHANNEL=15555550102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\nWHATSAPP_TEACHER_LINKS='[{"phone":"15555550102","firstName":"Antonio","lastName":"Neri"}]'\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nPILATES_MANAGER_PHONE=+1 (555) 555-0102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   // start:local starts services with --no-deps; the synthetic model catalog read by
@@ -40,13 +41,13 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     const result = startResult();
     assert.equal(result.status, 0, `start failed: ${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /sono sani/);
-    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-private|synthetic-new|1555555010[23]|123456789|987654321/);
+    assert.doesNotMatch(result.stdout + result.stderr, /synthetic-private|synthetic-new|1555555010[23]|555-0102|123456789|987654321/);
     for (const password of [admin, migrator, agentPassword]) assert.equal((result.stdout + result.stderr).includes(password), false);
   };
   try {
     await mkdir(join(dir, 'scenarios'));
     await mkdir(join(dir, 'integration'));
-    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
+    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes', 'src', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
@@ -57,17 +58,31 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     start(); // No node_modules or volumes: also exercises dependency preparation.
     assert.equal(await readlink(join(dir, '.env')), 'private.env');
     assert.equal(await readFile(join(dir, 'private.env'), 'utf8'), config);
-    const linksPath = join(dir, '.local/secrets/whatsapp-teacher-links');
-    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }]);
+    // The single configured number is normalized into a private file; no
+    // allowlist, home channel or teacher mapping is produced.
+    const managerPath = join(dir, '.local/secrets/whatsapp-manager-phone');
+    assert.equal(await readFile(managerPath, 'utf8'), '+15555550102\n');
+    for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
+      await assert.rejects(readFile(join(dir, '.local/secrets', name)));
+    }
     const originalGateway = compose('ps', '-q', 'hermes').trim();
-    await writeFile(join(dir, 'private.env'), config.replace('"phone":"15555550102"', '"phone":"15555550109"'));
-    const invalidLinks = startResult();
-    assert.notEqual(invalidLinks.status, 0);
-    assert.match(invalidLinks.stderr, /Collegamenti degli insegnanti non validi/);
-    assert.doesNotMatch(invalidLinks.stdout + invalidLinks.stderr, /1555555010[29]|Antonio|Neri/);
-    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }]);
-    assert.equal(compose('ps', '--status', 'running', '-q', 'hermes').trim(), originalGateway);
+    for (const [invalid, message] of [
+      [config.replace('+1 (555) 555-0102', '15555550109'), /PILATES_MANAGER_PHONE non valido/],
+      [`${config}WHATSAPP_ALLOWED_USERS=15555550109\n`, /chiavi non più usate: WHATSAPP_ALLOWED_USERS/],
+    ] as const) {
+      await writeFile(join(dir, 'private.env'), invalid);
+      const result = startResult();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, message);
+      assert.doesNotMatch(result.stdout + result.stderr, /1555555010[29]|555-0102/);
+      assert.equal(await readFile(managerPath, 'utf8'), '+15555550102\n');
+      assert.equal(compose('ps', '--status', 'running', '-q', 'hermes').trim(), originalGateway);
+    }
     await writeFile(join(dir, 'private.env'), config);
+    const brokerPassword = (await readFile(join(dir, '.local/secrets/db-broker'), 'utf8')).trim();
+    // Identities live only in the database, registered as /anagrafica does.
+    await seedIdentities({ host: '127.0.0.1', port: databasePort, password: brokerPassword },
+      { first: 'Synthetic', last: 'Manager', phone: '15555550102' }, [{ first: 'Synthetic', last: 'Successor', phone: '15555550103' }]);
     const db = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
     await db.connect();
     try {
@@ -125,7 +140,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     await writeFile(join(dir, 'replacement.env'), changed, { mode: 0o600 });
     await rename(join(dir, 'replacement.env'), join(dir, 'private.env'));
     start();
-    assert.deepEqual(JSON.parse(await readFile(linksPath, 'utf8')), [{ phone: '15555550103', firstName: 'Antonio', lastName: 'Neri' }]);
+    assert.equal(await readFile(managerPath, 'utf8'), '+15555550103\n');
     const address = (service: string) => {
       const id = compose('ps', '-q', service).trim();
       return execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', id], { encoding: 'utf8' }).trim();
@@ -133,7 +148,9 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     // A changed model updates the compaction threshold at the next start (TEC-025).
     assert.deepEqual(compactionSettings(gatewayId), ['PILATES_COMPACTION_THRESHOLD_TOKENS=52428', 'PILATES_IDLE_COMPACT_SECONDS=1800']);
-    execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_home_channel)" = 15555550103 && test "$PILATES_MODEL" = synthetic/updated-model'], { stdio: 'pipe' });
+    execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_manager_phone)" = +15555550103 && test ! -e /run/secrets/whatsapp_home_channel && test "$PILATES_MODEL" = synthetic/updated-model'], { stdio: 'pipe' });
+    const homes = execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'for f in /proc/[0-9]*/environ; do tr "\\0" "\\n" < "$f" 2>/dev/null; done | grep "^WHATSAPP_CLOUD_HOME_CHANNEL=" | sort -u'], { encoding: 'utf8' }).trim();
+    assert.equal(homes, 'WHATSAPP_CLOUD_HOME_CHANNEL=15555550103');
     const gateway = `http://${address('hermes')}:8090/whatsapp/updated`;
     const meta = `http://${address('meta-stub')}:8088/observations`;
     const broker = `http://${address('author-broker')}:8091`;
@@ -156,16 +173,18 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     const verify = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_migrator', password: migrator });
     await verify.connect();
     try {
-      const row = await verify.query("SELECT created_by_phone FROM app.clients WHERE first_name = 'beta'");
-      assert.equal(row.rows[0]?.created_by_phone, '15555550103');
+      const row = await verify.query("SELECT created_by_phone, created_by_name FROM studio_private.clients WHERE first_name = 'beta'");
+      assert.deepEqual(row.rows[0], { created_by_phone: '15555550103', created_by_name: 'Synthetic Successor' });
     } finally { await verify.end(); }
-    const denied = payload('15555550102', 'synthetic-denied');
+    // An unregistered number receives only the fixed refusal and no context.
+    const denied = payload('15555550109', 'synthetic-denied');
     assert.equal((await fetch(gateway, { method: 'POST', body: denied, headers: headers(denied) })).status, 200);
-    assert.equal((await fetch(`${broker}/v1/evidence`, { method: 'POST', body: denied, headers: { ...headers(denied), 'X-Pilates-Bridge': bridge } })).status, 204);
-    assert.equal((await fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': bridge }, body: JSON.stringify({ message_id: 'synthetic-denied', sender: '15555550102', turn: 'a'.repeat(64), pid: 1, txid: '1' }) })).status, 403);
+    assert.equal((await fetch(`${broker}/v1/admission`, { method: 'POST', body: denied, headers: { ...headers(denied), 'X-Pilates-Bridge': bridge } })).status, 200);
+    assert.equal((await fetch(`${broker}/v1/context`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pilates-Bridge': bridge }, body: JSON.stringify({ message_id: 'synthetic-denied', sender: '15555550109', turn: 'a'.repeat(64), pid: 1, txid: '1' }) })).status, 403);
     await delay(3000);
     const replies = await (await fetch(meta)).json() as { to: string; text: string }[];
-    assert.equal(replies.some((entry) => entry.to === '15555550102'), false, JSON.stringify(replies));
+    assert.deepEqual(replies.filter((entry) => entry.to === '15555550109').map((entry) => entry.text),
+      ['Accesso non abilitato. Per usare l’assistente dello studio rivolgiti al gestore.'], JSON.stringify(replies));
     const beforeMismatch = await readFile(join(dir, '.local/secrets/whatsapp-app-secret'), 'utf8');
     await writeFile(join(dir, 'private.env'), changed.replace(admin, 'synthetic-different-admin-password').replace('synthetic-new-app-secret', 'synthetic-other-app-secret'));
     const mismatch = startResult();

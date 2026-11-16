@@ -3,20 +3,36 @@ import type { Client } from 'pg';
 
 export const teacherTables = ['teachers', 'teacher_rules', 'teacher_rule_intervals', 'teacher_assignments'] as const;
 
+// The model-visible state. Author numbers are not part of it after the unified
+// identity; they are stripped so that a pre-transition schema compares equal.
 export async function readTeacherState(connection: Client): Promise<Record<string, unknown[]>> {
   const state: Record<string, unknown[]> = {};
   for (const table of teacherTables) {
     const order = table === 'teacher_rule_intervals' ? 'rule_id, weekday, start_time_min, start_time_max' : 'id';
-    state[table] = (await connection.query(`SELECT * FROM app.${table} ORDER BY ${order}`)).rows;
+    state[table] = (await connection.query(`SELECT * FROM app.${table} ORDER BY ${order}`)).rows
+      .map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !key.endsWith('_phone'))));
+  }
+  return state;
+}
+
+// Every stored author number, from wherever the rows live in the given schema.
+export async function readAuthorPhones(connection: Client, schema: 'app' | 'studio_private'): Promise<Record<string, unknown[]>> {
+  const state: Record<string, unknown[]> = {};
+  for (const table of ['clients', 'training_rules', 'attendance', 'teachers', 'teacher_rules', 'teacher_assignments']) {
+    if ((await connection.query('SELECT to_regclass($1) AS name', [`${schema}.${table}`])).rows[0].name === null) continue;
+    const columns = (await connection.query("SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 AND column_name LIKE '%\\_phone' ORDER BY column_name", [schema, table])).rows.map((row) => row.column_name as string);
+    if (columns.length) state[table] = (await connection.query(`SELECT id, ${columns.join(', ')} FROM ${schema}.${table} ORDER BY id`)).rows;
   }
   return state;
 }
 
 // The caller supplies a trusted transaction. Fixtures never disable triggers and
 // exercise the same construction, deactivation and cancellation path as the agent.
-export async function seedTeacherHistory(connection: Client): Promise<{ activeRuleId: string; validAssignmentId: string }> {
-  const original = (await connection.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('History', 'Synthetic') RETURNING id")).rows[0].id as string;
-  const replacement = (await connection.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('Replacement', 'Synthetic') RETURNING id")).rows[0].id as string;
+// Before the unified identity the two teachers are created by the previous
+// runtime; afterwards they must be registered beforehand and are passed in.
+export async function seedTeacherHistory(connection: Client, registered?: { original: string; replacement: string }): Promise<{ activeRuleId: string; validAssignmentId: string }> {
+  const original = registered?.original ?? (await connection.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('History', 'Synthetic') RETURNING id")).rows[0].id as string;
+  const replacement = registered?.replacement ?? (await connection.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('Replacement', 'Synthetic') RETURNING id")).rows[0].id as string;
   const insertRule = `WITH rule AS (
     INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, $2) RETURNING id
   ), intervals AS (
@@ -35,25 +51,28 @@ export async function seedTeacherHistory(connection: Client): Promise<{ activeRu
   return { activeRuleId, validAssignmentId };
 }
 
+// Teachers, rules and assignments are phone-free projections of private rows:
+// views cannot be truncated or altered (42809), and the backing tables still
+// enforce the original no-delete/no-truncate triggers, even for the owner.
+const projections = new Set(['teachers', 'teacher_rules', 'teacher_assignments']);
+const denied = (table: string) => (error: unknown) => {
+  const code = (error as { code?: string }).code;
+  return code === '42501' || (projections.has(table) && code === '42809');
+};
+
 export async function checkTeacherHistoryProtection(agent: Client, migrator: Client): Promise<void> {
   for (const connection of [agent, migrator]) {
     for (const table of teacherTables) {
       await assert.rejects(connection.query(`DELETE FROM app.${table}`), { code: '42501' });
-      await assert.rejects(connection.query(`TRUNCATE app.${table} CASCADE`), (error: unknown) => {
-        const code = (error as { code?: string }).code;
-        // The compatibility view cannot be truncated; its backing table still
-        // enforces the original no-delete/no-truncate triggers below.
-        return code === '42501' || (table === 'teachers' && code === '42809');
-      });
+      await assert.rejects(connection.query(`TRUNCATE app.${table} CASCADE`), denied(table));
     }
   }
   for (const table of teacherTables) {
-    await assert.rejects(agent.query(`ALTER TABLE app.${table} ADD COLUMN forbidden text`), (error: unknown) => {
-      const code = (error as { code?: string }).code;
-      return code === '42501' || (table === 'teachers' && code === '42809');
-    });
+    await assert.rejects(agent.query(`ALTER TABLE app.${table} ADD COLUMN forbidden text`), denied(table));
   }
-  for (const action of ['DELETE FROM', 'TRUNCATE']) {
-    await assert.rejects(migrator.query(`${action} studio_private.teachers${action === 'TRUNCATE' ? ' CASCADE' : ''}`), { code: '42501' });
+  for (const table of projections) {
+    for (const action of ['DELETE FROM', 'TRUNCATE']) {
+      await assert.rejects(migrator.query(`${action} studio_private.${table}${action === 'TRUNCATE' ? ' CASCADE' : ''}`), { code: '42501' });
+    }
   }
 }

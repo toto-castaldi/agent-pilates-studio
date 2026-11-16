@@ -7,7 +7,8 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
-import { checkTeacherHistoryProtection, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
+import { ownerContext } from './identity-seed.js';
+import { checkTeacherHistoryProtection, readAuthorPhones, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
 
 // The old and new images are intentionally fixed. This exercises one supported
 // upgrade path, not compatibility with arbitrary releases or major upgrades.
@@ -26,12 +27,11 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
-    'whatsapp-allowed-users': '15555550102',
-    'whatsapp-home-channel': '15555550102',
+    'whatsapp-manager-phone': '+15555550102',
     'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[{"phone":"15555550102","firstName":"History","lastName":"Synthetic"}]',
   };
   const oldOverride = join(directory, 'old.yaml');
+  const midOverride = join(directory, 'mid.yaml');
   const newOverride = join(directory, 'new.yaml');
   const oldDockerfile = join(directory, 'Dockerfile.old');
   const env = {
@@ -59,6 +59,9 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.equal(dockerfile.split(current).length, 2);
     await writeFile(oldDockerfile, dockerfile.replace(current, old));
     await writeFile(oldOverride, `services:\n  postgres:\n    image: postgres:17.9@sha256:2a0d0fe14825b0939f78a8cad5cd4e6aa68bf94d0e5dd96e24b6d23af4315545\n    volumes:\n      - ${JSON.stringify(`${resolve('db/pg_hba.conf')}:/etc/pilates/pg_hba.conf:ro`)}\n      - ${JSON.stringify(`${resolve('db/entrypoint.sh')}:/etc/pilates/entrypoint.sh:ro`)}\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    image: ${legacyImage}\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
+    // The previous Hermes image runs against the upgraded database: the gateway
+    // and broker code must match the database schema, the Hermes base differs.
+    await writeFile(midOverride, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    image: ${legacyImage}\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
     await writeFile(newOverride, `services:\n  model-stub:\n    image: ${project}-hermes\n    entrypoint: ["/opt/hermes/.venv/bin/python", "/model_stub.py"]\n    volumes:\n      - ${JSON.stringify(`${resolve('integration/model_stub.py')}:/model_stub.py:ro`)}\n    logging:\n      driver: none\n  hermes:\n    environment:\n      OPENROUTER_BASE_URL: http://model-stub:8088/v1\nnetworks:\n  default:\n    internal: true\n`);
     execFileSync('docker', ['build', '-f', oldDockerfile, '-t', legacyImage, '.'], { env, stdio: 'pipe', timeout: 600_000 });
     compose(newOverride, 'build', 'hermes', 'postgres');
@@ -121,13 +124,9 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
       planningBefore[table] = (await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows;
     }
     assert.equal((await migrator.query("SELECT to_regclass('app.teachers') AS name")).rows[0].name, null);
-    compose(oldOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
-    compose(oldOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
-    const oldGateway = compose(oldOverride, 'ps', '-q', 'hermes').trim();
-    const oldGatewayImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', oldGateway], { encoding: 'utf8' }).trim();
     const send = async (container: string, text: string) => {
       const endpoint = `http://${address(container)}:8090/webhooks/whatsapp`;
-      const body = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999999', changes: [{ field: 'messages', value: { metadata: { phone_number_id: '123456789012345' }, messages: [{ from: '15555550102', id: `wamid.${text}`, type: 'text', text: { body: text } }] } }] }] });
+      const body = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999999', changes: [{ field: 'messages', value: { metadata: { phone_number_id: '123456789012345' }, messages: [{ from: '15555550102', id: `wamid.${text}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: text } }] } }] }] });
       const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(body).digest('hex')}`;
       assert.equal((await fetch(endpoint, { method: 'POST', body, headers: { 'content-type': 'application/json', 'x-hub-signature-256': signature } })).status, 200);
       await delay(8_000);
@@ -136,10 +135,6 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
       const script = `from pathlib import Path\ndata=b''.join(p.read_bytes() for p in Path('/opt/data').glob('state.db*') if p.is_file())\nassert all(x.encode() in data for x in ${JSON.stringify(markers)})`;
       execFileSync('docker', ['exec', container, '/opt/hermes/.venv/bin/python', '-c', script], { stdio: 'pipe' });
     };
-    await send(oldGateway, 'synthetic-before-upgrade');
-    stateContains(oldGateway, ['synthetic-before-upgrade']);
-    assert.equal(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
-    compose(oldOverride, 'stop', 'hermes');
     // Apply TEC-033 and US-011 independently on the old database, populate
     // history, then apply only the additive identity foundation during upgrade.
     await cp('prisma/migrations/20261111000000_teachers', join(legacyMigrations, '20261111000000_teachers'), { recursive: true });
@@ -152,6 +147,8 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await cp('prisma/migrations/20261111141813_sender_teacher', join(legacyMigrations, '20261111141813_sender_teacher'), { recursive: true });
     migrate(databaseHost, true);
     const teachersBefore = await readTeacherState(migrator);
+    const phonesBefore = await readAuthorPhones(migrator, 'app');
+    assert.ok(Object.values(phonesBefore).flat().length > 0);
     const teacherStorageOid = (await migrator.query("SELECT 'app.teachers'::regclass::oid::text AS oid")).rows[0].oid;
     await migrator.end();
     migrator = undefined;
@@ -172,13 +169,28 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_changes')).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_writes')).rows[0].n, 0);
     assert.equal((await migrator.query('SELECT value FROM app.upgrade_probe WHERE id=1')).rows[0].value, 'synthetic-before-upgrade');
+    // Author numbers and WhatsApp profile snapshots are kept, only behind the projections.
+    assert.deepEqual(await readAuthorPhones(migrator, 'studio_private'), phonesBefore);
+    assert.deepEqual(await readAuthorPhones(migrator, 'app'), {});
+    for (const table of ['clients', 'training_rules', 'attendance', 'teacher_rules', 'teacher_assignments']) {
+      assert.equal((await migrator.query("SELECT relkind FROM pg_class WHERE oid = $1::regclass", [`app.${table}`])).rows[0].relkind, 'v');
+    }
     assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.clients c JOIN app.rule_clients rc ON rc.client_id = c.id JOIN app.training_rules r ON r.id = rc.rule_id JOIN app.rule_slots s ON s.rule_id = r.id WHERE c.first_name = 'Upgrade' AND r.rule_text = 'synthetic upgrade rule' AND s.weekday = 1")).rows[0].n, 1);
     for (const [table, rows] of Object.entries(planningBefore)) {
-      assert.deepEqual((await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows, rows);
+      const schema = ['rule_slots', 'rule_clients'].includes(table) ? 'app' : 'studio_private';
+      assert.deepEqual((await migrator.query(`SELECT * FROM ${schema}.${table} ORDER BY 1, 2`)).rows, rows);
     }
-    await migrator.query('BEGIN');
-    const newBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [newBinding.pid, newBinding.txid]);
+    // The manager completes the pre-existing teacher by hand, keeping its ID:
+    // no allowlist, mapping or profile name is imported.
+    const history = (await migrator.query("SELECT id FROM app.teachers WHERE first_name = 'History' AND last_name = 'Synthetic'")).rows[0].id as string;
+    const broker = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
+    await broker.connect();
+    try {
+      const completed = (await broker.query("SELECT * FROM studio_private.manage_teacher_identity('15555550102', '+15555550102', 'bootstrap', $1, 'history', 'synthetic', '+15555550102')", [history])).rows[0];
+      assert.deepEqual(completed, { id: history, identity_revision: '2' });
+      await migrator.query('BEGIN');
+      await ownerContext(migrator, broker, '15555550102');
+    } finally { await broker.end(); }
     assert.deepEqual(await readTeacherState(migrator), teachersBefore);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [oldClient]);
     await migrator.query('COMMIT');
@@ -190,6 +202,15 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     await checkTeacherHistoryProtection(agent, migrator);
     assert.deepEqual(await readTeacherState(agent), teachersBefore);
     await assert.rejects(agent.query('CREATE TABLE app.upgrade_forbidden (id int)'), (error: unknown) => (error as { code?: string }).code === '42501');
+    // The previous Hermes image persists a conversation; the new one keeps it.
+    compose(midOverride, 'up', '-d', '--wait', '--no-build', 'model-stub');
+    compose(midOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
+    const oldGateway = compose(midOverride, 'ps', '-q', 'hermes').trim();
+    const oldGatewayImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', oldGateway], { encoding: 'utf8' }).trim();
+    await send(oldGateway, 'synthetic-before-upgrade');
+    stateContains(oldGateway, ['synthetic-before-upgrade']);
+    assert.equal(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
+    compose(midOverride, 'stop', 'hermes');
     compose(newOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const newGateway = compose(newOverride, 'ps', '-q', 'hermes').trim();
     assert.notEqual(newGateway, oldGateway);

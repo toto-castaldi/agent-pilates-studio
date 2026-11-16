@@ -322,11 +322,16 @@ def install():
                 async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
                     for reply in decision['replies']:
                         # Long administrative lists are sent as bounded chunks.
-                        for start in range(0, len(reply['text']), 3500):
-                            await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
-                                headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
-                                json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
-                                      'text': {'body': reply['text'][start:start+3500]}})
+                        # Delivery is best effort: the broker decision is already
+                        # committed, and a retried webhook is not answered twice.
+                        try:
+                            for start in range(0, len(reply['text']), 3500):
+                                await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
+                                    headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
+                                    json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
+                                          'text': {'body': reply['text'][start:start+3500]}})
+                        except httpx.HTTPError:
+                            pass
                 payload = decision['payload']
                 if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
                     return web.Response(status=200)

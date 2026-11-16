@@ -66,3 +66,28 @@ export async function migrateAcrossTransition(env: NodeJS.ProcessEnv, url: URL,
 export async function legacyContext(client: Client, sender: string, profile: string | null): Promise<void> {
   await client.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), $1, $2, clock_timestamp() + interval '60 seconds')", [sender, profile]);
 }
+
+// Binds an agent transaction to a registered sender exactly as the broker
+// binds a WhatsApp turn: the trusted login, the resolved identity and revision.
+export async function bindAgent(agent: Client, broker: Client, sender: string): Promise<number> {
+  await agent.query('BEGIN');
+  const row = (await agent.query('SELECT pg_backend_pid() AS pid, txid_current()::text AS txid')).rows[0];
+  const person = (await broker.query('SELECT * FROM studio_private.resolve_teacher_identity($1)', [sender])).rows[0];
+  if (!person) throw new Error('Synthetic sender is not registered');
+  await broker.query('SELECT studio_private.bind_teacher_identity($1, $2, $3, $4, $5)',
+    [row.pid, row.txid, sender, person.id, person.identity_revision]);
+  return row.pid as number;
+}
+
+// Migration-owner fixture with the same row shape, for owner-only negative
+// checks and expired windows: the owner can always write its private tables.
+export async function ownerContext(owner: Client, broker: Client, sender: string,
+  target: { pid: number; txid: string } | null = null, expiresIn = '1 minute'): Promise<void> {
+  const person = (await broker.query('SELECT * FROM studio_private.resolve_teacher_identity($1)', [sender])).rows[0];
+  if (!person) throw new Error('Synthetic sender is not registered');
+  const binding = target ?? (await owner.query('SELECT pg_backend_pid() AS pid, txid_current()::text AS txid')).rows[0];
+  await owner.query(`INSERT INTO studio_private.author_context
+    (backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id, identity_revision)
+    VALUES ($1, $2, $3, $4, clock_timestamp() + $5::interval, $6, $7)`,
+  [binding.pid, binding.txid, sender, `${person.first_name} ${person.last_name}`, expiresIn, person.id, person.identity_revision]);
+}

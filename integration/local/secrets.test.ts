@@ -20,8 +20,9 @@ test('secret initialization is private and never replaces existing passwords', a
     for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'whatsapp-verify-token']) {
       assert.equal((await stat(join(directory, name))).mode & 0o077, 0);
     }
-    assert.equal(await readFile(join(directory, 'whatsapp-teacher-links'), 'utf8'), '[]\n');
-    assert.equal((await stat(join(directory, 'whatsapp-teacher-links'))).mode & 0o077, 0);
+    // No identity mapping or personal number is generated: identities live in the database.
+    await assert.rejects(stat(join(directory, 'whatsapp-teacher-links')));
+    await assert.rejects(stat(join(directory, 'whatsapp-manager-phone')));
     run();
     assert.equal(await readFile(passwordFile, 'utf8'), first);
     await chmod(passwordFile, 0o644);

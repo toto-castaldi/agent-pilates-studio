@@ -12,8 +12,8 @@ const run = (args: string[], release = commit) => spawnSync('bash', ['scripts/pr
   env: { ...process.env, PILATES_RELEASE: release, PILATES_HOME: '/nonexistent-synthetic-home' }, encoding: 'utf8',
 });
 
-test('production initializes and preserves an empty private teacher mapping for upgrades', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'pilates-prod-links-'));
+test('production requires one canonical manager number and refuses the former identity files', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'pilates-prod-manager-'));
   const bin = join(directory, 'bin');
   const root = join(directory, 'production');
   await mkdir(bin);
@@ -23,25 +23,37 @@ test('production initializes and preserves an empty private teacher mapping for 
     env: { ...process.env, PILATES_RELEASE: commit, PILATES_HOME: root, PATH: `${bin}:${process.env.PATH}` }, encoding: 'utf8',
   });
   try {
-    assert.equal(invoke(['init']).status, 0);
-    const mapping = join(root, 'secrets/whatsapp-teacher-links');
-    assert.equal(await readFile(mapping, 'utf8'), '[]\n');
-    assert.equal((await stat(mapping)).mode & 0o077, 0);
-    const configured = '[{"phone":"15555550102","firstName":"Antonio","lastName":"Neri"}]\n';
-    await writeFile(mapping, configured);
-    assert.equal(invoke(['init']).status, 0);
-    assert.equal(await readFile(mapping, 'utf8'), configured);
-    // Simulate a production directory created by an older release. Upgrade
-    // creates an empty file before the release check, without touching a stack.
-    await rm(mapping);
-    for (const name of ['openrouter-key', 'whatsapp-access-token', 'whatsapp-app-secret', 'whatsapp-verify-token', 'whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-phone-number-id']) {
+    const init = invoke(['init']);
+    assert.equal(init.status, 0);
+    // init asks for the manager number and creates no identity mapping.
+    assert.match(init.stdout, /To provide: secrets\/whatsapp-manager-phone/);
+    assert.doesNotMatch(init.stdout, /allowed-users|home-channel|teacher-links/);
+    assert.deepEqual((await readdir(join(root, 'secrets'))).filter((name) => name.startsWith('whatsapp-')).sort(), []);
+    for (const name of ['openrouter-key', 'whatsapp-access-token', 'whatsapp-app-secret', 'whatsapp-verify-token', 'whatsapp-phone-number-id']) {
       await writeFile(join(root, 'secrets', name), 'synthetic\n', { mode: 0o600 });
+    }
+    const manager = join(root, 'secrets/whatsapp-manager-phone');
+    // Secrets are checked before any release state or Docker operation.
+    for (const value of ['15555550102\n', '+1 555 555 0102\n', '+15555550102\n+15555550103\n', 'gestore\n']) {
+      await writeFile(manager, value, { mode: 0o600 });
+      const result = invoke(['update', commit]);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /manager phone must be one canonical international number/);
+      assert.doesNotMatch(result.stdout + result.stderr, /5555550/);
+    }
+    await writeFile(manager, '+15555550102\n', { mode: 0o600 });
+    for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
+      await writeFile(join(root, 'secrets', name), '15555550102\n', { mode: 0o600 });
+      const result = invoke(['update', commit]);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, new RegExp(`Obsolete identity file present: remove secrets/${name}`));
+      assert.doesNotMatch(result.stdout + result.stderr, /5555550/);
+      await rm(join(root, 'secrets', name));
     }
     const upgrade = invoke(['update', commit]);
     assert.notEqual(upgrade.status, 0);
     assert.match(upgrade.stderr, /No installed release/);
-    assert.equal(await readFile(mapping, 'utf8'), '[]\n');
-    assert.doesNotMatch(upgrade.stdout + upgrade.stderr, /Antonio|Neri|15555550102/);
+    assert.doesNotMatch(upgrade.stdout + upgrade.stderr, /5555550/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

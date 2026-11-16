@@ -580,7 +580,6 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.equal(execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
   } finally {
     for (const client of clients) await client.end().catch(() => {});
-    if (process.env.PILATES_TEST_KEEP) { console.log('KEEP', project, directory); return; }
     try { compose('down', '-v', '--remove-orphans'); } catch { /* best effort */ }
     try { execFileSync('docker', ['image', 'rm', `${project}-hermes`], { stdio: 'pipe' }); } catch { /* best effort */ }
     await rm(directory, { recursive: true, force: true });
