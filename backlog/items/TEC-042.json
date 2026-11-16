@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-042-riconoscimento-unico-del-mittente",
   "dependencies": [
     "TEC-041",
     "US-017",
