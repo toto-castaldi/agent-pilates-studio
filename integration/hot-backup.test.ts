@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { ownerContext, seedIdentities } from './identity-seed.js';
 
 const postgresBase = 'postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e368b2b74a9494a285';
 
@@ -33,10 +34,8 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
-    'whatsapp-allowed-users': '15555550102',
-    'whatsapp-home-channel': '15555550102',
+    'whatsapp-manager-phone': '+15555550102',
     'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[]',
   };
   const override = join(directory, 'compose.override.yaml');
   const env = {
@@ -95,11 +94,12 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     await writer.connect();
     await admin.query('CREATE TABLE app.hot_backup_probe (id integer PRIMARY KEY, value text NOT NULL)');
     await admin.query("INSERT INTO app.hot_backup_probe VALUES (1, 'before-commit')");
+    await seedIdentities({ host: postgresHost, password: secrets['db-broker'] }, { first: 'Synthetic', last: 'Author', phone: '15555550102' });
     await admin.query('BEGIN');
-    await admin.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), '15555550102', 'Synthetic Author', clock_timestamp() + interval '1 hour')");
+    await ownerContext(admin, admin, '15555550102', null, '1 hour');
     await admin.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Backup', 'Synthetic')");
     await admin.query('COMMIT');
-    await admin.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (1, 1, '15555550102', 'Synthetic Context', clock_timestamp() + interval '1 hour')");
+    await ownerContext(admin, admin, '15555550102', { pid: 1, txid: '1' }, '1 hour');
     await admin.query("INSERT INTO studio_private.consumed_messages (message_hash, expires_at) VALUES ('synthetic-replay-hash', clock_timestamp() + interval '1 hour')");
     compose('up', '-d', '--no-build', '--wait', '--wait-timeout', '120', 'author-broker', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();

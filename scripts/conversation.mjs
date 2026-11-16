@@ -10,7 +10,6 @@ import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
 import { assignmentScenarioMatches, attendanceScenarioMatches, fixtureCancellationReason, fixtureRuleDeactivationReason, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, seededTeacherFixturesMatch, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
-import { parseTeacherLinks } from './teacher-links.mjs';
 import { diagnoseModelRequest, diagnoseResponse } from '../dist/src/conversation-diagnostics.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -41,9 +40,9 @@ const safeEnv = Object.fromEntries(['PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONTE
 let failed = false;
 const selectedId = process.env.CONVERSATION_SCENARIO;
 const diagnostics = process.env.CONVERSATION_DIAGNOSTICS === '1';
-if (diagnostics && !['indicazione-mittente-collegato-inesistente', 'consultazione-presenze-statistiche',
+if (diagnostics && !['consultazione-presenze-statistiche',
   'assenza-anticipata-singola-annullamento', 'consultazione-pianificazione'].includes(selectedId)) {
-  console.error('Diagnostica mirata ammessa solo per uno dei quattro scenari autorizzati.');
+  console.error('Diagnostica mirata ammessa solo per uno dei tre scenari autorizzati.');
   process.exit(1);
 }
 if (selectedId && !catalog.scenarios.some((scenario) => scenario.id === selectedId)) {
@@ -59,13 +58,18 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     failed = true;
     break;
   }
-  try {
-    parseTeacherLinks(JSON.stringify(scenario.teacherLinks ?? []), scenario.sender);
-  } catch {
-    console.error('Collegamenti sintetici del catalogo non validi.');
+  // The sender is always a registered identity, with a name different from the
+  // optional WhatsApp profile; it is also the single configured manager.
+  const identity = scenario.identity;
+  const validName = (value) => typeof value === 'string' && /^[\p{L}' ]{1,60}$/u.test(value) && value === value.trim();
+  if (!identity || !validName(identity.firstName) || !validName(identity.lastName)
+      || (identity.teacher !== undefined && typeof identity.teacher !== 'boolean') || 'teacherLinks' in scenario
+      || (scenario.profile !== undefined && scenario.profile === `${identity.firstName} ${identity.lastName}`)) {
+    console.error('Identità sintetica del catalogo non valida.');
     failed = true;
     break;
   }
+  const registeredName = `${identity.firstName} ${identity.lastName}`;
   const directory = await mkdtemp(join(tmpdir(), 'pilates-conversation-'));
   const project = `pilates-conv-${randomBytes(8).toString('hex')}`;
   const secrets = {
@@ -78,15 +82,14 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     'whatsapp-access-token': randomBytes(32).toString('hex'),
     'whatsapp-app-secret': randomBytes(32).toString('hex'),
     'whatsapp-verify-token': randomBytes(32).toString('hex'),
-    'whatsapp-allowed-users': scenario.sender,
-    'whatsapp-home-channel': scenario.sender,
+    'whatsapp-manager-phone': `+${scenario.sender}`,
     'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': JSON.stringify(scenario.teacherLinks ?? []),
   };
   const override = join(directory, 'override.yaml');
   const env = { ...safeEnv, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', WHATSAPP_WEBHOOK_PATH: '/whatsapp/webhook', PILATES_MODEL: model };
   const compose = (...args) => execFileSync('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, ...args], { env, encoding: 'utf8', stdio: 'pipe', timeout: 240_000 });
   let client;
+  let broker;
   let proxy;
   const proxyStats = { requests: 0, denied: 0, completed: 0, failures: 0, status: 0 };
   let diagnosticModelEvents = [];
@@ -164,6 +167,24 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     client = new Client({ host, port: 5432, database: 'studio', user: 'studio_migrator', password: secrets['db-migrator'], connectionTimeoutMillis: 15_000, query_timeout: 30_000 });
     stage = 'connessione database';
     await client.connect();
+    // Identities exist only through the guided management functions, called by
+    // the trusted broker login exactly as /anagrafica does; no row is written
+    // directly. Synthetic phones of the other teachers are never sent anywhere.
+    stage = 'censimento sintetico';
+    broker = new Client({ host, port: 5432, database: 'studio', user: 'studio_broker', password: secrets['db-broker'], connectionTimeoutMillis: 15_000, query_timeout: 30_000 });
+    await broker.connect();
+    const emptyBefore = Number((await client.query('SELECT (SELECT count(*) FROM studio_private.teachers) + (SELECT count(*) FROM studio_private.clients) AS n')).rows[0].n);
+    if (emptyBefore !== 0) throw new Error('initial state');
+    const manage = (operation, firstName, lastName, phone) => broker.query('SELECT * FROM studio_private.manage_teacher_identity($1, $2, $3, NULL, $4, $5, $6)',
+      [scenario.sender, `+${scenario.sender}`, operation, firstName, lastName, phone]);
+    const operatorId = String((await manage('bootstrap', identity.firstName, identity.lastName, `+${scenario.sender}`)).rows[0].id);
+    for (const [position, person] of (scenario.setup?.teachers ?? []).entries()) {
+      if (`${person.firstName} ${person.lastName}` === registeredName) continue;
+      await manage('enroll', person.firstName, person.lastName, `+1555556${String(position).padStart(4, '0')}`);
+    }
+    // The operator's own registry row is part of the scenario only when the
+    // scenario treats the sender as one of its teachers.
+    const hiddenTeacher = identity.teacher ? null : operatorId;
     stage = 'avvio gateway e sostituti';
     await runProcess('docker', ['compose', '-p', project, '-f', 'compose.yaml', '-f', override, 'up', '-d', '--wait', '--wait-timeout', '150', 'model-proxy', 'meta-stub', 'hermes'], env, 240_000);
     stage = 'indirizzi gateway e sostituto Meta';
@@ -178,33 +199,36 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     let count = 0;
     stage = 'stato iniziale';
     const snapshot = async () => {
-      const clients = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM app.clients ORDER BY id')).rows;
+      const clients = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM studio_private.clients ORDER BY id')).rows;
       const rules = (await client.query(`SELECT r.id::text AS id, r.created_at::text AS "createdAt", r.rule_text AS text, r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName", (r.deactivated_at IS NULL) AS active, (r.created_at IS NOT NULL) AS "hasCreatedAt",
         r.deactivated_at::text AS "deactivatedAt", r.deactivated_by_phone AS "deactivatedByPhone", r.deactivated_by_name AS "deactivatedByName", r.deactivation_reason AS "deactivationReason",
         COALESCE((SELECT json_agg(c.first_name || ' ' || c.last_name ORDER BY c.id) FROM app.rule_clients rc JOIN app.clients c ON c.id = rc.client_id WHERE rc.rule_id = r.id), '[]'::json) AS clients,
         COALESCE((SELECT json_agg(json_build_object('weekday', s.weekday, 'time', to_char(s.start_time, 'HH24:MI')) ORDER BY s.weekday, s.start_time) FROM app.rule_slots s WHERE s.rule_id = r.id), '[]'::json) AS slots
-        FROM app.training_rules r ORDER BY r.id`)).rows;
+        FROM studio_private.training_rules r ORDER BY r.id`)).rows;
       const attendance = (await client.query(`SELECT a.id::text AS id, c.first_name || ' ' || c.last_name AS client,
         to_char(a.lesson_date, 'YYYY-MM-DD') AS "lessonDate", to_char(a.start_time, 'HH24:MI') AS time,
         a.outcome, a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName",
         a.cancelled_at::text AS "cancelledAt", a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
-        FROM app.attendance a JOIN app.clients c ON c.id = a.client_id ORDER BY a.id`)).rows;
-      const teachers = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM app.teachers ORDER BY id')).rows;
+        FROM studio_private.attendance a JOIN app.clients c ON c.id = a.client_id ORDER BY a.id`)).rows;
+      const teachers = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM studio_private.teachers WHERE $1::bigint IS NULL OR id <> $1::bigint ORDER BY id', [hiddenTeacher])).rows;
       const teacherRules = (await client.query(`SELECT r.id::text AS id, t.first_name || ' ' || t.last_name AS teacher, r.rule_text AS text,
         r.created_at::text AS "createdAt", r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName",
         r.deactivated_at::text AS "deactivatedAt", r.deactivated_by_phone AS "deactivatedByPhone", r.deactivated_by_name AS "deactivatedByName", r.deactivation_reason AS "deactivationReason",
         COALESCE((SELECT json_agg(json_build_object('weekday', i.weekday, 'min', to_char(i.start_time_min, 'HH24:MI'), 'max', to_char(i.start_time_max, 'HH24:MI'), 'isActive', i.is_active) ORDER BY i.weekday, i.start_time_min, i.start_time_max)
           FROM app.teacher_rule_intervals i WHERE i.rule_id = r.id), '[]'::json) AS intervals
-        FROM app.teacher_rules r JOIN app.teachers t ON t.id = r.teacher_id ORDER BY r.id`)).rows;
+        FROM studio_private.teacher_rules r JOIN app.teachers t ON t.id = r.teacher_id ORDER BY r.id`)).rows;
       const teacherAssignments = (await client.query(`SELECT a.id::text AS id, a.teacher_id::text AS "teacherId", t.first_name || ' ' || t.last_name AS teacher,
         to_char(a.lesson_date, 'YYYY-MM-DD') AS "lessonDate", to_char(a.start_time, 'HH24:MI') AS time,
         a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName", a.cancelled_at::text AS "cancelledAt",
         a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
-        FROM app.teacher_assignments a JOIN app.teachers t ON t.id = a.teacher_id ORDER BY a.id`)).rows;
+        FROM studio_private.teacher_assignments a JOIN app.teachers t ON t.id = a.teacher_id ORDER BY a.id`)).rows;
       return { clients, rules, attendance, teachers, teacherRules, teacherAssignments };
     };
     let previous = await snapshot();
-    if (!stateMatches(previous, scenario.initial)) throw new Error('initial state');
+    const registeredTeachers = new Set((scenario.setup?.teachers ?? []).map((person) => `${person.firstName} ${person.lastName}`));
+    if (identity.teacher) registeredTeachers.add(registeredName);
+    if (!stateMatches({ ...previous, teachers: [] }, scenario.initial)
+      || previous.teachers.length !== registeredTeachers.size) throw new Error('initial state');
     const reference = new Date();
     const relativeDate = (value) => scenarioRelativeDate(reference, value);
     const relativeTimestamp = (value) => scenarioRelativeTimestamp(reference, value);
@@ -220,7 +244,11 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })) };
       if (!Array.isArray(setup.clients) || !Array.isArray(setup.rules) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(setup.createdAt)) throw new Error('setup');
       await client.query('BEGIN');
-      await client.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), $1, $2, clock_timestamp() + interval '10 minutes')", [scenario.sender, scenario.profile]);
+      // The isolated migration owner installs the same identity-bound context
+      // the broker would bind: author and name come from the registry row.
+      await client.query(`INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id, identity_revision)
+        SELECT pg_backend_pid(), txid_current(), $1, first_name || ' ' || last_name, clock_timestamp() + interval '10 minutes', id, identity_revision
+          FROM studio_private.teachers WHERE id = $2`, [scenario.sender, operatorId]);
       const ids = new Map();
       for (const person of setup.clients) {
         const result = await client.query('INSERT INTO app.clients (first_name, last_name, created_at) VALUES ($1, $2, $3) RETURNING id', [person.firstName, person.lastName, setup.createdAt]);
@@ -239,11 +267,12 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         for (const slot of rule.slots) await client.query('INSERT INTO app.rule_slots (rule_id, weekday, start_time) VALUES ($1, $2, $3)', [id, slot.weekday, slot.time]);
         if (rule.active === false) await client.query("UPDATE app.training_rules SET deactivated_at = $2, deactivation_reason = 'Fine abitudine sintetica' WHERE id = $1", [id, rule.deactivatedAt ?? setup.createdAt]);
       }
-      // Teachers and current teacher rules use the normal authenticated
-      // triggers; current rules start now and only apply to later lessons.
+      // Teachers were registered above; current teacher rules use the normal
+      // authenticated triggers, start now and only apply to later lessons.
       const teacherIds = new Map();
       for (const person of setup.teachers ?? []) {
-        const result = await client.query('INSERT INTO app.teachers (first_name, last_name) VALUES ($1, $2) RETURNING id', [person.firstName, person.lastName]);
+        const result = await client.query('SELECT id FROM app.teachers WHERE first_name = $1 AND last_name = $2', [person.firstName, person.lastName]);
+        if (result.rows.length !== 1) throw new Error('teacher fixture');
         teacherIds.set(`${person.firstName} ${person.lastName}`, result.rows[0].id);
       }
       const pastInstant = (value) => /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(value ?? '') && Date.parse(value) < Date.now();
@@ -266,32 +295,32 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         // Retrodated synthetic history: the isolated migrator bypasses only the
         // two author triggers, inside this transaction and before any turn.
         stage = 'preparazione fixture insegnanti: disabilitazione trigger';
-        await client.query('ALTER TABLE app.teacher_rules DISABLE TRIGGER teacher_rules_author');
-        await client.query('ALTER TABLE app.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
+        await client.query('ALTER TABLE studio_private.teacher_rules DISABLE TRIGGER teacher_rules_author');
+        await client.query('ALTER TABLE studio_private.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
         stage = 'preparazione fixture insegnanti: inserimento';
         for (const rule of historicalRules) {
-          const result = await client.query('INSERT INTO app.teacher_rules (teacher_id, rule_text, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [teacherIds.get(rule.teacher), rule.text, rule.createdAt, scenario.sender, scenario.profile ?? null]);
+          const result = await client.query('INSERT INTO studio_private.teacher_rules (teacher_id, rule_text, created_at, created_by_phone, created_by_name) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [teacherIds.get(rule.teacher), rule.text, rule.createdAt, scenario.sender, registeredName]);
           await insertIntervals(result.rows[0].id, rule.intervals);
           if (rule.deactivatedAt) {
-            await client.query('UPDATE app.teacher_rules SET deactivated_at = $2, deactivated_by_phone = $3, deactivated_by_name = $4, deactivation_reason = $5 WHERE id = $1',
-              [result.rows[0].id, rule.deactivatedAt, scenario.sender, scenario.profile ?? null, fixtureRuleDeactivationReason]);
+            await client.query('UPDATE studio_private.teacher_rules SET deactivated_at = $2, deactivated_by_phone = $3, deactivated_by_name = $4, deactivation_reason = $5 WHERE id = $1',
+              [result.rows[0].id, rule.deactivatedAt, scenario.sender, registeredName, fixtureRuleDeactivationReason]);
           }
         }
         for (const row of setup.assignments ?? []) {
-          await client.query(`INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_phone, created_by_name,
+          await client.query(`INSERT INTO studio_private.teacher_assignments (teacher_id, lesson_date, start_time, created_at, created_by_phone, created_by_name,
             cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [teacherIds.get(row.teacher), row.lessonDate, row.time, row.createdAt, scenario.sender, scenario.profile ?? null,
-            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile ?? null : null,
+          [teacherIds.get(row.teacher), row.lessonDate, row.time, row.createdAt, scenario.sender, registeredName,
+            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? registeredName : null,
             row.cancelledAt ? fixtureCancellationReason : null]);
         }
         stage = 'preparazione fixture insegnanti: riabilitazione trigger';
         // ALTER TABLE refuses pending deferred events: run the completeness
         // checks of the seeded rules now, then restore the deferred mode.
-        await client.query('SET CONSTRAINTS app.teacher_rules_complete IMMEDIATE');
-        await client.query('SET CONSTRAINTS app.teacher_rules_complete DEFERRED');
-        await client.query('ALTER TABLE app.teacher_rules ENABLE TRIGGER teacher_rules_author');
-        await client.query('ALTER TABLE app.teacher_assignments ENABLE TRIGGER teacher_assignments_author');
+        await client.query('SET CONSTRAINTS studio_private.teacher_rules_complete IMMEDIATE');
+        await client.query('SET CONSTRAINTS studio_private.teacher_rules_complete DEFERRED');
+        await client.query('ALTER TABLE studio_private.teacher_rules ENABLE TRIGGER teacher_rules_author');
+        await client.query('ALTER TABLE studio_private.teacher_assignments ENABLE TRIGGER teacher_assignments_author');
       }
       for (const rule of (setup.teacherRules ?? []).filter((entry) => !entry.createdAt)) {
         const result = await client.query('INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, $2) RETURNING id', [teacherIds.get(rule.teacher), rule.text]);
@@ -301,7 +330,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       // trigger inside the same transaction before any conversational turn.
       if (setup.attendance?.length) {
         stage = 'preparazione fixture presenze: disabilitazione trigger';
-        await client.query('ALTER TABLE app.attendance DISABLE TRIGGER attendance_author');
+        await client.query('ALTER TABLE studio_private.attendance DISABLE TRIGGER attendance_author');
         stage = 'preparazione fixture presenze: inserimento';
         for (const row of setup.attendance) {
           if (!ids.has(row.client) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate)
@@ -310,20 +339,20 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
             || !['present', 'excused_absence', 'unexcused_absence'].includes(row.outcome)
             || (row.cancelledAt && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(row.cancelledAt)
               || Date.parse(row.cancelledAt) <= Date.parse(row.createdAt)))) throw new Error('attendance fixture');
-          await client.query(`INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name,
+          await client.query(`INSERT INTO studio_private.attendance (client_id, lesson_date, start_time, outcome, created_at, created_by_phone, created_by_name,
             cancelled_at, cancelled_by_phone, cancelled_by_name, cancellation_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, scenario.profile,
-            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? scenario.profile : null,
+          [ids.get(row.client), row.lessonDate, row.time, row.outcome, row.createdAt, scenario.sender, registeredName,
+            row.cancelledAt ?? null, row.cancelledAt ? scenario.sender : null, row.cancelledAt ? registeredName : null,
             row.cancelledAt ? fixtureCancellationReason : null]);
         }
         stage = 'preparazione fixture presenze: riabilitazione trigger';
-        await client.query('ALTER TABLE app.attendance ENABLE TRIGGER attendance_author');
+        await client.query('ALTER TABLE studio_private.attendance ENABLE TRIGGER attendance_author');
       }
       stage = 'preparazione fixture: verifica';
       await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
       await client.query('COMMIT');
       seededSnapshot = await snapshot();
-      const author = { authorPhone: scenario.sender, authorName: scenario.profile ?? null };
+      const author = { authorPhone: scenario.sender, authorName: registeredName };
       const expected = {
         clients: setup.clients.map((person) => ({ ...person, ...author })),
         rules: setup.rules.map((rule) => ({ textContains: [rule.text], clients: rule.clients, slots: rule.slots, ...author,
@@ -343,14 +372,14 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       // All author triggers must be enabled again before the first turn, and
       // seeded lessons must be valid local times, as the trigger would require.
       const triggers = (await client.query(`SELECT tgname, tgenabled FROM pg_trigger WHERE NOT tgisinternal AND tgname = ANY($1)
-        AND tgrelid IN ('app.teacher_rules'::regclass, 'app.teacher_assignments'::regclass, 'app.attendance'::regclass)`,
+        AND tgrelid IN ('studio_private.teacher_rules'::regclass, 'studio_private.teacher_assignments'::regclass, 'studio_private.attendance'::regclass)`,
       [['teacher_rules_author', 'teacher_assignments_author', 'attendance_author']])).rows;
       const invalidLessons = Number((await client.query(`SELECT count(*) FROM app.teacher_assignments
         WHERE ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AT TIME ZONE 'Europe/Rome' <> lesson_date + start_time`)).rows[0].count);
       if (triggers.length !== 3 || triggers.some((row) => row.tgenabled !== 'O') || invalidLessons) throw new Error('setup triggers');
       if (!teacherScenarioMatches({ ...seededSnapshot, clients: [], rules: [], attendance: [], teacherAssignments: [] },
-        { teachers: setup.teachers ?? [], rules: [...teacherRules.values()] }, scenario.sender, scenario.profile ?? null)
-        || !seededTeacherFixturesMatch(seededSnapshot, setup.teacherRules ?? [], setup.assignments ?? [], scenario.sender, scenario.profile ?? null)
+        { teachers: setup.teachers ?? [], rules: [...teacherRules.values()] }, scenario.sender, registeredName)
+        || !seededTeacherFixturesMatch(seededSnapshot, setup.teacherRules ?? [], setup.assignments ?? [], scenario.sender, registeredName)
         || !stateMatches({ ...seededSnapshot, attendance: [], teachers: [], teacherRules: [], teacherAssignments: [] }, expected)
         || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows })
         || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) =>
@@ -373,6 +402,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       const aggregatesBefore = turn.sqlAggregate ? await aggregateCount() : 0;
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
         metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
+        // The WhatsApp profile name must never become the identity: the
+        // registered name replaces it before Hermes.
         contacts: [{ wa_id: scenario.sender, profile: { name: scenario.profile } }],
         messages: [{ from: scenario.sender, id: `wamid.synthetic.${randomBytes(16).toString('hex')}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: turn.message } }],
       } }] }] });
@@ -412,7 +443,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       }
       const historyOk = historyPreserved(previous, current);
       const stateOk = assignmentExpected ? !!seededSnapshot && assignmentScenarioMatches(seededSnapshot, current, assignmentExpected)
-        : turn.teacherExpected ? teacherScenarioMatches(current, turn.teacherExpected, scenario.sender, scenario.profile ?? null)
+        : turn.teacherExpected ? teacherScenarioMatches(current, turn.teacherExpected, scenario.sender, registeredName)
           : attendanceExpected ? !!seededSnapshot && attendanceScenarioMatches(seededSnapshot, current, attendanceExpected)
             : turn.unchanged ? !!seededSnapshot && snapshotsMatch(seededSnapshot, current) : stateMatches(current, turn.expected);
       stage = `turno ${index + 1}: contenuto risposta`;
@@ -513,15 +544,19 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     console.error(`Proxy OpenRouter: richieste ${proxyStats.requests}, rifiutate ${proxyStats.denied}, risposte ${proxyStats.completed}, errori ${proxyStats.failures}, ultimo HTTP ${proxyStats.status}.`);
   } finally {
     if (client) await client.end().catch(() => { cleanupFailed = true; });
+    if (broker) await broker.end().catch(() => { cleanupFailed = true; });
     if (proxy?.listening) await new Promise((resolveClose) => proxy.close((error) => { if (error) cleanupFailed = true; resolveClose(); }));
     if (composeReady) {
       try { compose('down', '--volumes', '--remove-orphans'); } catch { cleanupFailed = true; }
     }
-    const existing = spawnSync('docker', ['image', 'inspect', `${project}-hermes`], { env, stdio: 'ignore', timeout: 60_000 });
-    if (existing.error) cleanupFailed = true;
-    if (existing.status === 0) {
-      const image = spawnSync('docker', ['image', 'rm', `${project}-hermes`], { env, stdio: 'ignore', timeout: 60_000 });
-      if (image.error || image.status !== 0) cleanupFailed = true;
+    // Both images built for this random project only (Hermes and PostgreSQL).
+    for (const name of [`${project}-hermes`, `${project}-postgres`]) {
+      const existing = spawnSync('docker', ['image', 'inspect', name], { env, stdio: 'ignore', timeout: 60_000 });
+      if (existing.error) cleanupFailed = true;
+      if (existing.status === 0) {
+        const image = spawnSync('docker', ['image', 'rm', name], { env, stdio: 'ignore', timeout: 60_000 });
+        if (image.error || image.status !== 0) cleanupFailed = true;
+      }
     }
     await rm(directory, { recursive: true, force: true }).catch(() => { cleanupFailed = true; });
     if (cleanupFailed) {

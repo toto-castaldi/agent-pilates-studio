@@ -1,10 +1,10 @@
 # ADR-003 — Identità unica degli insegnanti e accesso dal database
 
-- **State:** Accepted — base dati additiva TEC-041 implementata; riconoscimento target non ancora attivato
+- **State:** Accepted — base dati TEC-041, gestione guidata US-017 e attivazione coordinata TEC-042 implementate; prova operativa della transizione in TEC-043
 - **Date:** 2026-11-12
 - **Items:** TEC-041 (base dati), US-017 (gestione guidata), TEC-042 (attivazione), TEC-043 (transizione e prove operative)
 - **Requirements:** REQ-STUDIO-003, REQ-STUDIO-011, REQ-STUDIO-015, REQ-STUDIO-016, REQ-STUDIO-017, REQ-WA-002, REQ-WA-003, REQ-AGENT-006, REQ-AGENT-007, REQ-NFR-005
-- **Supersedes:** ADR-002 al completamento del passaggio coordinato
+- **Supersedes:** ADR-002, dal passaggio coordinato TEC-042
 
 ## Context
 
@@ -77,6 +77,19 @@ Il percorso pronto usa `/anagrafica`, passaggi dedicati, `/conferma <codice casu
 Una preview privata del solo bootstrap restituisce ID/revisione della persona incompleta corrispondente ai nomi raccolti, senza consentire al gestore incompleto di elencare persone o telefoni. La conferma del completamento mantiene l'ID. Per impedire un censimento alternativo via SQL nel solo assetto gestionale predisposto, il broker installa il flag fidato `management_only_enrollment` nel contesto autore: il trigger di inserimento legacy lo rifiuta. Non è una fonte di identità, non migra gli accessi ordinari e non è controllabile dal modello. Senza configurazione gestionale il percorso di compatibilità resta invariato; TEC-042 rimuoverà definitivamente l'inserimento legacy e i contesti precedenti. Si preferisce il flag transazionale a un GUC modificabile dal modello e a un numero gestore persistito come seconda configurazione nel database.
 
 `PILATES_MANAGER_PHONE` canonico deve essere uguale in gateway e broker; US-017 lo usa solo nell'override sintetico. Gli avvii locali/operativi non lo collegano ancora: il nuovo accesso ordinario, nome, «io» e autore restano riservati a TEC-042. Il percorso libero di creazione degli insegnanti descritto dalla baseline non è una via alternativa quando il componente gestionale è configurato. Non si attivano produzione, profilazione o scheduler. [Dettagli e prove](../operations/US-017-gestione.md).
+
+## Coordinated activation — TEC-042
+
+Gateway e broker sono passati insieme alla fonte nel database; la configurazione contiene soltanto `PILATES_MANAGER_PHONE`, letto da entrambi dallo stesso file privato, da cui deriva il canale home. Scelte di implementazione:
+
+- **Ammissione prima di Hermes.** Ogni webhook passa dal broker (`/v1/admission`), che unifica il percorso gestionale di US-017 e la risoluzione dell'identità. Ai messaggi ammessi sostituisce il profilo WhatsApp con nome e cognome censiti e associa una ricevuta con ID e revisione; ai numeri non abilitati invia solo il rifiuto fisso, una volta per messaggio. L'adattatore e l'autorizzazione di Hermes leggono soltanto i mittenti ammessi: si preferisce questo all'abilitazione di accesso aperto nell'adattatore o a un'allowlist rigenerata dal database, che sarebbe una seconda fonte da sincronizzare.
+- **Revisione nel binding.** `bind_teacher_identity` riceve ID e revisione ammessi e rifiuta un numero revocato, cambiato, riassegnato o modificato dopo l'ammissione; il gateway ricontrolla la ricevuta prima di avviare il turno. I contesti senza revisione non esistono più e il broker non ha INSERT diretto sul contesto.
+- **Numeri degli autori.** Le cinque tabelle con autori si spostano nello schema privato come gli insegnanti in TEC-041, con viste `app.*` aggiornabili senza le colonne `*_by_phone`; la vista degli insegnanti perde anche il numero dell'autore e diventa di sola lettura. Gli snapshot non si riscrivono. Gli errori del tool restituiscono solo SQLSTATE. Il gateway oscura nelle copie verso il modello i numeri noti al database e ogni numero con prefisso internazionale.
+- **Chat per identità.** Il proprietario della conversazione di ogni chat è registrato in `studio_private.chat_owners`; una chat precedente al passaggio o di un numero riassegnato viene azzerata con il reset nativo di Hermes prima del primo turno. Su decisione dell'utente del 2026-11-16 le sessioni preesistenti si azzerano invece di essere mantenute con il solo filtro delle copie: la vecchia cronologia non torna al modello né ai riassunti, ma resta nel volume e nei backup. Si è scartata una chiave di sessione con l'ID dell'insegnante, che avrebbe richiesto di modificare la generazione delle chiavi in più punti interni di Hermes.
+- **Archivi della chat.** Una regressione con webhook firmati ha dimostrato che il solo reset non protegge `/sessions` al riuso del numero: il controllo nativo confronta la chat WhatsApp, non la persona. Il broker mantiene quindi `session_owners`, un legame tecnico immutabile sessione–insegnante, non una fonte di identità. Prima di ogni turno si controllano ricevuta e proprietà; elenco e recupero richiedono sia l'autorizzazione nativa sia la corrispondenza del proprietario. Gli archivi senza legame non si recuperano via WhatsApp. Si preferisce questo alla disabilitazione dei comandi o al confronto dei nomi, che sono correggibili e non identificano una persona.
+- **Nessuna creazione dal modello.** L'inserimento di compatibilità e il default transitorio sono rimossi: solo le funzioni gestionali creano persone, sempre complete. Le istruzioni chiedono il censimento del gestore per un insegnante sconosciuto.
+
+Limiti: i messaggi accodati durante un turno in corso seguono il percorso busy di Hermes e non ripetono il controllo del turno, mentre le operazioni sui dati restano bloccate dopo una revoca; gli adattamenti usano punti interni della versione Hermes fissata. Prove ed esiti: [TEC-042](../operations/TEC-042-prove.md).
 
 ## Delivery and verification
 

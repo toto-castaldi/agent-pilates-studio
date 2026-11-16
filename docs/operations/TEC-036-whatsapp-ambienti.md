@@ -20,7 +20,7 @@ Il numero di test, il suo account WhatsApp Business e l'elenco dei destinatari a
 ## Configurazione Meta di produzione
 
 1. Creare l'app di tipo Business con caso d'uso WhatsApp scegliendo, nel passo del portfolio, la creazione di un nuovo portfolio: Meta crea account WhatsApp di test, account di messaggistica e numero di test. Il nome dell'app ha al massimo 30 caratteri.
-2. Registrare nell'elenco destinatari del numero di test i soli numeri degli utilizzatori, che devono coincidere con l'allowlist. Il pannello indica un massimo di 5 destinatari.
+2. Registrare nell'elenco destinatari del numero di test i soli numeri degli insegnanti che il gestore censirà nell'anagrafica (TEC-042). Il pannello indica un massimo di 5 destinatari; il censimento nel database non registra destinatari su Meta.
 3. Nel portfolio di produzione, in Impostazioni business > Utenti di sistema, creare il system user `pilates-prod` e assegnargli con accesso completo l'app, l'account WhatsApp di test e l'account di messaggistica. Generare il token con scadenza **Mai** e le sole autorizzazioni `whatsapp_business_messaging` e `whatsapp_business_management`; `business_management`, indicato dalla guida Meta, non serve e darebbe poteri sull'intero portfolio.
 4. Scrivere i segreti su `jarvis` dopo `ops init` (TEC-035), uno per comando, senza che il valore compaia a schermo:
 
@@ -34,8 +34,7 @@ Il numero di test, il suo account WhatsApp Business e l'elenco dei destinatari a
    | `whatsapp-app-secret` | Impostazioni app > Di base > Chiave segreta |
    | `whatsapp-phone-number-id` | Passaggio 1. Prova: «ID numero di telefono», diverso dall'ID dell'account WhatsApp |
    | `openrouter-key` | chiave OpenRouter dedicata alla produzione |
-   | `whatsapp-allowed-users` | numeri internazionali in sole cifre, separati da virgole |
-   | `whatsapp-home-channel` | uno dei numeri dell'allowlist, identico |
+   | `whatsapp-manager-phone` | numero del gestore, `+` e 8–15 cifre senza spazi; il canale home ne deriva |
 
    `whatsapp-verify-token` si genera su `jarvis` senza mostrarlo: `umask 077; openssl rand -hex 32 > /opt/agent-pilates-prod/secrets/whatsapp-verify-token`.
 5. Installare con `ops install` (TEC-035) e configurare il tunnel (sezione seguente) prima del webhook.

@@ -1,10 +1,8 @@
 # US-017 — Gestione guidata dell'anagrafica
 
-## Availability and activation boundary
+## Availability
 
-Il componente è pronto per la transizione coordinata descritta da ADR-003. **Non è attivato nello stack operativo.** Non modificare produzione, `.env` privati, allowlist o mapping per provarlo. Il normale accesso, il nome nella chat, «io» e l'autore restano alla baseline fino a TEC-042; il completamento di un censimento con questa capacità non abilita ancora il numero nel gateway ordinario precedente. Il numero di test Meta mantiene i propri limiti esterni.
-
-La configurazione predisposta è `PILATES_MANAGER_PHONE`, canonico con `+` e 8–15 cifre, prima cifra non zero. Deve essere uguale in gateway e broker, mai fornito dal modello. Il componente non lo ricava dal canale home o dall'allowlist. Compose e i launcher operativi non lo inoltrano ancora; **non** si cambia l'assetto ordinario per attivarlo parzialmente. La suite `integration/management.test.ts`, inclusa in `npm run test:author`, genera soltanto un override sintetico temporaneo che lo passa a entrambi. Non è una procedura di censimento esterna: tutte le operazioni avvengono da webhook firmati.
+Il percorso è attivo con l'identità unica dalla TEC-042 ([prove](TEC-042-prove.md)): il numero del gestore è l'unica configurazione personale, `PILATES_MANAGER_PHONE` in `.env` locale o `secrets/whatsapp-manager-phone` in produzione, canonico con `+` e 8–15 cifre, prima cifra non zero. Gateway e broker lo leggono dallo stesso file privato; non è mai fornito dal modello e non è ricavato da altri dati. Censimento e abilitazione determinano l'accesso ordinario, il nome nella chat, «io» e l'autore, senza riavvii. Il numero di test Meta mantiene i propri limiti esterni. Non è una procedura di censimento esterna: tutte le operazioni avvengono da webhook firmati.
 
 ## Chat protocol
 
@@ -14,7 +12,7 @@ La configurazione predisposta è `PILATES_MANAGER_PHONE`, canonico con `+` e 8�
 - Prima di ogni scrittura viene mostrato il riepilogo con i dati validati e un codice casuale. Solo `/conferma <codice>` esatto nella stessa chat salva. Un semplice «sì» non salva. Il codice è monouso e non può essere trasferito a un altro mittente. Non sono argomenti di un tool del modello.
 - `/annulla` esce senza scrivere. La scadenza assoluta è dieci minuti dall'ingresso, non prolungata dagli input. Conferma errata, dato invalido, duplicato o errore del database chiudono la bozza senza salvare; serve un nuovo ingresso. Non ci sono salvataggi parziali.
 - Un riavvio del broker invalida la conferma anche se non sono trascorsi dieci minuti. Il flusso interrotto/scaduto resta intercettato: i messaggi successivi non arrivano al modello fino a `/anagrafica` o `/annulla`. Non si riprendono automaticamente bozze o conferme dai backup. Dopo annullamento o chiusura, testo arbitrario fuori dal percorso non è promesso anonimo.
-- Un ordinario che usa `/anagrafica`, `/annulla` o `/conferma` riceve un rifiuto fisso, senza chiamate al modello e senza dati del gestore. I messaggi ordinari non gestionali continuano sulla baseline, senza attivare il nuovo riconoscimento.
+- Un insegnante abilitato che usa `/anagrafica`, `/annulla` o `/conferma` riceve un rifiuto fisso, senza chiamate al modello e senza dati del gestore; i suoi messaggi non gestionali vanno all'agente. Un numero non censito, incompleto o revocato riceve invece solo il rifiuto di accesso, anche per questi comandi.
 
 Esempio soltanto sintetico: `/anagrafica` → `nuovo` → `Synthetic` → `Instructor` → `+1 (555) 555-0901` → riepilogo → `/conferma <codice ricevuto>`. Il prefisso internazionale `+` o `00` è obbligatorio; spazi, parentesi, punti e trattini vengono normalizzati, non aggirano l'unicità. Nessuna deduzione del paese, assegnazione del numero o registrazione automatica su Meta.
 
@@ -28,11 +26,11 @@ La migrazione `20261113000000_management_bootstrap` aggiunge:
 
 - `preview_manager_bootstrap(sender, manager_phone, first_name, last_name)`, ingresso privato del solo broker: per il solo gestore ancora incompleto restituisce ID e revisione di una persona incompleta corrispondente ai nomi già raccolti, oppure nessuna riga. Non elenca altre persone né restituisce telefoni. Le funzioni TEC-041 restano l'unica via di mutazione.
 - `studio_private.management_sessions`, stato privato indicizzato dall'impronta SHA-256 del mittente. Le bozze contengono dati personali, restano nel database e nei backup privati, mai nei log o al modello. La tabella non è un'identità o una fonte di autorizzazione. Il broker ha soltanto il DML necessario su questo stato; il modello nessun accesso. Un nonce di istanza invalida le conferme dopo riavvio/ripristino. La riga viene eliminata all'uscita o al termine; lo stato scaduto resta solo come intercettazione fino all'uscita o nuovo ingresso.
-- `management_only_enrollment` nel contesto autore privato, con default falso per la compatibilità additiva. Il broker lo imposta dal fatto che il percorso gestionale è configurato, non da argomenti del tool. Il trigger `insert_legacy_teacher` vieta allora il censimento tramite SQL, anche con un GUC forgiato: citare un insegnante sconosciuto non lo crea né sostituisce la procedura. Questo non cambia accesso, nome, autore o «io» ordinari; TEC-042 toglierà definitivamente il percorso legacy.
+- `management_only_enrollment` nel contesto autore privato, che vietava il censimento tramite SQL nel solo assetto gestionale. Dalla TEC-042 il flag e l'inserimento di compatibilità sono rimossi: nessun contesto consente all'agente di creare insegnanti.
 
 Il lock transazionale per mittente serializza le transizioni, anche concorrenti o da più processi. Le impronte persistenti in `consumed_messages` impediscono il replay per almeno la finestra di accettazione firmata, anche dopo riavvio. Letture, verifica delle revisioni e chiamata gestionale avvengono nella stessa transazione; le funzioni TEC-041 serializzano le scritture e ricontrollano l'accesso al salvataggio. Un cambiamento di gestore, accesso o dati confermati fa fallire una vecchia conferma. Un savepoint separa l'errore di mutazione dal consumo del messaggio e dalla chiusura della bozza. ID, creazione originale, regole, presenze, indicazioni e autori storici non vengono riscritti.
 
-Le vecchie cronologie, i telefoni degli autori ancora esposti dalla baseline e l'isolamento delle chat al riuso del numero restano alla protezione coordinata TEC-042; non si dichiara già anonimo lo storico. Nessun cambiamento a cron, profilazione, stack dello studio o rischio residuo del proxy.
+Le vecchie cronologie, i telefoni degli autori e l'isolamento delle chat al riuso del numero sono protetti dalla TEC-042 (`design/identity`, `design/security`); lo storico conservato nei volumi e nei backup non è dichiarato anonimo. Nessun cambiamento a cron, profilazione, stack dello studio o rischio residuo del proxy.
 
 ## Verification
 
@@ -41,7 +39,7 @@ Le prove usano soltanto dati sintetici. Le evidenze e gli esiti finali sono regi
 - `test/identity-flow.test.ts`: transizioni pure, bootstrap, normalizzazione, tutte le operazioni, riepilogo prima della conferma, cancellazione, invalidi, scadenza, restrizioni di sé e isolamento dei rifiuti. Nessun processo/filesystem/rete nei test unitari.
 - `integration/management.test.ts` (`test:author`): PostgreSQL e gateway reali in rete Docker interna, sostituti locali Meta/modello; bootstrap da vuoto e con persona preesistente, operazioni, duplicati, invalidi, annullamento, scadenza, riavvio, replay concorrente, conferma di altro mittente, revoca prima del salvataggio e revisione cambiata. Osserva zero richieste al modello per gestione/rifiuti; esercita poi SQL di censimento libero rifiutato, turni normali e una compattazione reale, verificando assenza dei telefoni gestionali da richieste e file di sessione e assenza di dati sensibili nei log.
 - `integration/identity-checks.ts` (`test:db`): privilegi della preview, assenza di accesso del modello allo stato privato e divieto SQL nel contesto gestionale anche con GUC falso, oltre alle prove TEC-041 di atomicità, concorrenza e conservazione dello storico.
-- `test:local`: coerenza di SOUL, schema e documentazione; contratto di inclusione dei componenti nell'immagine e di non attivazione nel Compose operativo.
+- `test:local`: coerenza di SOUL, schema e documentazione; contratto di inclusione dei componenti nell'immagine e, dalla TEC-042, di attivazione congiunta in gateway e broker con il solo numero del gestore.
 
 Le prove sintetiche non garantiscono la correttezza di servizi esterni o di immagini Hermes diverse dalla versione fissata. Gli adattamenti ai punti interni di aiohttp/Hermes vanno riverificati a ogni aggiornamento.
 

@@ -13,8 +13,7 @@ OPENROUTER_API_KEY=synthetic-sensitive-model-token
 WHATSAPP_ACCESS_TOKEN=synthetic-sensitive-access-token
 WHATSAPP_APP_SECRET=synthetic-sensitive-app-secret
 WHATSAPP_VERIFY_TOKEN=synthetic-sensitive-verify-token
-WHATSAPP_ALLOWED_USERS=15555550102
-WHATSAPP_HOME_CHANNEL=15555550102
+PILATES_MANAGER_PHONE=+1 (555) 555-0102
 WHATSAPP_PHONE_NUMBER_ID=123456789
 `;
 
@@ -27,7 +26,7 @@ test('local start validates configuration, preserves secrets and suppresses chil
   assert.equal(system.content('.local/secrets/db-admin'), password);
   assert.ok(system.calls.some((call) => call.args.includes('--force-recreate') && call.args.includes('--no-deps') && call.args.includes('hermes')));
   assert.ok(system.calls.every((call) => call.stdio === 'ignore' || (Array.isArray(call.stdio) && call.stdio.join(',') === 'ignore,pipe,ignore')));
-  assert.ok(system.calls.every((call) => call.env.DB_ADMIN_PASSWORD === undefined && call.env.WHATSAPP_HOME_CHANNEL === undefined));
+  assert.ok(system.calls.every((call) => call.env.DB_ADMIN_PASSWORD === undefined && call.env.PILATES_MANAGER_PHONE === undefined && call.env.WHATSAPP_CLOUD_HOME_CHANNEL === undefined));
   assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive|15555550102/);
   system.failCommand('hermes');
   let logCount = system.logs.length;
@@ -44,13 +43,17 @@ test('local start validates configuration, preserves secrets and suppresses chil
   assert.equal(await startLocal(system), 1);
   assert.match(system.errors.at(-1) ?? '', /non corrisponde/);
   assert.equal(system.content('.local/secrets/db-admin'), password);
-  system.put('.env', configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS='));
+  system.put('.env', configuration.replace('PILATES_MANAGER_PHONE=+1 (555) 555-0102', 'PILATES_MANAGER_PHONE='));
   assert.equal(await startLocal(system), 1);
-  assert.match(system.errors.at(-1) ?? '', /WHATSAPP_ALLOWED_USERS/);
-  for (const value of ['', '15555550103', '15555550102,15555550103']) {
-    system.put('.env', configuration.replace('WHATSAPP_HOME_CHANNEL=15555550102', `WHATSAPP_HOME_CHANNEL=${value}`));
+  assert.match(system.errors.at(-1) ?? '', /PILATES_MANAGER_PHONE/);
+  // No country is assumed, separators only; the rejected value is never echoed.
+  for (const value of ['15555550102', '+0555550102', '+1555', '+1 555 555 0102 x1', '+15555550102,+15555550103', 'gestore']) {
+    system.put('.env', configuration.replace('PILATES_MANAGER_PHONE=+1 (555) 555-0102', `PILATES_MANAGER_PHONE=${value}`));
+    const calls = system.calls.length;
     assert.equal(await startLocal(system), 1);
-    assert.doesNotMatch(system.errors.at(-1) ?? '', /1555555010[23]/);
+    assert.equal(system.calls.length, calls, 'validation must precede service changes');
+    assert.match(system.errors.at(-1) ?? '', /PILATES_MANAGER_PHONE/);
+    assert.doesNotMatch(system.errors.at(-1) ?? '', /555|0102|gestore/);
   }
   for (const value of ['', '0', '-5', '1.5', 'quattro']) {
     system.put('.env', `${configuration}PILATES_IDLE_COMPACT_SECONDS=${value}\n`);
@@ -61,44 +64,29 @@ test('local start validates configuration, preserves secrets and suppresses chil
   assert.equal(await startLocal(system), 1);
 });
 
-test('teacher links are private, validated before effects and replaced on restart', async () => {
-  const linked = [{ phone: '15555550102', firstName: 'Antonio', lastName: 'Neri' }];
-  const withLinks = `${configuration}WHATSAPP_TEACHER_LINKS='${JSON.stringify(linked)}'\n`;
+test('the manager phone is the only number: normalized, private and the former sources are refused or removed', async () => {
   const system = memorySystem();
-  system.put('.env', withLinks);
-  assert.equal(await startLocal(system), 0);
-  assert.equal(system.content('.local/secrets/whatsapp-teacher-links'), `${JSON.stringify(linked)}\n`);
-  assert.ok(system.calls.every((call) => call.env.WHATSAPP_TEACHER_LINKS === undefined));
   system.put('.env', configuration);
-  const before = system.calls.length;
+  for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
+    system.put(`.local/secrets/${name}`, '15555550109\n');
+  }
   assert.equal(await startLocal(system), 0);
-  assert.equal(system.content('.local/secrets/whatsapp-teacher-links'), '[]\n');
-  assert.ok(system.calls.slice(before).some((call) => call.args.includes('--force-recreate') && call.args.includes('author-broker')));
-  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /15555550102|Antonio|Neri/);
-  const shared = [...linked, { ...linked[0], phone: '15555550103' }];
-  const twoSenders = memorySystem();
-  twoSenders.put('.env', `${configuration.replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS=15555550102,15555550103')}WHATSAPP_TEACHER_LINKS='${JSON.stringify(shared)}'\n`);
-  assert.equal(await startLocal(twoSenders), 0, 'different authorized senders may refer to the same teacher');
-  assert.deepEqual(JSON.parse(twoSenders.content('.local/secrets/whatsapp-teacher-links') ?? ''), shared);
-
-  const invalid = [
-    'not-json', '{}', 'null', '[1]',
-    JSON.stringify([{ ...linked[0], phone: '15555550103' }]),
-    JSON.stringify([{ ...linked[0], phone: '+15555550102' }]),
-    JSON.stringify([linked[0], { ...linked[0], firstName: 'Francesca' }]),
-    JSON.stringify([{ ...linked[0], lastName: '' }]),
-    JSON.stringify([{ ...linked[0], firstName: ' Antonio' }]),
-    JSON.stringify([{ ...linked[0], firstName: 'Antonio\nNeri' }]),
-    JSON.stringify([{ ...linked[0], lastName: 'a'.repeat(201) }]),
-    JSON.stringify([{ ...linked[0], extra: 'synthetic' }]),
-  ];
-  for (const value of invalid) {
+  assert.equal(system.content('.local/secrets/whatsapp-manager-phone'), '+15555550102\n');
+  assert.equal((await system.lstat('.local/secrets/whatsapp-manager-phone')).mode & 0o077, 0);
+  for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
+    assert.equal(system.content(`.local/secrets/${name}`), undefined, `${name} must not survive the transition`);
+  }
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /555|0102|0109/);
+  system.put('.env', configuration.replace('+1 (555) 555-0102', '0015555550103'));
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/whatsapp-manager-phone'), '+15555550103\n');
+  for (const key of ['WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_HOME_CHANNEL=15555550102', `WHATSAPP_TEACHER_LINKS='[]'`]) {
     const failed = memorySystem();
-    failed.put('.env', `${configuration}WHATSAPP_TEACHER_LINKS='${value}'\n`);
-    assert.equal(await startLocal(failed), 1, 'invalid mapping must fail');
+    failed.put('.env', `${configuration}${key}\n`);
+    assert.equal(await startLocal(failed), 1, 'former identity sources must not be silently ignored');
     assert.equal(failed.calls.length, 0, 'validation must precede service changes');
-    assert.equal(failed.content('.local/secrets/whatsapp-teacher-links'), undefined);
-    assert.doesNotMatch([...failed.logs, ...failed.errors].join(' '), /1555555010[23]|Antonio|Neri|Francesca/);
+    assert.match(failed.errors.at(-1) ?? '', new RegExp(key.slice(0, key.indexOf('='))));
+    assert.doesNotMatch(failed.errors.at(-1) ?? '', /555|0102/);
   }
 });
 
@@ -110,12 +98,11 @@ test('external configuration is replaced only after both services stop and both 
   const changed = configuration
     .replace('synthetic-sensitive-model-token', 'new-synthetic-model-token')
     .replace('synthetic-sensitive-app-secret', 'new-synthetic-app-secret')
-    .replace('WHATSAPP_ALLOWED_USERS=15555550102', 'WHATSAPP_ALLOWED_USERS=15555550103')
-    .replace('WHATSAPP_HOME_CHANNEL=15555550102', 'WHATSAPP_HOME_CHANNEL=15555550103');
+    .replace('PILATES_MANAGER_PHONE=+1 (555) 555-0102', 'PILATES_MANAGER_PHONE=+15555550103');
   system.put('.env', changed);
   const start = system.calls.length;
   assert.equal(await startLocal(system), 0);
-  assert.equal(system.content('.local/secrets/whatsapp-allowed-users'), '15555550103\n');
+  assert.equal(system.content('.local/secrets/whatsapp-manager-phone'), '+15555550103\n');
   assert.equal(system.content('.local/secrets/whatsapp-app-secret'), 'new-synthetic-app-secret\n');
   assert.equal(system.content('.local/secrets/bridge-token'), internal);
   const calls = system.calls.slice(start);
@@ -126,7 +113,7 @@ test('external configuration is replaced only after both services stop and both 
   system.put('.env', changed.replace('synthetic-admin-password', 'different-admin-password').replace('15555550103', '15555550104'));
   assert.equal(await startLocal(system), 1);
   assert.equal(system.calls.length, count);
-  assert.equal(system.content('.local/secrets/whatsapp-allowed-users'), '15555550103\n');
+  assert.equal(system.content('.local/secrets/whatsapp-manager-phone'), '+15555550103\n');
 });
 
 test('production project and volumes are refused before any service or secret changes', async () => {

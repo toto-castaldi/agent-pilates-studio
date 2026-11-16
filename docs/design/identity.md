@@ -1,31 +1,42 @@
 # Sender identity and teacher registry
 
-Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md). La base dati e il percorso guidato sono già presenti; l'attivazione coordinata dei consumatori è una decisione aperta (`README`). Finché non avviene restano in esercizio le fonti del runtime precedente descritte sotto.
+Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teacher-identity.md): gateway e broker usano insieme la fonte nel database. Resta aperta la prova operativa della transizione su un'installazione esistente, del recupero e del trasferimento del gestore (TEC-043).
 
-## Runtime attuale
+## Ammissione
 
-- L'accesso deriva dall'allowlist `WHATSAPP_ALLOWED_USERS` verificata dal gateway e dal broker.
-- Il broker risolve l'insegnante del mittente dal collegamento privato `WHATSAPP_TEACHER_LINKS` (numero autorizzato, nome e cognome) e dall'anagrafica, senza distinzione di maiuscole, tramite una funzione riservata; lo installa nel contesto autore effimero come `sender_teacher_id`, senza tabella persistente di collegamenti. Il modello consulta l'insegnante tramite `app.current_sender_teacher_id()`, non tramite il numero; se non esiste corrispondenza chiede il nome ([ADR-002](../adr/ADR-002-sender-teacher-identity.md), sostituita da ADR-003).
-- Il nome dell'autore proviene dal payload firmato; il contesto nativo di sessione di Hermes include il nome visualizzato WhatsApp, quando disponibile, come etichetta non fidata.
-- La distinzione tra richieste riferite a «io» e ad altre persone è un'interpretazione del modello; il modello non può fornire argomenti a `app.current_sender_teacher_id()` né alterare il contesto.
+- Ogni corpo webhook raggiunge il broker (`/v1/admission`) prima dell'adattatore Hermes, degli slash command, di SQLite e di ogni richiesta al modello. Il broker verifica HMAC, Phone Number ID, messaggio diretto, ID e timestamp firmato (`webhook-trust`) e risolve ogni mittente con `studio_private.resolve_teacher_identity`.
+- Il solo numero `PILATES_MANAGER_PHONE` entra prima nel percorso gestionale: se non è ancora censito riceve obbligatoriamente il censimento iniziale, senza modello né DML sullo studio; se è censito e abilitato i suoi messaggi non gestionali proseguono come quelli degli altri.
+- Un'identità completa e abilitata è ammessa: il broker crea una ricevuta in memoria con ID e revisione della persona, sostituisce nel payload il nome del profilo WhatsApp con nome e cognome censiti e restituisce il corpo filtrato, che il gateway firma di nuovo per l'adattatore. I comandi gestionali di un utilizzatore ordinario ricevono il rifiuto fisso di US-017.
+- Un numero non censito, incompleto o revocato riceve una sola volta per messaggio (impronta anti-replay) il testo fisso «Accesso non abilitato. Per usare l'assistente dello studio rivolgiti al gestore.», senza informazioni sul gestore, sessione, turno del modello o accesso ai dati. Messaggi non validi, di gruppo o di un altro account sono scartati. Un errore del broker restituisce un errore HTTP senza inoltro.
+- Nel gateway la stessa ammissione è l'unica autorizzazione per WhatsApp: la policy dell'adattatore (`allowlist`) e l'autorizzazione di Hermes leggono soltanto i mittenti ammessi dal broker e non ancora scaduti; non esistono allowlist, pairing o allow-all in configurazione. Eventi interni o di gruppo sul canale WhatsApp non avviano turni.
+- La consegna delle risposte fisse e gestionali è best effort: la decisione del broker è già salvata e un nuovo invio dello stesso webhook non riceve una seconda risposta.
 
-## Modello di identità unica
+## Turno, nome, «io» e autore
 
-- Il gateway risolve il numero autenticato nel database prima di aprire il turno del modello; un numero non censito, incompleto o revocato riceve solo il rifiuto fisso, senza informazioni sul gestore e senza chiamate al modello. Il broker applica indipendentemente la stessa fonte per l'autore e il mittente.
-- Il nome inviato al modello è quello censito, mai quello del profilo WhatsApp, anche nelle sessioni esistenti; il metadato del profilo non è una fonte o un fallback e non è reintrodotto dalla cronologia o dalla compattazione. Il contesto per «io» non accetta parametri dichiarati dal modello.
-- Dal numero sostituito non si avviano nuove operazioni; il nuovo numero e un numero assegnato a una persona diversa iniziano una chat vuota, senza cancellare i dati dello studio.
-- L'unico numero personale in configurazione è `PILATES_MANAGER_PHONE`, da cui deriva il canale home; allowlist, collegamenti in configurazione e numero home separato non sono fonti né fallback (`configuration`).
+- Prima della sessione e del turno il gateway chiede al broker (`/v1/turn`) se l'identità della ricevuta è ancora la stessa persona abilitata con la stessa revisione; altrimenti risponde con il rifiuto fisso senza chiamare il modello.
+- Il nome inviato al modello è quello censito, nel contesto nativo della sessione; il profilo WhatsApp non arriva a Hermes. Nessun fallback usa il numero o il profilo.
+- Per ogni operazione SQL il plugin chiede al broker di legare la transazione (`/v1/context`): il broker consuma l'impronta del messaggio e chiama `bind_teacher_identity` con ID e revisione della ricevuta. Il database rifiuta un numero revocato, cambiato, riassegnato a un'altra persona o con revisione superata; `require_author_context()` ricontrolla la riga a ogni scrittura con lock condiviso fino al commit. Autore, nome dell'autore e `app.current_sender_teacher_id()` derivano da quella riga.
+- Ogni modifica gestionale (correzione, cambio numero, revoca, riabilitazione) incrementa la revisione: messaggi, ricevute o turni in corso con la revisione precedente non possono più scrivere né avviare un nuovo turno; un nuovo messaggio viene ammesso di nuovo con i dati correnti.
+
+## Chat per identità
+
+- `studio_private.chat_owners` registra, per impronta del mittente, l'insegnante proprietario della conversazione Hermes di quella chat. Non è una fonte di identità o di accesso.
+- Al primo turno di una chat senza proprietario, cioè precedente al passaggio, o il cui proprietario è un'altra persona, il gateway azzera la sessione Hermes con il reset nativo prima di elaborare il messaggio e solo dopo registra il nuovo proprietario. La cronologia precedente, con nomi di profilo e testi, non è più usata come contesto attivo del modello o dei riassunti; resta nel volume e nei backup e non è dichiarata anonima.
+- Ogni sessione Hermes usata da un turno ordinario è legata una sola volta all'insegnante in `studio_private.session_owners`. Prima del modello il broker ricontrolla la ricevuta e registra o verifica il proprietario della sessione; un legame esistente non si riassegna. Il recupero e l'elenco delle sessioni richiedono sia il controllo nativo della chat sia lo stesso proprietario corrente nel broker; una sessione senza legame, inclusa una precedente al passaggio, non è recuperabile da WhatsApp. Non si disabilitano i comandi: restano disponibili per le sessioni della stessa identità.
+- Un cambio di numero apre la chat del nuovo numero, vuota; un numero assegnato a un'altra persona non eredita la conversazione, neppure tramite i comandi di recupero. Correzione del nome e riabilitazione conservano la chat. I dati dello studio non cambiano.
+- I messaggi che arrivano mentre un turno è in corso seguono il percorso busy di Hermes: sono ammessi dal broker alla ricezione; una revoca confermata nel frattempo blocca le operazioni sui dati, ma non interrompe il turno già avviato.
 
 ## Gestione guidata
 
 Il percorso è deterministico e precede il modello ([guida](../operations/US-017-gestione.md)):
 
 - `/anagrafica` apre il flusso, `/annulla` esce e `/conferma <codice>` salva un solo riepilogo entro 10 minuti dall'ingresso. Il gestore incompleto riceve obbligatoriamente il bootstrap.
-- La politica pura TypeScript (`src/identity-flow.ts`) è eseguita da Node.js nel broker Python, senza un nuovo servizio. Il gateway interroga `/v1/management` prima dell'adattatore Hermes, di SQLite e di ogni richiesta al modello; il broker verifica indipendentemente HMAC, account, mittente e timestamp, usa le funzioni private dell'identità (`data-model`) e risponde soltanto al mittente autenticato.
-- Lock transazionale, impronte anti-replay persistenti, codice casuale e revisioni vincolano conferma, dati e mittente. Al salvataggio si ricontrollano gestore e revisione del destinatario; gli errori chiudono il flusso senza mutazioni o audit parziali. Le conferme scadono al riavvio: il flusso resta intercettato fino a nuovo ingresso o annullamento, senza riversare risposte tardive al modello.
-- Nell'assetto gestionale configurato il broker marca i contesti ordinari `management_only_enrollment`: il trigger fidato vieta l'inserimento di insegnanti incompleti da SQL anche se il modello lo tenta. Il flag non cambia la fonte di accesso, nome, «io» o autore e il modello non può leggerlo o impostarlo. Senza configurazione gestionale la compatibilità resta invariata.
-- Il percorso è attivo solo nell'override sintetico delle prove, con `PILATES_MANAGER_PHONE` uguale in gateway e broker; Compose e avvii operativi non lo attivano prima della transizione. La gestione delle lezioni resta conversazionale.
+- La politica pura TypeScript (`src/identity-flow.ts`) è eseguita da Node.js nel broker Python, senza un nuovo servizio; il broker usa le funzioni private dell'identità (`data-model`) e risponde soltanto al mittente autenticato.
+- Lock transazionale, impronte anti-replay persistenti, codice casuale e revisioni vincolano conferma, dati e mittente. Al salvataggio si ricontrollano gestore e revisione del destinatario; gli errori chiudono il flusso senza mutazioni o audit parziali.
+- Il modello non può creare insegnanti: `app.teachers` è in sola lettura e la creazione richiede la guardia delle funzioni gestionali. Citare un insegnante sconosciuto produce solo la richiesta di censimento del gestore.
 
-## Transizione
+## Configurazione
 
-Il passaggio è coordinato: gateway e broker cambiano insieme fonte dell'identità e si applicano insieme le restrizioni definitive su censimenti e lettura dei numeri, compresi gli autori storici. Non si attiva un gateway con una fonte e un broker con un'altra e non si mantiene una sincronizzazione permanente con i vecchi file. La transizione preserva ID, snapshot e dati. Distingue il trasferimento della funzione gestionale a un'altra persona (il vecchio numero perde i soli privilegi gestionali) dal cambio del numero della stessa persona (l'identità interna resta e il numero sostituito perde l'accesso); il flusso ordinario in chat non può eseguire nessuna delle due operazioni.
+L'unico numero personale configurato è `PILATES_MANAGER_PHONE` (`configuration`), uguale in gateway e broker perché letto dallo stesso file privato; il canale home ne deriva. Allowlist, collegamenti numero–insegnante e canale home separato non esistono: `start:local` e `prod.sh` rifiutano le vecchie chiavi o i vecchi file. Censire un destinatario non supera i limiti esterni di Meta.
+
+Il trasferimento della funzione gestionale a un'altra persona (il vecchio numero perde i soli privilegi gestionali) e il cambio del numero del gestore stesso non sono possibili dal flusso in chat: richiedono una procedura dell'operatore che aggiorni insieme configurazione e anagrafica, documentata e verificata in TEC-043.

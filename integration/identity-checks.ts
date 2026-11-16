@@ -34,10 +34,12 @@ export async function checkTeacherIdentities(
   const list = (sender = managerSender, configuredManager = managerPhone) => broker.query(
     'SELECT * FROM studio_private.list_teacher_identities($1, $2)', [sender, configuredManager]);
   const resolve = (sender: string) => broker.query('SELECT * FROM studio_private.resolve_teacher_identity($1)', [sender]);
+  const bindSql = 'SELECT studio_private.bind_teacher_identity($1, $2, $3, $4, $5)';
   const bind = async (connection: Client, sender: string): Promise<Binding> => {
     await connection.query('BEGIN');
     const binding = (await connection.query<Binding>('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await broker.query('SELECT studio_private.bind_teacher_identity($1, $2, $3)', [binding.pid, binding.txid, sender]);
+    const person = (await resolve(sender)).rows[0];
+    await broker.query(bindSql, [binding.pid, binding.txid, sender, person.id, person.identity_revision]);
     return binding;
   };
   const release = async (connection: Client, binding: Binding, commit = false) => {
@@ -70,7 +72,8 @@ export async function checkTeacherIdentities(
     'studio_private.list_teacher_identities(text,text)',
     'studio_private.preview_manager_bootstrap(text,text,text,text)',
     'studio_private.resolve_teacher_identity(text)',
-    'studio_private.bind_teacher_identity(integer,bigint,text)',
+    'studio_private.bind_teacher_identity(integer,bigint,text,bigint,bigint)',
+    'studio_private.identity_phone_digits()',
   ]) {
     const privileges = (await migrator.query("SELECT has_function_privilege('studio_agent', $1, 'EXECUTE') AS agent, has_function_privilege('studio_broker', $1, 'EXECUTE') AS broker", [signature])).rows[0];
     assert.deepEqual(privileges, { agent: false, broker: true });
@@ -79,14 +82,19 @@ export async function checkTeacherIdentities(
   }
   for (const signature of [
     'studio_private.identity_state(studio_private.teachers)', 'studio_private.require_identity_manager(text,text)',
-    'studio_private.normalize_identity_phone(text)', 'studio_private.insert_legacy_teacher()',
+    'studio_private.normalize_identity_phone(text)', 'studio_private.apply_teacher_creation()',
     'studio_private.protect_teacher_identity()',
   ]) {
     assert.equal((await migrator.query("SELECT has_function_privilege('studio_broker', $1, 'EXECUTE') AS allowed", [signature])).rows[0].allowed, false);
   }
+  const auditStart = Number((await migrator.query('SELECT coalesce(max(id), 0) AS id FROM studio_private.teacher_identity_changes')).rows[0].id);
   const oldView = await readTeacherState(agent);
+  const oldPrivate = (await migrator.query('SELECT id, created_at, created_by_phone, created_by_name FROM studio_private.teachers ORDER BY id')).rows;
   const studioBefore: Record<string, unknown[]> = {};
-  for (const table of ['clients', 'training_rules', 'rule_slots', 'rule_clients', 'attendance']) {
+  for (const table of ['clients', 'training_rules', 'attendance']) {
+    studioBefore[table] = (await migrator.query(`SELECT * FROM studio_private.${table} ORDER BY 1, 2`)).rows;
+  }
+  for (const table of ['rule_slots', 'rule_clients']) {
     studioBefore[table] = (await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows;
   }
   // Even a trusted-owner fixture cannot accidentally persist the capability.
@@ -122,13 +130,10 @@ export async function checkTeacherIdentities(
   await assertClosed();
 
   // The other bootstrap path completes an existing person, never duplicates or
-  // rewrites their original profile-name snapshot or domain relationships.
-  await migrator.query('BEGIN');
-  const legacyBinding = (await migrator.query<Binding>('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-  await migrator.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES ($1, $2, '15555550102', 'Old Synthetic Profile', clock_timestamp() + interval '1 minute')", [legacyBinding.pid, legacyBinding.txid]);
-  const manager = (await migrator.query("INSERT INTO app.teachers (first_name, last_name, created_by_phone, created_by_name) VALUES ('Legacy', 'ManagerSynthetic', 'forged', 'forged') RETURNING *")).rows[0];
-  await migrator.query('COMMIT');
-  await migrator.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [legacyBinding.pid, legacyBinding.txid]);
+  // rewrites their original profile-name snapshot or domain relationships. The
+  // person was created by the previous runtime, before the transition.
+  const manager = (await agent.query("SELECT * FROM app.teachers WHERE first_name = 'Legacy' AND last_name = 'ManagerSynthetic'")).rows[0];
+  assert.equal(manager.created_by_name, 'Old Synthetic Profile');
   const legacyPerson = (await migrator.query('SELECT * FROM studio_private.teachers WHERE id = $1', [manager.id])).rows[0];
   assert.equal(legacyPerson.phone, null);
   const previewSql = 'SELECT * FROM studio_private.preview_manager_bootstrap($1,$2,$3,$4)';
@@ -151,18 +156,27 @@ export async function checkTeacherIdentities(
   assert.deepEqual((await resolve(managerSender)).rows, [{ id: manager.id, first_name: 'Legacy', last_name: 'ManagerSynthetic', access_enabled: true, identity_revision: '2' }]);
 
   const guidedBinding = await bind(agent, managerSender);
-  await migrator.query('UPDATE studio_private.author_context SET management_only_enrollment=true WHERE backend_pid=$1 AND transaction_id=$2', [guidedBinding.pid, guidedBinding.txid]);
-  // Even arbitrary SQL and a forged GUC cannot bypass the trusted context policy.
+  // Even the manager's own context, arbitrary SQL and a forged GUC cannot
+  // enroll a teacher: only the guided management functions create people.
   await agent.query("SET LOCAL app.management_only_enrollment = 'false'");
   await assert.rejects(agent.query("INSERT INTO app.teachers(first_name,last_name) VALUES ('Forbidden','Synthetic')"), { code: '42501' });
   await release(agent, guidedBinding);
+  // Nor can the migration owner create an incomplete person after the transition.
+  await migrator.query('BEGIN');
+  await migrator.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id, identity_revision) SELECT pg_backend_pid(), txid_current(), '15555550120', 'Synthetic', clock_timestamp() + interval '1 minute', id, identity_revision FROM studio_private.teachers WHERE phone = '+15555550120'");
+  await assert.rejects(migrator.query("INSERT INTO studio_private.teachers (first_name, last_name) VALUES ('Owner', 'Incomplete')"), { code: '42501' });
+  await migrator.query('ROLLBACK');
+  // Contexts of the previous runtime, without an identity revision, no longer exist.
+  await migrator.query('BEGIN');
+  await assert.rejects(migrator.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at) VALUES (pg_backend_pid(), txid_current(), '15555550120', 'Legacy', clock_timestamp() + interval '1 minute')"), { code: '23502' });
+  await migrator.query('ROLLBACK');
+  await assert.rejects(broker.query("INSERT INTO studio_private.author_context (backend_pid, transaction_id, sender, profile_name, expires_at, sender_teacher_id, identity_revision) VALUES (1, 1, '15555550120', 'Forged', clock_timestamp(), 1, 1)"), { code: '42501' });
 
   const enrolled = (await mutate(broker, 'enroll', null, '  New  Synthetic ', ' Identity ', '+1 (555) 555-0123')).rows[0];
   const enrolledId = enrolled.id as string;
   const publicPerson = (await agent.query('SELECT * FROM app.teachers WHERE id = $1', [enrolledId])).rows[0];
-  assert.deepEqual(Object.keys(publicPerson), ['id', 'first_name', 'last_name', 'created_at', 'created_by_phone', 'created_by_name']);
+  assert.deepEqual(Object.keys(publicPerson), ['id', 'first_name', 'last_name', 'created_at', 'created_by_name']);
   assert.equal(publicPerson.first_name, 'New Synthetic');
-  assert.equal(publicPerson.created_by_phone, null, 'New management author phones must not leak through the compatibility view');
   assert.equal(publicPerson.created_by_name, 'Legacy ManagerSynthetic');
   const created = (await migrator.query('SELECT * FROM studio_private.teachers WHERE id = $1', [enrolledId])).rows[0];
   assert.equal(created.phone, '+15555550123');
@@ -211,12 +225,40 @@ export async function checkTeacherIdentities(
     'SELECT * FROM studio_private.teacher_identity_changes',
     'SELECT studio_private.require_identity_manager(\'15555550120\', \'+15555550120\')',
   ]) await assert.rejects(agent.query(sql), { code: '42501' });
-  for (const column of ['phone', 'access_enabled', 'legacy_identity', 'identity_revision']) {
+  for (const column of ['phone', 'access_enabled', 'legacy_identity', 'identity_revision', 'created_by_phone']) {
     await assert.rejects(agent.query(`SELECT ${column} FROM app.teachers`), { code: '42703' });
   }
-  const jsonRows = JSON.stringify((await agent.query('SELECT to_jsonb(t), row_to_json(t), t::text FROM app.teachers t')).rows);
-  for (const hidden of [managerSender, '15555550121', '15555550123']) assert.equal(jsonRows.includes(hidden), false);
-  assert.equal((await agent.query("SELECT count(*)::int AS n FROM pg_catalog.pg_stats WHERE schemaname = 'studio_private' AND tablename = 'teachers'")).rows[0].n, 0);
+  // No projection, row conversion, XML export, statistic or private relation
+  // exposes current or historical author numbers to the model's role.
+  const authorProjections: Record<string, string[]> = {
+    clients: ['created_by_phone'], training_rules: ['created_by_phone', 'deactivated_by_phone'],
+    attendance: ['created_by_phone', 'cancelled_by_phone'], teacher_rules: ['created_by_phone', 'deactivated_by_phone'],
+    teacher_assignments: ['created_by_phone', 'cancelled_by_phone'],
+  };
+  await migrator.query('ANALYZE studio_private.clients, studio_private.training_rules, studio_private.attendance, studio_private.teacher_rules, studio_private.teacher_assignments, studio_private.teachers');
+  const exposed: string[] = [];
+  for (const [table, columns] of Object.entries(authorProjections)) {
+    for (const column of columns) await assert.rejects(agent.query(`SELECT ${column} FROM app.${table}`), { code: '42703' });
+    for (const sql of [`SELECT * FROM studio_private.${table}`, `SELECT to_jsonb(t) FROM studio_private.${table} t`,
+      `SELECT pg_catalog.table_to_xml('studio_private.${table}', true, false, '')`]) await assert.rejects(agent.query(sql), { code: '42501' });
+    await assert.rejects(broker.query(`SELECT * FROM studio_private.${table}`), { code: '42501' });
+    exposed.push(JSON.stringify((await agent.query(`SELECT to_jsonb(t), row_to_json(t), t::text FROM app.${table} t`)).rows));
+    exposed.push((await agent.query(`SELECT pg_catalog.table_to_xml('app.${table}', true, false, '')::text AS xml`)).rows[0].xml);
+  }
+  exposed.push(JSON.stringify((await agent.query('SELECT to_jsonb(t), row_to_json(t), t::text FROM app.teachers t')).rows));
+  exposed.push(JSON.stringify((await agent.query("SELECT * FROM pg_catalog.pg_stats WHERE schemaname IN ('app', 'studio_private')")).rows));
+  const authorNumbers = (await migrator.query('SELECT * FROM studio_private.identity_phone_digits()')).rows.map((row) => row.identity_phone_digits as string);
+  for (const hidden of new Set([managerSender, '15555550121', '15555550123', '15555550102', '15555550103', ...authorNumbers])) {
+    assert.equal(exposed.some((text) => text.includes(hidden)), false, 'an identity or author number is readable by the model role');
+  }
+  assert.ok(authorNumbers.includes('15555550102') && authorNumbers.includes(managerSender));
+  for (const sql of ['SELECT * FROM studio_private.identity_phone_digits()', 'SELECT * FROM studio_private.chat_owners',
+    'SELECT * FROM studio_private.session_owners',
+    "SELECT studio_private.bind_teacher_identity(pg_backend_pid(), txid_current(), '15555550120', 1, 1)"]) {
+    await assert.rejects(agent.query(sql), { code: '42501' });
+  }
+  for (const sql of ['UPDATE studio_private.session_owners SET teacher_id = 1', 'DELETE FROM studio_private.session_owners',
+    'TRUNCATE studio_private.session_owners']) await assert.rejects(broker.query(sql), { code: '42501' });
   for (const sql of [
     "UPDATE app.teachers SET first_name = 'Forged' WHERE id = $1",
     'DELETE FROM app.teachers WHERE id = $1',
@@ -246,9 +288,9 @@ export async function checkTeacherIdentities(
     assert.equal((await agent.query('SELECT app.current_sender_teacher_id() AS id')).rows[0].id, legacyId);
     await assert.rejects(otherAgent.query('SELECT app.current_sender_teacher_id()'), { code: '42501' });
     await assert.rejects(otherAgent.query('SELECT app.current_sender_teacher_id($1)', [enrolledId]), { code: '42883' });
-    const author = (await agent.query("INSERT INTO app.clients (first_name, last_name, created_by_phone, created_by_name) VALUES ('Identity', 'TemporaryClient', 'forged', 'forged') RETURNING id, created_by_phone, created_by_name")).rows[0];
-    assert.equal(author.created_by_phone, '15555550121');
+    const author = (await agent.query("INSERT INTO app.clients (first_name, last_name, created_by_name) VALUES ('Identity', 'TemporaryClient', 'forged') RETURNING id, created_by_name")).rows[0];
     assert.equal(author.created_by_name, 'Synthetic InstructorOne');
+    assert.deepEqual((await migrator.query('SELECT count(*)::int AS n FROM studio_private.clients WHERE id = $1', [author.id])).rows[0].n, 0, 'uncommitted');
     const training = (await agent.query("INSERT INTO app.training_rules (rule_text, created_by_name) VALUES ('Synthetic identity temporary rule', 'forged') RETURNING created_by_name")).rows[0];
     assert.equal(training.created_by_name, author.created_by_name);
     const attendance = (await agent.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_name) VALUES ($1, '2020-01-02', '13:00', 'present', 'forged') RETURNING created_by_name", [author.id])).rows[0];
@@ -261,8 +303,16 @@ export async function checkTeacherIdentities(
 
     // Absent, invalid, expired and mismatched bindings fail closed.
     const ownPid = (await broker.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+    const managerRow = (await resolve(managerSender)).rows[0];
     for (const [pid, txid, sender] of [[ownPid, '1', managerSender], [0, '1', managerSender], [ownPid, '0', managerSender], [null, '1', managerSender]]) {
-      await assert.rejects(broker.query('SELECT studio_private.bind_teacher_identity($1, $2, $3)', [pid, txid, sender]), { code: '42501' });
+      await assert.rejects(broker.query(bindSql, [pid, txid, sender, managerRow.id, managerRow.identity_revision]), { code: '42501' });
+    }
+    // The broker binds only the identity and revision admitted with the message.
+    for (const [expectedId, expectedRevision] of [[enrolledId, managerRow.identity_revision], [managerRow.id, String(Number(managerRow.identity_revision) + 1)], [managerRow.id, null]]) {
+      await otherAgent.query('BEGIN');
+      const target = (await otherAgent.query<Binding>('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
+      await assert.rejects(broker.query(bindSql, [target.pid, target.txid, managerSender, expectedId, expectedRevision]), { code: '42501' });
+      await otherAgent.query('ROLLBACK');
     }
     for (const sender of ['', managerPhone, '+1 555 555 0120', 'invalid']) {
       await assert.rejects(resolve(sender), { code: '42501' });
@@ -285,7 +335,8 @@ export async function checkTeacherIdentities(
     await rejectUnchanged(() => mutate(broker, 'revoke', legacyId), '23514');
     await otherAgent.query('BEGIN');
     const deniedBinding = (await otherAgent.query<Binding>('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await assert.rejects(broker.query('SELECT studio_private.bind_teacher_identity($1, $2, $3)', [deniedBinding.pid, deniedBinding.txid, '15555550121']), { code: '42501' });
+    const revokedRow = (await resolve('15555550121')).rows[0];
+    await assert.rejects(broker.query(bindSql, [deniedBinding.pid, deniedBinding.txid, '15555550121', revokedRow.id, revokedRow.identity_revision]), { code: '42501' });
     await otherAgent.query('ROLLBACK');
     await mutate(broker, 'enable', legacyId);
     // Re-enabling the same phone must not revive the earlier authorization.
@@ -302,9 +353,12 @@ export async function checkTeacherIdentities(
     await assert.rejects(agent.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-02-03', '13:00', 'present' FROM app.clients LIMIT 1"), { code: '42501' });
     await release(agent, staleNumber);
     const renamed = await bind(agent, '15555550125');
-    const freshAuthor = (await agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Identity', 'RenamedTemporary') RETURNING created_by_phone, created_by_name")).rows[0];
-    assert.deepEqual(freshAuthor, { created_by_phone: '15555550125', created_by_name: 'Corrected InstructorSynthetic' });
-    await release(agent, renamed);
+    const freshAuthor = (await agent.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Identity', 'RenamedTemporary') RETURNING id, created_by_name")).rows[0];
+    assert.equal(freshAuthor.created_by_name, 'Corrected InstructorSynthetic');
+    await release(agent, renamed, true);
+    assert.deepEqual((await migrator.query('SELECT created_by_phone, created_by_name FROM studio_private.clients WHERE id = $1', [freshAuthor.id])).rows[0],
+      { created_by_phone: '15555550125', created_by_name: 'Corrected InstructorSynthetic' });
+    studioBefore.clients = (await migrator.query('SELECT * FROM studio_private.clients ORDER BY 1, 2')).rows;
 
     // Locks order the in-flight transaction before revoke confirmation. No
     // already completed operation is retroactively undone.
@@ -394,17 +448,20 @@ export async function checkTeacherIdentities(
   const after = await readTeacherState(agent);
   for (const table of ['teacher_rules', 'teacher_rule_intervals', 'teacher_assignments']) assert.deepEqual(after[table], oldView[table]);
   for (const [table, rows] of Object.entries(studioBefore)) {
-    assert.deepEqual((await migrator.query(`SELECT * FROM app.${table} ORDER BY 1, 2`)).rows, rows);
+    const schema = ['rule_slots', 'rule_clients'].includes(table) ? 'app' : 'studio_private';
+    assert.deepEqual((await migrator.query(`SELECT * FROM ${schema}.${table} ORDER BY 1, 2`)).rows, rows);
   }
-  for (const person of oldView.teachers as Array<Record<string, unknown>>) {
+  for (const person of oldPrivate) {
     const current = (await migrator.query('SELECT id, created_at, created_by_phone, created_by_name FROM studio_private.teachers WHERE id = $1', [person.id])).rows[0];
-    assert.deepEqual(current, { id: person.id, created_at: person.created_at, created_by_phone: person.created_by_phone, created_by_name: person.created_by_name });
+    assert.deepEqual(current, person);
   }
   const changes = (await migrator.query('SELECT * FROM studio_private.teacher_identity_changes ORDER BY id')).rows;
   const latest = new Map<string, Record<string, unknown>>();
   for (const change of changes) {
-    assert.equal(change.actor_teacher_id, manager.id);
-    assert.equal(change.actor_phone, managerSender);
+    if (Number(change.id) > auditStart) {
+      assert.equal(change.actor_teacher_id, manager.id);
+      assert.equal(change.actor_phone, managerSender);
+    }
     assert.equal(change.after_state.identity_revision, change.before_state ? change.before_state.identity_revision + 1 : 1);
     latest.set(change.teacher_id, change.after_state as Record<string, unknown>);
   }

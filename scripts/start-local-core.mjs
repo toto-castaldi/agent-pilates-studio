@@ -2,7 +2,7 @@ import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
 import { idleSeconds } from './compaction-policy.mjs';
-import { parseTeacherLinks } from './teacher-links.mjs';
+import { normalizeManagerPhone, OBSOLETE_IDENTITY_FILES, OBSOLETE_IDENTITY_KEYS } from './manager-phone.mjs';
 
 class SafeError extends Error {}
 
@@ -36,8 +36,10 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       await file.close();
     }
     const config = parseEnv(contents);
-    // An omitted mapping means no linked senders; an explicit invalid value fails.
-    if (config.WHATSAPP_TEACHER_LINKS === undefined) config.WHATSAPP_TEACHER_LINKS = '[]';
+    // Allowlist, home channel and teacher links are no longer identity sources:
+    // identities live only in the database (ADR-003). Name the keys, never values.
+    const obsolete = OBSOLETE_IDENTITY_KEYS.filter((key) => config[key] !== undefined);
+    if (obsolete.length) throw new SafeError(`Rimuovere da .env le chiavi non più usate: ${obsolete.join(', ')}.`);
     const required = {
       DB_ADMIN_PASSWORD: 'db-admin',
       DB_MIGRATOR_PASSWORD: 'db-migrator',
@@ -46,10 +48,8 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       WHATSAPP_ACCESS_TOKEN: 'whatsapp-access-token',
       WHATSAPP_APP_SECRET: 'whatsapp-app-secret',
       WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
-      WHATSAPP_ALLOWED_USERS: 'whatsapp-allowed-users',
-      WHATSAPP_HOME_CHANNEL: 'whatsapp-home-channel',
+      PILATES_MANAGER_PHONE: 'whatsapp-manager-phone',
       WHATSAPP_PHONE_NUMBER_ID: 'whatsapp-phone-number-id',
-      WHATSAPP_TEACHER_LINKS: 'whatsapp-teacher-links',
     };
     for (const key of Object.keys(required)) {
       const value = config[key];
@@ -61,16 +61,12 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     if (passwords.some((password) => password.length < 16) || new Set(passwords).size !== 3) {
       throw new SafeError('Le tre password database devono essere distinte e lunghe almeno 16 caratteri.');
     }
-    if (!/^\d+(,\d+)*$/.test(config.WHATSAPP_ALLOWED_USERS) || !/^\d+$/.test(config.WHATSAPP_PHONE_NUMBER_ID)) {
-      throw new SafeError('Allowlist o Phone Number ID non validi.');
-    }
-    if (!/^\d+$/.test(config.WHATSAPP_HOME_CHANNEL) || !config.WHATSAPP_ALLOWED_USERS.split(',').includes(config.WHATSAPP_HOME_CHANNEL)) {
-      throw new SafeError('Canale home WhatsApp mancante o non autorizzato.');
-    }
+    if (!/^\d+$/.test(config.WHATSAPP_PHONE_NUMBER_ID)) throw new SafeError('Phone Number ID non valido.');
+    // The home channel derives from this single number in gateway and broker.
     try {
-      config.WHATSAPP_TEACHER_LINKS = JSON.stringify(parseTeacherLinks(config.WHATSAPP_TEACHER_LINKS, config.WHATSAPP_ALLOWED_USERS));
+      config.PILATES_MANAGER_PHONE = normalizeManagerPhone(config.PILATES_MANAGER_PHONE);
     } catch {
-      throw new SafeError('Collegamenti degli insegnanti non validi.');
+      throw new SafeError('PILATES_MANAGER_PHONE non valido: indicare il numero con prefisso internazionale (+ o 00).');
     }
     const port = (name, fallback) => {
       const value = config[name] || fallback;
@@ -204,6 +200,13 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
           try { await unlink(temporary); } catch { /* The temporary file remains private. */ }
           throw error;
         }
+      }
+    }
+    // The former identity files were generated from .env and are no longer
+    // mounted: remove them so no parallel number list survives the transition.
+    for (const name of OBSOLETE_IDENTITY_FILES) {
+      try { await unlink(resolve(directory, name)); } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
       }
     }
     // Additional service credentials are generated once and never silently rotated.

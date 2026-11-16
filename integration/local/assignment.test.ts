@@ -26,7 +26,8 @@ test('assignment catalog covers recording, confirmations, identity, correction a
   const multiple = scenario('sostituzione-piu-lezioni');
   for (const turn of multiple.turns.slice(0, 3)) assert.deepEqual(turn.assignmentExpected, { addedTeachers: [], assignments: [] });
   assert.ok(multiple.turns[0].response.question && multiple.turns[2].response.question);
-  assert.equal(multiple.turns[3].assignmentExpected.addedTeachers.length, 1);
+  assert.equal(multiple.turns[3].assignmentExpected.addedTeachers.length, 0, 'Antonio Neri is registered beforehand');
+  assert.ok(multiple.setup.teachers.some((person: { firstName: string }) => person.firstName === 'Antonio'));
   assert.deepEqual(multiple.turns[3].assignmentExpected.assignments.map((row: { time: string }) => row.time), ['13:00', '17:59']);
   const period = scenario('sostituzione-periodo');
   assert.deepEqual(period.turns[0].assignmentExpected, { addedTeachers: [], assignments: [] });
@@ -39,47 +40,51 @@ test('assignment catalog covers recording, confirmations, identity, correction a
   }
   const noLessons = scenario('sostituzione-senza-lezioni');
   assert.ok(noLessons.setup.teacherRules.length && !noLessons.setup.clients.length && !noLessons.setup.attendance?.length);
+  // «io» is the registered sender, despite a declared different name.
   const linked = scenario('indicazione-mittente-collegato');
-  assert.ok(linked.teacherLinks.length);
-  assert.ok(linked.turns.every((turn: { assignmentExpected: { assignments: { teacher: string }[] } }) => turn.assignmentExpected.assignments.every((row) => row.teacher === 'Antonio Neri')));
-  for (const id of ['indicazione-mittente-non-collegato', 'indicazione-mittente-collegato-inesistente']) {
-    const unlinked = scenario(id);
-    assert.deepEqual(unlinked.turns[0].assignmentExpected, { addedTeachers: [], assignments: [] });
-    assert.equal(unlinked.turns[0].response.question, true);
-    assert.equal(unlinked.turns[1].assignmentExpected.assignments.length, 1);
+  assert.deepEqual(linked.identity, { firstName: 'Antonio', lastName: 'Neri', teacher: true });
+  assert.ok(linked.turns.every((turn: { assignmentExpected: { assignments: { teacher: string; authorName: string }[] } }) => turn.assignmentExpected.assignments.every((row) => row.teacher === 'Antonio Neri' && row.authorName === 'Antonio Neri')));
+  // An unknown teacher is never created: the gestore must register it first.
+  const unknown = scenario('insegnante-sconosciuto-indicazione');
+  for (const turn of unknown.turns) {
+    assert.deepEqual(turn.assignmentExpected, { addedTeachers: [], assignments: [] });
+    assert.ok(turn.response.anyOf.some((group: string[]) => group.includes('gestore')));
   }
-  assert.equal(scenario('indicazione-mittente-collegato-inesistente').turns[1].assignmentExpected.assignments[0].authorName, null);
   const naming = scenario('indicazione-nome-chiarimento');
-  assert.ok(naming.turns[0].response.question && naming.turns[2].response.question);
+  assert.ok(naming.turns[0].response.question);
+  assert.equal(naming.turns.length, 3);
   assert.deepEqual(naming.turns[2].assignmentExpected, naming.turns[1].assignmentExpected);
-  assert.equal(naming.turns[3].assignmentExpected.addedTeachers[0].firstName, 'Elena');
+  assert.ok(naming.turns[2].message.includes('Elena Neri'));
   const attendance = scenario('presenze-senza-indicazione');
-  assert.ok(attendance.teacherLinks.length && attendance.setup.teachers.length);
+  assert.ok(attendance.identity.teacher && attendance.setup.teachers.length);
   assert.ok(attendance.turns.every((turn: { attendanceExpected?: unknown; response: { excludes: string[] } }) => turn.attendanceExpected && turn.response.excludes.includes('insegnant')));
   const correction = scenario('indicazione-correzione-annullamento');
   assert.equal(correction.turns[1].response.question, true);
   assert.deepEqual(correction.turns[0].assignmentExpected, correction.turns[1].assignmentExpected);
   assert.deepEqual(correction.turns.map((turn: { assignmentExpected: { assignments: { cancellation?: unknown }[] } }) => turn.assignmentExpected.assignments.filter((row) => row.cancellation).length), [0, 0, 1, 2, 3, 3, 3]);
   assert.ok(correction.turns[4].response.contains.includes('Francesca'));
-  assert.ok(correction.turns[6].response.contains.includes('Operatore'));
+  assert.ok(correction.turns[6].response.contains.includes(correction.identity.firstName), 'the author is the registered name');
   const harness = await readFile('scripts/conversation.mjs', 'utf8');
   assert.match(harness, /assignmentScenarioMatches\(seededSnapshot, current, assignmentExpected\)/);
   assert.match(harness, /historyPreserved\(previous, current\)/);
   assert.ok(harness.indexOf('const stateOk =') < harness.indexOf('if (!responseMatches(text, expectedResponse))'), 'database checks must also run on a lexical failure');
   // US-015: historical fixtures may bypass only the rule and assignment author
-  // triggers, inside the migrator's setup transaction; teachers keep theirs.
+  // triggers, inside the migrator's setup transaction; teachers keep theirs and
+  // are registered only through the guided management functions (TEC-042).
+  assert.match(harness, /manage_teacher_identity/);
+  assert.doesNotMatch(harness, /INSERT INTO (?:app|studio_private)\.teachers/);
   assert.doesNotMatch(harness, /DISABLE TRIGGER (?:teachers_author|ALL|USER)\b/);
   assert.equal([...harness.matchAll(/DISABLE TRIGGER (\w+)/g)].map((match) => match[1]).sort().join(','), 'attendance_author,teacher_assignments_author,teacher_rules_author');
   const begin = harness.indexOf("await client.query('BEGIN')");
   const commit = harness.indexOf("await client.query('COMMIT')");
   for (const [table, trigger] of [['teacher_rules', 'teacher_rules_author'], ['teacher_assignments', 'teacher_assignments_author'], ['attendance', 'attendance_author']]) {
-    const disable = harness.indexOf(`ALTER TABLE app.${table} DISABLE TRIGGER ${trigger}`);
-    const enable = harness.indexOf(`ALTER TABLE app.${table} ENABLE TRIGGER ${trigger}`);
+    const disable = harness.indexOf(`ALTER TABLE studio_private.${table} DISABLE TRIGGER ${trigger}`);
+    const enable = harness.indexOf(`ALTER TABLE studio_private.${table} ENABLE TRIGGER ${trigger}`);
     assert.ok(begin > 0 && disable > begin && enable > disable && commit > enable, `${trigger} must be restored inside the setup transaction`);
   }
-  const flush = harness.indexOf('SET CONSTRAINTS app.teacher_rules_complete IMMEDIATE');
-  assert.ok(flush > 0 && flush < harness.indexOf('ALTER TABLE app.teacher_rules ENABLE TRIGGER teacher_rules_author'), 'pending rule checks must run before ALTER TABLE');
-  assert.ok(harness.indexOf('SET CONSTRAINTS app.teacher_rules_complete DEFERRED') > flush);
+  const flush = harness.indexOf('SET CONSTRAINTS studio_private.teacher_rules_complete IMMEDIATE');
+  assert.ok(flush > 0 && flush < harness.indexOf('ALTER TABLE studio_private.teacher_rules ENABLE TRIGGER teacher_rules_author'), 'pending rule checks must run before ALTER TABLE');
+  assert.ok(harness.indexOf('SET CONSTRAINTS studio_private.teacher_rules_complete DEFERRED') > flush);
   assert.match(harness, /tgenabled !== 'O'/);
   assert.match(harness, /seededTeacherFixturesMatch\(seededSnapshot, setup\.teacherRules \?\? \[\], setup\.assignments \?\? \[\]/);
 });

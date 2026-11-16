@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import type { Client } from 'pg';
+import { ownerContext } from './identity-seed.js';
 
-export async function checkLessonFunctions(migrator: Client): Promise<void> {
+// Historical fixtures in one rolled-back transaction of the administrator; the
+// two teachers are registered beforehand through the guided management functions.
+export async function checkLessonFunctions(migrator: Client, broker: Client, teachers: { lesson: string; substitute: string }): Promise<void> {
   const reference = await readFile('integration/lesson-reference.sql', 'utf8');
   await migrator.query('BEGIN');
   try {
-    await migrator.query(`INSERT INTO studio_private.author_context
-      (backend_pid, transaction_id, sender, profile_name, expires_at)
-      VALUES (pg_backend_pid(), txid_current(), '15555550199', 'Synthetic Seed', clock_timestamp() + interval '10 minutes')`);
+    await ownerContext(migrator, broker, '15555550199', null, '10 minutes');
     const client = (await migrator.query("INSERT INTO app.clients (first_name,last_name) VALUES ('Lesson','Synthetic') RETURNING id")).rows[0].id;
-    const teacher = (await migrator.query("INSERT INTO app.teachers (first_name,last_name) VALUES ('Lesson','Synthetic') RETURNING id")).rows[0].id;
-    const substitute = (await migrator.query("INSERT INTO app.teachers (first_name,last_name) VALUES ('Substitute','Synthetic') RETURNING id")).rows[0].id;
+    const teacher = teachers.lesson;
+    const substitute = teachers.substitute;
     for (const [weekday, time, created, deactivated] of [
       [1, '09:00', '2026-01-01T08:00Z', null], [1, '09:00', '2026-01-01T08:00Z', null],
       [2, '10:00', '2026-03-10T09:00Z', null], // created exactly at start: not valid
@@ -23,26 +24,26 @@ export async function checkLessonFunctions(migrator: Client): Promise<void> {
       await migrator.query('INSERT INTO app.rule_slots VALUES ($1,$2,$3)', [rule, weekday, time]);
       if (deactivated) await migrator.query("UPDATE app.training_rules SET deactivated_at=$2, deactivation_reason='Synthetic end' WHERE id=$1", [rule, deactivated]);
     }
-    await migrator.query('ALTER TABLE app.teacher_rules DISABLE TRIGGER teacher_rules_author');
-    await migrator.query('ALTER TABLE app.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
-    await migrator.query('ALTER TABLE app.attendance DISABLE TRIGGER attendance_author');
-    const rule = (await migrator.query(`INSERT INTO app.teacher_rules (teacher_id,rule_text,created_at,created_by_phone)
+    await migrator.query('ALTER TABLE studio_private.teacher_rules DISABLE TRIGGER teacher_rules_author');
+    await migrator.query('ALTER TABLE studio_private.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
+    await migrator.query('ALTER TABLE studio_private.attendance DISABLE TRIGGER attendance_author');
+    const rule = (await migrator.query(`INSERT INTO studio_private.teacher_rules (teacher_id,rule_text,created_at,created_by_phone)
       VALUES ($1,'Synthetic teacher fixture','2026-01-01','15555550199') RETURNING id`, [teacher])).rows[0].id;
     await migrator.query("INSERT INTO app.teacher_rule_intervals (rule_id,weekday,start_time_min,start_time_max) VALUES ($1,1,'09:00','09:00')", [rule]);
-    await migrator.query("UPDATE app.teacher_rules SET deactivated_at='2026-04-01', deactivated_by_phone='15555550199', deactivation_reason='Synthetic end' WHERE id=$1", [rule]);
+    await migrator.query("UPDATE studio_private.teacher_rules SET deactivated_at='2026-04-01', deactivated_by_phone='15555550199', deactivation_reason='Synthetic end' WHERE id=$1", [rule]);
     for (const [day, time, cancelled] of [['2026-03-02', '09:00', false], ['2026-03-03', '11:00', false], ['2026-03-09', '09:00', true]]) {
-      await migrator.query(`INSERT INTO app.teacher_assignments
+      await migrator.query(`INSERT INTO studio_private.teacher_assignments
         (teacher_id,lesson_date,start_time,created_at,created_by_phone,cancelled_at,cancelled_by_phone,cancellation_reason)
         VALUES ($1,$2,$3,'2026-02-01','15555550199', CASE WHEN $4 THEN '2026-02-02'::timestamptz END,
           CASE WHEN $4 THEN '15555550199' END,CASE WHEN $4 THEN 'Synthetic cancel' END)`, [substitute, day, time, cancelled]);
     }
     for (const [day, cancelled] of [['2026-03-05', false], ['2026-03-06', true]]) {
-      await migrator.query(`INSERT INTO app.attendance
+      await migrator.query(`INSERT INTO studio_private.attendance
         (client_id,lesson_date,start_time,outcome,created_at,created_by_phone,cancelled_at,cancelled_by_phone,cancellation_reason)
         VALUES ($1,$2,'17:00','present','2026-03-20','15555550199', CASE WHEN $3 THEN '2026-03-21'::timestamptz END,
           CASE WHEN $3 THEN '15555550199' END,CASE WHEN $3 THEN 'Synthetic cancel' END)`, [client, day, cancelled]);
     }
-    await migrator.query('SET CONSTRAINTS app.teacher_rules_complete IMMEDIATE');
+    await migrator.query('SET CONSTRAINTS studio_private.teacher_rules_complete IMMEDIATE');
     await migrator.query('SET LOCAL ROLE studio_agent');
     assert.equal((await migrator.query('SELECT current_user AS role')).rows[0].role, 'studio_agent');
     for (const bounds of [['2026-03-01', '2026-03-31'], ['2026-10-19', '2026-10-31'], ['2026-01-01', '2026-12-31']]) {

@@ -2,12 +2,10 @@
 import asyncio
 import hashlib
 import json
-import os
 import re
 import secrets
 import time
 
-from aiohttp import web
 import asyncpg
 
 
@@ -20,8 +18,9 @@ def person(row):
 class IdentityManagement:
     def __init__(self, broker):
         self.broker = broker
-        configured = os.environ.get('PILATES_MANAGER_PHONE', '')
-        if configured and not re.fullmatch(r'\+[1-9][0-9]{7,14}', configured):
+        # The single configured manager number, already validated by the broker.
+        configured = broker.manager_phone
+        if not re.fullmatch(r'\+[1-9][0-9]{7,14}', configured):
             raise ValueError('Invalid manager configuration')
         self.manager = configured
         self.instance = secrets.token_hex(32)
@@ -102,49 +101,7 @@ class IdentityManagement:
                     await connection.execute('DELETE FROM studio_private.management_sessions WHERE sender_hash=$1', key)
                 return result['reply']
 
-    async def handle(self, request):
-        if not self.broker.authorized(request):
-            return web.Response(status=403)
-        body = await request.read()
-        import hmac
-        signature = request.headers.get('X-Hub-Signature-256', '')
-        expected = 'sha256=' + hmac.new(self.broker.app_secret, body, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(signature.encode(), expected.encode()):
-            return web.Response(status=401)
-        if not self.manager:
-            return web.Response(status=503)
-        try:
-            payload = json.loads(body)
-            if payload.get('object') != 'whatsapp_business_account':
-                raise ValueError('Invalid payload')
-            replies = []
-            for entry in payload.get('entry', []):
-                for change in entry.get('changes', []):
-                    value = change.get('value') or {}
-                    if change.get('field') != 'messages':
-                        continue
-                    kept = []
-                    for message in value.get('messages', []):
-                        sender = message.get('from', '')
-                        valid = (str((value.get('metadata') or {}).get('phone_number_id', '')) == self.broker.phone_id
-                                 and isinstance(sender, str) and re.fullmatch(r'[1-9][0-9]{7,14}', sender)
-                                 and not message.get('chat') and isinstance(message.get('id'), str) and 0 < len(message['id']) <= 512
-                                 and isinstance(message.get('timestamp'), str) and re.fullmatch(r'[0-9]{1,12}', message['timestamp'])
-                                 and -30 <= time.time()-int(message['timestamp']) <= 300)
-                        if not valid:
-                            continue
-                        reply = await self.message(sender, message)
-                        if reply is None:
-                            kept.append(message)
-                        elif reply:
-                            replies.append(dict(to=sender, text=reply))
-                    value['messages'] = kept
-            return web.json_response(dict(payload=payload, replies=replies))
-        except asyncio.CancelledError:
-            self.instance = secrets.token_hex(32)
-            raise
-        except (ValueError, TypeError, AttributeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
-            # A failed/ambiguous request must not leave a pending confirmation
-            # executable by a later replay in this broker process.
-            self.instance = secrets.token_hex(32)
-            return web.Response(status=503)
+    def invalidate(self):
+        # A failed/ambiguous request must not leave a pending confirmation
+        # executable by a later replay in this broker process.
+        self.instance = secrets.token_hex(32)

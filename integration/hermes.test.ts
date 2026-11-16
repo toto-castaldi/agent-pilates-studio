@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
 import { readIdentityState, seedIdentityDirectory } from './identity-fixtures.js';
+import { legacyContext, migrateAcrossTransition, ownerContext, seedIdentities } from './identity-seed.js';
 import { checkTeacherHistoryProtection, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
 
 test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { timeout: 360_000 }, async () => {
@@ -26,10 +27,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     'whatsapp-access-token': 'synthetic-access-token',
     'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token',
-    'whatsapp-allowed-users': '15555550102',
-    'whatsapp-home-channel': '15555550102',
+    'whatsapp-manager-phone': '+15555550102',
     'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[]',
   };
   const override = join(directory, 'compose.override.yaml');
   const env = {
@@ -76,62 +75,46 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     const migrationUrl = new URL(`postgresql://${postgresHost}:5432/studio?schema=public`);
     migrationUrl.username = 'studio_migrator';
     migrationUrl.password = databasePassword;
-    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], {
-      env: { ...env, DATABASE_URL: migrationUrl.toString() },
-      stdio: 'pipe',
-      timeout: 90_000,
-    });
     migrator = new Client({ host: postgresHost, port: 5432, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await migrator.connect();
-    // All migrations run from an empty database, independently of upgrade tests.
-    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers')).rows[0].n, 0);
+    const owner = migrator;
+    // All migrations run from an empty database. Two teachers of the previous
+    // runtime are created just before the unified identity, without a phone.
+    await migrateAcrossTransition(env, migrationUrl, async () => {
+      assert.equal((await owner.query('SELECT count(*)::int AS n FROM studio_private.teachers')).rows[0].n, 0);
+      await owner.query('BEGIN');
+      await legacyContext(owner, '15555550102', 'Legacy Snapshot');
+      await owner.query("INSERT INTO app.teachers (first_name, last_name) VALUES ('History', 'Synthetic'), ('Replacement', 'Synthetic')");
+      await owner.query('COMMIT');
+    });
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teachers WHERE phone IS NULL')).rows[0].n, 2);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_identity_changes')).rows[0].n, 0);
+    await seedIdentities({ host: postgresHost, password: secrets['db-broker'] },
+      { first: 'Synthetic', last: 'Profile', phone: '15555550102' }, [{ first: 'Synthetic', last: 'Recovery', phone: '15555550103' }]);
     await migrator.query('CREATE TABLE app.stack_probe (id int PRIMARY KEY, value text NOT NULL)');
-    const allowlistFile = join(directory, 'whatsapp-allowed-users');
-    const assertSafePreflight = () => assert.throws(() => compose('run', '--rm', '--no-deps', 'hermes'), (error: unknown) => {
+    const managerFile = join(directory, 'whatsapp-manager-phone');
+    const assertSafeFailure = (service: string) => assert.throws(() => compose('run', '--rm', '--no-deps', service), (error: unknown) => {
       const output = error as { stdout?: string; stderr?: string };
       const combined = `${output.stdout ?? ''}${output.stderr ?? ''}`;
-      assert.match(combined, /hermes_preflight_failed/);
-      assert.doesNotMatch(combined, /synthetic-app-secret|synthetic-access-token|synthetic-invalid-allowlist|1555555010[23]/);
+      if (service === 'hermes') assert.match(combined, /hermes_preflight_failed/);
+      assert.doesNotMatch(combined, /synthetic-app-secret|synthetic-access-token|synthetic-invalid-manager|5555550/);
       return true;
     });
+    // A missing, malformed, non-canonical or multiple manager number stops both
+    // consumers without printing it; the home channel cannot be set separately.
     try {
-      await writeFile(allowlistFile, '');
-      assertSafePreflight();
-      await writeFile(allowlistFile, 'synthetic-invalid-allowlist');
-      assertSafePreflight();
-      await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
-      await chmod(allowlistFile, 0o644);
-      assertSafePreflight();
-    } finally {
-      await chmod(allowlistFile, 0o600);
-      await writeFile(allowlistFile, secrets['whatsapp-allowed-users']);
-    }
-    const homeFile = join(directory, 'whatsapp-home-channel');
-    try {
-      await writeFile(homeFile, '');
-      assertSafePreflight();
-      await writeFile(homeFile, '15555550103');
-      assertSafePreflight();
-    } finally {
-      await writeFile(homeFile, secrets['whatsapp-home-channel']);
-    }
-    // The broker independently rejects malformed, unauthorized and duplicate
-    // mappings, even outside start:local, without emitting their contents.
-    const linksFile = join(directory, 'whatsapp-teacher-links');
-    try {
-      const link = { phone: '15555550102', firstName: 'Synthetic', lastName: 'Instructor' };
-      for (const value of ['invalid-json', JSON.stringify([{ ...link, phone: '15555550103' }]),
-        JSON.stringify([link, { ...link, firstName: 'OtherSynthetic' }])]) {
-        await writeFile(linksFile, value);
-        assert.throws(() => compose('run', '--rm', '--no-deps', 'author-broker'), (error: unknown) => {
-          const output = error as { stdout?: string; stderr?: string };
-          assert.doesNotMatch(`${output.stdout ?? ''}${output.stderr ?? ''}`, /1555555010[23]|Synthetic|Instructor|invalid-json/);
-          return true;
-        });
+      for (const value of ['', 'synthetic-invalid-manager', '15555550102', '+1 555 555 0102', '+15555550102\n+15555550103\n']) {
+        await writeFile(managerFile, value);
+        assertSafeFailure('hermes');
+        assertSafeFailure('author-broker');
       }
+      await writeFile(managerFile, secrets['whatsapp-manager-phone']);
+      await chmod(managerFile, 0o644);
+      assertSafeFailure('hermes');
+      assertSafeFailure('author-broker');
     } finally {
-      await writeFile(linksFile, secrets['whatsapp-teacher-links']);
+      await chmod(managerFile, 0o600);
+      await writeFile(managerFile, secrets['whatsapp-manager-phone']);
     }
     compose('up', '-d', '--wait', '--wait-timeout', '120', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();
@@ -145,8 +128,11 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       messages: [{ from: '15555550102', id: 'wamid.synthetic.tool', timestamp: String(Math.floor(Date.now() / 1000)), type: 'text' }],
     } }] }] });
     const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(proof).digest('hex')}`;
-    assert.equal((await fetch(`http://${brokerHost}:8091/v1/evidence`, { method: 'POST', body: proof, headers: { 'X-Pilates-Bridge': secrets['bridge-token'], 'X-Hub-Signature-256': signature } })).status, 204);
-    execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_broker && test ! -e /run/secrets/whatsapp_teacher_links'], { stdio: 'pipe' });
+    assert.equal((await fetch(`http://${brokerHost}:8091/v1/admission`, { method: 'POST', body: proof, headers: { 'X-Pilates-Bridge': secrets['bridge-token'], 'X-Hub-Signature-256': signature } })).status, 200);
+    for (const id of [gatewayId, brokerId]) {
+      execFileSync('docker', ['exec', id, 'sh', '-c', 'test ! -e /run/secrets/whatsapp_allowed_users && test ! -e /run/secrets/whatsapp_home_channel && test ! -e /run/secrets/whatsapp_teacher_links'], { stdio: 'pipe' });
+    }
+    execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'test ! -e /run/secrets/db_broker'], { stdio: 'pipe' });
     execFileSync('docker', ['exec', brokerId, 'sh', '-c', 'test ! -e /run/secrets/db_agent && test ! -e /run/secrets/db_migrator && test ! -e /run/secrets/db_admin'], { stdio: 'pipe' });
 
     const python = [
@@ -186,8 +172,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.equal((await fetch(`${endpoint}?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=ok`)).status, 403);
     const payload = (sender: string, type: 'text' | 'interactive', text: string) => {
       const message = type === 'text'
-        ? { from: sender, id: `wamid.synthetic.${text}`, type, text: { body: text } }
-        : { from: sender, id: 'wamid.synthetic.tap', type, interactive: { type: 'button_reply', button_reply: { id: 'cl:x:1', title: 'synthetic' } } };
+        ? { from: sender, id: `wamid.synthetic.${text}`, timestamp: String(Math.floor(Date.now() / 1000)), type, text: { body: text } }
+        : { from: sender, id: 'wamid.synthetic.tap', timestamp: String(Math.floor(Date.now() / 1000)), type, interactive: { type: 'button_reply', button_reply: { id: 'cl:x:1', title: 'synthetic' } } };
       return JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999999', changes: [{ field: 'messages', value: { metadata: { phone_number_id: '123456789012345' }, messages: [message] } }] }] });
     };
     const denied = payload('15555550101', 'text', 'synthetic-unauthorized-message');
@@ -248,19 +234,19 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     expectFailure(backup, /Stop Hermes before taking a backup/);
     await assert.rejects(access(backupDirectory));
     await migrator.query("INSERT INTO app.stack_probe VALUES (77, 'backup-synthetic')");
+    broker = new Client({ host: postgresHost, port: 5432, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
+    await broker.connect();
     await migrator.query('BEGIN');
-    const backupBinding = (await migrator.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await migrator.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 minute')", [backupBinding.pid, backupBinding.txid]);
+    await ownerContext(migrator, broker, '15555550102');
     const backupClient = (await migrator.query("INSERT INTO app.clients (first_name, last_name) VALUES ('Backup', 'Synthetic') RETURNING id")).rows[0].id;
     const backupAttendance = (await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'present') RETURNING id", [backupClient])).rows[0].id;
     await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [backupAttendance]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [backupClient]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [backupClient]);
-    const backupTeachers = await seedTeacherHistory(migrator);
-    await migrator.query('COMMIT');
-    broker = new Client({ host: postgresHost, port: 5432, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
-    await broker.connect();
     const legacyTeacherId = (await migrator.query("SELECT id FROM app.teachers WHERE first_name = 'History' AND last_name = 'Synthetic'")).rows[0].id as string;
+    const replacementTeacherId = (await migrator.query("SELECT id FROM app.teachers WHERE first_name = 'Replacement' AND last_name = 'Synthetic'")).rows[0].id as string;
+    const backupTeachers = await seedTeacherHistory(migrator, { original: legacyTeacherId, replacement: replacementTeacherId });
+    await migrator.query('COMMIT');
     const directoryIdentities = await seedIdentityDirectory(broker, legacyTeacherId);
     const identityState = await readIdentityState(migrator);
     assert.deepEqual(identityState.teacher_identity_writes, []);
@@ -269,8 +255,9 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     expectFailure(backup, /Stop author-broker before taking a backup/);
     compose('stop', 'author-broker');
     // A backup must never restore an ephemeral PID/transaction binding.
-    await migrator.query("INSERT INTO studio_private.author_context VALUES (1, 1, '15555550102', 'Synthetic Profile', clock_timestamp() + interval '1 hour')");
+    await ownerContext(migrator, broker, '15555550102', { pid: 1, txid: '1' }, '1 hour');
 
+    assert.equal(Number((await migrator.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
     // Rehearse persistence across a restart and a same-image container replacement.
     await broker.end();
     broker = undefined;
@@ -317,14 +304,15 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     restored = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_migrator', password: databasePassword });
     await restored.connect();
     assert.equal((await restored.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
-    assert.deepEqual((await restored.query("SELECT outcome, lesson_date::text AS lesson_date, start_time::text AS start_time, created_at IS NOT NULL AS created, created_by_phone, created_by_name, cancelled_at IS NOT NULL AS cancelled, cancelled_by_phone, cancelled_by_name, cancellation_reason FROM app.attendance ORDER BY id")).rows, [
+    assert.deepEqual((await restored.query("SELECT outcome, lesson_date::text AS lesson_date, start_time::text AS start_time, created_at IS NOT NULL AS created, created_by_phone, created_by_name, cancelled_at IS NOT NULL AS cancelled, cancelled_by_phone, cancelled_by_name, cancellation_reason FROM studio_private.attendance ORDER BY id")).rows, [
       { outcome: 'present', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: true, cancelled_by_phone: '15555550102', cancelled_by_name: 'Synthetic Profile', cancellation_reason: 'synthetic correction' },
       { outcome: 'excused_absence', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
       { outcome: 'excused_absence', lesson_date: '2099-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
     ]);
     await assert.rejects(restored.query('DELETE FROM app.attendance'), { code: '42501' });
-    await assert.rejects(restored.query('TRUNCATE app.attendance'), { code: '42501' });
+    await assert.rejects(restored.query('TRUNCATE studio_private.attendance'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
+    assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await restoredAgent.connect();
     assert.equal((await restoredAgent.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
@@ -333,6 +321,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.deepEqual(await readIdentityState(restored), identityState);
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teachers'), { code: '42501' });
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teacher_identity_changes'), { code: '42501' });
+    await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.session_owners'), { code: '42501' });
     restoredBroker = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
     await restoredBroker.connect();
     const recoveredIdentities = (await restoredBroker.query("SELECT * FROM studio_private.list_teacher_identities('15555550120', '+15555550120')")).rows;
@@ -342,14 +331,15 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.equal((await restoredBroker.query("SELECT access_enabled FROM studio_private.resolve_teacher_identity('15555550124')")).rows[0].access_enabled, true);
     await restoredAgent.query('BEGIN');
     const identityBinding = (await restoredAgent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await restoredBroker.query("SELECT studio_private.bind_teacher_identity($1, $2, '15555550121')", [identityBinding.pid, identityBinding.txid]);
+    const recoveredPerson = (await restoredBroker.query("SELECT * FROM studio_private.resolve_teacher_identity('15555550121')")).rows[0];
+    await restoredBroker.query("SELECT studio_private.bind_teacher_identity($1, $2, '15555550121', $3, $4)", [identityBinding.pid, identityBinding.txid, recoveredPerson.id, recoveredPerson.identity_revision]);
     assert.equal((await restoredAgent.query('SELECT app.current_sender_teacher_id() AS id')).rows[0].id, legacyTeacherId);
     await restoredAgent.query('ROLLBACK');
     await restoredBroker.query('DELETE FROM studio_private.author_context WHERE backend_pid = $1 AND transaction_id = $2', [identityBinding.pid, identityBinding.txid]);
     assert.equal((await restored.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
     await checkTeacherHistoryProtection(restoredAgent, restored);
     assert.deepEqual(await readTeacherState(restoredAgent), teacherState);
-    await assert.rejects(restored.query("UPDATE app.teachers SET created_by_phone = 'forged'"), { code: '42501' });
+    await assert.rejects(restored.query("UPDATE studio_private.teachers SET created_by_phone = 'forged'"), { code: '42501' });
     await assert.rejects(restoredAgent.query('CREATE TABLE app.restore_forbidden (id int)'), (error: unknown) => {
       assert.equal((error as { code?: string }).code, '42501');
       return true;
@@ -361,23 +351,24 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     // Recovered triggers must still reject late interval appends and authorize
     // legitimate transitions; comparing rows alone would not prove this.
     await restoredAgent.query('BEGIN');
-    const restoredBinding = (await restoredAgent.query('SELECT pg_backend_pid() AS pid, txid_current() AS txid')).rows[0];
-    await restored.query("INSERT INTO studio_private.author_context VALUES ($1, $2, '15555550103', 'Synthetic Recovery', clock_timestamp() + interval '1 minute')", [restoredBinding.pid, restoredBinding.txid]);
+    const restoredBinding = (await restoredAgent.query('SELECT pg_backend_pid() AS pid, txid_current()::text AS txid')).rows[0];
+    await ownerContext(restored, restoredBroker, '15555550103', restoredBinding);
     await restoredAgent.query('SAVEPOINT late_interval');
     await assert.rejects(restoredAgent.query("INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) VALUES ($1, 6, '09:00', '10:00')", [backupTeachers.activeRuleId]), { code: '42501' });
     await restoredAgent.query('ROLLBACK TO SAVEPOINT late_interval');
-    const recoveredRule = (await restoredAgent.query("UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic recovery replacement', deactivated_by_phone = 'forged' WHERE id = $1 RETURNING teacher_id, deactivated_by_phone", [backupTeachers.activeRuleId])).rows[0];
-    assert.equal(recoveredRule.deactivated_by_phone, '15555550103');
+    const recoveredRule = (await restoredAgent.query("UPDATE app.teacher_rules SET deactivated_at = clock_timestamp(), deactivation_reason = 'synthetic recovery replacement', deactivated_by_name = 'forged' WHERE id = $1 RETURNING teacher_id, deactivated_by_name", [backupTeachers.activeRuleId])).rows[0];
+    assert.equal(recoveredRule.deactivated_by_name, 'Synthetic Recovery');
     assert.equal((await restoredAgent.query('SELECT count(*)::int AS n FROM app.teacher_rule_intervals WHERE rule_id = $1 AND is_active', [backupTeachers.activeRuleId])).rows[0].n, 0);
     await restoredAgent.query(`WITH rule AS (
       INSERT INTO app.teacher_rules (teacher_id, rule_text) VALUES ($1, 'Synthetic recovered rule') RETURNING id
     ) INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max)
       SELECT rule.id, previous.weekday, previous.start_time_min, previous.start_time_max FROM rule
       CROSS JOIN app.teacher_rule_intervals previous WHERE previous.rule_id = $2`, [recoveredRule.teacher_id, backupTeachers.activeRuleId]);
-    const recoveredAssignment = (await restoredAgent.query("UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic recovery correction', cancelled_by_phone = 'forged' WHERE id = $1 RETURNING cancelled_by_phone", [backupTeachers.validAssignmentId])).rows[0];
-    assert.equal(recoveredAssignment.cancelled_by_phone, '15555550103');
+    const recoveredAssignment = (await restoredAgent.query("UPDATE app.teacher_assignments SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic recovery correction', cancelled_by_name = 'forged' WHERE id = $1 RETURNING cancelled_by_name", [backupTeachers.validAssignmentId])).rows[0];
+    assert.equal(recoveredAssignment.cancelled_by_name, 'Synthetic Recovery');
     await restoredAgent.query("INSERT INTO app.teacher_assignments (teacher_id, lesson_date, start_time) VALUES ($1, '2020-01-01', '09:00')", [recoveredRule.teacher_id]);
     await restoredAgent.query('COMMIT');
+    assert.equal((await restored.query('SELECT deactivated_by_phone FROM studio_private.teacher_rules WHERE id = $1', [backupTeachers.activeRuleId])).rows[0].deactivated_by_phone, '15555550103');
     assert.equal((await restored.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
 
     // Compare the real Hermes SQLite files, ownership and integrity after restoring.

@@ -7,8 +7,9 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { hasHomeChannelNotice } from '../src/conversation.js';
+import { seedIdentities } from './identity-seed.js';
 
-test('configured home is immutable through signed WhatsApp turns and cron stays disabled', { timeout: 420_000 }, async () => {
+test('home derived from the manager is immutable through signed WhatsApp turns and cron stays disabled', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-home-test-'));
   const project = `pilates-home-${randomBytes(8).toString('hex')}`;
   const secrets: Record<string, string> = {
@@ -16,9 +17,8 @@ test('configured home is immutable through signed WhatsApp turns and cron stays 
     'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token', 'whatsapp-app-secret': 'synthetic-app-secret',
-    'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-allowed-users': '15555550102,15555550103',
-    'whatsapp-home-channel': '15555550102', 'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[]',
+    'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-manager-phone': '+15555550102\n',
+    'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'override.yaml');
   const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', PILATES_MODEL: 'synthetic/test-model' };
@@ -40,7 +40,12 @@ test('configured home is immutable through signed WhatsApp turns and cron stays 
     migrationUrl.username = 'studio_migrator';
     migrationUrl.password = secrets['db-migrator'];
     execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], { env: { ...env, DATABASE_URL: migrationUrl.toString() }, stdio: 'pipe', timeout: 90_000 });
+    await seedIdentities({ host: address('postgres'), password: secrets['db-broker'] },
+      { first: 'Synthetic', last: 'Manager', phone: '15555550102' }, [{ first: 'Synthetic', last: 'Teacher', phone: '15555550103' }]);
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'meta-stub', 'hermes');
+    // The home channel is derived from the single manager number.
+    const homes = execFileSync('docker', ['exec', compose('ps', '-q', 'hermes').trim(), 'sh', '-c', 'for f in /proc/[0-9]*/environ; do tr "\\0" "\\n" < "$f" 2>/dev/null; done | grep "^WHATSAPP_CLOUD_HOME_CHANNEL=" | sort -u'], { encoding: 'utf8' }).trim();
+    assert.equal(homes, 'WHATSAPP_CLOUD_HOME_CHANNEL=15555550102');
     let gateway = `http://${address('hermes')}:8090/whatsapp/webhook`;
     const meta = `http://${address('meta-stub')}:8088/observations`;
     type Message = { to: string; text: string };
