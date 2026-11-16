@@ -41,7 +41,6 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 
 ## Open decisions
 
-- **Contesto dell'agente compatto (REQ-AGENT-008)** — TEC-046. Vincoli e opzioni verificati sono in `agent-context` e nel [rapporto dello spike](../spikes/SPIKE-003-skill-tool-contesto-compatto.md). Restano da decidere con l'utente, registrandoli in un ADR: skill Hermes adattate o tool del plugin, comandi `/<skill>` e altri comandi slash già esposti, granularità delle skill e allineamento di REQ-AGENT-008 a REQ-NFR-005. Precede l'attivazione dell'identità unica.
 - **Transizione all'identità unica (REQ-STUDIO-015–017, [ADR-003](../adr/ADR-003-unified-teacher-identity.md))** — TEC-042 attiva insieme accesso, nome, «io» e autore dal database, rimuove allowlist e collegamento in configurazione e decide l'isolamento delle sessioni al cambio o riuso del numero; TEC-043 verifica transizione, installazione nuova e recupero e documenta la procedura operativa di trasferimento o recupero del numero del gestore. Ruoli, fonti dell'identità e mancata importazione del mapping non sono riaperti.
 - **Parti non verificate dell'audit dei log del proxy** — alla chiusura della v0.3.0: accettare come limiti Logpush, Log Explorer della zona e Logpull (non verificati) e i sistemi interni di Cloudflare (non verificabili), oppure verificarli dal dashboard senza Live logs (`proxy-logs`).
 - **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.3.0.
