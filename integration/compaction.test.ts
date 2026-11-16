@@ -7,11 +7,12 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { seedIdentities } from './identity-seed.js';
 
 type ModelObservation = {
   kind: 'turn' | 'summary' | 'aux'; model: string; chars: number; last_role: string;
   verbatim: string[]; all: string[]; current: string[]; summary_in_context: boolean; soul: boolean; clock: boolean;
-  private_phone: boolean;
+  private_phone: boolean; profile_name: boolean;
 };
 type MetaObservation = { to: string; text: string };
 
@@ -33,9 +34,8 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token', 'whatsapp-app-secret': 'synthetic-app-secret',
-    'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-allowed-users': `${ALPHA},${BETA}`,
-    'whatsapp-home-channel': ALPHA, 'whatsapp-phone-number-id': '123456789012345',
-    'whatsapp-teacher-links': '[]',
+    'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-manager-phone': `+${ALPHA}`,
+    'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'override.yaml');
   const env = {
@@ -68,6 +68,8 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     const db = new Client({ host: address('postgres'), port: 5432, database: 'studio', user: 'studio_migrator', password: secrets['db-migrator'] });
     database = db;
     await db.connect();
+    await seedIdentities({ host: address('postgres'), password: secrets['db-broker'] },
+      { first: 'Alpha', last: 'Synthetic', phone: ALPHA }, [{ first: 'Beta', last: 'Synthetic', phone: BETA }]);
     compose('up', '-d', '--wait', 'model-stub', 'meta-stub');
 
     // Invalid inactivity and an unknown model window stop the gateway with only the fixed event.
@@ -104,7 +106,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     const metaObservations = async () => await (await fetch(meta)).json() as MetaObservation[];
     const send = async (sender: string, text: string) => {
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
-        metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] }, contacts: [{ wa_id: sender, profile: { name: 'Synthetic' } }],
+        metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] }, contacts: [{ wa_id: sender, profile: { name: 'WhatsAppProfile Synthetic' } }],
         messages: [{ from: sender, id: `wamid.synthetic.${randomBytes(16).toString('hex')}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: text } }],
       } }] }] });
       const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(payload).digest('hex')}`;
@@ -234,14 +236,15 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     assert.deepEqual(await domain(), domainBefore);
     await turn(BETA, 'REGISTER MARK-B-12');
     for (let i = 0; i < 60 && (await domain()).clients === domainBefore.clients; i++) await delay(1000);
-    const registered = (await db.query("SELECT created_by_phone, created_by_name FROM app.clients WHERE first_name = 'compaction'")).rows;
-    assert.deepEqual(registered, [{ created_by_phone: BETA, created_by_name: 'Synthetic' }]);
+    const registered = (await db.query("SELECT created_by_phone, created_by_name FROM studio_private.clients WHERE first_name = 'compaction'")).rows;
+    assert.deepEqual(registered, [{ created_by_phone: BETA, created_by_name: 'Beta Synthetic' }]);
 
     // 7. Isolation, same summary model, and silent delivery.
     const all = await modelObservations();
     for (const item of all) {
       assert.equal(item.model, 'synthetic/compaction-model');
       assert.equal(item.private_phone, false, 'an authorized sender number reached a model request');
+      assert.equal(item.profile_name, false, 'a WhatsApp profile name reached a model request');
       const senders = new Set(item.all.map((marker) => marker.split('-')[1]));
       assert.ok(senders.size <= 1, 'a model request mixed two senders');
     }
@@ -252,6 +255,24 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     for (const item of delivered) {
       assert.ok([ALPHA, BETA].includes(item.to));
       assert.equal(item.text, REPLY);
+    }
+
+    // 7b. A chat persisted before the transition has no owner: its conversation,
+    // with the old profile metadata and numbers, never reaches the model again,
+    // neither in the next request nor in a later compaction.
+    await db.query('DELETE FROM studio_private.chat_owners');
+    observations = await turn(ALPHA, 'MARK-A-40 ciao');
+    assert.equal(kinds(observations, 'summary').length, 0);
+    assert.deepEqual(lastTurn(observations).all, ['MARK-A-40'], 'a pre-transition conversation reached the model');
+    for (const index of [41, 42, 43]) await turn(ALPHA, message(`MARK-A-${index}`, 5_000));
+    await waitIdle();
+    observations = await turn(ALPHA, 'MARK-A-44 ciao');
+    const fresh = kinds(observations, 'summary');
+    assert.ok(fresh.length > 0, 'the new conversation is compacted after inactivity');
+    for (const item of [...fresh, lastTurn(observations)]) {
+      assert.ok(item.all.every((marker) => Number(marker.split('-')[2]) >= 40), 'a pre-transition turn reached a compaction');
+      assert.equal(item.private_phone, false);
+      assert.equal(item.profile_name, false);
     }
 
     // 8. Summaries persist in Hermes' SQLite volume, never in logs, and are in the backup.

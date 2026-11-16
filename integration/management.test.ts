@@ -7,18 +7,20 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { legacyContext, migrateAcrossTransition } from './identity-seed.js';
 
 test('guided management with signed webhooks, private PostgreSQL and no model history', { timeout: 900_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-management-'));
   const project = `pilates-management-${randomBytes(8).toString('hex')}`;
-  let manager = '15555550102'; const ordinary = '15555550103';
+  let manager = '15555550102'; const ordinary = '15555550103'; const successor = '15555550107';
+  const REFUSAL = /^Accesso non abilitato\. Per usare l.assistente dello studio rivolgiti al gestore\.$/u;
   const secrets: Record<string, string> = {
     'db-admin': randomBytes(32).toString('hex'), 'db-migrator': randomBytes(32).toString('hex'),
     'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-key',
     'whatsapp-access-token': 'synthetic-access', 'whatsapp-app-secret': 'synthetic-secret',
-    'whatsapp-verify-token': 'synthetic-verify', 'whatsapp-allowed-users': `${manager},${ordinary}`,
-    'whatsapp-home-channel': manager, 'whatsapp-phone-number-id': '123456789012345', 'whatsapp-teacher-links': '[]',
+    'whatsapp-verify-token': 'synthetic-verify', 'whatsapp-manager-phone': `+${manager}`,
+    'whatsapp-phone-number-id': '123456789012345',
   };
   const override = join(directory, 'override.yaml');
   const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', COMPOSE_PROJECT_NAME: project, PILATES_VOLUME_PREFIX: project, PILATES_HERMES_IMAGE: `${project}-hermes`, PILATES_POSTGRES_IMAGE: `${project}-postgres`, SECRETS_DIR: directory, POSTGRES_PORT: '0', WHATSAPP_WEBHOOK_PORT: '0', PILATES_MODEL: 'synthetic/compaction-model', PILATES_IDLE_COMPACT_SECONDS: '1' };
@@ -28,9 +30,6 @@ test('guided management with signed webhooks, private PostgreSQL and no model hi
     await Promise.all(Object.entries(secrets).map(([key, value]) => writeFile(join(directory, key), value, { mode: 0o600 })));
     await writeFile(join(directory, 'config.yaml'), (await readFile('hermes/config.yaml', 'utf8')).replace('\ndisplay:\n', '\ndisplay:\n  tool_progress: off\n'));
     await writeFile(override, `services:
-  author-broker:
-    environment:
-      PILATES_MANAGER_PHONE: "+${manager}"
   model-stub:
     image: ${project}-hermes
     entrypoint: ["/opt/hermes/.venv/bin/python", "/stub.py"]
@@ -45,7 +44,6 @@ test('guided management with signed webhooks, private PostgreSQL and no model hi
     logging: {driver: none}
   hermes:
     environment:
-      PILATES_MANAGER_PHONE: "+${manager}"
       OPENROUTER_BASE_URL: http://model-stub:8088/v1
     volumes:
       - ${JSON.stringify(`${resolve('scenarios/gateway-launcher.sh')}:/opt/hermes/libexec/hermes:ro`)}
@@ -58,9 +56,17 @@ networks:
     const address = (service: string) => execFileSync('docker', ['inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', compose('ps', '-q', service).trim()], { encoding: 'utf8' }).trim();
     const url = new URL(`postgresql://${address('postgres')}:5432/studio?schema=public`);
     url.username = 'studio_migrator'; url.password = secrets['db-migrator'];
-    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy'], { env: { ...env, DATABASE_URL: url.toString() }, stdio: 'pipe', timeout: 90_000 });
     db = new Client({ host: address('postgres'), database: 'studio', user: 'studio_migrator', password: secrets['db-migrator'] }); await db.connect();
     const sql = (query: string, params: unknown[] = []) => (db as Client).query(query, params);
+    // Incomplete teachers of the previous runtime exist only from before the transition.
+    await migrateAcrossTransition(env, url, async () => {
+      await sql('BEGIN');
+      await legacyContext(db as Client, '15555550109', 'Synthetic');
+      await sql("INSERT INTO app.teachers(first_name,last_name) VALUES ('Legacy','Synthetic'), ('LegacyManager','Synthetic')");
+      await sql('COMMIT');
+    });
+    const legacy = String((await sql("SELECT id FROM studio_private.teachers WHERE first_name='Legacy'")).rows[0].id);
+    const legacyManager = String((await sql("SELECT id FROM studio_private.teachers WHERE first_name='LegacyManager'")).rows[0].id);
     compose('up', '-d', '--wait', '--wait-timeout', '150', 'model-stub', 'meta-stub', 'hermes');
     const gateway = () => `http://${address('hermes')}:8090/whatsapp/webhook`;
     const meta = `http://${address('meta-stub')}:8088/observations`;
@@ -84,10 +90,16 @@ networks:
     };
     const start = () => step('/anagrafica');
     assert.equal((await post(payload('/anagrafica'), 'sha256=bad')).status, 401);
-    await step('/anagrafica', ordinary); await step('/conferma stolen', ordinary);
+    // Not registered yet: only the fixed refusal, never the management flow.
+    assert.match(await step('/anagrafica', ordinary), REFUSAL); assert.match(await step('/conferma stolen', ordinary), REFUSAL);
+    // Any first message from the unregistered manager opens the mandatory bootstrap.
+    assert.match(await step('ciao'), /Censimento iniziale obbligatorio/u);
     await start(); await step('Synthetic');
     assert.match(await confirm(await step('Manager')), /salvata/u);
-    const managerId = String((await sql('SELECT id FROM studio_private.teachers')).rows[0].id);
+    const managerId = String((await sql("SELECT id FROM studio_private.teachers WHERE phone = '+15555550102'")).rows[0].id);
+    await start(); await step('nuovo'); await step('Ordinary'); await step('Synthetic');
+    assert.match(await confirm(await step('+1 555 555 0103')), /salvata/u);
+    assert.match(await step('/anagrafica', ordinary), /riservata/u);
     await start(); await step('nuovo'); await step('Other'); await step('Synthetic');
     assert.match(await confirm(await step('+1 (555) 555-0901')), /salvata/u);
     const otherId = String((await sql("SELECT id FROM studio_private.teachers WHERE first_name='Other'")).rows[0].id);
@@ -151,14 +163,10 @@ networks:
       await changed.query("SELECT * FROM studio_private.manage_teacher_identity('15555550905','+15555550905','enable',$1,NULL,NULL,NULL)", [managerId]);
     } finally { await changed.end(); }
     assert.equal((await observations()).length, 0, 'management must never call a model');
-    // Restart the empty database while retaining legacy persons to test matching bootstrap.
-    // Use a separate synthetic manager number via the trusted DB proof, not model input.
-    await sql('BEGIN');
-    await sql("INSERT INTO studio_private.author_context VALUES (pg_backend_pid(),txid_current(),'15555550103','Synthetic',clock_timestamp()+interval '60 seconds',NULL,NULL)");
-    const legacy = (await sql("INSERT INTO app.teachers(first_name,last_name) VALUES ('Legacy','Synthetic') RETURNING id")).rows[0].id;
-    await sql('COMMIT');
+    // A pre-transition incomplete person is completed manually, keeping its ID.
     await start(); await step(`completa ${legacy}`); assert.match(await confirm(await step('+15555550904')), /salvata/u);
-    // Ordinary conversations still take the baseline path. Fill enough history
+    assert.equal((await sql('SELECT phone FROM studio_private.teachers WHERE id=$1', [legacy])).rows[0].phone, '+15555550904');
+    // Ordinary conversations of the enabled manager reach the model. Fill enough history
     // for idle compaction, observing all principal and auxiliary requests.
     for (let i = 0; i < 8; i++) {
       const previous = (await replies()).length;
@@ -183,15 +191,12 @@ networks:
     execFileSync('docker', ['exec', gatewayId, '/opt/hermes/.venv/bin/python', '-c', "from pathlib import Path; files=[p for p in Path('/opt/data').rglob('*') if p.is_file() and p.suffix in ('.db','.jsonl')]; assert not any(b'1555555090' in p.read_bytes() or b'555-0901' in p.read_bytes() for p in files)"], { stdio: 'pipe' });
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{.HostConfig.LogConfig.Type}}', compose('ps', '-q', 'author-broker').trim()], { encoding: 'utf8' }).trim(), 'none');
     // Complete a legacy manager through the signed guided bootstrap, preserving ID.
-    await sql('BEGIN');
-    await sql("INSERT INTO studio_private.author_context VALUES (pg_backend_pid(),txid_current(),'15555550103','Synthetic',clock_timestamp()+interval '60 seconds',NULL,NULL)");
-    const legacyManager = (await sql("INSERT INTO app.teachers(first_name,last_name) VALUES ('LegacyManager','Synthetic') RETURNING id")).rows[0].id;
-    await sql('COMMIT');
+    // The operator moves the single configured number; both consumers restart together.
     await start(); await step(`numero ${otherId}`);
     const oldManager = manager;
-    manager = ordinary;
-    await writeFile(override, (await readFile(override, 'utf8')).replaceAll(`+${oldManager}`, `+${manager}`));
-    compose('up', '-d', '--wait', '--wait-timeout', '150', 'hermes');
+    manager = successor;
+    await writeFile(join(directory, 'whatsapp-manager-phone'), `+${manager}`, { mode: 0o600 });
+    compose('up', '-d', '--force-recreate', '--wait', '--wait-timeout', '150', 'author-broker', 'hermes');
     const modelCount = (await observations()).length;
     assert.match(await step('+15555550906', oldManager), /riservata/u);
     assert.match(await step('/annulla', oldManager), /riservata/u);

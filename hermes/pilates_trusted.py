@@ -1,10 +1,14 @@
-"""Bridge authenticated webhook receipts and per-turn metadata into the SQL tool.
+"""Admit authenticated WhatsApp senders and bridge per-turn metadata into the SQL tool.
 
-This module is installed only in the gateway image. The model cannot supply these
-values as tool arguments. The broker independently verifies the raw Meta signature.
+This module is installed only in the gateway image. Every webhook body is decided
+by the broker before the Hermes adapter: only identities that are complete and
+enabled in the database reach Hermes, with their registered name. The model
+cannot supply identity values as tool arguments.
 """
 
+import asyncio
 import contextvars
+import dataclasses
 import hashlib
 import hmac
 import json
@@ -12,7 +16,9 @@ import math
 import os
 import re
 import secrets
+import threading
 import time
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -23,6 +29,51 @@ from aiohttp.web_app import Application
 current_turn = contextvars.ContextVar('pilates_trusted_turn', default=None)
 BROKER_URL = 'http://author-broker:8091'
 TOKEN_PATH = '/run/pilates-agent/bridge_token'
+ADMISSION_LIFETIME = 900
+MAX_ADMISSIONS = 4096
+# Same fixed text as the broker: no manager data, no self-enrollment invitation.
+ACCESS_REFUSAL = 'Accesso non abilitato. Per usare l’assistente dello studio rivolgiti al gestore.'
+# message ID -> (sender digits, teacher ID, monotonic expiry), filled only from broker decisions.
+admissions = OrderedDict()
+# Digits of every identity and author number known to the database (broker-provided).
+known_numbers = set()
+sender_locks = {}
+# Turns run in worker threads; the event loop records admissions.
+admissions_lock = threading.Lock()
+
+
+def admit(entries):
+    now = time.monotonic()
+    with admissions_lock:
+        for item in entries:
+            admissions[item['message_id']] = (item['sender'], item['teacher'], now + ADMISSION_LIFETIME)
+            admissions.move_to_end(item['message_id'])
+        while len(admissions) > MAX_ADMISSIONS:
+            admissions.popitem(last=False)
+
+
+def admitted(message_id, sender):
+    now = time.monotonic()
+    with admissions_lock:
+        for key, value in list(admissions.items()):
+            if value[2] <= now:
+                del admissions[key]
+        record = admissions.get(message_id) if message_id else None
+    return record if record is not None and record[0] == sender else None
+
+
+def admitted_senders():
+    now = time.monotonic()
+    with admissions_lock:
+        return {sender for sender, _, expires in admissions.values() if expires > now}
+
+
+def redaction_numbers():
+    numbers = set(known_numbers) | admitted_senders()
+    manager = os.environ.get('PILATES_MANAGER_PHONE', '')
+    if manager.startswith('+'):
+        numbers.add(manager[1:])
+    return numbers
 
 
 def bridge_token():
@@ -38,11 +89,17 @@ def idle_seconds():
     return int(value)
 
 
+# Any international number written with an explicit prefix, with common separators.
+INTERNATIONAL = re.compile(r'(?:\+|\b00)[ .()\-\u00a0\u202f]*[1-9](?:[ .()\-\u00a0\u202f]*[0-9]){7,14}')
+
+
 def redact_phones(value, allowed):
     # Redact only a wire copy, not the authenticated identity or persisted
-    # history. Also cover common separators in a known configured number.
-    patterns = [re.compile(r'[ .()+\-\u00a0]*'.join(re.escape(digit) for digit in phone))
-                for phone in allowed if re.fullmatch(r'[0-9]+', phone)]
+    # history: every identity/author number known to the database, also with
+    # common separators, and any explicitly international number.
+    patterns = [re.compile(r'[ .()+\-\u00a0\u202f]*'.join(re.escape(digit) for digit in phone))
+                for phone in sorted(allowed, key=len, reverse=True) if re.fullmatch(r'[0-9]{8,15}', phone)]
+    patterns.append(INTERNATIONAL)
 
     def redact(item):
         if isinstance(item, str):
@@ -78,21 +135,18 @@ def transcript_epoch(value):
     return None
 
 
-async def send_evidence(request):
+async def broker_turn(message_id, sender, bind):
+    """Ask the broker whether the admitted identity is still current; None means refuse."""
     try:
-        body = await request.read()
-        # The pinned WhatsApp adapter reads request.content directly instead of
-        # request.read(); restore the bytes so it independently verifies them.
-        request.content.unread_data(body)
-        headers = {'X-Pilates-Bridge': bridge_token(),
-                   'X-Hub-Signature-256': request.headers.get('X-Hub-Signature-256', '')}
-        async with ClientSession(timeout=ClientTimeout(total=5), trust_env=False) as session:
-            async with session.post(BROKER_URL + '/v1/evidence', data=body, headers=headers) as response:
-                await response.read()
+        async with ClientSession(timeout=ClientTimeout(total=8), trust_env=False) as session:
+            async with session.post(BROKER_URL + '/v1/turn', json={'message_id': message_id, 'sender': sender, 'bind': bind},
+                                    headers={'X-Pilates-Bridge': bridge_token()}) as response:
+                if response.status != 200:
+                    return None
+                verdict = await response.json()
+                return verdict if isinstance(verdict, dict) and isinstance(verdict.get('reset'), bool) else None
     except Exception:
-        # The real adapter still authenticates the webhook. If this bridge is
-        # unavailable, the SQL tool must refuse the turn rather than guess.
-        pass
+        return None
 
 
 def install():
@@ -111,6 +165,9 @@ def install():
     import cron.scheduler_provider as scheduler_provider
     import gateway.run as gateway_run
     import gateway.session as gateway_session
+    from gateway.authz_mixin import GatewayAuthorizationMixin
+    from gateway.platforms.whatsapp_common import WhatsAppBehaviorMixin
+    from gateway.run_inbound import GatewayInboundMixin
     from gateway.slash_commands import GatewaySlashCommandsMixin
 
     # Hermes marks WhatsApp Cloud as a plugin but does not mark it PII-safe.
@@ -146,9 +203,9 @@ def install():
         api_messages, system = original_build_messages(agent, messages, **kwargs)
         now = datetime.now(ZoneInfo('Europe/Rome')).isoformat(timespec='seconds')
         system = (system + '\n\nData e ora correnti (Europe/Rome): ' + now).strip()
-        # Native prompt redaction does not cover historic tool output, names or
-        # user text. Remove known authorized phones from the wire copy too.
-        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        # Native prompt redaction does not cover tool output, names or user
+        # text. Remove identity and author numbers from the wire copy too.
+        allowed = redaction_numbers()
         api_messages = redact_phones(api_messages, allowed)
         system = redact_phones(system, allowed)
         if api_messages and api_messages[0].get('role') == 'system':
@@ -165,7 +222,7 @@ def install():
     original_summary_call = ContextCompressor._call_summary_llm
 
     def summary_call(compressor, prompt, prompt_started_at):
-        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        allowed = redaction_numbers()
         return original_summary_call(compressor, redact_phones(prompt, allowed), prompt_started_at)
 
     ContextCompressor._call_summary_llm = summary_call
@@ -176,14 +233,14 @@ def install():
     original_title = turn_context._maybe_title_session_at_turn_start
 
     def title(agent, messages, title_user_message=None):
-        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        allowed = redaction_numbers()
         return original_title(agent, redact_phones(messages, allowed), redact_phones(title_user_message, allowed))
 
     turn_context._maybe_title_session_at_turn_start = title
     original_side_question = side_question.answer_side_question
 
     def answer_side_question(question, history=None, *args, **kwargs):
-        allowed = os.environ.get('WHATSAPP_CLOUD_ALLOWED_USERS', '').split(',')
+        allowed = redaction_numbers()
         return original_side_question(redact_phones(question, allowed), redact_phones(history, allowed), *args, **kwargs)
 
     side_question.answer_side_question = answer_side_question
@@ -244,49 +301,105 @@ def install():
 
     async def handle(app, request):
         if request.method == 'POST' and request.path == os.environ.get('WHATSAPP_CLOUD_WEBHOOK_PATH', '/whatsapp/webhook'):
-            if os.environ.get('PILATES_MANAGER_PHONE'):
-                # This path precedes the adapter, its slash commands, SQLite,
-                # titles and model turns. Never fall through on broker failure.
-                from aiohttp import web
-                from multidict import CIMultiDict
-                try:
-                    raw = await request.read()
-                    headers = {'X-Pilates-Bridge': bridge_token(),
-                               'X-Hub-Signature-256': request.headers.get('X-Hub-Signature-256', '')}
-                    async with ClientSession(timeout=ClientTimeout(total=20), trust_env=False) as session:
-                        async with session.post(BROKER_URL + '/v1/management', data=raw, headers=headers) as response:
-                            if response.status != 200:
-                                return web.Response(status=response.status)
-                            decision = await response.json()
-                    import httpx
-                    async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
-                        for reply in decision['replies']:
-                            # Long administrative lists are sent as bounded chunks.
-                            for start in range(0, len(reply['text']), 3500):
-                                await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
-                                    headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
-                                    json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
-                                          'text': {'body': reply['text'][start:start+3500]}})
-                    payload = decision['payload']
-                    if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
-                        return web.Response(status=200)
-                    # Only non-management messages reach the native adapter. The
-                    # broker has verified the original signature; re-sign the
-                    # filtered wire copy for the adapter's independent verifier.
-                    wire = json.dumps(payload).encode()
-                    signature = 'sha256=' + hmac.new(os.environ['WHATSAPP_CLOUD_APP_SECRET'].encode(), wire, hashlib.sha256).hexdigest()
-                    filtered_headers = CIMultiDict(request.headers)
-                    filtered_headers['X-Hub-Signature-256'] = signature
-                    filtered_headers['Content-Length'] = str(len(wire))
-                    request._read_bytes = None
-                    request.content.unread_data(wire)
-                    request = request.clone(headers=filtered_headers)
-                except Exception:
-                    return web.Response(status=503)
-            await send_evidence(request)
+            # This path precedes the adapter, its slash commands, SQLite, titles
+            # and model turns. Never fall through on broker failure.
+            from aiohttp import web
+            from multidict import CIMultiDict
+            try:
+                raw = await request.read()
+                headers = {'X-Pilates-Bridge': bridge_token(),
+                           'X-Hub-Signature-256': request.headers.get('X-Hub-Signature-256', '')}
+                async with ClientSession(timeout=ClientTimeout(total=20), trust_env=False) as session:
+                    async with session.post(BROKER_URL + '/v1/admission', data=raw, headers=headers) as response:
+                        if response.status != 200:
+                            return web.Response(status=response.status)
+                        decision = await response.json()
+                admit(decision['admitted'])
+                if decision['admitted']:
+                    known_numbers.clear()
+                    known_numbers.update(number for number in decision['redact'] if isinstance(number, str))
+                import httpx
+                async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
+                    for reply in decision['replies']:
+                        # Long administrative lists are sent as bounded chunks.
+                        for start in range(0, len(reply['text']), 3500):
+                            await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
+                                headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
+                                json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
+                                      'text': {'body': reply['text'][start:start+3500]}})
+                payload = decision['payload']
+                if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
+                    return web.Response(status=200)
+                # Only admitted messages reach the native adapter, with the
+                # registered names. The broker has verified the original
+                # signature; re-sign the filtered copy for the adapter's verifier.
+                wire = json.dumps(payload).encode()
+                signature = 'sha256=' + hmac.new(os.environ['WHATSAPP_CLOUD_APP_SECRET'].encode(), wire, hashlib.sha256).hexdigest()
+                filtered_headers = CIMultiDict(request.headers)
+                filtered_headers['X-Hub-Signature-256'] = signature
+                filtered_headers['Content-Length'] = str(len(wire))
+                request._read_bytes = None
+                request.content.unread_data(wire)
+                request = request.clone(headers=filtered_headers)
+            except Exception:
+                return web.Response(status=503)
         return await original_handle(app, request)
 
     Application._handle = handle
+
+    # The adapter's allowlist policy and Hermes' own authorization both read
+    # this live set: only senders admitted by the broker from the database.
+    original_allow_from = WhatsAppBehaviorMixin._live_dm_allow_from
+
+    def live_allow_from(adapter):
+        if type(adapter).__name__ == 'WhatsAppCloudAdapter':
+            return admitted_senders()
+        return original_allow_from(adapter)
+
+    WhatsAppBehaviorMixin._live_dm_allow_from = live_allow_from
+    original_principal = GatewayAuthorizationMixin._principal_authorized
+
+    def principal_authorized(self, source, *, allow_adapter_delegation):
+        # No pairing, role, allow-all or configuration grant for WhatsApp: a
+        # direct sender is authorized only while the broker's admission lasts.
+        if getattr(source, 'platform', None) == Platform.WHATSAPP_CLOUD:
+            return (getattr(source, 'chat_type', None) == 'dm' and not getattr(source, 'is_bot', False)
+                    and str(source.user_id or '') in admitted_senders())
+        return original_principal(self, source, allow_adapter_delegation=allow_adapter_delegation)
+
+    GatewayAuthorizationMixin._principal_authorized = principal_authorized
+
+    # Before session creation, busy handling and the model: the admitted
+    # identity must still be current, and the chat's Hermes conversation must
+    # belong to it. A pre-transition chat, or a number now registered to another
+    # person, starts empty; the studio data are untouched.
+    original_message = GatewayInboundMixin._handle_message
+
+    async def handle_message(self, event):
+        source = event.source
+        if getattr(source, 'platform', None) == Platform.WHATSAPP_CLOUD:
+            if getattr(event, 'internal', False) or source.chat_type != 'dm' or getattr(source, 'is_bot', False):
+                return None
+            sender = str(source.user_id or '')
+            record = admitted(event.message_id, sender)
+            if record is None:
+                return None
+            lock = sender_locks.setdefault(sender, asyncio.Lock())
+            async with lock:
+                verdict = await broker_turn(event.message_id, sender, False)
+                if verdict is None:
+                    return ACCESS_REFUSAL
+                if verdict['reset']:
+                    try:
+                        await self._handle_reset_command(dataclasses.replace(event, text='/new'))
+                    except Exception:
+                        return None
+                    verdict = await broker_turn(event.message_id, sender, True)
+                    if verdict is None or verdict['reset']:
+                        return ACCESS_REFUSAL
+        return await original_message(self, event)
+
+    GatewayInboundMixin._handle_message = handle_message
     original_run = TurnRunner._run_conversation_with_approval
 
     def run(self, agent, agent_history, observed_group_context, persist_user_message_override,
@@ -296,7 +409,8 @@ def install():
         identity = None
         if (api_execution.get() is None and source.platform == Platform.WHATSAPP_CLOUD
                 and getattr(source, 'chat_type', None) == 'dm' and not getattr(source, 'is_bot', False)
-                and not ctx.persist_user_display_kind and ctx.inbound_message_id and source.user_id):
+                and not ctx.persist_user_display_kind and ctx.inbound_message_id and source.user_id
+                and admitted(str(ctx.inbound_message_id), str(source.user_id)) is not None):
             identity = (str(ctx.inbound_message_id), str(source.user_id), secrets.token_hex(32))
         from gateway.run import _last_transcript_timestamp
         last = transcript_epoch(_last_transcript_timestamp(getattr(ctx, 'history', None)))
