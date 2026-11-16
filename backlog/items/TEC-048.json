@@ -1,0 +1,37 @@
+{
+  "id": "TEC-048",
+  "title": "Allineamento al template v4.0.0",
+  "version": "v0.3.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-047"
+  ],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "PROCESS §4.4",
+    "PROCESS §5",
+    "PROCESS §6",
+    "PROCESS §8",
+    "PROCESS-PARALLEL §2",
+    "AGENTS §10",
+    "design/process-tooling",
+    "design/test-strategy",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare la release v4.0.0 di agile-project-template (b642da351cc848df6af89242fd31872b80c38a66), includendo le modifiche intermedie v3.0.1 e v3.1.0. Suddividere il processo, migrare una sola volta i riferimenti con migrate-process e aggiornare strumenti, skill e documentazione pertinente preservando personalizzazioni, dati del backlog e protezioni dello studio. Nessun worker, deploy, modifica dello stack o configurazione personale; nessun merge su main.",
+  "acceptance_criteria": [
+    "Tag e commit target e intermedi verificati nel clone pubblico isolato; confronto con le basi adottate dimostrate e registrazione in docs/TEMPLATE-ORIGIN.md di adozioni, soli confronti e divergenze senza sovrascrivere file personalizzati o seed del backlog.",
+    "Process version 4.0.0; processo core, docs/process/, regole parallele, CLI e tutte le skill incluse le tre guide di orchestrate identici al target; visualizzatore Pi aggiornato mantenendo la sola divergenza di refresh concordata.",
+    "migrate-process eseguito prima con --dry-run poi una sola volta senza; riferimenti dei record migrati tramite CLI e menzioni attuali in AGENTS, CLAUDE, README, docs e test aggiornate. Storico conservato con numerazione storica esplicita ove pertinente; backlog check passa.",
+    "docs --for e validazione dei riferimenti di processo sono provati con fixture sintetiche, inclusi sezioni inesistenti e migrazione; test locali aggiornati per guide orchestrate, nomi worker con prefisso repository e blob adottati. Passano gate rapido e suite separate pertinenti test:local, test:pi e test:claude; limiti delle prove simulabili espliciti."
+  ],
+  "remarks": [
+    "Utente: confermata aggiunta e implementazione in questa sessione, P0 EPIC-001 v0.3.0 come cambio di scope, senza worker, deploy o merge."
+  ]
+}
