@@ -6,6 +6,8 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-17
+
 ### Added
 
 - Procedura operativa per trasferire la funzione di gestore a un'altra persona già censita o per cambiare il numero della stessa persona, con recupero verificabile e allineamento di configurazione e anagrafica. Il recupero segue l'identità precedente e non chi ha riutilizzato il numero; un errore di scrittura non annulla un cambiamento più vecchio. I tentativi equivalenti in chat restano vietati. L'aggiornamento non importa allowlist, mapping o nomi WhatsApp; censire un destinatario non lo preregistra sul numero di test Meta e i backup precedenti non diventano anonimi (TEC-043).

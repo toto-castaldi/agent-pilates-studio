@@ -1,6 +1,6 @@
 # Technical design — agent-pilates-studio
 
-**Target version:** v0.3.0
+**Target version:** v0.4.0
 
 Il *come* del progetto, un file per argomento (`docs/process/docs.md` §2). I requisiti sono in `docs/requirements/`. Gli item citano un argomento come `design/<topic>` (il file `docs/design/<topic>.md`); le decisioni con alternative rilevanti sono in `docs/adr/`. L'elenco degli argomenti si ottiene con `python3 .agents/tools/backlog.py docs`; `docs --for <ID>` elenca i file necessari per un item.
 
@@ -42,5 +42,4 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 
 ## Open decisions
 
-- **Parti non verificate dell'audit dei log del proxy** — alla chiusura della v0.3.0: accettare come limiti Logpush, Log Explorer della zona e Logpull (non verificati) e i sistemi interni di Cloudflare (non verificabili), oppure verificarli dal dashboard senza Live logs (`proxy-logs`).
-- **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.3.0.
+- **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.4.0.

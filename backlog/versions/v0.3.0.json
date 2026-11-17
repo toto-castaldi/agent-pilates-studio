@@ -1,7 +1,8 @@
 {
   "id": "v0.3.0",
   "goal": "Gli insegnanti registrano e consultano via WhatsApp presenze, assenze e insegnanti delle lezioni, con correzioni e storico; l'identità unica nel database determina accesso e autore e un solo gestore mantiene l'anagrafica tramite una procedura guidata.",
-  "state": "Open",
+  "state": "Closed",
+  "closed_at": "2026-11-17",
   "scope_changes": [
     "2026-11-07: su accordo dell'utente, TEC-028 è aggiunto alla v0.3.0 per allineare il progetto al template v1.6.1 e attivare l'orchestrazione del lavoro parallelo.",
     "2026-11-07: su accordo dell'utente, TEC-029 è aggiunto alla v0.3.0 per adottare il template v1.7.0 e il coordinamento non bloccante dei worker.",
