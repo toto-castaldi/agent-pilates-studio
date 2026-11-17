@@ -30,7 +30,7 @@ Il modello di identità unica è deciso in [ADR-003](../adr/ADR-003-unified-teac
 
 Il percorso è deterministico e precede il modello ([guida](../operations/US-017-gestione.md)):
 
-- `/anagrafica` apre il flusso, `/annulla` esce e `/conferma <codice>` salva un solo riepilogo entro 10 minuti dall'ingresso. Il gestore incompleto riceve obbligatoriamente il bootstrap.
+- `/anagrafica` apre il flusso con un menu fisso che descrive ogni voce, distinguendo `correggi ID` (solo nome e cognome) da `numero ID` (telefono), e lo ripresenta dopo un comando non riconosciuto; `/annulla` esce e `/conferma <codice>` salva un solo riepilogo entro 10 minuti dall'ingresso. Il gestore incompleto riceve obbligatoriamente il bootstrap.
 - La politica pura TypeScript (`src/identity-flow.ts`) è eseguita da Node.js nel broker Python, senza un nuovo servizio; il broker usa le funzioni private dell'identità (`data-model`) e risponde soltanto al mittente autenticato.
 - Lock transazionale, impronte anti-replay persistenti, codice casuale e revisioni vincolano conferma, dati e mittente. Al salvataggio si ricontrollano gestore e revisione del destinatario; gli errori chiudono il flusso senza mutazioni o audit parziali.
 - Il modello non può creare insegnanti: `app.teachers` è in sola lettura e la creazione richiede la guardia delle funzioni gestionali. Citare un insegnante sconosciuto produce solo la richiesta di censimento del gestore.

@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P2",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "us/US-018-menu-anagrafica-descrizione-operazioni",
   "dependencies": [],
   "requirements": [
@@ -24,5 +24,7 @@
   ],
   "remarks": [
     "Emerso il 2026-11-17 in produzione: per cambiare il numero di un'insegnante il gestore ha usato «correggi 2», che chiede solo nome e cognome."
-  ]
+  ],
+  "outcome": "Il menu di /anagrafica descrive ogni voce (elenco, nuovo, completa, correggi solo nome e cognome, numero per il telefono, revoca, abilita, /annulla), senza telefoni e ripresentato identico dopo comandi non riconosciuti o ID inesistenti; regex, passaggi, riepiloghi e conferme invariati, nessuna chiamata al modello. Coperto dal test di unità 'menu describes every operation...' in test/identity-flow.test.ts; guida US-017-gestione.md e design identity allineati; gate lint/typecheck/test (101/101)/build verde.",
+  "closed_at": "2026-11-17"
 }

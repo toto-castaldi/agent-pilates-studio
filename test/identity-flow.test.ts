@@ -64,3 +64,21 @@ test('management policies: untrusted or revoked senders cannot manage or confirm
   assert.equal(managementTransition({ ...base, text: 'ordinary turn', manager: false }).handled, false);
   assert.equal(managementTransition({ ...base, text: '/anagrafica', actor: { ...actor, access_enabled: false } }).state, null);
 });
+test('management policies: menu describes every operation and is repeated unchanged after unknown commands', () => {
+  const run = flow();
+  const menu = run('/anagrafica');
+  assert.equal(menu.state?.step, 'menu'); assert.equal(menu.save, undefined);
+  for (const entry of ['elenco', 'nuovo', 'completa ID', 'correggi ID', 'numero ID', 'revoca ID', 'abilita ID', '/annulla']) {
+    assert.match(menu.reply, new RegExp(`(^|\\n)(- )?.*${entry}`, 'u'));
+  }
+  assert.match(menu.reply, /- correggi ID: cambia solo nome e cognome, non il telefono/u);
+  assert.match(menu.reply, /- numero ID: cambia il telefono della persona/u);
+  assert.equal(menu.reply.split('\n').filter((line) => line.startsWith('- ')).length, 7);
+  assert.doesNotMatch(menu.reply, /\d/u);
+  for (const text of ['correggi', 'cambia numero 2', 'numero 9', 'correggi 0', 'hello']) {
+    const repeated = run(text);
+    assert.equal(repeated.reply, menu.reply); assert.equal(repeated.state?.step, 'menu');
+    assert.equal(repeated.state?.operation, undefined); assert.equal(repeated.save, undefined);
+  }
+  assert.equal(run('numero 2').state?.step, 'phone');
+});
