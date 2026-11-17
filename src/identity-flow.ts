@@ -30,7 +30,17 @@ export function managementTransition(input: ManagementInput): ManagementResult {
   if (/^\/annulla$/iu.test(text)) return result('Procedura annullata. Nessun salvataggio.');
   let state = input.state;
   if (state && state.expires <= now && text.toLowerCase() !== '/anagrafica') return result('Procedura scaduta. Riparti con /anagrafica.');
-  const menu = 'Anagrafica: elenco, nuovo, completa ID, correggi ID, numero ID, revoca ID, abilita ID. /annulla per uscire.';
+  const menu = [
+    'Anagrafica, scrivi una voce:',
+    '- elenco: mostra le persone censite con ID, telefono e accesso',
+    '- nuovo: censisce una nuova persona (nome, cognome, telefono)',
+    '- completa ID: aggiunge il telefono a una persona da completare',
+    '- correggi ID: cambia solo nome e cognome, non il telefono',
+    '- numero ID: cambia il telefono della persona',
+    '- revoca ID: toglie l\'accesso all\'assistente',
+    '- abilita ID: riabilita l\'accesso revocato',
+    'ID è l\'identificativo mostrato da elenco, non il telefono. /annulla per uscire.',
+  ].join('\n');
   if (/^\/anagrafica$/iu.test(text) || (!actor && !state)) {
     state = { step: actor ? 'menu' : 'firstName', expires: now + MANAGEMENT_TTL, operation: actor ? undefined : 'bootstrap' };
     return result(actor ? menu : 'Censimento iniziale obbligatorio del gestore. Inserisci il nome; il numero sarà quello autenticato.', state);

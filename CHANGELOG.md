@@ -6,6 +6,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+### Changed
+
+- Il menu di `/anagrafica` descrive brevemente ogni operazione e chiarisce che «correggi» cambia solo nome e cognome mentre «numero» cambia il telefono; comandi, passaggi e conferme restano invariati (US-018).
+
 ## [0.3.0] - 2026-11-17
 
 ### Added
