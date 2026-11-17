@@ -1,0 +1,31 @@
+{
+  "id": "TEC-049",
+  "title": "Esito degli invii WhatsApp rifiutati nei log",
+  "version": "v0.4.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-OPS-003",
+    "REQ-NFR-002",
+    "REQ-NFR-005"
+  ],
+  "design_references": [
+    "design/security",
+    "design/identity",
+    "design/integrations"
+  ],
+  "description": "Oggi il gateway ignora l'esito HTTP degli invii a Meta delle risposte fisse e gestionali (hermes/pilates_trusted.py) e né l'adattatore né il codice registrano un rifiuto: in produzione un destinatario assente dall'elenco del numero di test non riceve nulla e i log non mostrano errori. Registrare esito e codice d'errore Meta degli invii falliti, senza dati personali.",
+  "acceptance_criteria": [
+    "Un invio di risposta fissa o gestionale con risposta HTTP non 2xx o errore di rete produce una riga di log con stato HTTP e codice d'errore Meta, senza numeri, testi, nomi o credenziali; la consegna resta best effort e non cambia la decisione del broker.",
+    "Le risposte dell'agente inviate dall'adattatore Hermes che falliscono producono una riga di log equivalente, oppure il limite è documentato se l'adattatore non lo consente nei confini di design/integrations.",
+    "Test di unità in memoria coprono la classificazione degli esiti e l'assenza di dati personali nella riga di log; una suite separata con Meta sostitutivo verifica il rifiuto simulato (es. codice 131030).",
+    "Documentazione operativa (TEC-035 o design/security) indica come riconoscere nei log un destinatario non registrato sul numero di test."
+  ],
+  "remarks": [
+    "Emerso il 2026-11-17 in produzione: un insegnante appena censito non riceveva risposte perché assente dall'elenco destinatari del numero di test Meta; nessuna traccia nei log."
+  ]
+}
