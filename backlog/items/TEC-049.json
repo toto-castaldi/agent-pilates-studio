@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "task/TEC-049-esito-invii-whatsapp-rifiutati",
   "dependencies": [],
   "requirements": [
     "REQ-OPS-003",
