@@ -1,0 +1,31 @@
+{
+  "id": "TEC-050",
+  "title": "Backup a caldo pianificato della produzione",
+  "version": "v0.4.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-039",
+    "TEC-040"
+  ],
+  "requirements": [
+    "REQ-OPS-010",
+    "REQ-OPS-008",
+    "REQ-OPS-009",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "design/production"
+  ],
+  "description": "Con l'uso crescente della produzione, il backup a caldo di REQ-OPS-008 viene eseguito dalla crontab dell'operatore su jarvis alle 14:30 e alle 22:30 (Europe/Rome), con conservazione di 30 giorni dei soli backup pianificati, tramite uno script versionato installato a mano come il launcher di REQ-OPS-009.",
+  "acceptance_criteria": [
+    "Uno script shell versionato, installato a mano nella home di jarvis, esegue il backup a caldo dell'immagine ops usando soltanto il commit registrato in state/release, senza checkout né credenziali GitHub e senza duplicare dump, checksum e marcatori di REQ-OPS-008.",
+    "La riga crontab documentata esegue lo script alle 14:30 e alle 22:30 ora Europe/Rome; installare o sostituire script e crontab non aggiorna né riavvia i servizi.",
+    "Senza installazione, con release mancante o con backup fallito lo script termina con codice d'errore e lo registra nel log locale senza credenziali, messaggi o numeri di telefono; un lock impedisce esecuzioni sovrapposte.",
+    "Dopo un backup riuscito sono eliminati solo i backup a caldo pianificati completi più vecchi di 30 giorni; backup manuali, quiescenti e incompleti restano intatti, verificato da test con dati sintetici.",
+    "La procedura operativa e il design di produzione descrivono installazione, verifica dell'esecuzione, lettura del log, rotazione e disattivazione; CHANGELOG aggiornato."
+  ]
+}

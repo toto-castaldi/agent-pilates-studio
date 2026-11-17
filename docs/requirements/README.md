@@ -34,13 +34,14 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 
 - Esito degli invii WhatsApp rifiutati o non accettati, per le risposte fisse, gestionali e dell'agente, registrato nei log con il codice d'errore e senza dati personali, per diagnosticare la mancata consegna (REQ-OPS-003, REQ-NFR-002).
 - Menu della gestione guidata dell'anagrafica con una breve descrizione di ogni operazione, che distingua la correzione di nome e cognome dal cambio del numero (REQ-STUDIO-016).
+- Backup a caldo del database di produzione pianificato due volte al giorno, alle 14:30 e alle 22:30, con conservazione di 30 giorni dei soli backup pianificati, solo sul server (REQ-OPS-010).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.4.0
 
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
-- Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati.
+- Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati diversi dal backup di REQ-OPS-010; copia dei backup fuori dal server.
 - Disattivazione degli insegnanti dalla pianificazione, dati di profilo oltre a nome, cognome e telefono, compensi e ore lavorate, permessi differenziati sulle operazioni dello studio; sale, attrezzature e capienza. La sola revoca dell'accesso e la gestione dell'anagrafica riservata al gestore sono invece in scope.
 - Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
 - Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
