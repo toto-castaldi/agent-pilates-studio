@@ -10,6 +10,7 @@ import { Client } from 'pg';
 import { readIdentityState, seedIdentityDirectory } from './identity-fixtures.js';
 import { legacyContext, migrateAcrossTransition, ownerContext, seedIdentities } from './identity-seed.js';
 import { checkTeacherHistoryProtection, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
+import { assertGatewayLog } from './gateway-log.js';
 
 test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { timeout: 360_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-stack-test-'));
@@ -201,7 +202,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       assert.equal(options['max-size'], '1m');
       assert.equal(options['max-file'], '3');
       const log = execFileSync('docker', ['logs', container], { encoding: 'utf8', stdio: 'pipe' });
-      assert.deepEqual(log.trim().split('\n'), [expected]);
+      if (expected === 'hermes_launch') assertGatewayLog(log);
+      else assert.deepEqual(log.trim().split('\n'), [expected]);
       for (const forbidden of [...Object.values(secrets), '15555550101', '15555550102', 'synthetic-unauthorized-message', 'synthetic-allowed-message', 'synthetic-postgres-credential']) {
         assert.equal(log.includes(forbidden), false);
       }

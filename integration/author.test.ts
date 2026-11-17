@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { Client } from 'pg';
+import { parseSendFailureLine } from '../src/send-failure-log.js';
 import { legacyContext, migrateAcrossTransition, seedIdentities } from './identity-seed.js';
 
 test('database identities admit WhatsApp senders and bind authors through the isolated broker', { timeout: 420_000 }, async () => {
@@ -348,6 +349,61 @@ test('database identities admit WhatsApp senders and bind authors through the is
       "assert not any(x in logs for x in [b'15555550102', b'15555550103', b'15555550104', b'15555550105', b'WhatsAppProfile', b'SyntheticInstructor', b'Legacy Snapshot', b'synthetic-app-secret'])",
     ].join('\n');
     execFileSync('docker', ['exec', gatewayId, '/opt/hermes/.venv/bin/python', '-c', logCheck], { stdio: 'pipe' });
+    // Refused or undelivered sends, fixed and from the agent, leave only the
+    // fixed event in the Docker log: no recipient, text, name or credential.
+    const failureLine = (source: string, status: string, code: string) => `whatsapp_send_failed source=${source} status=${status} code=${code}`;
+    const classifierCheck = [
+      'from pilates_trusted import send_failure_line as line',
+      "assert line('fixed', 400, {'error': {'code': 131030, 'message': 'Recipient 15555550104 alpha not allowed', 'fbtrace_id': 'synthetic-trace', 'error_data': {'details': 'synthetic'}}}) == 'whatsapp_send_failed source=fixed status=400 code=131030'",
+      "assert line('agent') == 'whatsapp_send_failed source=agent status=network code=none'",
+      "assert line('agent', 503, None) == 'whatsapp_send_failed source=agent status=503 code=none'",
+      "assert line('agent', 500, 'raw 15555550104 synthetic-access-token') == 'whatsapp_send_failed source=agent status=500 code=none'",
+      "assert line('fixed', 400, {'error': {'code': True}}) == 'whatsapp_send_failed source=fixed status=400 code=none'",
+      "assert line('fixed', 400, {'error': {'code': 15555550104}}) == 'whatsapp_send_failed source=fixed status=400 code=none'",
+      "assert line('fixed', 400, {'error': {'code': '131030'}}) == 'whatsapp_send_failed source=fixed status=400 code=none'",
+      "assert line('fixed', 15555550104, {'error': {'code': 131030}}) == 'whatsapp_send_failed source=fixed status=invalid code=131030'",
+      "assert line('fixed', True, None) == 'whatsapp_send_failed source=fixed status=network code=none'",
+      'try:',
+      "    line('15555550104', 400, None)",
+      'except ValueError:',
+      '    pass',
+      'else:',
+      '    raise AssertionError',
+    ].join('\n');
+    execFileSync('docker', ['exec', '--user', '10000', gatewayId, '/opt/hermes/.venv/bin/python', '-c', classifierCheck], { stdio: 'pipe', timeout: 60_000 });
+    const metaReject = async (to: string, mode: 'refuse' | 'drop' | 'clear') => {
+      assert.equal((await fetch(`http://${address('meta-stub')}:8088/synthetic-reject`, { method: 'POST', body: JSON.stringify({ to, mode }) })).status, 204);
+    };
+    const gatewayLog = () => execFileSync('docker', ['logs', gatewayId], { encoding: 'utf8', stdio: 'pipe' }).trim().split('\n');
+    const waitFailure = async (expected: string) => {
+      for (let i = 0; i < 90; i++) {
+        if (gatewayLog().includes(expected)) return;
+        await delay(500);
+      }
+      assert.fail(`Timed out waiting for ${expected}`);
+    };
+    await metaReject('15555550108', 'refuse');
+    assert.equal((await gatewayPost(body('15555550108', 'WhatsAppProfile Denied', 'synthetic-send-refused', 'send-refused alpha'))).status, 200);
+    await waitFailure(failureLine('fixed', '400', '131030'));
+    await metaReject('15555550109', 'drop');
+    assert.equal((await gatewayPost(body('15555550109', 'WhatsAppProfile Denied', 'synthetic-send-dropped', 'send-dropped alpha'))).status, 200);
+    await waitFailure(failureLine('fixed', 'network', 'none'));
+    await metaReject('15555550102', 'refuse');
+    assert.equal((await gatewayPost(body('15555550102', 'WhatsAppProfile Alpha', 'synthetic-agent-refused', 'context-probe agent-send-refused'))).status, 200);
+    await waitObservation((entry) => entry.user.includes('agent-send-refused'));
+    await waitFailure(failureLine('agent', '400', '131030'));
+    for (const number of ['15555550102', '15555550108', '15555550109']) await metaReject(number, 'clear');
+    await delay(2000);
+    // A refused send does not change the broker's decisions: the admitted
+    // teacher is served again on the next message.
+    const afterRefusal = (await replies()).length;
+    assert.equal((await gatewayPost(body('15555550102', 'WhatsAppProfile Alpha', 'synthetic-agent-delivered', 'context-probe agent-send-delivered'))).status, 200);
+    await waitReply(afterRefusal, '15555550102', /Completato/u);
+    const failureLog = gatewayLog();
+    assert.equal(failureLog[0], 'hermes_launch');
+    assert.ok(failureLog.length > 1);
+    for (const entry of failureLog.slice(1)) assert.ok(parseSendFailureLine(entry), `unexpected gateway log line: ${entry}`);
+    assert.doesNotMatch(failureLog.join('\n'), /1555555|WhatsAppProfile|SyntheticInstructor|alpha|Recipient|synthetic-|Bearer|Completato|Accesso/iu);
     assert.equal(execFileSync('docker', ['inspect', '--format', '{{.HostConfig.LogConfig.Type}}', compose('ps', '-q', 'author-broker').trim()], { encoding: 'utf8' }).trim(), 'none');
 
     // Exercise the real session cache, prompt refresh and wire-only clock with

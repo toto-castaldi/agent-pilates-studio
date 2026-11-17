@@ -9,6 +9,9 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 ### Changed
 
 - Il menu di `/anagrafica` descrive brevemente ogni operazione e chiarisce che «correggi» cambia solo nome e cognome mentre «numero» cambia il telefono; comandi, passaggi e conferme restano invariati (US-018).
+### Added
+
+- Il log del gateway registra con la riga fissa `whatsapp_send_failed` ogni invio WhatsApp rifiutato da Meta o rimasto senza risposta, per le risposte fisse, gestionali e dell'agente, con il solo stato HTTP e il codice d'errore Meta e senza numeri, testi, nomi o credenziali. La guida di produzione spiega come riconoscere un destinatario assente dall'elenco del numero di test (codice 131030) (TEC-049).
 
 ## [0.3.0] - 2026-11-17
 

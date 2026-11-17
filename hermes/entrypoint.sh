@@ -65,5 +65,10 @@ export PILATES_COMPACTION_THRESHOLD_TOKENS PILATES_IDLE_COMPACT_SECONDS
 
 trap - EXIT
 printf '%s\n' hermes_launch >&3
+# Only the gateway keeps the event channel, as descriptor 9: its launcher hands
+# it to the Python process alone for the fixed send-failure events.
+case " $* " in
+  *" gateway run "*) exec 9>&3 ;;
+esac
 exec 3>&-
 exec /opt/hermes/docker/entrypoint-dispatch.sh "$@"

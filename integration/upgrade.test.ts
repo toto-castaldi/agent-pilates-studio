@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { Client } from 'pg';
 import { ownerContext } from './identity-seed.js';
 import { checkTeacherHistoryProtection, readAuthorPhones, readTeacherState, seedTeacherHistory } from './teacher-fixtures.js';
+import { assertGatewayLog } from './gateway-log.js';
 
 // The old and new images are intentionally fixed. This exercises one supported
 // upgrade path, not compatibility with arbitrary releases or major upgrades.
@@ -216,7 +217,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     const oldGatewayImage = execFileSync('docker', ['inspect', '--format', '{{.Image}}', oldGateway], { encoding: 'utf8' }).trim();
     await send(oldGateway, 'synthetic-before-upgrade');
     stateContains(oldGateway, ['synthetic-before-upgrade']);
-    assert.equal(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
+    assertGatewayLog(execFileSync('docker', ['logs', oldGateway], { encoding: 'utf8', stdio: 'pipe' }));
     compose(midOverride, 'stop', 'hermes');
     compose(newOverride, 'up', '-d', '--wait', '--wait-timeout', '150', '--no-build', 'hermes');
     const newGateway = compose(newOverride, 'ps', '-q', 'hermes').trim();
@@ -227,7 +228,7 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     execFileSync('docker', ['exec', newGateway, 'sh', '-c', 'test ! -e /run/secrets/whatsapp_allowed_users && test ! -e /run/secrets/whatsapp_home_channel && test ! -e /run/secrets/whatsapp_teacher_links'], { stdio: 'pipe' });
     stateContains(newGateway, ['synthetic-before-upgrade', 'synthetic-after-upgrade']);
     assert.deepEqual(await readTeacherState(migrator), teachersBefore);
-    assert.equal(execFileSync('docker', ['logs', newGateway], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
+    assertGatewayLog(execFileSync('docker', ['logs', newGateway], { encoding: 'utf8', stdio: 'pipe' }));
     assert.equal(execFileSync('docker', ['logs', newDatabase], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'postgres_launch');
   } finally {
     await agent?.end().catch(() => undefined);

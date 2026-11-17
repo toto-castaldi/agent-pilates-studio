@@ -176,9 +176,114 @@ def bind_session(message_id, sender, session_id):
         return False
 
 
-def install():
+# Fixed event for a refused or undelivered WhatsApp send. Only the source, the
+# HTTP status and Meta's numeric error code are written: never the recipient,
+# the text, Meta's message or trace ID, names or credentials.
+SEND_FAILURE_EVENT = 'whatsapp_send_failed'
+SEND_SOURCES = ('fixed', 'agent')
+# Write-only descriptor towards the Docker log, opened by the launcher; None
+# disables the events (for example in a separate diagnostic run).
+events_fd = None
+# Collects the Graph response of an adapter send while its call is running.
+adapter_send = contextvars.ContextVar('pilates_adapter_send', default=None)
+
+
+def _plain_int(value):
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def send_failure_line(source, status=None, body=None):
+    """Classify a failed send; status None means no HTTP response (network error)."""
+    if source not in SEND_SOURCES:
+        raise ValueError('unknown send source')
+    status = _plain_int(status)
+    status_field = str(status) if status is not None and 100 <= status <= 599 else ('network' if status is None else 'invalid')
+    error = body.get('error') if isinstance(body, dict) else None
+    code = _plain_int(error.get('code')) if isinstance(error, dict) else None
+    # Meta codes and subcodes have at most seven digits: no field can carry a
+    # phone number (eight or more digits).
+    code_field = str(code) if code is not None and 0 <= code < 10 ** 7 else 'none'
+    return f'{SEND_FAILURE_EVENT} source={source} status={status_field} code={code_field}'
+
+
+def response_body(response):
+    try:
+        return response.json()
+    except Exception:
+        return None
+
+
+def emit_send_failure(source, status=None, body=None):
+    # Best effort: delivery and broker decisions never depend on the log.
+    if events_fd is None:
+        return
+    try:
+        os.write(events_fd, (send_failure_line(source, status, body) + '\n').encode())
+    except (OSError, ValueError):
+        pass
+
+
+def observe_adapter_sends(cls):
+    """Log refused or failed Graph sends of the native WhatsApp Cloud adapter."""
+    if cls.__dict__.get('_pilates_send_observed') or '_post_messages' not in cls.__dict__:
+        return
+    original_post = cls.__dict__['_post_messages']
+    original_error = cls.__dict__.get('_response_error')
+    error_function = original_error.__func__ if isinstance(original_error, staticmethod) else original_error
+    if error_function is None:
+        return
+
+    def response_error(resp):
+        # Called by _post_messages only for a non-200 Graph response.
+        outcome = adapter_send.get()
+        if outcome is not None and not outcome:
+            outcome.append((getattr(resp, 'status_code', None), response_body(resp)))
+        return error_function(resp)
+
+    async def post_messages(self, payload, *args, **kwargs):
+        outcome = []
+        token = adapter_send.set(outcome)
+        try:
+            result = await original_post(self, payload, *args, **kwargs)
+        finally:
+            adapter_send.reset(token)
+        if isinstance(result, tuple) and len(result) == 2 and result[1] is not None:
+            # No recorded response: the request itself failed.
+            emit_send_failure('agent', *(outcome[0] if outcome else (None, None)))
+        return result
+
+    cls._response_error = staticmethod(response_error)
+    cls._post_messages = post_messages
+    cls._pilates_send_observed = True
+
+
+def observe_platform_adapters(base):
+    """Patch the WhatsApp Cloud adapter class whenever its plugin module is (re)loaded."""
+    import sys
+    original = base.__dict__.get('__init_subclass__')
+
+    def init_subclass(cls, **kwargs):
+        if isinstance(original, classmethod):
+            original.__func__(cls, **kwargs)
+        else:
+            super(base, cls).__init_subclass__(**kwargs)
+        if cls.__name__ == 'WhatsAppCloudAdapter':
+            observe_adapter_sends(cls)
+
+    base.__init_subclass__ = classmethod(init_subclass)
+    for module in list(sys.modules.values()):
+        cls = getattr(module, 'WhatsAppCloudAdapter', None)
+        if isinstance(cls, type) and issubclass(cls, base):
+            observe_adapter_sends(cls)
+
+
+def install(events=None):
+    global events_fd
+    events_fd = events
     from pilates_skills import install as install_skills
     install_skills()
+    from gateway.platforms.base import BasePlatformAdapter
+    observe_platform_adapters(BasePlatformAdapter)
     from gateway.config import Platform
     from gateway.run_turn_runner import TurnRunner
     from gateway.session_api_turn import api_execution
@@ -353,14 +458,19 @@ def install():
                         # Long administrative lists are sent as bounded chunks.
                         # Delivery is best effort: the broker decision is already
                         # committed, and a retried webhook is not answered twice.
+                        # A refusal stops the remaining chunks and is logged as a
+                        # fixed event without recipient or text.
                         try:
                             for start in range(0, len(reply['text']), 3500):
-                                await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
+                                sent = await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
                                     headers={'Authorization': 'Bearer ' + os.environ['WHATSAPP_CLOUD_ACCESS_TOKEN']},
                                     json={'messaging_product': 'whatsapp', 'to': reply['to'], 'type': 'text',
                                           'text': {'body': reply['text'][start:start+3500]}})
+                                if not 200 <= sent.status_code < 300:
+                                    emit_send_failure('fixed', sent.status_code, response_body(sent))
+                                    break
                         except httpx.HTTPError:
-                            pass
+                            emit_send_failure('fixed')
                 payload = decision['payload']
                 if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
                     return web.Response(status=200)

@@ -9,10 +9,17 @@ case " $* " in
   export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${XDG_CACHE_HOME:-$HOME/.cache}/hermes-pycache}"
   # Request a refresh before accepting turns, including sessions persisted by
   # an earlier release. Failure must stop startup rather than reuse stale rules.
-  /opt/hermes/libexec/hermes-upstream sessions refresh-prompts >/dev/null 2>&1
+  /opt/hermes/libexec/hermes-upstream sessions refresh-prompts >/dev/null 2>&1 9>&-
   exec /opt/hermes/.venv/bin/python -P -c '
 import logging, os, site, sys
 logging.disable(1000)
+# Send-failure event channel from the entrypoint: a non-inheritable copy for
+# this process only; absent in diagnostic runs.
+try:
+    events = os.dup(9)
+    os.close(9)
+except OSError:
+    events = None
 fd = os.open(os.devnull, os.O_WRONLY)
 os.dup2(fd, 1)
 os.dup2(fd, 2)
@@ -21,10 +28,10 @@ if fd > 2:
 sys.argv[0] = "hermes"
 site.addsitedir(os.environ["HERMES_SITE"])
 import pilates_trusted
-pilates_trusted.install()
+pilates_trusted.install(events)
 from hermes_cli.main import main
 sys.exit(main())
 ' "$@"
   ;;
 esac
-exec /opt/hermes/libexec/hermes-upstream "$@"
+exec /opt/hermes/libexec/hermes-upstream "$@" 9>&-

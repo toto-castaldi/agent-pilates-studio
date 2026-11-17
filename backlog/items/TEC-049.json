@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-049-esito-invii-whatsapp-rifiutati",
   "dependencies": [],
   "requirements": [
     "REQ-OPS-003",
@@ -27,5 +28,7 @@
   ],
   "remarks": [
     "Emerso il 2026-11-17 in produzione: un insegnante appena censito non riceveva risposte perché assente dall'elenco destinatari del numero di test Meta; nessuna traccia nei log."
-  ]
+  ],
+  "outcome": "Il gateway scrive nel log Docker la riga fissa 'whatsapp_send_failed source=fixed|agent status=<HTTP>|network code=<codice Meta>|none' per ogni invio a Meta rifiutato (non 2xx) o senza risposta: risposte fisse e gestionali dal client del gateway (un rifiuto interrompe le parti restanti), risposte dell'agente avvolgendo _post_messages/_response_error di WhatsAppCloudAdapter tramite __init_subclass__ della classe base. Nessun numero, testo, nome, messaggio Meta, trace ID o credenziale; consegna best effort, decisioni del broker invariate. Canale: copia del descrittore eventi (fd 9) solo per 'gateway run', chiusa per refresh-prompts e altri comandi, non ereditabile nel processo Python; i processi di supervisione s6 lo ereditano senza usarlo. Contratto TS in memoria del formato (src/send-failure-log.ts, test/send-failure-log.test.ts). La classificazione Python non è coperta da npm test: è verificata nella suite separata test:author (asserzioni sul classificatore nel container e Meta sostitutivo con rifiuto 400/131030, connessione chiusa e rifiuto di una risposta dell'agente, righe validate dal contratto e prive di dati sintetici). Gate rapido verde; test:author, test:hermes, test:upgrade, test:compaction e test:start verdi (asserzioni dei log adeguate agli eventi di invio). Documentati in design/security, design/integrations, TEC-035 (riconoscere 131030), TEC-005, README e CHANGELOG. Non eseguite prove reali Meta/OpenRouter.",
+  "closed_at": "2026-11-17"
 }
