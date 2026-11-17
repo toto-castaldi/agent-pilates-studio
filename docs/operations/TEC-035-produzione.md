@@ -224,6 +224,24 @@ docker compose -p agent-pilates-prod ps
 
 Il comando va lanciato senza il file Compose solo per consultare lo stato. Non stampare il corpo di `/health`. Gli errori di `ops` sono messaggi fissi: l'output degli strumenti è soppresso per non esporre dati sensibili.
 
+### Invii WhatsApp rifiutati
+
+Quando Meta rifiuta l'invio di una risposta, o la richiesta non riceve risposta, il gateway scrive nel proprio log una riga fissa per ogni invio fallito:
+
+```bash
+docker compose -p agent-pilates-prod logs --no-log-prefix hermes | grep '^whatsapp_send_failed'
+```
+
+```text
+whatsapp_send_failed source=fixed status=400 code=131030
+```
+
+- `source`: `fixed` per le risposte fisse e gestionali del gateway (rifiuto d'accesso, `/anagrafica`), `agent` per le risposte dell'agente inviate dall'adattatore Hermes.
+- `status`: stato HTTP della risposta di Meta; `network` se la richiesta non ha ricevuto risposta (errore di rete o connessione chiusa).
+- `code`: campo numerico `error.code` restituito da Meta, `none` se assente.
+
+La riga non contiene destinatario, testo, nomi, messaggio d'errore Meta, identificativo di traccia o credenziali: per capire chi non ha ricevuto la risposta servono la data e l'orario dell'evento, confrontati con quanto riferito dalla persona. **`status=400 code=131030`** indica un destinatario assente dall'elenco dei destinatari ammessi del numero di test Meta: aggiungerlo nella configurazione WhatsApp dell'app Meta o passare a un numero di produzione. Censire la persona con `/anagrafica` non basta. Altri codici vanno interpretati con la documentazione degli errori della WhatsApp Cloud API. La consegna resta best effort: la riga non ripete l'invio e non cambia ammissione, rifiuti o dati salvati. L'assenza di righe non prova la consegna, che dipende anche dagli stati asincroni di Meta, non registrati.
+
 ## Prova del 2026-11-09
 
 Eseguita su `jarvis` con Docker 29.9.2, in un progetto temporaneo nella home, con dati sintetici, porte diverse da quelle di produzione e registry su loopback alimentato dalle immagini pubblicate su GHCR per il commit `bde1e6c`; la seconda versione era la stessa con una modifica sintetica a `SOUL.md`. Risultati positivi:

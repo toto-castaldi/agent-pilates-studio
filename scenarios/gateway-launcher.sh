@@ -7,10 +7,17 @@ case " $* " in
   unset PYTHONPATH PYTHONHOME
   export HERMES_SITE=/opt/hermes/.venv/lib/python3.14/site-packages
   export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${XDG_CACHE_HOME:-$HOME/.cache}/hermes-pycache}"
-  /opt/hermes/libexec/hermes-upstream sessions refresh-prompts >/dev/null 2>&1
+  /opt/hermes/libexec/hermes-upstream sessions refresh-prompts >/dev/null 2>&1 9>&-
   exec /opt/hermes/.venv/bin/python -P -c '
 import logging, os, site, sys
 logging.disable(1000)
+# Send-failure event channel from the entrypoint: a non-inheritable copy for
+# this process only; absent in diagnostic runs.
+try:
+    events = os.dup(9)
+    os.close(9)
+except OSError:
+    events = None
 fd = os.open(os.devnull, os.O_WRONLY)
 os.dup2(fd, 1)
 os.dup2(fd, 2)
@@ -46,7 +53,7 @@ async def audited_fetch(statement, *args, **kwargs):
     return rows
 asyncpg.prepared_stmt.PreparedStatement.fetch = audited_fetch
 import pilates_trusted
-pilates_trusted.install()
+pilates_trusted.install(events)
 # Test-only invariant: inspect the live gateway config during the command.
 from gateway.config import Platform
 from gateway.slash_commands import GatewaySlashCommandsMixin
@@ -63,4 +70,4 @@ sys.exit(main())
 ' "$@"
   ;;
 esac
-exec /opt/hermes/libexec/hermes-upstream "$@"
+exec /opt/hermes/libexec/hermes-upstream "$@" 9>&-
