@@ -10,6 +10,6 @@ Lo stato dei log del proxy è quello verificato dall'audit con indicatori sintet
 
 - **Log locali del proxy:** nei formati e negli esiti osservati non conservano credenziali, messaggi o numeri. Fa eccezione una riga storica di sviluppo, anteriore al filtro, con un verify token di origine non determinata, nel journal e in copia in syslog.
 - **Cloudflare:** conserva per 31-32 giorni la query string delle richieste nei dataset di analytics, dove risultano i verify token reali di produzione e sviluppo delle verifiche Meta accettate. Corpi, header e firme non sono conservati.
-- **Non verificabili con l'accesso in sola lettura:** job Logpush, dataset Log Explorer della zona, flag Logpull e sistemi interni Cloudflare; non sono stati controllati dal dashboard.
+- **Non verificabili con l'accesso in sola lettura:** job Logpush, dataset Log Explorer della zona, flag Logpull e sistemi interni Cloudflare; non sono controllati dal dashboard e restano limiti accettati dall'operatore.
 
 I verify token esposti non sono ruotati: l'operatore accetta il rischio residuo fino alla scadenza della retention Cloudflare indicata nelle evidenze e per la riga storica su `jarvis`. Per ogni verifica futura si usa il verify token monouso: subito dopo una verifica Meta riuscita il valore lato server è sostituito con uno nuovo, non comunicato a Meta ([procedura](../operations/TEC-036-whatsapp-ambienti.md#verify-token-monouso)). Rotazioni o modifiche infrastrutturali richiedono autorizzazioni separate.

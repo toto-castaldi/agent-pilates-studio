@@ -8,7 +8,7 @@ Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicit
 
 - **Name:** `agent-pilates-studio`
 - **Summary:** assistente WhatsApp dello studio Pilates per titolare e collaboratori, basato su Hermes con database relazionale, OpenRouter e WhatsApp Business; installazione, aggiornamento e prova riproducibili.
-- **Current version:** v0.3.0 — vedere `python3 .agents/tools/backlog.py status`.
+- **Current version:** v0.4.0 — vedere `python3 .agents/tools/backlog.py status`.
 - **Requirements:** `docs/requirements/` · **Design:** `docs/design/` (un file ciascuno, elencati con `python3 .agents/tools/backlog.py docs`; leggere solo quelli necessari)
 
 ## 2. Language
@@ -22,7 +22,7 @@ Lo scope della versione corrente è definito in `docs/requirements/README.md`; c
 
 - Funzionalità e tabelle di dominio solo per i requisiti STUDIO (regole di allenamento, clienti e, dalla v0.3.0, presenze e assenze alle lezioni puntuali, insegnanti con le loro regole e indicazioni). Il cambio di scope del 2026-11-12 include l'anagrafica unica insegnanti/utilizzatori con telefono, nome e cognome, accesso revocabile e gestione guidata riservata all'unico gestore configurato (REQ-STUDIO-015–017). Sono fuori scope: eccezioni della pianificazione dei clienti, capienza, disattivazione degli insegnanti dalle lezioni, permessi diversi sulle operazioni dello studio, più gestori, anagrafiche separate degli utilizzatori, pacchetti, pagamenti e richiesta automatica delle presenze. Il nuovo modello è attivo dalla TEC-042; la prova operativa della transizione dalla baseline precedente è TEC-043 (ADR-003).
 - Il server, Docker/Compose e HTTPS pubblico sono prerequisiti; provisioning, DNS e certificati sono fuori scope.
-- Niente deploy automatico o monitoraggio avanzato nella v0.3.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti di REQ-NFR-002.
+- Niente deploy automatico o monitoraggio avanzato nella v0.4.0. La produzione su `jarvis` si aggiorna solo a mano, dalle immagini pubblicate dalla pipeline e senza checkout applicativo sul server (REQ-OPS-004–007); è ammesso il solo launcher shell minimale di REQ-OPS-009, sempre nei limiti di REQ-NFR-002.
 
 ## 4. Stack and architecture
 

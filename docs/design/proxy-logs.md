@@ -12,7 +12,7 @@ La procedura operativa vieta agli operatori di avviare lo streaming remoto dei l
 
 ## Cloudflare
 
-`httpRequestsAdaptive` e gli eventi firewall conservano la query string per 31-32 giorni, non header né corpi; vi risultano le verifiche Meta accettate, quindi i verify token reali di produzione e sviluppo. Non sono verificabili con il token di sola lettura i job Logpush, Log Explorer della zona, Logpull e i sistemi interni di Cloudflare (decisione aperta in `README`).
+`httpRequestsAdaptive` e gli eventi firewall conservano la query string per 31-32 giorni, non header né corpi; vi risultano le verifiche Meta accettate, quindi i verify token reali di produzione e sviluppo. Non sono verificabili con il token di sola lettura i job Logpush, Log Explorer della zona, Logpull e i sistemi interni di Cloudflare: restano limiti accettati dall'operatore.
 
 ## Verify token e rischio accettato
 

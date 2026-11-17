@@ -1,6 +1,6 @@
 # Requirements — agent-pilates-studio
 
-**Target version:** v0.3.0
+**Target version:** v0.4.0
 
 **State:** baseline
 
@@ -12,8 +12,6 @@ Il *cosa* del progetto, un file per requisito (`docs/process/docs.md` §1). Il *
 | `glossary.md` | termini usati in requisiti, backlog e codice |
 | `acceptance.md` | accettazione della release della versione aperta |
 | `REQ-<AREA>-NNN.md` | un requisito; copiare `_TEMPLATE.md` |
-
-Il modello di identità unica degli insegnanti (REQ-STUDIO-015–017) è concordato ma non ancora attivo nel runtime: fino alla transizione coordinata descritta in `docs/design/identity.md` restano in esercizio il riconoscimento tramite allowlist e collegamento numero–insegnante in configurazione. La transizione è una decisione aperta in `docs/design/README.md`.
 
 ## Goal
 
@@ -32,25 +30,13 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 
 ## Scope
 
-### In scope for v0.3.0
+### In scope for v0.4.0
 
-- Registrazione conversazionale delle presenze dei clienti alle lezioni puntuali, su iniziativa dell'utilizzatore, anche tramite i clienti attesi (REQ-STUDIO-006).
-- Registrazione delle assenze giustificate e non giustificate e richiesta all'utilizzatore per i clienti attesi non citati (REQ-STUDIO-007).
-- Correzione tramite annullamento, senza cancellazione, con storico consultabile (REQ-STUDIO-008).
-- Registrazione anticipata delle assenze giustificate per lezioni future, anche su più lezioni, e annullamento prima della lezione (REQ-STUDIO-010).
-- Consultazione di presenze, assenze e registrazioni mancanti, con riepiloghi e statistiche per periodo (REQ-STUDIO-009).
-- Anagrafica degli insegnanti (REQ-STUDIO-011), regole settimanali degli insegnanti (REQ-STUDIO-012), indicazioni puntuali e sostituzioni con correzione tramite annullamento (REQ-STUDIO-013) e consultazioni per insegnante (REQ-STUDIO-014).
-- Identità unica degli insegnanti nel database con telefono, nome e cognome; accesso deciso dal censimento, gestione guidata riservata all'unico gestore configurato, correzioni, cambio numero, revoca e riabilitazione, transizione manuale e numeri esclusi dal modello (REQ-STUDIO-015–017). Nessuna anagrafica separata degli utilizzatori.
-- Contesto dell'agente compatto, con `SOUL.md` entro 15.000 caratteri, skill versionate di sola lettura caricate su richiesta soltanto dall'agente, comandi WhatsApp di caricamento delle skill rifiutati dal sistema e ricostruzioni dei dati in viste, funzioni o tool dedicati, a comportamenti invariati (REQ-AGENT-008).
-- L'agente non propone spontaneamente la creazione di un profilo dell'utilizzatore (REQ-AGENT-007).
-- Ambiente di produzione su `jarvis`, separato dallo sviluppo (REQ-OPS-004), aggiornato manualmente con una procedura precisa (REQ-OPS-005) e un launcher con commit parametrico (REQ-OPS-009), con immagini pubblicate dalla pipeline e senza codice sul server (REQ-OPS-007), collegato a una propria app Meta con callback stabile (REQ-OPS-006); uso continuativo del gateway pubblico di produzione nei limiti di REQ-NFR-002.
-- Backup a caldo del solo database di produzione con un comando `ops`, senza fermare gateway e broker (REQ-OPS-008).
-- Audit privacy dei log del proxy Cloudflare e locali, con evidenze verificabili, prove sintetiche e limiti non osservabili espliciti (REQ-NFR-002, REQ-NFR-004); nessuna dichiarazione di conformità né autorizzazione implicita a modifiche infrastrutturali.
-- Manifest versionato del workflow Pi e `settings.json` effettivo locale e ignorato, preparato prima dell'avvio anche nei clone dei worker (REQ-NFR-022).
-- Processo e strumenti condivisi del template di origine, con requisiti e design suddivisi in file indirizzabili; l'adozione di una versione del template è un'attività di processo, non un requisito (REQ-NFR-013).
+- Esito degli invii WhatsApp rifiutati o non accettati, per le risposte fisse, gestionali e dell'agente, registrato nei log con il codice d'errore e senza dati personali, per diagnosticare la mancata consegna (REQ-OPS-003, REQ-NFR-002).
+- Menu della gestione guidata dell'anagrafica con una breve descrizione di ogni operazione, che distingua la correzione di nome e cognome dal cambio del numero (REQ-STUDIO-016).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
-### Out of scope for v0.3.0
+### Out of scope for v0.4.0
 
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
