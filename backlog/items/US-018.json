@@ -1,0 +1,27 @@
+{
+  "id": "US-018",
+  "title": "Menu di /anagrafica con la descrizione delle operazioni",
+  "version": "v0.4.0",
+  "epic": "EPIC-006",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-STUDIO-016"
+  ],
+  "design_references": [
+    "design/identity"
+  ],
+  "description": "Come gestore, voglio che il menu di /anagrafica spieghi brevemente ogni voce, così da scegliere subito l'operazione giusta: oggi «correggi ID» viene scambiato per una correzione generale, mentre cambia solo nome e cognome e il telefono si cambia con «numero ID».",
+  "acceptance_criteria": [
+    "Il menu mostrato da /anagrafica descrive ciascuna voce (elenco, nuovo, completa, correggi, numero, revoca, abilita) e chiarisce che correggi cambia solo nome e cognome e numero cambia il telefono.",
+    "Comandi accettati, passaggi, riepiloghi, conferme e controlli di sicurezza restano invariati; nessuna chiamata al modello e nessun telefono nei testi fuori dai riepiloghi già previsti.",
+    "Test di unità in memoria della macchina a stati (src/identity-flow.ts) coprono il nuovo testo del menu, anche quando è ripresentato dopo un comando non riconosciuto.",
+    "La guida operativa della gestione (US-017-gestione.md) è allineata al nuovo menu."
+  ],
+  "remarks": [
+    "Emerso il 2026-11-17 in produzione: per cambiare il numero di un'insegnante il gestore ha usato «correggi 2», che chiede solo nome e cognome."
+  ]
+}
