@@ -1,0 +1,34 @@
+{
+  "id": "BUG-005",
+  "title": "Bootstrap dei ruoli fallisce durante l'inizializzazione di PostgreSQL",
+  "version": "v0.4.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Bug",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-OPS-001",
+    "REQ-OPS-002",
+    "REQ-NFR-001",
+    "REQ-NFR-002",
+    "REQ-NFR-003"
+  ],
+  "design_references": [
+    "design/configuration",
+    "design/production",
+    "design/test-strategy"
+  ],
+  "description": "Su un volume PostgreSQL vuoto l'entrypoint ufficiale avvia un server temporaneo raggiungibile solo dal socket locale, lo arresta e avvia quello definitivo. Il healthcheck di postgres in compose.yaml (pg_isready senza -h) usa il socket e può dare esito positivo durante il server temporaneo; db-bootstrap parte allora e si collega via TCP a postgres:5432 mentre il server rifiuta o si riavvia. bootstrap.sh non riprova e scarta l'errore di psql. Il carico delle suite in parallelo allarga la finestra: è l'intermittenza registrata in TEC-043, TEC-046, US-017 e US-019.",
+  "found_in": "v0.4.0",
+  "steps_to_reproduce": "Con postgres:17.10 al digest fissato, POSTGRES_USER=studio_admin, POSTGRES_DB=studio e password sintetica, avviare un container su volume vuoto e interrogare ogni 0,1 s pg_isready via socket e con -h 127.0.0.1: osservato il 2026-11-18 un campione con socket OK e TCP non raggiungibile, seguito da socket non disponibile e poi da entrambi OK. Nel progetto: npm run test:author con i file eseguiti in parallelo fallisce in modo intermittente in management.test.ts o transition.test.ts con 'Database role setup failed.' prima delle migrazioni.",
+  "expected": "db-bootstrap parte solo quando il server definitivo accetta connessioni TCP e la configurazione dei ruoli riesce anche con più progetti di prova avviati in parallelo e al primo avvio di un volume vuoto in produzione o dopo un ripristino.",
+  "actual": "Il healthcheck può segnalare healthy durante il server temporaneo di inizializzazione; il bootstrap fallisce con 'Database role setup failed.' e la suite o l'avvio si interrompono; la riesecuzione isolata di solito passa.",
+  "acceptance_criteria": [
+    "Il healthcheck di postgres verifica il server definitivo tramite TCP (ad esempio pg_isready -h 127.0.0.1 -U studio_admin -d studio), in sviluppo e in produzione, e il design (configuration, production) descrive la condizione di pronto; eventuali tentativi ripetuti nel bootstrap sono brevi e limitati e non scrivono nei log SQL, valori, password o messaggi d'errore di psql.",
+    "Un test di regressione automatico in una suite separata riproduce la finestra di inizializzazione su un volume vuoto con soli dati sintetici: fallisce con il healthcheck precedente, ad esempio rilevando un esito healthy mentre il TCP non è raggiungibile o forzando un'inizializzazione lenta, e passa con la correzione; se la finestra non è riproducibile in modo deterministico, il limite è documentato e la verifica è manuale.",
+    "npm run test:author eseguito più volte con i file in parallelo, insieme a test:db, test:hermes e test:upgrade, passa senza 'Database role setup failed.'; gli esiti, compresi eventuali fallimenti, sono registrati in docs/operations senza dati personali.",
+    "Avvio locale, aggiornamento della produzione e ripristino da backup su volume vuoto restano funzionanti; l'aggiornamento non richiede passi manuali aggiuntivi all'operatore e il quality gate e le suite della CI passano sul branch del bug."
+  ]
+}
