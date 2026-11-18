@@ -245,6 +245,9 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await migrator.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic correction' WHERE id = $1", [backupAttendance]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2020-01-01', '09:00', 'excused_absence')", [backupClient]);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [backupClient]);
+    const backupPlanned = (await migrator.query("INSERT INTO app.planned_participations (client_id, lesson_date, start_time) VALUES ($1, '2099-01-02', '18:00') RETURNING id", [backupClient])).rows[0].id;
+    await migrator.query("UPDATE app.planned_participations SET cancelled_at = clock_timestamp(), cancellation_reason = 'synthetic not coming' WHERE id = $1", [backupPlanned]);
+    await migrator.query("INSERT INTO app.planned_participations (client_id, lesson_date, start_time) VALUES ($1, '2099-01-02', '18:00')", [backupClient]);
     const legacyTeacherId = (await migrator.query("SELECT id FROM app.teachers WHERE first_name = 'History' AND last_name = 'Synthetic'")).rows[0].id as string;
     const replacementTeacherId = (await migrator.query("SELECT id FROM app.teachers WHERE first_name = 'Replacement' AND last_name = 'Synthetic'")).rows[0].id as string;
     const backupTeachers = await seedTeacherHistory(migrator, { original: legacyTeacherId, replacement: replacementTeacherId });
@@ -312,6 +315,13 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
       { outcome: 'excused_absence', lesson_date: '2020-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
       { outcome: 'excused_absence', lesson_date: '2099-01-01', start_time: '09:00:00', created: true, created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancelled_by_name: null, cancellation_reason: null },
     ]);
+    assert.deepEqual((await restored.query("SELECT lesson_date::text AS lesson_date, start_time::text AS start_time, created_by_phone, created_by_name, cancelled_at IS NOT NULL AS cancelled, cancelled_by_phone, cancellation_reason FROM studio_private.planned_participations ORDER BY id")).rows, [
+      { lesson_date: '2099-01-02', start_time: '18:00:00', created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: true, cancelled_by_phone: '15555550102', cancellation_reason: 'synthetic not coming' },
+      { lesson_date: '2099-01-02', start_time: '18:00:00', created_by_phone: '15555550102', created_by_name: 'Synthetic Profile', cancelled: false, cancelled_by_phone: null, cancellation_reason: null },
+    ]);
+    assert.deepEqual((await restored.query("SELECT source FROM app.expected_clients('2099-01-02', '2099-01-02') WHERE client_id = $1", [backupClient])).rows, [{ source: 'planned' }]);
+    await assert.rejects(restored.query('DELETE FROM studio_private.planned_participations'), { code: '42501' });
+    await assert.rejects(restored.query('TRUNCATE studio_private.planned_participations'), { code: '42501' });
     await assert.rejects(restored.query('DELETE FROM app.attendance'), { code: '42501' });
     await assert.rejects(restored.query('TRUNCATE studio_private.attendance'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);

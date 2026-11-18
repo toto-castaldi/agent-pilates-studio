@@ -93,7 +93,7 @@ export async function checkTeacherIdentities(
   const oldView = await readTeacherState(agent);
   const oldPrivate = (await migrator.query('SELECT id, created_at, created_by_phone, created_by_name FROM studio_private.teachers ORDER BY id')).rows;
   const studioBefore: Record<string, unknown[]> = {};
-  for (const table of ['clients', 'training_rules', 'attendance']) {
+  for (const table of ['clients', 'training_rules', 'attendance', 'planned_participations']) {
     studioBefore[table] = (await migrator.query(`SELECT * FROM studio_private.${table} ORDER BY 1, 2`)).rows;
   }
   for (const table of ['rule_slots', 'rule_clients']) {
@@ -234,10 +234,10 @@ export async function checkTeacherIdentities(
   // exposes current or historical author numbers to the model's role.
   const authorProjections: Record<string, string[]> = {
     clients: ['created_by_phone'], training_rules: ['created_by_phone', 'deactivated_by_phone'],
-    attendance: ['created_by_phone', 'cancelled_by_phone'], teacher_rules: ['created_by_phone', 'deactivated_by_phone'],
+    attendance: ['created_by_phone', 'cancelled_by_phone'], planned_participations: ['created_by_phone', 'cancelled_by_phone'], teacher_rules: ['created_by_phone', 'deactivated_by_phone'],
     teacher_assignments: ['created_by_phone', 'cancelled_by_phone'],
   };
-  await migrator.query('ANALYZE studio_private.clients, studio_private.training_rules, studio_private.attendance, studio_private.teacher_rules, studio_private.teacher_assignments, studio_private.teachers');
+  await migrator.query('ANALYZE studio_private.clients, studio_private.training_rules, studio_private.attendance, studio_private.planned_participations, studio_private.teacher_rules, studio_private.teacher_assignments, studio_private.teachers');
   const exposed: string[] = [];
   for (const [table, columns] of Object.entries(authorProjections)) {
     for (const column of columns) await assert.rejects(agent.query(`SELECT ${column} FROM app.${table}`), { code: '42703' });

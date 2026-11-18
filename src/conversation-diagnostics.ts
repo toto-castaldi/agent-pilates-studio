@@ -16,7 +16,7 @@ export function diagnoseModelRequest(value: unknown): object[] {
       try { args = object(JSON.parse(String(fn.arguments))); } catch { /* unparseable arguments are not echoed */ }
       const query = typeof args.query === 'string' ? args.query : '';
       const sql = fn.name === 'studio_sql_query';
-      const tables = ['teachers', 'teacher_assignments', 'teacher_rules', 'attendance', 'clients', 'training_rules'];
+      const tables = ['teachers', 'teacher_assignments', 'teacher_rules', 'attendance', 'planned_participations', 'clients', 'training_rules'];
       calls.set(entry.id, {
         tool: sql ? 'sql' : fn.name === 'skill_view' ? 'skill' : 'other',
         operations: sql ? ['select', 'insert', 'update', 'delete'].filter((op) => new RegExp(`\\b${op}\\b`, 'i').test(query)) : [],

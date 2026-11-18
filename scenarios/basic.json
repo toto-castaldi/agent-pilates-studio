@@ -1245,6 +1245,143 @@
           }
         }
       ]
+    },
+    {
+      "id": "partecipazione-prevista-oggi-annullamento",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "identity": { "firstName": "Ottavia", "lastName": "Registrata" }, "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Mario", "lastName": "Rossi" }],
+        "rules": [{ "text": "Mario Rossi martedì alle 08:00", "clients": ["Mario Rossi"], "slots": [{ "weekday": 2, "time": "08:00" }] }]
+      },
+      "turns": [
+        {
+          "message": "Oggi alle $LATER_TIME si allenerà Mario Rossi, è una lezione extra.",
+          "response": { "contains": ["Mario"], "times": ["$LATER_TIME"], "dates": ["$TODAY"], "anyOf": [["extra", "recuper", "previst", "programmat", "registrat", "salvat"]] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Mario Rossi", "lessonDate": "$TODAY", "time": "$LATER_TIME", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        },
+        {
+          "message": "Segna Mario Rossi presente oggi alle $LATER_TIME.",
+          "response": { "contains": [], "anyOf": [["non ancora", "non è ancora", "non e ancora", "non iniziat", "deve ancora", "futur", "dopo l"]] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Mario Rossi", "lessonDate": "$TODAY", "time": "$LATER_TIME", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        },
+        {
+          "message": "Mario Rossi alla fine oggi non viene più.",
+          "response": { "contains": ["Mario"], "anyOf": [["annull", "cancell", "rimoss"]] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Mario Rossi", "lessonDate": "$TODAY", "time": "$LATER_TIME", "authorPhone": "15555550102", "authorName": "Ottavia Registrata", "cancellation": { "authorPhone": "15555550102", "authorName": "Ottavia Registrata" } }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "partecipazione-prevista-nome-simile",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "identity": { "firstName": "Ottavia", "lastName": "Registrata" }, "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Lucia", "lastName": "Bianchi" }],
+        "rules": []
+      },
+      "turns": [
+        {
+          "message": "Lunedì prossimo alle 10 Lucia Bianco recupera.",
+          "response": { "contains": ["Bianchi"], "question": true },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": []
+          }
+        },
+        {
+          "message": "Sì, intendevo Lucia Bianchi.",
+          "response": { "contains": ["Lucia"], "times": ["10:00"], "dates": ["$NEXT_MONDAY"] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Lucia Bianchi", "lessonDate": "$NEXT_MONDAY", "time": "10:00", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "partecipazione-prevista-data-ambigua",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "identity": { "firstName": "Ottavia", "lastName": "Registrata" }, "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Mario", "lastName": "Rossi" }],
+        "rules": []
+      },
+      "turns": [
+        {
+          "message": "Mario Rossi la prossima settimana alle 18 fa una lezione extra.",
+          "response": { "contains": [], "question": true },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": []
+          }
+        },
+        {
+          "message": "Mercoledì.",
+          "response": { "contains": ["Mario"], "times": ["18:00"], "dates": ["$NEXT_MONDAY+2"] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Mario Rossi", "lessonDate": "$NEXT_MONDAY+2", "time": "18:00", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "partecipazione-prevista-gia-attesa",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "identity": { "firstName": "Ottavia", "lastName": "Registrata" }, "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Anna", "lastName": "Verdi" }],
+        "rules": [{ "text": "Anna Verdi lunedì alle 19:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "19:00" }] }]
+      },
+      "turns": [
+        {
+          "message": "Lunedì prossimo alle 19 Anna Verdi fa un recupero.",
+          "response": { "contains": ["Anna"], "anyOf": [["già", "gia ", "regola", "abitualmente", "normalmente", "di solito"]] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "partecipazione-prevista-tutti",
+      "sender": "15555550102", "profile": "Operatore Sintetico", "identity": { "firstName": "Ottavia", "lastName": "Registrata" }, "initial": { "clients": [], "rules": [] },
+      "setup": {
+        "createdAt": "2024-01-01T09:00:00Z",
+        "clients": [{ "firstName": "Anna", "lastName": "Verdi" }, { "firstName": "Lucia", "lastName": "Bianchi" }],
+        "rules": [{ "text": "Anna Verdi lunedì alle 18:00", "clients": ["Anna Verdi"], "slots": [{ "weekday": 1, "time": "18:00" }] }],
+        "planned": [{ "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00" }]
+      },
+      "turns": [
+        {
+          "message": "Lunedì scorso alle 18 c'erano tutti.",
+          "response": { "contains": ["Anna", "Lucia"], "excludes": ["non atteso", "non attesa", "non prevista", "non previsto"] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [{ "client": "Anna Verdi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }, { "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }],
+            "planned": [{ "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        }
+      ]
     }
   ]
 }

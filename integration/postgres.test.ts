@@ -11,6 +11,7 @@ import { checkTeacherIdentities } from './identity-checks.js';
 import { bindAgent, legacyContext, ownerContext, seedIdentities, UNIFIED_IDENTITY_MIGRATION } from './identity-seed.js';
 import { checkTeachers } from './teacher-checks.js';
 import { checkLessonFunctions } from './lesson-checks.js';
+import { checkPlannedParticipations } from './planned-checks.js';
 
 test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { timeout: 420_000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'pilates-db-test-'));
@@ -196,6 +197,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       await lessonAdmin.end();
     }
     await checkAttendance(agent, migrator, broker, client.rows[0].id as string);
+    await checkPlannedParticipations(agent, migrator, broker, client.rows[0].id as string);
     await checkTeachers(agent, migrator, broker, { ...connection, user: 'studio_agent', password: passwords.agent },
       { one: await teacherId('Synthetic', 'InstructorOne'), two: await teacherId('Synthetic', 'InstructorTwo') });
     // «Io» comes only from the authenticated, transaction-bound identity: no
@@ -327,6 +329,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       { query: "INSERT INTO app.clients (first_name, last_name, created_by_name) VALUES ('Synthetic', 'Plugin', 'forged')" },
       { query: "INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1" },
       { query: "UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged'" },
+      { query: "INSERT INTO app.planned_participations (client_id, lesson_date, start_time) SELECT id, '2099-01-01', '10:00' FROM app.clients LIMIT 1" },
       { query: "INSERT INTO app.teachers (first_name, last_name, created_by_name) VALUES ('Synthetic', 'UntrustedPlugin', 'forged')" },
       { query: "INSERT INTO app.teacher_rules (teacher_id, rule_text) SELECT id, 'Synthetic untrusted' FROM app.teachers LIMIT 1" },
       { query: "INSERT INTO app.teacher_rule_intervals (rule_id, weekday, start_time_min, start_time_max) SELECT id, 6, '12:00', '13:00' FROM app.teacher_rules LIMIT 1" },

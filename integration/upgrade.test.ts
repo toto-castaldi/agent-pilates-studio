@@ -201,7 +201,19 @@ test('isolated upgrade preserves PostgreSQL and Hermes state across real image v
     } finally { await broker.end(); }
     assert.deepEqual(await readTeacherState(migrator), teachersBefore);
     await migrator.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) VALUES ($1, '2099-01-01', '09:00', 'excused_absence')", [oldClient]);
+    // US-019 on the upgraded data: the old rule still yields a 'rule' expected
+    // client, and a new planned participation is expected with its own source.
+    assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.planned_participations')).rows[0].n, 0);
+    assert.deepEqual((await migrator.query("SELECT start_time::text AS time, source FROM app.expected_clients('2099-01-05', '2099-01-06') WHERE client_id = $1 ORDER BY 1", [oldClient])).rows,
+      [{ time: '09:00:00', source: 'rule' }]);
+    await migrator.query("INSERT INTO app.planned_participations (client_id, lesson_date, start_time) VALUES ($1, '2099-01-06', '18:00')", [oldClient]);
+    assert.deepEqual((await migrator.query("SELECT lesson_date::text AS day, start_time::text AS time, source FROM app.expected_clients('2099-01-05', '2099-01-06') WHERE client_id = $1 ORDER BY 1, 2", [oldClient])).rows,
+      [{ day: '2099-01-05', time: '09:00:00', source: 'rule' }, { day: '2099-01-06', time: '18:00:00', source: 'planned' }]);
+    assert.equal((await migrator.query("SELECT count(*)::int AS n FROM app.existing_lessons('2099-01-06', '2099-01-06')")).rows[0].n, 1);
     await migrator.query('COMMIT');
+    assert.deepEqual((await migrator.query(`SELECT p.created_by_phone, p.created_by_name = t.first_name || ' ' || t.last_name AS registered_name
+      FROM studio_private.planned_participations p JOIN studio_private.teachers t ON t.phone = '+' || p.created_by_phone`)).rows,
+      [{ created_by_phone: '15555550102', registered_name: true }]);
     assert.equal((await migrator.query('SELECT count(*)::int AS n FROM studio_private.teacher_rule_builds')).rows[0].n, 0);
     agent = new Client({ host: databaseHost, port: 5432, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
     await agent.connect();

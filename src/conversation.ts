@@ -26,9 +26,29 @@ export interface ExpectedAttendance extends AttendanceState {
   cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
 }
 
+export interface PlannedState {
+  client: string;
+  lessonDate: string;
+  time: string;
+  authorPhone: string;
+  authorName: string | null;
+  createdAt?: string;
+  cancelledAt?: string | null;
+  cancelledByPhone?: string | null;
+  cancelledByName?: string | null;
+  cancellationReason?: string | null;
+  id?: string;
+}
+
+export interface ExpectedPlanned extends PlannedState {
+  cancellation?: { authorPhone: string; authorName: string | null; reasonAnyOf?: string[] };
+}
+
+// Without `planned` the planned participations must stay exactly unchanged.
 export interface AttendanceExpectation {
   attendance: ExpectedAttendance[];
   addedClients: ClientState[];
+  planned?: ExpectedPlanned[];
 }
 
 export interface Slot {
@@ -111,6 +131,7 @@ export interface ActualState {
   clients: ClientState[];
   rules: ActualRule[];
   attendance?: AttendanceState[];
+  planned?: PlannedState[];
   teachers?: ClientState[];
   teacherRules?: TeacherRuleState[];
   teacherAssignments?: TeacherAssignmentState[];
@@ -162,11 +183,12 @@ export function romeDate(instant: Date): string {
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
-export const relativeDateTokens = ['TODAY', 'YESTERDAY', 'NEXT_MONDAY', 'LAST_SATURDAY', 'LAST_WEEK_MONDAY'] as const;
+export const relativeDateTokens = ['TODAY', 'YESTERDAY', 'NEXT_MONDAY', 'LAST_MONDAY', 'LAST_SATURDAY', 'LAST_WEEK_MONDAY'] as const;
 const relativeDatePattern = new RegExp(`^\\$(${relativeDateTokens.join('|')})(?:\\+(\\d+))?$`);
 
 // Freeze relative fixture dates at the start of a scenario, in Rome's calendar.
-// $LAST_SATURDAY is the latest Saturday strictly before today; $LAST_WEEK_MONDAY
+// $LAST_MONDAY and $LAST_SATURDAY are the latest Monday and Saturday strictly
+// before today; $LAST_WEEK_MONDAY
 // is the Monday of the previous ISO week. An optional +N adds whole days.
 export function scenarioRelativeDate(reference: Date, value: string): string {
   const match = relativeDatePattern.exec(value);
@@ -177,6 +199,7 @@ export function scenarioRelativeDate(reference: Date, value: string): string {
     TODAY: 0,
     YESTERDAY: -1,
     NEXT_MONDAY: (8 - day) % 7 || 7,
+    LAST_MONDAY: -((day + 6) % 7 || 7),
     LAST_SATURDAY: -((day + 1) % 7 || 7),
     LAST_WEEK_MONDAY: -((day + 6) % 7) - 7,
   };
@@ -186,6 +209,13 @@ export function scenarioRelativeDate(reference: Date, value: string): string {
 
 export function scenarioRelativeTimestamp(reference: Date, value: string | undefined): string | undefined {
   return value?.replace(/^\$[A-Z_]+(?:\+\d+)?(?=T)/, (token) => scenarioRelativeDate(reference, token));
+}
+
+// A start time later today in Rome, for lessons that must not have started yet:
+// two hours after the current hour, or null when it would cross midnight.
+export function scenarioLaterTime(reference: Date): string | null {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', hourCycle: 'h23' }).format(reference));
+  return hour + 2 <= 23 ? `${String(hour + 2).padStart(2, '0')}:00` : null;
 }
 
 export function hasHomeChannelNotice(text: string): boolean {
@@ -255,7 +285,7 @@ export function responseMatches(text: string, expected: ExpectedResponse): boole
 // SQL decomposition. Each resulting rule must belong to one group; the union
 // of its Cartesian associations must cover the group exactly once.
 export function stateMatches(actual: ActualState, expected: ExpectedState): boolean {
-  if (actual.attendance?.length || actual.teachers?.length || actual.teacherRules?.length || actual.teacherAssignments?.length) return false;
+  if (actual.attendance?.length || actual.planned?.length || actual.teachers?.length || actual.teacherRules?.length || actual.teacherAssignments?.length) return false;
   if (actual.clients.length !== expected.clients.length) return false;
   const remainingClients = [...actual.clients];
   for (const client of expected.clients) {
@@ -317,6 +347,8 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
     if (index < 0) return false;
     remaining.splice(index, 1);
   }
+  if (expected.planned ? !plannedRowsMatch(actual.planned ?? [], expected.planned)
+    : JSON.stringify(before.planned ?? []) !== JSON.stringify(actual.planned ?? [])) return false;
   const rows = [...(actual.attendance ?? [])];
   if (rows.length !== expected.attendance.length) return false;
   for (const item of expected.attendance) {
@@ -336,12 +368,37 @@ export function attendanceScenarioMatches(before: ActualState, actual: ActualSta
   return true;
 }
 
+// All planned participations, including cancelled ones: client, lesson, author,
+// system instants, single cancellation and at most one valid row per lesson.
+function plannedRowsMatch(actual: PlannedState[], expected: ExpectedPlanned[]): boolean {
+  const rows = [...actual];
+  if (rows.length !== expected.length || new Set(rows.map((row) => row.id)).size !== rows.length) return false;
+  const valid = rows.filter((row) => !row.cancelledAt).map((row) => JSON.stringify([normalized(row.client), row.lessonDate, row.time]));
+  if (new Set(valid).size !== valid.length) return false;
+  for (const item of expected) {
+    const index = rows.findIndex((row) => normalized(row.client) === normalized(item.client)
+      && row.lessonDate === item.lessonDate && row.time === item.time
+      && row.authorPhone === item.authorPhone && row.authorName === item.authorName
+      && !!row.id && !!row.createdAt && !Number.isNaN(Date.parse(row.createdAt))
+      && (item.cancellation
+        ? !!row.cancelledAt && !Number.isNaN(Date.parse(row.cancelledAt)) && Date.parse(row.cancelledAt) >= Date.parse(row.createdAt)
+          && row.cancelledByPhone === item.cancellation.authorPhone && row.cancelledByName === item.cancellation.authorName
+          && !!row.cancellationReason?.trim() && (!item.cancellation.reasonAnyOf
+            || item.cancellation.reasonAnyOf.some((word) => normalized(row.cancellationReason ?? '').includes(normalized(word))))
+        : !row.cancelledAt && !row.cancelledByPhone && !row.cancelledByName && !row.cancellationReason));
+    if (index < 0) return false;
+    rows.splice(index, 1);
+  }
+  return true;
+}
+
 // Assignment scenarios preserve all unrelated tables and compare the complete
 // assignment history, including cancellations and the teacher foreign key.
 export function assignmentScenarioMatches(before: ActualState, actual: ActualState, expected: AssignmentExpectation): boolean {
   if (JSON.stringify(before.clients) !== JSON.stringify(actual.clients)
     || JSON.stringify(before.rules) !== JSON.stringify(actual.rules)
     || JSON.stringify(before.attendance ?? []) !== JSON.stringify(actual.attendance ?? [])
+    || JSON.stringify(before.planned ?? []) !== JSON.stringify(actual.planned ?? [])
     || JSON.stringify(before.teacherRules ?? []) !== JSON.stringify(actual.teacherRules ?? [])) return false;
   const teachers = actual.teachers ?? [];
   const originalTeachers = before.teachers ?? [];
@@ -384,7 +441,7 @@ export function assignmentScenarioMatches(before: ActualState, actual: ActualSta
 // Compare teacher coverage minute by minute, permitting equivalent splits but
 // rejecting duplicates, missing endpoints, wrong authors and extra records.
 export function teacherScenarioMatches(actual: ActualState, expected: TeacherExpectation, authorPhone: string, authorName: string | null): boolean {
-  if (actual.clients.length || actual.rules.length || actual.attendance?.length || actual.teacherAssignments?.length) return false;
+  if (actual.clients.length || actual.rules.length || actual.attendance?.length || actual.planned?.length || actual.teacherAssignments?.length) return false;
   const teachers = [...(actual.teachers ?? [])];
   if (teachers.length !== expected.teachers.length) return false;
   for (const person of expected.teachers) {
@@ -516,6 +573,17 @@ export function historyPreserved(previous: ActualState, current: ActualState): b
       deactivatedByName: row.deactivatedByName, deactivationReason: row.deactivationReason,
       intervals: next.intervals.map((interval) => ({ ...interval, isActive: true })) };
     return JSON.stringify(restored) === JSON.stringify(row);
+  })) return false;
+  if (!(previous.planned ?? []).every((row) => {
+    if (!row.id || !row.createdAt) return false;
+    const matches = (current.planned ?? []).filter((next) => next.id === row.id);
+    if (matches.length !== 1) return false;
+    const next = matches[0];
+    if (JSON.stringify(row) === JSON.stringify(next)) return true;
+    if (row.cancelledAt || row.cancelledByPhone || row.cancelledByName || row.cancellationReason
+      || !next.cancelledAt || Number.isNaN(Date.parse(next.cancelledAt)) || !next.cancelledByPhone || !next.cancellationReason?.trim()) return false;
+    return JSON.stringify({ ...next, cancelledAt: row.cancelledAt, cancelledByPhone: row.cancelledByPhone,
+      cancelledByName: row.cancelledByName, cancellationReason: row.cancellationReason }) === JSON.stringify(row);
   })) return false;
   if (!(previous.attendance ?? []).every((row) => {
     if (!row.id || !row.createdAt) return false;

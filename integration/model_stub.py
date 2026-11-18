@@ -88,6 +88,10 @@ async def chat(request):
             queries = ["UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_name = 'forged', cancellation_reason = 'synthetic teacher correction' WHERE lesson_date = '2020-01-01' RETURNING id"]
         elif 'teacher-cancel-future' in last:
             queries = ["UPDATE app.teacher_assignments SET cancelled_at = '1900-01-01', cancelled_by_name = 'forged', cancellation_reason = 'synthetic future teacher correction' WHERE lesson_date = '2099-01-01' RETURNING id"]
+        elif 'planned-insert' in last:
+            queries = ["INSERT INTO app.planned_participations (client_id, lesson_date, start_time, created_by_name) SELECT id, '2099-02-02', '18:00', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
+        elif 'planned-cancel' in last:
+            queries = ["UPDATE app.planned_participations SET cancelled_at = '1900-01-01', cancelled_by_name = 'forged', cancellation_reason = 'synthetic planned cancellation' WHERE lesson_date = '2099-02-02' RETURNING id"]
         elif 'future-absence-insert' in last:
             queries = ["INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome, created_by_name) SELECT id, '2099-01-01', '09:00', 'excused_absence', 'forged' FROM app.clients WHERE first_name = 'alpha' RETURNING id"]
         elif 'future-absence-cancel' in last:

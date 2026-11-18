@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type ActualState, type ExpectedState, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../src/conversation.js';
+import { type ActualState, type ExpectedState, assignmentScenarioMatches, attendanceScenarioMatches, hasHomeChannelNotice, historyPreserved, responseMatches, romeDate, scenarioLaterTime, scenarioRelativeDate, scenarioRelativeTimestamp, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../src/conversation.js';
 
 const expected: ExpectedState = {
   clients: [{ firstName: 'Antonio', lastName: 'Rossi', authorPhone: '15555550102', authorName: 'Sintetico' }],
@@ -138,6 +138,8 @@ test('last Saturday and last week are resolved in the Rome calendar for every we
     assert.equal(scenarioRelativeDate(reference, '$LAST_SATURDAY'), lastSaturday[offset]);
     assert.equal(scenarioRelativeDate(reference, '$LAST_WEEK_MONDAY'), '2026-11-02');
     assert.equal(scenarioRelativeDate(reference, '$LAST_WEEK_MONDAY+6'), '2026-11-08');
+    // The latest Monday strictly before today: last week's on Monday itself.
+    assert.equal(scenarioRelativeDate(reference, '$LAST_MONDAY'), offset === 0 ? '2026-11-02' : '2026-11-09');
   }
   // Saturday counts the previous week; just after midnight Rome is already Sunday.
   assert.equal(scenarioRelativeDate(new Date('2026-11-14T22:30:00Z'), '$LAST_SATURDAY'), '2026-11-07');
@@ -293,4 +295,40 @@ test('multi-client and multi-slot groups allow different decompositions but no m
   assert.equal(stateMatches({ clients, rules: [{ ...row, slots: [...row.slots, row.slots[0]] }] }, groups), false);
   assert.equal(stateMatches({ clients, rules: [{ ...row, text: 'Allenamento lunedì alle 8 e giovedì alle 15' }] }, groups), false);
   assert.equal(stateMatches({ clients, rules: [{ ...row, text: 'Antonio e Lucia insieme lunedì alle 8' }] }, groups), false);
+});
+
+test('planned participations are compared in full, stay unchanged unless expected and keep their history', () => {
+  const author = { authorPhone: '15555550102', authorName: 'Sintetico' };
+  const client = { firstName: 'Lucia', lastName: 'Bianchi', id: '1', createdAt: '2024-01-01T09:00:00Z', ...author };
+  const row = { id: '7', client: 'Lucia Bianchi', lessonDate: '2099-01-08', time: '10:00', createdAt: '2026-01-01T09:00:00Z', ...author,
+    cancelledAt: null, cancelledByPhone: null, cancelledByName: null, cancellationReason: null };
+  const before: ActualState = { clients: [client], rules: [], attendance: [], planned: [] };
+  const after: ActualState = { ...before, planned: [row] };
+  const expectation = { addedClients: [], attendance: [], planned: [{ ...row }] };
+  assert.ok(attendanceScenarioMatches(before, after, expectation));
+  assert.equal(attendanceScenarioMatches(before, after, { addedClients: [], attendance: [] }), false, 'an unexpected planned participation is a change');
+  assert.ok(attendanceScenarioMatches(after, after, { addedClients: [], attendance: [] }));
+  for (const change of [{ lessonDate: '2099-01-09' }, { time: '10:01' }, { authorPhone: '999' }, { authorName: 'Falso' }, { createdAt: '' }, { client: 'Lucia Bianco' }, { cancelledAt: '2026-01-02T09:00:00Z' }]) {
+    assert.equal(attendanceScenarioMatches(before, { ...after, planned: [{ ...row, ...change }] }, expectation), false);
+  }
+  assert.equal(attendanceScenarioMatches(before, { ...after, planned: [row, { ...row, id: '8' }] }, { ...expectation, planned: [row, row] }), false, 'two valid rows for one lesson');
+  const cancelled = { ...row, cancelledAt: '2026-01-02T09:00:00Z', cancelledByPhone: '15555550102', cancelledByName: 'Sintetico', cancellationReason: 'non viene più' };
+  const cancelledExpected = { addedClients: [], attendance: [], planned: [{ ...row, cancellation: { ...author, reasonAnyOf: ['non viene'] } }] };
+  assert.ok(attendanceScenarioMatches(before, { ...after, planned: [cancelled] }, cancelledExpected));
+  assert.equal(attendanceScenarioMatches(before, { ...after, planned: [{ ...cancelled, cancelledAt: '2025-01-01T00:00:00Z' }] }, cancelledExpected), false);
+  assert.equal(attendanceScenarioMatches(before, { ...after, planned: [{ ...cancelled, cancellationReason: ' ' }] }, cancelledExpected), false);
+  assert.ok(historyPreserved(after, { ...after, planned: [cancelled] }));
+  assert.equal(historyPreserved(after, { ...after, planned: [] }), false);
+  assert.equal(historyPreserved(after, { ...after, planned: [{ ...row, time: '11:00' }] }), false);
+  assert.equal(historyPreserved({ ...after, planned: [cancelled] }, { ...after, planned: [{ ...cancelled, cancellationReason: 'riscritto' }] }), false);
+  assert.equal(stateMatches({ ...after, clients: [], rules: [] }, { clients: [], rules: [] }), false);
+  assert.equal(teacherScenarioMatches({ clients: [], rules: [], planned: [row] }, { teachers: [], rules: [] }, '15555550102', 'Sintetico'), false);
+  assert.equal(assignmentScenarioMatches(before, after, { assignments: [], addedTeachers: [] }), false);
+});
+
+test('the later start time stays today in Rome and is unavailable near midnight', () => {
+  assert.equal(scenarioLaterTime(new Date('2026-07-01T07:30:00Z')), '11:00');
+  assert.equal(scenarioLaterTime(new Date('2026-01-15T19:59:00Z')), '22:00');
+  assert.equal(scenarioLaterTime(new Date('2026-01-15T21:00:00Z')), null);
+  assert.equal(scenarioLaterTime(new Date('2026-01-15T22:30:00Z')), null);
 });

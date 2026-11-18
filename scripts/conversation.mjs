@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Client } from 'pg';
 import { proxyHeaders } from '../dist/src/conversation-proxy.js';
 import { runProcess } from '../dist/src/conversation-process.js';
-import { assignmentScenarioMatches, attendanceScenarioMatches, fixtureCancellationReason, fixtureRuleDeactivationReason, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioRelativeDate, scenarioRelativeTimestamp, seededTeacherFixturesMatch, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
+import { assignmentScenarioMatches, attendanceScenarioMatches, fixtureCancellationReason, fixtureRuleDeactivationReason, hasHomeChannelNotice, historyPreserved, responseMatches, scenarioLaterTime, scenarioRelativeDate, scenarioRelativeTimestamp, seededTeacherFixturesMatch, snapshotsMatch, stateMatches, teacherScenarioMatches } from '../dist/src/conversation.js';
 import { diagnoseModelRequest, diagnoseResponse } from '../dist/src/conversation-diagnostics.js';
 
 const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -210,6 +210,11 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         a.outcome, a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName",
         a.cancelled_at::text AS "cancelledAt", a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
         FROM studio_private.attendance a JOIN app.clients c ON c.id = a.client_id ORDER BY a.id`)).rows;
+      const planned = (await client.query(`SELECT p.id::text AS id, c.first_name || ' ' || c.last_name AS client,
+        to_char(p.lesson_date, 'YYYY-MM-DD') AS "lessonDate", to_char(p.start_time, 'HH24:MI') AS time,
+        p.created_at::text AS "createdAt", p.created_by_phone AS "authorPhone", p.created_by_name AS "authorName",
+        p.cancelled_at::text AS "cancelledAt", p.cancelled_by_phone AS "cancelledByPhone", p.cancelled_by_name AS "cancelledByName", p.cancellation_reason AS "cancellationReason"
+        FROM studio_private.planned_participations p JOIN app.clients c ON c.id = p.client_id ORDER BY p.id`)).rows;
       const teachers = (await client.query('SELECT id::text AS id, first_name AS "firstName", last_name AS "lastName", created_by_phone AS "authorPhone", created_by_name AS "authorName", created_at::text AS "createdAt" FROM studio_private.teachers WHERE $1::bigint IS NULL OR id <> $1::bigint ORDER BY id', [hiddenTeacher])).rows;
       const teacherRules = (await client.query(`SELECT r.id::text AS id, t.first_name || ' ' || t.last_name AS teacher, r.rule_text AS text,
         r.created_at::text AS "createdAt", r.created_by_phone AS "authorPhone", r.created_by_name AS "authorName",
@@ -222,7 +227,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         a.created_at::text AS "createdAt", a.created_by_phone AS "authorPhone", a.created_by_name AS "authorName", a.cancelled_at::text AS "cancelledAt",
         a.cancelled_by_phone AS "cancelledByPhone", a.cancelled_by_name AS "cancelledByName", a.cancellation_reason AS "cancellationReason"
         FROM studio_private.teacher_assignments a JOIN app.teachers t ON t.id = a.teacher_id ORDER BY a.id`)).rows;
-      return { clients, rules, attendance, teachers, teacherRules, teacherAssignments };
+      return { clients, rules, attendance, planned, teachers, teacherRules, teacherAssignments };
     };
     let previous = await snapshot();
     const registeredTeachers = new Set((scenario.setup?.teachers ?? []).map((person) => `${person.firstName} ${person.lastName}`));
@@ -230,6 +235,14 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
     if (!stateMatches({ ...previous, teachers: [] }, scenario.initial)
       || previous.teachers.length !== registeredTeachers.size) throw new Error('initial state');
     const reference = new Date();
+    // $LATER_TIME is a start time later today, for lessons not yet started.
+    const laterTime = scenarioLaterTime(reference);
+    const usesLaterTime = JSON.stringify(scenario).includes('$LATER_TIME');
+    if (usesLaterTime && !laterTime) {
+      stage = 'orario odierno successivo non disponibile vicino alla mezzanotte';
+      throw new Error('later time');
+    }
+    const laterValue = (value) => (typeof value === 'string' ? value.replaceAll('$LATER_TIME', laterTime ?? '') : value);
     const relativeDate = (value) => scenarioRelativeDate(reference, value);
     const relativeTimestamp = (value) => scenarioRelativeTimestamp(reference, value);
     let seededSnapshot;
@@ -241,7 +254,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         teacherRules: scenario.setup.teacherRules?.map((rule) => ({ ...rule,
           createdAt: relativeTimestamp(rule.createdAt), deactivatedAt: relativeTimestamp(rule.deactivatedAt) })),
         assignments: scenario.setup.assignments?.map((row) => ({ ...row,
-          lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })) };
+          lessonDate: relativeDate(row.lessonDate), createdAt: relativeTimestamp(row.createdAt), cancelledAt: relativeTimestamp(row.cancelledAt) })),
+        planned: scenario.setup.planned?.map((row) => ({ ...row, lessonDate: relativeDate(row.lessonDate), time: laterValue(row.time) })) };
       if (!Array.isArray(setup.clients) || !Array.isArray(setup.rules) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(setup.createdAt)) throw new Error('setup');
       await client.query('BEGIN');
       // The isolated migration owner installs the same identity-bound context
@@ -348,6 +362,13 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         stage = 'preparazione fixture presenze: riabilitazione trigger';
         await client.query('ALTER TABLE studio_private.attendance ENABLE TRIGGER attendance_author');
       }
+      // Planned participations are created through the normal author trigger,
+      // which accepts past and future lessons; a cancelled one is cancelled now.
+      for (const row of setup.planned ?? []) {
+        if (!ids.has(row.client) || !/^\d{4}-\d\d-\d\d$/.test(row.lessonDate) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.time)) throw new Error('planned fixture');
+        const result = await client.query('INSERT INTO app.planned_participations (client_id, lesson_date, start_time) VALUES ($1, $2, $3) RETURNING id', [ids.get(row.client), row.lessonDate, row.time]);
+        if (row.cancelled) await client.query('UPDATE app.planned_participations SET cancelled_at = clock_timestamp(), cancellation_reason = $2 WHERE id = $1', [result.rows[0].id, fixtureCancellationReason]);
+      }
       stage = 'preparazione fixture: verifica';
       await client.query('DELETE FROM studio_private.author_context WHERE backend_pid = pg_backend_pid() AND transaction_id = txid_current()');
       await client.query('COMMIT');
@@ -360,6 +381,8 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       };
       const setupRows = (setup.attendance ?? []).map((row) => ({ ...row, ...author,
         cancellation: row.cancelledAt ? { ...author, reasonAnyOf: [fixtureCancellationReason] } : undefined }));
+      const setupPlanned = (setup.planned ?? []).map((row) => ({ client: row.client, lessonDate: row.lessonDate, time: row.time, ...author,
+        cancellation: row.cancelled ? { ...author, reasonAnyOf: [fixtureCancellationReason] } : undefined }));
       const fixtureTimes = (await client.query("SELECT created_at::text AS created, cancelled_at::text AS cancelled, created_at < ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AS anticipated, ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') <= clock_timestamp() AS started FROM app.attendance ORDER BY id")).rows;
       const teacherRules = new Map();
       for (const rule of setup.teacherRules ?? []) {
@@ -377,11 +400,11 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       const invalidLessons = Number((await client.query(`SELECT count(*) FROM app.teacher_assignments
         WHERE ((lesson_date + start_time) AT TIME ZONE 'Europe/Rome') AT TIME ZONE 'Europe/Rome' <> lesson_date + start_time`)).rows[0].count);
       if (triggers.length !== 3 || triggers.some((row) => row.tgenabled !== 'O') || invalidLessons) throw new Error('setup triggers');
-      if (!teacherScenarioMatches({ ...seededSnapshot, clients: [], rules: [], attendance: [], teacherAssignments: [] },
+      if (!teacherScenarioMatches({ ...seededSnapshot, clients: [], rules: [], attendance: [], planned: [], teacherAssignments: [] },
         { teachers: setup.teachers ?? [], rules: [...teacherRules.values()] }, scenario.sender, registeredName)
         || !seededTeacherFixturesMatch(seededSnapshot, setup.teacherRules ?? [], setup.assignments ?? [], scenario.sender, registeredName)
-        || !stateMatches({ ...seededSnapshot, attendance: [], teachers: [], teacherRules: [], teacherAssignments: [] }, expected)
-        || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows })
+        || !stateMatches({ ...seededSnapshot, attendance: [], planned: [], teachers: [], teacherRules: [], teacherAssignments: [] }, expected)
+        || !attendanceScenarioMatches({ ...seededSnapshot, attendance: [] }, seededSnapshot, { addedClients: [], attendance: setupRows, planned: setupPlanned })
         || fixtureTimes.length !== setupRows.length || fixtureTimes.some((row, index) =>
           (row.anticipated && setupRows[index].outcome !== 'excused_absence') || (!row.started && setupRows[index].outcome !== 'excused_absence')
           || new Date(row.created).getTime() !== new Date(setupRows[index].createdAt).getTime()
@@ -395,17 +418,18 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
       if (interrupted) throw new Error('interrupted');
       stage = `turno ${index + 1}`;
       const attendanceExpected = turn.attendanceExpected && { ...turn.attendanceExpected,
-        attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate) })) };
+        attendance: turn.attendanceExpected.attendance.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate), time: laterValue(entry.time) })),
+        planned: turn.attendanceExpected.planned?.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate), time: laterValue(entry.time) })) };
       const assignmentExpected = turn.assignmentExpected && { ...turn.assignmentExpected,
         assignments: turn.assignmentExpected.assignments.map((entry) => ({ ...entry, lessonDate: relativeDate(entry.lessonDate) })) };
-      const expectedResponse = { ...turn.response, dates: turn.response.dates?.map(relativeDate) };
+      const expectedResponse = { ...turn.response, dates: turn.response.dates?.map(relativeDate), times: turn.response.times?.map(laterValue) };
       const aggregatesBefore = turn.sqlAggregate ? await aggregateCount() : 0;
       const payload = JSON.stringify({ object: 'whatsapp_business_account', entry: [{ id: '999', changes: [{ field: 'messages', value: {
         metadata: { phone_number_id: secrets['whatsapp-phone-number-id'] },
         // The WhatsApp profile name must never become the identity: the
         // registered name replaces it before Hermes.
         contacts: [{ wa_id: scenario.sender, profile: { name: scenario.profile } }],
-        messages: [{ from: scenario.sender, id: `wamid.synthetic.${randomBytes(16).toString('hex')}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: turn.message } }],
+        messages: [{ from: scenario.sender, id: `wamid.synthetic.${randomBytes(16).toString('hex')}`, timestamp: String(Math.floor(Date.now() / 1000)), type: 'text', text: { body: laterValue(turn.message) } }],
       } }] }] });
       const signature = `sha256=${createHmac('sha256', secrets['whatsapp-app-secret']).update(payload).digest('hex')}`;
       stage = `turno ${index + 1}: webhook`;
@@ -454,7 +478,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
           `indicazioni ${current.teacherAssignments.length}`, `insegnanti ${current.teachers.length}`,
           /errore|error|failed|fallit|impossibil|unable|sorry/.test(normalized) ? 'errore segnalato' : 'nessun errore riconosciuto',
           turn.response.contains.every((word) => normalized.includes(word.toLocaleLowerCase('it-IT'))) ? 'nomi presenti' : 'nomi mancanti',
-          responseMatches(text, { contains: [], times: turn.response.times }) ? 'orari presenti' : 'orari mancanti',
+          responseMatches(text, { contains: [], times: expectedResponse.times }) ? 'orari presenti' : 'orari mancanti',
           responseMatches(text, { contains: [], anyOf: turn.response.anyOf }) ? 'alternative presenti' : 'alternative mancanti',
           responseMatches(text, { contains: [], excludes: turn.response.excludes }) ? 'esclusioni rispettate' : `esclusioni violate ${turn.response.excludes.map((word, index) => normalized.includes(word.toLocaleLowerCase('it-IT')) ? index + 1 : 0).filter(Boolean).join('/')}`,
           responseMatches(text, { contains: [], question: turn.response.question }) ? 'requisito domanda rispettato' : 'requisito domanda non rispettato',
@@ -518,7 +542,7 @@ for (const scenario of catalog.scenarios.filter((entry) => !selectedId || entry.
         const assignments = current.teacherAssignments;
         console.error(`Indicazioni sintetiche: totali ${assignments.length}, valide ${assignments.filter((row) => !row.cancelledAt).length}, annullate ${assignments.filter((row) => row.cancelledAt).length}.`);
         const rows = current.attendance ?? [];
-        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, clienti ${current.clients.length}, regole clienti ${current.rules.length}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}, insegnanti ${current.teachers.length}, regole insegnanti ${current.teacherRules.length}.`);
+        console.error(`Diagnostica sintetica database: storico ${historyOk ? 'conservato' : 'alterato'}, stato ${stateOk ? 'conforme' : 'difforme'}, clienti ${current.clients.length}, regole clienti ${current.rules.length}, registrazioni ${rows.length}, annullate ${rows.filter((row) => row.cancelledAt).length}, presenze ${rows.filter((row) => row.outcome === 'present').length}, partecipazioni previste ${current.planned.length}, previste annullate ${current.planned.filter((row) => row.cancelledAt).length}, insegnanti ${current.teachers.length}, regole insegnanti ${current.teacherRules.length}.`);
         console.error(`Indicatori sintetici risposta: domanda ${/[?？]/.test(text) ? 'sì' : 'no'}, conferma ${/conferm/i.test(text) ? 'sì' : 'no'}, errore ${/errore|fallit|impossibil/i.test(text) ? 'sì' : 'no'}.`);
         throw new Error('database mismatch');
       }
