@@ -1324,7 +1324,7 @@
       "turns": [
         {
           "message": "Mario Rossi la prossima settimana alle 18 fa una lezione extra.",
-          "response": { "contains": [], "question": true },
+          "response": { "contains": [], "question": true, "anyOf": [["giorno", "quale", "data", "quando"]] },
           "attendanceExpected": {
             "addedClients": [],
             "attendance": [],
@@ -1359,6 +1359,15 @@
             "attendance": [],
             "planned": []
           }
+        },
+        {
+          "message": "Allora lunedì prossimo Anna Verdi recupera alle 11.",
+          "response": { "contains": ["Anna"], "times": ["11:00"], "dates": ["$NEXT_MONDAY"] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [],
+            "planned": [{ "client": "Anna Verdi", "lessonDate": "$NEXT_MONDAY", "time": "11:00", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
         }
       ]
     },
@@ -1375,6 +1384,15 @@
         {
           "message": "Lunedì scorso alle 18 c'erano tutti.",
           "response": { "contains": ["Anna", "Lucia"], "excludes": ["non atteso", "non attesa", "non prevista", "non previsto"] },
+          "attendanceExpected": {
+            "addedClients": [],
+            "attendance": [{ "client": "Anna Verdi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }, { "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }],
+            "planned": [{ "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }]
+          }
+        },
+        {
+          "message": "Chi era presente lunedì scorso alle 18?",
+          "response": { "contains": ["Anna", "Lucia"], "times": ["18:00"], "dates": ["$LAST_MONDAY"] },
           "attendanceExpected": {
             "addedClients": [],
             "attendance": [{ "client": "Anna Verdi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }, { "client": "Lucia Bianchi", "lessonDate": "$LAST_MONDAY", "time": "18:00", "outcome": "present", "authorPhone": "15555550102", "authorName": "Ottavia Registrata" }],
