@@ -13,12 +13,13 @@
 - **Fascia oraria:** parte della giornata (mattina, pomeriggio, sera) con limiti fissi definiti nel file `SOUL.md` dell'agente.
 - **Lezione puntuale:** lezione in una data e con un orario d'inizio precisi nel fuso Europe/Rome, ad esempio sabato 7 novembre 2026 alle 19:00; l'orario d'inizio comprende ore e minuti e la lezione dura un'ora.
 - **Regola valida per una lezione:** regola inserita prima dell'inizio della lezione puntuale e non disattivata entro quell'istante.
-- **Cliente atteso:** cliente associato a una regola valida per la lezione con uno slot nello stesso giorno della settimana e allo stesso orario d'inizio.
+- **Partecipazione prevista:** registrazione puntuale che un cliente parteciperà a una lezione non derivante dalle sue regole, ad esempio una lezione extra o un recupero (REQ-STUDIO-018); si annulla e non è una presenza.
+- **Cliente atteso:** cliente associato a una regola valida per la lezione con uno slot nello stesso giorno della settimana e allo stesso orario d'inizio, oppure con una partecipazione prevista valida per quella lezione.
 - **Presenza:** registrazione che un cliente ha partecipato a una lezione puntuale.
 - **Assenza:** registrazione che un cliente non ha partecipato a una lezione puntuale, di tipo giustificata o non giustificata.
 - **Registrazione valida:** presenza o assenza non annullata; solo le registrazioni valide contano nelle consultazioni.
 - **Assenza anticipata:** assenza giustificata registrata prima dell'inizio della lezione puntuale, perché il cliente ha avvisato (REQ-STUDIO-010).
-- **Lezione puntuale esistente:** lezione puntuale con almeno un cliente atteso, una registrazione valida di presenza o assenza o un'indicazione valida dell'insegnante.
+- **Lezione puntuale esistente:** lezione puntuale con almeno un cliente atteso, compresi quelli con partecipazione prevista, una registrazione valida di presenza o assenza o un'indicazione valida dell'insegnante.
 - **Regola dell'insegnante:** abitudine settimanale ricorrente di un insegnante, ad esempio "Antonio allena tutti i mercoledì pomeriggio e i venerdì pomeriggio", espressa in un testo in linguaggio naturale pulito, con l'insegnante e, per ogni giorno della settimana, un intervallo di orari d'inizio delle lezioni; una fascia oraria corrisponde ai limiti definiti in `SOUL.md`, un orario a un solo orario d'inizio.
 - **Regola dell'insegnante valida per una lezione:** regola dell'insegnante inserita prima dell'inizio della lezione puntuale, non disattivata entro quell'istante, con un intervallo nello stesso giorno della settimana che comprende l'orario d'inizio.
 - **Insegnante atteso:** insegnante della regola dell'insegnante valida per la lezione.

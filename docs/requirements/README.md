@@ -17,7 +17,7 @@ Il *cosa* del progetto, un file per requisito (`docs/process/docs.md` §1). Il *
 
 Un assistente WhatsApp dello studio Pilates per il titolare e i collaboratori, basato su Hermes con database relazionale, modello tramite OpenRouter e comunicazione WhatsApp Business; installazione, aggiornamento e prova sono riproducibili.
 
-Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico; le presenze e le assenze effettive dei clienti alle singole lezioni, comprese le assenze giustificate annunciate prima della lezione; gli insegnanti dello studio, le loro regole settimanali e i cambi puntuali, come le sostituzioni, per ricavare chi ha tenuto ogni lezione. Le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche. L'anagrafica degli insegnanti è l'unica fonte dell'identità degli utilizzatori: telefono, nome e cognome nel database, gestione guidata riservata a un solo gestore e accesso revocabile senza modificare lo storico.
+Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini settimanali di allenamento dei clienti, salvate come regole in linguaggio naturale con autore e storico; le partecipazioni previste fuori dalle regole, come lezioni extra e recuperi; le presenze e le assenze effettive dei clienti alle singole lezioni, comprese le assenze giustificate annunciate prima della lezione; gli insegnanti dello studio, le loro regole settimanali e i cambi puntuali, come le sostituzioni, per ricavare chi ha tenuto ogni lezione. Le registrazioni hanno autore e storico, si correggono senza cancellazioni e sono consultabili con riepiloghi e statistiche. L'anagrafica degli insegnanti è l'unica fonte dell'identità degli utilizzatori: telefono, nome e cognome nel database, gestione guidata riservata a un solo gestore e accesso revocabile senza modificare lo storico.
 
 ## Actors
 
@@ -36,6 +36,7 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 - Menu della gestione guidata dell'anagrafica con una breve descrizione di ogni operazione, che distingua la correzione di nome e cognome dal cambio del numero (REQ-STUDIO-016).
 - Backup a caldo del database di produzione pianificato due volte al giorno, alle 14:30 e alle 22:30, con conservazione di 30 giorni dei soli backup pianificati, solo sul server (REQ-OPS-010).
 - Ripartenza automatica e sana dei servizi di produzione dopo un riavvio del server, senza intervento dell'operatore (REQ-OPS-002).
+- Partecipazioni previste di un cliente a una lezione puntuale fuori dalle sue regole, come lezioni extra e recuperi, programmabili anche prima dell'inizio e annullabili con storico; il cliente risulta atteso a quella lezione (REQ-STUDIO-018).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.4.0
@@ -45,7 +46,7 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati diversi dal backup di REQ-OPS-010; copia dei backup fuori dal server.
 - Disattivazione degli insegnanti dalla pianificazione, dati di profilo oltre a nome, cognome e telefono, compensi e ore lavorate, permessi differenziati sulle operazioni dello studio; sale, attrezzature e capienza. La sola revoca dell'accesso e la gestione dell'anagrafica riservata al gestore sono invece in scope.
 - Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
-- Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale.
+- Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale diverse dalle partecipazioni previste di REQ-STUDIO-018.
 - Anagrafica degli utilizzatori separata dagli insegnanti, più gestori, ruoli configurabili e uso dell'agente da parte di clienti o altre categorie di persone.
 - Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
 - Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server e installazione dei suoi prerequisiti Docker/Compose, DNS, certificati, deploy automatico e monitoraggio avanzato.

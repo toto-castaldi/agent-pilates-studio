@@ -1,0 +1,37 @@
+{
+  "id": "US-019",
+  "title": "Partecipazioni previste: lezioni extra e recuperi",
+  "version": "v0.4.0",
+  "epic": "EPIC-005",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-STUDIO-018",
+    "REQ-STUDIO-002",
+    "REQ-STUDIO-003",
+    "REQ-STUDIO-004",
+    "REQ-STUDIO-006",
+    "REQ-STUDIO-009",
+    "REQ-DB-002",
+    "REQ-NFR-002",
+    "REQ-NFR-005",
+    "REQ-NFR-006"
+  ],
+  "design_references": [
+    "design/data-model",
+    "design/invariants",
+    "design/agent-context",
+    "design/conversation-tests"
+  ],
+  "description": "Come insegnante, voglio programmare in anticipo che un cliente parteciperà a una lezione fuori dalle sue regole, come una lezione extra o un recupero, così che risulti atteso a quella lezione e la presenza si registri poi come per gli altri.",
+  "acceptance_criteria": [
+    "Un messaggio come \"oggi alle 18 si allenerà <nome>\" o \"giovedì alle 10 <nome> recupera\", anche prima dell'inizio, registra una partecipazione prevista per la lezione puntuale con data e orario nel fuso Europe/Rome e autore ricavato dal sistema, senza limite di anticipo, e l'agente riepiloga cliente, data e orario. Con data o orario mancanti o ambigui chiede chiarimenti e non registra; con un nome simile a uno già censito chiede quale cliente intende, e un cliente nuovo è creato secondo REQ-STUDIO-002. Non crea, modifica né disattiva regole e non registra presenze.",
+    "Se il cliente è già atteso per regola o ha già una partecipazione prevista valida per la lezione, l'agente lo segnala e non registra. Una comunicazione come \"<nome> alla fine non viene più\" annulla la partecipazione prevista una sola volta con data, autore e motivo; le partecipazioni annullate restano consultabili come storico ed escluse dagli attesi.",
+    "Il cliente con partecipazione prevista valida è atteso a quella sola lezione: compare nella consultazione della pianificazione distinto dagli attesi per regola, rende esistente la lezione, conta per \"c'erano tutti\" e \"tutti tranne\" senza essere segnalato come non atteso, e rientra nelle registrazioni mancanti e nelle statistiche. Presenze e assenze si registrano come per gli altri clienti, la presenza solo dopo l'inizio; un'assenza anticipata resta possibile secondo REQ-STUDIO-010.",
+    "Una migrazione versionata introduce le partecipazioni previste con unicità per cliente e lezione tra le valide, autore protetto, annullamento unico, divieto di cancellazione, riscrittura e DDL per l'agente, e aggiorna le funzioni dei clienti attesi e delle lezioni esistenti. I test su PostgreSQL reale verificano privilegi, vincoli e l'aggiornamento dallo schema precedente con dati, usando solo dati sintetici; le suite test:db, test:author e test:upgrade sono aggiornate dove pertinente e backup e ripristino restano verificati.",
+    "Il comportamento è descritto in una skill versionata, con il solo instradamento in SOUL.md entro il limite di caratteri e senza duplicazioni nel codice; il design (data-model, invariants) descrive il modello scelto e la decisione aperta è chiusa. Gli scenari sono aggiunti al catalogo conversazionale ed eseguiti con il modello reale, con verifica deterministica del database: partecipazione prevista oggi prima dell'inizio, nome simile già censito, data ambigua, cliente già atteso per regola, annullamento, \"c'erano tutti\" che la include e presenza futura ancora rifiutata."
+  ]
+}
