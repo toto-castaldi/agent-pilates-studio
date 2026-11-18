@@ -12,6 +12,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 ### Added
 
 - Il log del gateway registra con la riga fissa `whatsapp_send_failed` ogni invio WhatsApp rifiutato da Meta o rimasto senza risposta, per le risposte fisse, gestionali e dell'agente, con il solo stato HTTP e il codice d'errore Meta e senza numeri, testi, nomi o credenziali. La guida di produzione spiega come riconoscere un destinatario assente dall'elenco del numero di test (codice 131030) (TEC-049).
+- Backup a caldo pianificato della produzione: lo script `backup-agent-pilates.sh`, installato a mano su `jarvis` e avviato dalla crontab dell'operatore alle 14:30 e alle 22:30 (Europe/Rome), esegue la copia a caldo con l'immagine `ops` della release in esercizio, impedisce esecuzioni sovrapposte, registra l'esito in un log locale senza dati sensibili e conserva per 30 giorni le sole copie pianificate complete, senza toccare backup manuali, quiescenti o incompleti (TEC-050).
 
 ## [0.3.0] - 2026-11-17
 

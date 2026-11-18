@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-050-backup-a-caldo-pianificato",
   "dependencies": [
     "TEC-039",
     "TEC-040"
@@ -27,5 +28,7 @@
     "Senza installazione, con release mancante o con backup fallito lo script termina con codice d'errore e lo registra nel log locale senza credenziali, messaggi o numeri di telefono; un lock impedisce esecuzioni sovrapposte.",
     "Dopo un backup riuscito sono eliminati solo i backup a caldo pianificati completi più vecchi di 30 giorni; backup manuali, quiescenti e incompleti restano intatti, verificato da test con dati sintetici.",
     "La procedura operativa e il design di produzione descrivono installazione, verifica dell'esecuzione, lettura del log, rotazione e disattivazione; CHANGELOG aggiornato."
-  ]
+  ],
+  "outcome": "Script versionato scripts/backup-agent-pilates.sh (da installare a mano come ~/backup-agent-pilates.sh): legge e valida state/release, esegue ops backup-hot di quel solo commit con i mount del launcher, flock non bloccante, log locale 0600 con soli messaggi fissi, marcatore SCHEDULED nella directory hot-* completata e rotazione a 30 giorni dei soli backup pianificati completi. Procedura TEC-035 (verifica del fuso con timedatectl, installazione, crontab 30 14,22, log, rotazione, disattivazione), design di produzione, README e CHANGELOG aggiornati. Verificato con 5 test con Docker sostitutivo e dati sintetici in test:local (56/56) e gate rapido (lint, typecheck, 104 test unitari, build). Non installato né eseguito su jarvis: installazione e prima esecuzione reale restano all'operatore.",
+  "closed_at": "2026-11-17"
 }

@@ -1,6 +1,6 @@
 # TEC-035 — Installazione e aggiornamento della produzione
 
-Procedura manuale per `jarvis`. Sul server non c'è un checkout applicativo: restano Docker 29 o successivo, i volumi, le immagini e la directory privata `/opt/agent-pilates-prod`; è ammesso il solo launcher shell minimale descritto sotto. Ogni comando viene dall'immagine `ops` del commit scelto e parte solo se lanciato dall'operatore. La CI pubblica le immagini ma non contatta il server.
+Procedura manuale per `jarvis`. Sul server non c'è un checkout applicativo: restano Docker 29 o successivo, i volumi, le immagini e la directory privata `/opt/agent-pilates-prod`; sono ammessi soltanto il launcher shell minimale e lo script del backup a caldo pianificato descritti sotto. Ogni comando viene dall'immagine `ops` del commit scelto e parte solo se lanciato dall'operatore; l'unica eccezione è il backup a caldo avviato dalla crontab dell'operatore, che usa l'immagine `ops` della release registrata. La CI pubblica le immagini ma non contatta il server.
 
 **REQ-NFR-004:** non avviare lo streaming remoto dei log del tunnel Cloudflare condiviso, né dal dashboard Live logs né con `cloudflared tail` o strumenti equivalenti. Non usare `docker compose down --volumes` sul progetto di produzione.
 
@@ -161,6 +161,64 @@ Il commit indicato deve coincidere con l'immagine `ops` scelta, non necessariame
 La directory nuova indicata nell'output è `/opt/agent-pilates-prod/backups/hot-<data-UTC>-<commit-ops>-<suffisso>/`, con permessi `0700` e file `0600`: `postgres.dump`, `SHA256SUMS` e `COMPLETE` contenente `hot-postgres-v1`. Il suffisso evita collisioni, anche tra copie nello stesso secondo. Un errore non è un successo: se la directory è già stata creata resta incompleta, con `INCOMPLETE` se è stato possibile crearlo e senza `COMPLETE`; anche una directory priva di entrambi i marcatori è incompleta. Può contenere dati parziali sensibili: non usarla e rimuoverla solo intenzionalmente. Un errore prima della creazione non lascia alcuna directory. Gli output grezzi di Docker, PostgreSQL e checksum sono soppressi.
 
 La copia a caldo è riconoscibile e non viene accettata come backup quiescente da `ops rollback` o `restore.sh`: mancano l'archivio Hermes e il relativo checksum e il marcatore ha un valore diverso. Un `ops` che include TEC-039 esegue il controllo **prima** di fermare la produzione. Le immagini `ops` precedenti possono invece fermare i servizi prima di rifiutare un backup non valido: non indicare mai una copia a caldo al rollback, anche quando si usa l'immagine della release precedente.
+
+### Backup a caldo pianificato
+
+Due volte al giorno, alle 14:30 e alle 22:30 ora Europe/Rome, la crontab dell'operatore su `jarvis` avvia `~/backup-agent-pilates.sh`, copia del file versionato `scripts/backup-agent-pilates.sh` (REQ-OPS-010). Lo script non accetta argomenti: legge lo SHA registrato in `/opt/agent-pilates-prod/state/release` e, se è un solo SHA completo valido, esegue `backup-hot` con l'immagine `ops` di quello stesso commit e gli stessi due mount del launcher. Non sceglie altri commit, non contatta GitHub, non richiede checkout né credenziali e non aggiorna, ferma o riavvia i servizi. La copia è identica a quella manuale qui sopra (dump, checksum e `COMPLETE`); dopo il successo lo script aggiunge nella sola directory nuova il file `SCHEDULED` con valore `scheduled-hot-v1`, che distingue le copie pianificate da quelle manuali. La release in esercizio deve includere TEC-039, che ha introdotto `backup-hot`.
+
+Valori fissi di produzione: directory `/opt/agent-pilates-prod`, log `~/backup-agent-pilates.log` (permessi `0600`), lock `~/.backup-agent-pilates.lock`, conservazione 30 giorni. Le variabili `PILATES_BACKUP_ROOT`, `PILATES_BACKUP_LOG` e `PILATES_BACKUP_LOCK` esistono solo per i test con dati sintetici: non impostarle sul server né nella crontab.
+
+**Fuso orario.** La riga crontab usa l'ora di sistema; `CRON_TZ` non è usato perché non è supportato da tutte le implementazioni di cron. Prima di installare la riga, su `jarvis`:
+
+```bash
+timedatectl show --property=Timezone --value
+```
+
+Se il risultato non è `Europe/Rome`, impostarlo (`sudo timedatectl set-timezone Europe/Rome`) e ricontrollare prima di proseguire; il cambio del fuso orario non riavvia i servizi Docker, ma vale per tutto il server e i suoi job pianificati.
+
+**Installazione o sostituzione dello script.** Dal clone verificato sul PC, con la stessa cautela del launcher:
+
+```bash
+REMOTE_SCRIPT=$(ssh jarvis 'umask 077; mktemp "$HOME/.backup-agent-pilates.XXXXXXXX"') &&
+scp scripts/backup-agent-pilates.sh "jarvis:$REMOTE_SCRIPT" &&
+ssh jarvis bash -s -- "$REMOTE_SCRIPT" <<'REMOTE'
+set -euo pipefail
+candidate=$1
+target="$HOME/backup-agent-pilates.sh"
+bash -n "$candidate"
+if [[ -e $target ]]; then
+  backup=$(mktemp "$HOME/backup-agent-pilates.sh.bak.XXXXXXXX")
+  cp -- "$target" "$backup"
+fi
+chmod 0700 "$candidate"
+mv -T -- "$candidate" "$target"
+"$target" --help
+REMOTE
+```
+
+`--help` non invoca Docker. Copiare solo questo script, non il repository, i segreti o la configurazione locale.
+
+**Riga crontab.** Con `crontab -e` dell'operatore (lo stesso utente che usa il launcher e può accedere a Docker), aggiungere una sola riga:
+
+```cron
+30 14,22 * * * "$HOME/backup-agent-pilates.sh" >/dev/null 2>&1
+```
+
+L'esito resta nel log dello script, non nella posta di cron. Installare o sostituire script e riga non avvia un backup e non tocca i servizi: la prima esecuzione è al successivo orario pianificato. Per provarla subito si può lanciare a mano `~/backup-agent-pilates.sh`, che esegue un vero backup a caldo e la rotazione.
+
+**Verifica e lettura del log.** Dopo un orario pianificato:
+
+```bash
+crontab -l | grep backup-agent-pilates
+tail -n 20 ~/backup-agent-pilates.log
+ls -d /opt/agent-pilates-prod/backups/hot-*/SCHEDULED
+```
+
+Ogni esecuzione riuscita registra `Scheduled hot backup started.`, `Hot backup completed: <directory>` e `Scheduled hot backup finished; expired backups removed: <n>.`; le eliminazioni sono elencate una per riga. Gli orari del log sono in UTC, come i nomi delle directory. Un errore produce righe `Error: …` con messaggi fissi e codice d'uscita diverso da zero: produzione non installata, release assente o non valida, errore dell'immagine `ops` (sono riportati solo i suoi messaggi fissi `Error:`), copia nuova non completa, oppure `Another scheduled backup is running.` se un'esecuzione precedente è ancora attiva. Il log non contiene credenziali, messaggi o numeri di telefono; l'output grezzo di Docker è scartato. Il log cresce di poche righe al giorno e si può troncare intenzionalmente. Dopo un errore si interviene a mano: lo script non ritenta.
+
+**Rotazione.** Solo dopo un backup riuscito sono eliminate le directory `hot-*` con data UTC del nome più vecchia di 30 giorni che hanno `COMPLETE` uguale a `hot-postgres-v1`, `SCHEDULED` uguale a `scheduled-hot-v1` e nessun `INCOMPLETE`. Copie a caldo manuali, backup quiescenti, directory incomplete o con marcatori diversi e collegamenti simbolici non vengono mai toccati. Le copie restano solo su `jarvis`: la copia indipendente fuori sede indicata sopra resta a carico dell'operatore.
+
+**Disattivazione.** Rimuovere la riga con `crontab -e` e verificare con `crontab -l`; un'esecuzione già avviata termina da sola. Lo script e le copie già fatte restano finché non vengono rimossi intenzionalmente; senza la riga crontab non c'è alcuna rotazione.
 
 ### Copia sul PC e ripristino per consultazione
 
