@@ -1,0 +1,32 @@
+{
+  "id": "BUG-004",
+  "title": "Gateway di produzione non riparte dopo il riavvio del server",
+  "version": "v0.4.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Bug",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-OPS-002",
+    "REQ-OPS-005",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "design/production",
+    "design/test-strategy"
+  ],
+  "description": "Dopo un reboot di jarvis il container hermes di produzione resta in Exited (128): Docker non risolve i mount type: image con subpath (SOUL.md, config.yaml, plugin, skill) del container esistente, la policy unless-stopped non ritenta e docker start fallisce sempre. Broker e PostgreSQL, senza mount image, ripartono. Il ripristino attuale è rieseguire a mano il launcher sulla release in esercizio, che ricrea i servizi. La causa interna di Docker non è accertata; la scelta della correzione è una decisione aperta di design.",
+  "found_in": "v0.4.0",
+  "steps_to_reproduce": "Su jarvis, release abd46c31ff3961142611dd0392aa36e4eafaa477, Docker 29.9.2 o 29.10.0, containerd 2.4.2-4, kernel 7.0.0-43: con gateway sano eseguire sudo reboot; dopo il boot docker ps mostra agent-pilates-prod-hermes-1 Exited (128) e docker inspect riporta cannot access path /var/lib/docker/rootfs/overlayfs/<id>/opt/pilates/release/<file>: lstat .../opt: no such file or directory. Si riproduce anche con un container sonda usa-e-getta con gli stessi quattro mount e restart unless-stopped. Non si riproduce con docker stop/start né con systemctl restart docker; container nuovi con gli stessi mount partono. Osservato il 2026-11-18 due volte.",
+  "expected": "Dopo il riavvio del server PostgreSQL, broker e gateway di produzione ripartono sani sulla stessa release e con gli stessi dati, senza intervento dell'operatore.",
+  "actual": "Il gateway resta fermo con Exited (128) e l'agente non risponde finché l'operatore non riesegue ~/update-agent-pilates.sh sulla release in esercizio.",
+  "acceptance_criteria": [
+    "La causa è riprodotta con un container sonda senza dati di produzione e la correzione scelta è registrata nel design (production) e tolta dalle decisioni aperte, concordata con l'utente prima dell'implementazione se introduce un automatismo sul server (REQ-OPS-005, AGENTS.md §3).",
+    "SOUL.md, configurazione, plugin e skill restano in sola lettura per l'agente, provenienti dall'immagine della release e non sostituibili dal volume Hermes.",
+    "Un test di regressione automatico in una suita separata (test:images o equivalente) esercita la ripartenza del gateway dopo l'arresto del demone e dei container in condizioni equivalenti al reboot, fallisce senza la correzione e passa con essa; se la condizione non è riproducibile in CI, il limite è documentato e la prova è manuale.",
+    "Su jarvis, con un reboot reale concordato con l'utente, PostgreSQL, broker e gateway ripartono healthy senza intervento, sulla stessa release; l'esito è registrato in docs/operations senza dati personali.",
+    "La procedura di produzione documenta il ripristino manuale dopo un riavvio finché la correzione non è rilasciata, e il quality gate e le suite della CI passano sul branch del bug."
+  ]
+}

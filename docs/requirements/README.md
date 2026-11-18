@@ -35,6 +35,7 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 - Esito degli invii WhatsApp rifiutati o non accettati, per le risposte fisse, gestionali e dell'agente, registrato nei log con il codice d'errore e senza dati personali, per diagnosticare la mancata consegna (REQ-OPS-003, REQ-NFR-002).
 - Menu della gestione guidata dell'anagrafica con una breve descrizione di ogni operazione, che distingua la correzione di nome e cognome dal cambio del numero (REQ-STUDIO-016).
 - Backup a caldo del database di produzione pianificato due volte al giorno, alle 14:30 e alle 22:30, con conservazione di 30 giorni dei soli backup pianificati, solo sul server (REQ-OPS-010).
+- Ripartenza automatica e sana dei servizi di produzione dopo un riavvio del server, senza intervento dell'operatore (REQ-OPS-002).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.4.0
