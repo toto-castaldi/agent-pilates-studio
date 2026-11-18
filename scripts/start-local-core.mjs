@@ -159,7 +159,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       try {
         let ready = false;
         for (let attempt = 0; attempt < 120; attempt++) {
-          const result = spawnSync('docker', ['exec', container, 'pg_isready', '-U', 'studio_admin', '-d', 'studio'], { env, stdio: 'ignore' });
+          const result = spawnSync('docker', ['exec', container, 'pg_isready', '-h', '127.0.0.1', '-U', 'studio_admin', '-d', 'studio'], { env, stdio: 'ignore' });
           if (!result.error && result.status === 0) { ready = true; break; }
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 1000));
         }
