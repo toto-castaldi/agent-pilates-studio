@@ -33,4 +33,4 @@ Eseguite poi in sequenza: `test:start` 1/1 (avvio locale), `test:images` 2/2 (ba
 
 ## Limiti
 
-Tre giri non dimostrano l'assenza dell'intermittenza, che prima si manifestava in modo occasionale; la causa individuata è però esclusa dalla regressione. La prova su `jarvis` non è stata eseguita: l'aggiornamento applica il nuovo healthcheck ricreando PostgreSQL con `compose.yaml` dell'immagine `ops`, senza passi aggiuntivi. Le suite `test:pi`, `test:pi-package` e `test:claude`, estranee alla modifica, sono verificate dalla CI del branch.
+Tre giri non dimostrano l'assenza dell'intermittenza, che prima si manifestava in modo occasionale; la causa individuata è però esclusa dalla regressione. La prova su `jarvis` non è stata eseguita: l'aggiornamento applica il nuovo healthcheck ricreando PostgreSQL con `compose.yaml` dell'immagine `ops`, senza passi aggiuntivi. La CI del branch (run 44423248171, commit della correzione e dei documenti) ha superato quality gate e tutte le suite di integrazione, comprese `test:pi`, `test:pi-package` e `test:claude`, non eseguite in locale.
