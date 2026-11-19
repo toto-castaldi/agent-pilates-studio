@@ -1,4 +1,5 @@
--- Frozen pre-reduction SOUL query; independent regression oracle (TEC-046).
+-- Frozen pre-reduction SOUL query; independent regression oracle (TEC-046),
+-- extended with the valid planned participations of US-019.
 WITH days AS (
   SELECT $1::text::date + n AS day FROM generate_series(0, $2::text::date - $1::text::date) AS n
 ), lessons AS (
@@ -14,6 +15,9 @@ WITH days AS (
   WHERE cancelled_at IS NULL AND lesson_date BETWEEN $1::text::date AND $2::text::date
   UNION
   SELECT lesson_date, start_time FROM app.teacher_assignments
+  WHERE cancelled_at IS NULL AND lesson_date BETWEEN $1::text::date AND $2::text::date
+  UNION
+  SELECT lesson_date, start_time FROM app.planned_participations
   WHERE cancelled_at IS NULL AND lesson_date BETWEEN $1::text::date AND $2::text::date
 ), teaching AS (
   SELECT l.lesson_date, l.start_time,

@@ -25,12 +25,15 @@ test('studio context is mounted read-only and matches the versioned schema witho
   // in SOUL matches either its table or its view, and the moved tables keep
   // every column of the projection plus only the private author numbers.
   const unified = await readFile('prisma/migrations/20261117000000_unified_sender_identity/migration.sql', 'utf8');
+  // US-019 creates its private table and projection directly in one migration.
+  const planned = await readFile('prisma/migrations/20261119000000_planned_participations/migration.sql', 'utf8');
   const expected: Record<string, string[]> = {
     clients: ['id', 'first_name', 'last_name', 'created_at', 'created_by_name'],
     training_rules: ['id', 'rule_text', 'created_at', 'created_by_name', 'deactivated_at', 'deactivated_by_name', 'deactivation_reason'],
     rule_slots: ['rule_id', 'weekday', 'start_time'],
     rule_clients: ['rule_id', 'client_id'],
     attendance: ['id', 'client_id', 'lesson_date', 'start_time', 'outcome', 'created_at', 'created_by_name', 'cancelled_at', 'cancelled_by_name', 'cancellation_reason'],
+    planned_participations: ['id', 'client_id', 'lesson_date', 'start_time', 'created_at', 'created_by_name', 'cancelled_at', 'cancelled_by_name', 'cancellation_reason'],
     teachers: ['id', 'first_name', 'last_name', 'created_at', 'created_by_name'],
     teacher_rules: ['id', 'teacher_id', 'rule_text', 'created_at', 'created_by_name', 'deactivated_at', 'deactivated_by_name', 'deactivation_reason'],
     teacher_rule_intervals: ['rule_id', 'weekday', 'start_time_min', 'start_time_max', 'is_active'],
@@ -41,10 +44,11 @@ test('studio context is mounted read-only and matches the versioned schema witho
     assert.ok(tableLine, `missing table ${table}`);
     const mentioned = [...tableLine.matchAll(/`([a-z_]+)`/g)].map((match) => match[1]);
     assert.deepEqual(mentioned, columns, `unexpected columns for ${table}`);
-    const definition = migration.match(new RegExp(`CREATE TABLE app\\.${table} \\(([\\s\\S]*?)\\n\\);`))?.[1];
+    const definition = migration.match(new RegExp(`CREATE TABLE app\\.${table} \\(([\\s\\S]*?)\\n\\);`))?.[1]
+      ?? planned.match(new RegExp(`CREATE TABLE studio_private\\.${table} \\(([\\s\\S]*?)\\n\\);`))?.[1];
     assert.ok(definition, `migration lacks ${table}`);
     const defined = [...definition.matchAll(/^\s{2}([a-z_]+)\s+(?:bigint|smallint|text|timestamptz|date|time|boolean)\b/gm)].map((match) => match[1]);
-    const view = unified.match(new RegExp(`CREATE VIEW app\\.${table} AS\\s+SELECT ([\\s\\S]*?) FROM studio_private\\.${table};`))?.[1];
+    const view = [unified, planned].map((source) => source.match(new RegExp(`CREATE VIEW app\\.${table} AS\\s+SELECT ([\\s\\S]*?) FROM studio_private\\.${table};`))?.[1]).find(Boolean);
     if (view) {
       assert.deepEqual(view.split(',').map((column) => column.trim()), columns, `projection columns differ for ${table}`);
       assert.deepEqual(defined.filter((column) => !column.endsWith('_phone')), columns, `schema columns differ for ${table}`);
@@ -72,7 +76,7 @@ test('studio context is mounted read-only and matches the versioned schema witho
   assert.match(soul, /telefoni dell'anagrafica e degli autori non sono leggibili/);
   const skillNames = await readdir('hermes/skills');
   const contexts = [soul, ...await Promise.all(skillNames.map((name) => readFile(`hermes/skills/${name}/SKILL.md`, 'utf8')))];
-  const functions = await readFile('prisma/migrations/20261116000000_lesson_functions/migration.sql', 'utf8');
+  const functions = `${await readFile('prisma/migrations/20261116000000_lesson_functions/migration.sql', 'utf8')}\n${planned}`;
   for (const context of contexts) {
     for (const match of context.matchAll(/(?:FROM|JOIN|UPDATE|INTO)\s+app\.([a-z_]+)(?!\w|\s*\()/gi)) {
       assert.ok(expected[match[1]], `Unknown table in context: ${match[1]}`);

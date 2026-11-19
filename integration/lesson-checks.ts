@@ -24,6 +24,12 @@ export async function checkLessonFunctions(migrator: Client, broker: Client, tea
       await migrator.query('INSERT INTO app.rule_slots VALUES ($1,$2,$3)', [rule, weekday, time]);
       if (deactivated) await migrator.query("UPDATE app.training_rules SET deactivated_at=$2, deactivation_reason='Synthetic end' WHERE id=$1", [rule, deactivated]);
     }
+    // Planned participations (US-019): a valid extra lesson, a cancelled one and
+    // one for a lesson where the client is already expected by rule.
+    for (const [day, time, cancelled] of [['2026-03-04', '18:00', false], ['2026-03-11', '18:00', true], ['2026-03-02', '09:00', false]] as const) {
+      const planned = (await migrator.query('INSERT INTO app.planned_participations (client_id,lesson_date,start_time) VALUES ($1,$2,$3) RETURNING id', [client, day, time])).rows[0].id;
+      if (cancelled) await migrator.query("UPDATE app.planned_participations SET cancelled_at=clock_timestamp(), cancellation_reason='Synthetic cancel' WHERE id=$1", [planned]);
+    }
     await migrator.query('ALTER TABLE studio_private.teacher_rules DISABLE TRIGGER teacher_rules_author');
     await migrator.query('ALTER TABLE studio_private.teacher_assignments DISABLE TRIGGER teacher_assignments_author');
     await migrator.query('ALTER TABLE studio_private.attendance DISABLE TRIGGER attendance_author');
@@ -60,6 +66,16 @@ export async function checkLessonFunctions(migrator: Client, broker: Client, tea
     assert.equal(await expected('2026-03-13', '10:00'), 0, 'deactivation boundary is strict');
     assert.equal(await expected('2026-03-29', '02:30'), 0, 'spring gap must be excluded');
     assert.equal(await expected('2026-10-25', '02:30'), 1, 'autumn repeated hour counts once');
+    const sources = async (day: string, time: string) => (await migrator.query(
+      'SELECT source FROM app.expected_clients($1,$1) WHERE client_id=$2 AND start_time=$3 ORDER BY source', [day, client, time])).rows.map((row) => row.source);
+    assert.deepEqual(await sources('2026-03-04', '18:00'), ['planned'], 'a valid planned participation makes the client expected');
+    assert.deepEqual(await sources('2026-03-11', '18:00'), [], 'a cancelled planned participation is not expected');
+    assert.deepEqual(await sources('2026-03-02', '09:00'), ['rule'], 'the rule wins over a planned participation of the same lesson');
+    assert.deepEqual(await sources('2026-03-09', '09:00'), ['rule']);
+    const exists = async (day: string, time: string) => (await migrator.query(
+      'SELECT count(*)::int AS n FROM app.existing_lessons($1,$1) WHERE start_time=$2', [day, time])).rows[0].n;
+    assert.equal(await exists('2026-03-04', '18:00'), 1, 'a planned participation creates the lesson');
+    assert.equal(await exists('2026-03-11', '18:00'), 0);
     const march = (await migrator.query("SELECT * FROM app.lesson_teachers('2026-03-01','2026-03-31')")).rows;
     assert.ok(march.some((row) => row.expected_id === teacher && row.assigned_id === substitute && row.teacher_id === substitute));
     assert.ok(march.some((row) => row.expected_id === teacher && !row.assigned_id && row.teacher_id === teacher));

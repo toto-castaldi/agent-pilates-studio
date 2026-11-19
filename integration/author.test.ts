@@ -260,6 +260,19 @@ test('database identities admit WhatsApp senders and bind authors through the is
     assert.deepEqual((await migrator.query("SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason FROM studio_private.attendance WHERE lesson_date = '2099-01-01'")).rows[0], { cancelled_by_phone: '15555550103', cancelled_by_name: BETA, cancellation_reason: 'synthetic future cancellation' });
     await waitObservation((entry) => entry.user.includes('future-absence-cancel') && entry.last_role === 'tool');
     await delay(2000);
+    // Planned participations (US-019): the trusted author and the system
+    // cancellation instant replace the values declared by the model.
+    assert.equal((await gatewayPost(body('15555550102', 'WhatsAppProfile Alpha', 'synthetic-planned-insert', 'planned-insert'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.planned_participations', 1);
+    assert.deepEqual((await migrator.query('SELECT created_by_phone, created_by_name FROM studio_private.planned_participations')).rows[0], { created_by_phone: '15555550102', created_by_name: ALPHA });
+    await waitObservation((entry) => entry.user.includes('planned-insert') && entry.last_role === 'tool');
+    await delay(2000);
+    assert.equal((await gatewayPost(body('15555550103', 'WhatsAppProfile Beta', 'synthetic-planned-cancel', 'planned-cancel'))).status, 200);
+    await waitFor('SELECT count(*) FROM app.planned_participations WHERE cancelled_at IS NOT NULL', 1);
+    assert.deepEqual((await migrator.query("SELECT cancelled_by_phone, cancelled_by_name, cancellation_reason, cancelled_at > created_at AS system_instant FROM studio_private.planned_participations")).rows[0],
+      { cancelled_by_phone: '15555550103', cancelled_by_name: BETA, cancellation_reason: 'synthetic planned cancellation', system_instant: true });
+    await waitObservation((entry) => entry.user.includes('planned-cancel') && entry.last_role === 'tool');
+    await delay(2000);
     const teacherStart = (await migrator.query('SELECT clock_timestamp() AS now')).rows[0].now as Date;
     assert.deepEqual((await Promise.all([
       gatewayPost(body('15555550102', 'WhatsAppProfile Alpha', 'synthetic-teacher-alpha', 'teacher-create-alpha')),
@@ -556,6 +569,7 @@ test('database identities admit WhatsApp senders and bind authors through the is
     await agent1.query('ROLLBACK');
     await assert.rejects(agent1.query("INSERT INTO app.attendance (client_id, lesson_date, start_time, outcome) SELECT id, '2020-01-01', '10:00', 'present' FROM app.clients LIMIT 1"), { code: '42501' });
     await assert.rejects(agent1.query("UPDATE app.attendance SET cancelled_at = clock_timestamp(), cancellation_reason = 'forged' WHERE id = (SELECT id FROM app.attendance LIMIT 1)"), { code: '42501' });
+    await assert.rejects(agent1.query("INSERT INTO app.planned_participations (client_id, lesson_date, start_time) SELECT id, '2099-03-03', '10:00' FROM app.clients LIMIT 1"), { code: '42501' });
     for (const sql of [
       "INSERT INTO app.teachers (first_name, last_name) VALUES ('Untrusted', 'Synthetic')",
       "INSERT INTO app.teacher_rules (teacher_id, rule_text) SELECT id, 'Synthetic untrusted' FROM app.teachers LIMIT 1",

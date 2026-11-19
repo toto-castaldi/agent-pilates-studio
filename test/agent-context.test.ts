@@ -11,9 +11,9 @@ test('the always-present context fits without Hermes truncation and retains shar
   }
 });
 
-test('the six detail skills have only declarative name and short description metadata', () => {
+test('the seven detail skills have only declarative name and short description metadata', () => {
   assert.deepEqual(Object.keys(skills).sort(), ['studio-insegnanti-consultazioni', 'studio-insegnanti-indicazioni',
-    'studio-insegnanti-regole', 'studio-presenze', 'studio-presenze-consultazioni', 'studio-regole-clienti']);
+    'studio-insegnanti-regole', 'studio-partecipazioni-previste', 'studio-presenze', 'studio-presenze-consultazioni', 'studio-regole-clienti']);
   for (const [name, content] of Object.entries(skills)) {
     const metadata = content.match(/^---\nname: ([^\n]+)\ndescription: ([^\n]+)\n---\n/);
     assert.ok(metadata, `Unexpected metadata: ${name}`);

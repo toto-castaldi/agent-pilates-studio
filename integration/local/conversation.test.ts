@@ -58,6 +58,14 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
       if (row.outcome !== 'excused_absence') assert.ok(createdAt > Date.parse(`${resolveDate(row.lessonDate)}T${row.time}:00Z`));
       if (row.cancelledAt) assert.ok(resolveInstant(row.cancelledAt) > createdAt);
     }
+    // Planned participations (US-019): synthetic clients of the setup, valid
+    // lesson dates and times; $LATER_TIME is a start later today.
+    const plannedTime = /^(?:(?:[01]\d|2[0-3]):[0-5]\d|\$LATER_TIME)$/;
+    for (const row of scenario.setup?.planned ?? []) {
+      assert.ok(scenario.setup.clients.some((client: { firstName: string; lastName: string }) => `${client.firstName} ${client.lastName}` === row.client));
+      assert.match(row.lessonDate, fixtureDate);
+      assert.match(row.time, plannedTime);
+    }
     for (const row of scenario.setup?.assignments ?? []) {
       assert.ok(scenario.setup.teachers.some((person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}` === row.teacher));
       assert.match(row.lessonDate, fixtureDate);
@@ -127,6 +135,16 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
             assert.equal(row.cancellation.authorName, registered);
           }
         }
+        for (const row of turn.attendanceExpected.planned ?? []) {
+          assert.ok(row.client && fixtureDate.test(row.lessonDate));
+          assert.match(row.time, plannedTime);
+          assert.equal(row.authorPhone, scenario.sender);
+          assert.equal(row.authorName, registered);
+          if (row.cancellation) {
+            assert.equal(row.cancellation.authorPhone, scenario.sender);
+            assert.equal(row.cancellation.authorName, registered);
+          }
+        }
         for (const person of turn.attendanceExpected.addedClients) {
           assert.ok(person.firstName && person.lastName);
           assert.equal(person.authorPhone, scenario.sender);
@@ -155,6 +173,10 @@ test('conversation catalog is synthetic, complete and excluded from CI', async (
     assert.ok(ids.has(id), `Missing scenario ${id}`);
   }
   for (const id of ['assenza-anticipata-singola-annullamento', 'assenza-anticipata-ambigua-non-attesa', 'assenza-anticipata-periodo', 'assenza-anticipata-conflitto-presenza', 'assenza-anticipata-conflitto-assenza', 'assenza-anticipata-conflitto-tutti-tranne', 'assenza-anticipata-conflitto-esplicito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
+  // Planned participations: today before the start with future presence
+  // refused and cancellation, similar name, ambiguous date, already expected
+  // by rule and «c'erano tutti» including the planned client.
+  for (const id of ['partecipazione-prevista-oggi-annullamento', 'partecipazione-prevista-nome-simile', 'partecipazione-prevista-data-ambigua', 'partecipazione-prevista-gia-attesa', 'partecipazione-prevista-tutti']) assert.ok(ids.has(id), `Missing scenario ${id}`);
   for (const id of ['insegnanti-fasce-e-orari', 'insegnanti-cognome-e-riconoscimento', 'insegnanti-sovrapposizione-conferma', 'insegnanti-sovrapposizione-stesso', 'insegnanti-disattivazione-parziale', 'insegnanti-mittente-collegato', 'insegnante-sconosciuto-regola', 'insegnanti-io-nome-censito']) assert.ok(ids.has(id), `Missing scenario ${id}`);
   // Unified identity (TEC-042): registered name instead of the profile, false
   // declared identity, «io» for rules and assignments, system author and

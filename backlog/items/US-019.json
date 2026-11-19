@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "User Story",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "us/US-019-partecipazioni-previste",
   "dependencies": [],
   "requirements": [
     "REQ-STUDIO-018",
@@ -33,5 +34,7 @@
     "Il cliente con partecipazione prevista valida è atteso a quella sola lezione: compare nella consultazione della pianificazione distinto dagli attesi per regola, rende esistente la lezione, conta per \"c'erano tutti\" e \"tutti tranne\" senza essere segnalato come non atteso, e rientra nelle registrazioni mancanti e nelle statistiche. Presenze e assenze si registrano come per gli altri clienti, la presenza solo dopo l'inizio; un'assenza anticipata resta possibile secondo REQ-STUDIO-010.",
     "Una migrazione versionata introduce le partecipazioni previste con unicità per cliente e lezione tra le valide, autore protetto, annullamento unico, divieto di cancellazione, riscrittura e DDL per l'agente, e aggiorna le funzioni dei clienti attesi e delle lezioni esistenti. I test su PostgreSQL reale verificano privilegi, vincoli e l'aggiornamento dallo schema precedente con dati, usando solo dati sintetici; le suite test:db, test:author e test:upgrade sono aggiornate dove pertinente e backup e ripristino restano verificati.",
     "Il comportamento è descritto in una skill versionata, con il solo instradamento in SOUL.md entro il limite di caratteri e senza duplicazioni nel codice; il design (data-model, invariants) descrive il modello scelto e la decisione aperta è chiusa. Gli scenari sono aggiunti al catalogo conversazionale ed eseguiti con il modello reale, con verifica deterministica del database: partecipazione prevista oggi prima dell'inizio, nome simile già censito, data ambigua, cliente già atteso per regola, annullamento, \"c'erano tutti\" che la include e presenza futura ancora rifiutata."
-  ]
+  ],
+  "outcome": "Partecipazioni previste di lezioni extra e recuperi: migrazione 20261119000000 con tabella privata, proiezione app.planned_participations senza telefoni, autore protetto, annullamento unico con istante di sistema, unicità tra le valide, divieto di cancellazione, riscrittura e DDL; expected_clients con colonna source (rule/planned) ed existing_lessons estese; settima skill studio-partecipazioni-previste con instradamento in SOUL.md (11.535 caratteri) e skill delle presenze, consultazioni, regole e indicazioni allineate; decisione aperta chiusa in data-model e invariants. Verificati test:db, test:upgrade, test:hermes, test:local; test:author 6/6 in sequenza (l'esecuzione parallela fallisce nel bootstrap dei ruoli, intermittenza preesistente di TEC-043/TEC-046). Cinque scenari nuovi OK col modello reale. Confronto dell'intero catalogo con openai/gpt-6.1-terra: origin/main 159b239 47/56 OK, branch 54/61 OK (cinque nuovi OK); sui 56 comuni 45 OK in entrambi, 4 da errore a OK, 5 in errore in entrambi (instabilità preesistenti), 2 da OK a errore (consultazione-lezioni-senza-insegnante e consultazione-presenze-statistiche, solo testo) non riprodotti in una riesecuzione ciascuno e non attribuiti a US-019, quindi senza correzioni. Evidenze in docs/operations/US-019-prove.md.",
+  "closed_at": "2026-11-19"
 }

@@ -13,6 +13,7 @@
 - L'autore di ogni scrittura viene dal contesto protetto registrato dal broker (`webhook-trust`): i trigger ne controllano scadenza, associazione e identità corrente e sovrascrivono autore e istante dichiarati con il numero autenticato, il nome censito e l'orologio del database. I numeri degli autori non sono leggibili dal ruolo dell'agente (`data-model`). Senza contesto valido l'operazione è rifiutata. Un GUC modificabile dall'agente non è fonte di fiducia e l'autore dei clienti non è modificabile.
 - **Regole di allenamento:** l'agente non ha `DELETE` e può aggiornare solo i campi di disattivazione; trigger rifiutano `DELETE` e `TRUNCATE` anche al ruolo di migrazione e una seconda disattivazione. Un vincolo richiede data, numero e motivo coerenti.
 - **Presenze e assenze:** inserimenti già annullati, annullamenti incompleti, seconda modifica e riscrittura sono rifiutati; `DELETE` e `TRUNCATE` sono rifiutati anche al migratore. L'agente può aggiornare solo i campi di annullamento.
+- **Partecipazioni previste:** stessi divieti delle presenze, anche per il normale DML del migratore; l'istante di annullamento è fissato dal database e una partecipazione annullata non si modifica più. Al più una partecipazione prevista valida per cliente e lezione.
 - **Insegnanti, regole e indicazioni:** le regole si disattivano e le indicazioni si annullano una sola volta, con motivo non vuoto; solo questi campi di transizione sono aggiornabili dall'agente. DELETE e TRUNCATE sono rifiutati anche al migratore e i trigger proteggono dalla riscrittura tramite il normale DML del migratore. Soltanto le funzioni gestionali protette del gestore correggono nome, cognome, telefono e accesso di un insegnante, senza cambiare ID e autore originario.
 
 ## Date e orari
@@ -20,7 +21,7 @@
 - Date e ore delle lezioni sono convertite con `AT TIME ZONE 'Europe/Rome'` e confrontate con `clock_timestamp()` del database, che deve essere sincronizzato.
 - Per lezioni non ancora iniziate è ammessa solo `excused_absence`, senza limite di anticipo; presenze e assenze non giustificate future sono rifiutate.
 - Gli orari locali inesistenti al cambio primaverile sono rifiutati; nell'ora ripetuta autunnale vale il secondo istante, in ora solare, e una registrazione è ammessa solo quando anche quell'istante è iniziato.
-- Le indicazioni ammettono lezioni passate e future, ma rifiutano date non finite, orari con secondi o 24:00 e orari locali inesistenti.
+- Le indicazioni e le partecipazioni previste ammettono lezioni passate e future, ma rifiutano date non finite, orari con secondi o 24:00 e orari locali inesistenti. Una partecipazione prevista non consente di registrare una presenza prima dell'inizio.
 
 ## Intervalli delle regole degli insegnanti
 
