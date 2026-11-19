@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "fix/BUG-005-bootstrap-ruoli-inizializzazione-postgresql",
   "dependencies": [],
   "requirements": [
     "REQ-OPS-001",
@@ -30,5 +31,7 @@
     "Un test di regressione automatico in una suite separata riproduce la finestra di inizializzazione su un volume vuoto con soli dati sintetici: fallisce con il healthcheck precedente, ad esempio rilevando un esito healthy mentre il TCP non è raggiungibile o forzando un'inizializzazione lenta, e passa con la correzione; se la finestra non è riproducibile in modo deterministico, il limite è documentato e la verifica è manuale.",
     "npm run test:author eseguito più volte con i file in parallelo, insieme a test:db, test:hermes e test:upgrade, passa senza 'Database role setup failed.'; gli esiti, compresi eventuali fallimenti, sono registrati in docs/operations senza dati personali.",
     "Avvio locale, aggiornamento della produzione e ripristino da backup su volume vuoto restano funzionanti; l'aggiornamento non richiede passi manuali aggiuntivi all'operatore e il quality gate e le suite della CI passano sul branch del bug."
-  ]
+  ],
+  "outcome": "Healthcheck di PostgreSQL via TCP (pg_isready -h 127.0.0.1) in compose.yaml per sviluppo e produzione e nell'attesa di start:local; db-bootstrap attende il server con al più 15 tentativi brevi senza output di psql. Regressione deterministica integration/postgres-readiness.test.ts in test:db (blocco di initdb su volume vuoto): fallisce col healthcheck precedente e passa con la correzione. Tre giri paralleli di test:author, test:db, test:hermes e test:upgrade senza 'Database role setup failed.', più test:start, test:images, test:local e test:compaction verdi; CI del branch verde; esiti in docs/operations/BUG-005-prove.md. Prova su jarvis non eseguita.",
+  "closed_at": "2026-11-19"
 }

@@ -30,7 +30,8 @@ services:
         max-size: "1m"
         max-file: "3"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U studio_admin -d studio"]
+      # TCP only: initdb's temporary server listens on the Unix socket alone.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U studio_admin -d studio"]
       interval: 2s
       timeout: 3s
       retries: 30
