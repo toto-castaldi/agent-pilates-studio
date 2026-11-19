@@ -1,0 +1,26 @@
+{
+  "id": "TEC-051",
+  "title": "Configurazione rapida di modello e livello di thinking",
+  "version": "v0.4.0",
+  "epic": "EPIC-002",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P2",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-AGENT-002"
+  ],
+  "design_references": [
+    "design/configuration",
+    "design/integrations"
+  ],
+  "description": "Oggi il modello si sceglie con PILATES_MODEL e il livello di thinking non è configurabile (vale il predefinito di Hermes). Aggiungere PILATES_REASONING_EFFORT accanto a PILATES_MODEL, applicato a agent.reasoning_effort di Hermes, con cambio effettivo al riavvio del gateway. Verificare e, se necessario, bloccare i comandi /model e /reasoning sul canale WhatsApp.",
+  "acceptance_criteria": [
+    "PILATES_REASONING_EFFORT è accettata in .env da start:local e in prod.env da scripts/prod.sh, documentata in .env.example, README e design; senza valore vale un predefinito documentato.",
+    "Il valore configurato è applicato a agent.reasoning_effort di Hermes per le risposte del modello; un valore fuori dai livelli ammessi arresta l'avvio con un errore che non espone segreti.",
+    "Cambiare PILATES_MODEL o PILATES_REASONING_EFFORT e riavviare o ricreare il gateway applica i nuovi valori senza ricostruire le immagini, senza perdere dati o cronologia e aggiornando la soglia di compattazione del modello.",
+    "I comandi /model e /reasoning, comprese varianti e alias, inviati via WhatsApp da qualunque utilizzatore, gestore incluso, non cambiano modello né livello di thinking e non raggiungono il modello; gli altri comandi slash restano invariati.",
+    "Test di unità coprono validazione e propagazione della configurazione; test:start o test:author verificano con gateway reale e sostituti sintetici l'applicazione dopo il riavvio e il rifiuto dei comandi."
+  ]
+}

@@ -4,6 +4,7 @@
   "state": "Open",
   "scope_changes": [
     "2026-11-18: su accordo dell'utente, US-019 è aggiunto alla v0.4.0 per programmare partecipazioni previste fuori dalle regole, come lezioni extra e recuperi, anche prima dell'inizio della lezione (REQ-STUDIO-018).",
-    "2026-11-19: su accordo dell'utente, BUG-005 è aggiunto alla v0.4.0 per correggere il bootstrap dei ruoli che fallisce durante l'inizializzazione di PostgreSQL su volume vuoto (REQ-OPS-002, REQ-NFR-001)."
+    "2026-11-19: su accordo dell'utente, BUG-005 è aggiunto alla v0.4.0 per correggere il bootstrap dei ruoli che fallisce durante l'inizializzazione di PostgreSQL su volume vuoto (REQ-OPS-002, REQ-NFR-001).",
+    "2026-11-19: Aggiunta la configurazione rapida di modello e livello di thinking dell'assistente (REQ-AGENT-002), su richiesta dell'utente."
   ]
 }

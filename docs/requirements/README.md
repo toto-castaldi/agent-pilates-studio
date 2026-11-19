@@ -37,6 +37,7 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 - Backup a caldo del database di produzione pianificato due volte al giorno, alle 14:30 e alle 22:30, con conservazione di 30 giorni dei soli backup pianificati, solo sul server (REQ-OPS-010).
 - Ripartenza automatica e sana dei servizi di produzione dopo un riavvio del server, senza intervento dell'operatore (REQ-OPS-002).
 - Partecipazioni previste di un cliente a una lezione puntuale fuori dalle sue regole, come lezioni extra e recuperi, programmabili anche prima dell'inizio e annullabili con storico; il cliente risulta atteso a quella lezione (REQ-STUDIO-018).
+- Scelta rapida del modello e del livello di thinking dell'assistente nella configurazione privata, effettiva al riavvio del gateway e non modificabile dalla chat (REQ-AGENT-002).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.4.0
