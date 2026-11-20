@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { parse } from 'yaml';
 
-test('studio context is mounted read-only and matches the versioned schema without secrets', async () => {
+test('studio context is served read-only from the image and matches the versioned schema without secrets', async () => {
   const soul = await readFile('hermes/SOUL.md', 'utf8');
   const requirements = await readFile('docs/requirements/REQ-AGENT-005.md', 'utf8');
   const name = requirements.match(/il nome dell'agente è ([\p{L}]+)\./u)?.[1];
@@ -19,8 +19,12 @@ test('studio context is mounted read-only and matches the versioned schema witho
     'prisma/migrations/20261111000000_teachers/migration.sql',
   ].map((file) => readFile(file, 'utf8')))).join('\n');
   const compose = parse(await readFile('compose.yaml', 'utf8')) as { services: { hermes: { volumes: (string | { type: string; target: string; image?: { subpath: string } })[] } } };
-  const soulMount = compose.services.hermes.volumes.find((entry) => typeof entry !== 'string' && entry.target === '/opt/data/SOUL.md');
-  assert.deepEqual(typeof soulMount === 'object' && [soulMount.type, soulMount.image?.subpath], ['image', 'opt/pilates/release/SOUL.md']);
+  // BUG-004: no image mounts, which do not survive a host reboot; the image
+  // links its own release files into the volume after the Hermes setup.
+  assert.deepEqual(compose.services.hermes.volumes, ['hermes_data:/opt/data']);
+  const dockerfile = await readFile('hermes/Dockerfile', 'utf8');
+  assert.match(dockerfile, /^COPY --chmod=0755 hermes\/release-links\.sh \/etc\/cont-init\.d\/016-pilates-release$/m);
+  assert.match(dockerfile, /^COPY hermes\/skills \/opt\/pilates\/release\/skills$/m);
   // The model sees phone-free projections (TEC-042): every app relation listed
   // in SOUL matches either its table or its view, and the moved tables keep
   // every column of the projection plus only the private author numbers.
@@ -105,8 +109,6 @@ test('studio context is mounted read-only and matches the versioned schema witho
   }
   assert.deepEqual(config.platform_toolsets.whatsapp_cloud, ['studio-postgres', 'skills']);
   assert.equal(config.auxiliary.background_review.enabled, false);
-  const skillMount = compose.services.hermes.volumes.find((entry) => typeof entry !== 'string' && entry.target === '/opt/data/skills');
-  assert.deepEqual(typeof skillMount === 'object' && [skillMount.type, skillMount.image?.subpath], ['image', 'opt/pilates/release/skills']);
   assert.doesNotMatch(soul, /(?:sk-or-v1-|sk-proj-|ghp_|xox[baprs]-)[a-z0-9-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b\d{10,15}\b/i);
   assert.doesNotMatch(soul, /(?:password|api[_ -]?key|token|secret)\s*[:=]\s*["']?[^\s"']{8,}/i);
   for (const file of ['hermes/config.yaml', 'hermes/pilates_trusted.py']) {

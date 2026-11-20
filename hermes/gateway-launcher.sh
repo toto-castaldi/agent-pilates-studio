@@ -4,6 +4,12 @@
 set -eu
 case " $* " in
   *" gateway run "*)
+  # The release files must be the image's own (release-links.sh) or an
+  # explicit Compose mount; never a copy in the volume or Hermes' defaults.
+  for name in SOUL.md config.yaml plugins skills; do
+    [ "$(readlink "/opt/data/$name")" = "/opt/pilates/release/$name" ] && continue
+    awk -v path="/opt/data/$name" '$5 == path { found = 1 } END { exit !found }' /proc/self/mountinfo || exit 1
+  done
   unset PYTHONPATH PYTHONHOME
   export HERMES_SITE=/opt/hermes/.venv/lib/python3.14/site-packages
   export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${XDG_CACHE_HOME:-$HOME/.cache}/hermes-pycache}"

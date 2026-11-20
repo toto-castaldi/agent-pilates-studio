@@ -42,5 +42,4 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 
 ## Open decisions
 
-- **Mount `type: image` e riavvio del server** — dopo un reboot di `jarvis` il gateway non riparte perché i mount `subpath` dall'immagine non si risolvono più; da scegliere tra un montaggio dei file dell'agente che non dipenda dai mount `image` e una ricreazione dei servizi all'avvio compatibile con REQ-OPS-005; in carico al BUG della v0.4.0.
 - **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.4.0.
