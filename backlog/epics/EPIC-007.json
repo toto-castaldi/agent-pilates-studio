@@ -1,0 +1,5 @@
+{
+  "id": "EPIC-007",
+  "title": "Osservabilità e metriche d'uso",
+  "scope": "metriche d'uso dell'agente per turno, loro registrazione protetta nel database e dashboard di consultazione per l'operatore."
+}

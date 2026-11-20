@@ -1,0 +1,31 @@
+{
+  "id": "SPIKE-004",
+  "title": "Fonti e punto di misura delle metriche d'uso",
+  "version": "v0.5.0",
+  "epic": "EPIC-007",
+  "module": "MOD-001",
+  "type": "Spike",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-OPS-011",
+    "REQ-OPS-012"
+  ],
+  "design_references": [
+    "design/integrations",
+    "design/compaction",
+    "design/data-model",
+    "design/production",
+    "design/security"
+  ],
+  "description": "Stabilire, con Hermes alla versione fissata e sostituti sintetici, da dove ricavare ogni dato di REQ-OPS-011 e come proteggerlo, prima di implementare raccolta e dashboard. Risponde alla decisione aperta sulle metriche d'uso del design.",
+  "acceptance_criteria": [
+    "Il rapporto docs/spikes/SPIKE-NNN indica per ogni dato di REQ-OPS-011 (tipo di turno, istanti e tempi complessivi e del modello, modello, livello di thinking, token, contesto in token e percentuale della finestra, compattazioni, chiamate ai tool, costo OpenRouter, esito dell'invio) la fonte (hook o plugin Hermes, broker, risposta OpenRouter) e il punto di misura, verificati con un gateway reale e un provider sintetico, e quali dati non sono disponibili.",
+    "Il rapporto confronta almeno due modi di ottenere il costo della generazione (campo usage della risposta OpenRouter, endpoint delle generazioni) per completezza, ritardo e chiamate aggiuntive, e ne raccomanda uno.",
+    "Il rapporto propone lo schema degli eventi e il modo di scriverli senza che l'agente possa leggerli, modificarli o dichiararne i valori con il proprio accesso SQL o i tool, indicando dove risiedono le credenziali di scrittura rispetto al processo dell'agente.",
+    "Il rapporto propone immagine e versione fissata di Grafana, provisioning versionato di sorgente dati e dashboard, ruolo di sola lettura, credenziali nella configurazione privata e porta solo loopback per produzione e sviluppo, con l'impatto su launcher, backup e CI.",
+    "Il rapporto verifica che misurazione e scrittura non aggiungano al log, al modello o alla cronologia numeri di telefono, testi o nomi (REQ-NFR-002) e stima il ritardo aggiunto al turno.",
+    "Le scelte sono registrate nel design, la decisione aperta è chiusa o ridotta a quanto resta, e le attività successive sono aggiornate se il rapporto lo richiede, previo accordo con l'utente."
+  ]
+}
