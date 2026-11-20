@@ -327,6 +327,21 @@ def install(events=None):
 
     GatewaySlashCommandsMixin._handle_set_home_command = reject_set_home
 
+    # Model, reasoning effort, fast mode and runtime are operator-owned
+    # (PILATES_MODEL, PILATES_REASONING_EFFORT). Every alias and spelling
+    # resolves to these handlers on the idle path; mid-run, Hermes already
+    # rejects them without changing anything. No session or global override
+    # is written and the text never reaches the model.
+    from gateway.slash_commands_model import GatewayModelCommandsMixin
+
+    async def reject_model_settings(self, event):
+        return 'Modello e livello di ragionamento sono gestiti dall’operatore.'
+
+    for name in ('_handle_model_command', '_handle_reasoning_command', '_handle_fast_command', '_handle_codex_runtime_command'):
+        if not callable(getattr(GatewayModelCommandsMixin, name, None)):
+            raise RuntimeError('Unsupported Hermes model command boundary')
+        setattr(GatewayModelCommandsMixin, name, reject_model_settings)
+
     # The cached session prompt can span midnight. Add the clock to the wire
     # copy for every model request, never to SQLite or the conversation history.
     original_build_messages = assembly.build_api_messages

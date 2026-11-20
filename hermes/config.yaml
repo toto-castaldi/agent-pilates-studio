@@ -22,6 +22,9 @@ tools:
   tool_search:
     enabled: "off"
 agent:
+  # Operator-owned (PILATES_REASONING_EFFORT, validated at start, default medium);
+  # /model, /reasoning, /fast and /codex-runtime are refused in the chat.
+  reasoning_effort: "${PILATES_REASONING_EFFORT}"
   disabled_toolsets:
     - terminal
     - file

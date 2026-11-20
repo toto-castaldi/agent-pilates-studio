@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
-const { contextWindow, compactionThreshold, idleSeconds, resolveCompaction } = createRequire(import.meta.url)('../../scripts/compaction-policy.mjs');
+const { contextWindow, compactionThreshold, idleSeconds, reasoningEffort, REASONING_EFFORTS, DEFAULT_REASONING_EFFORT, resolveCompaction } = createRequire(import.meta.url)('../../scripts/compaction-policy.mjs');
 
 test('the compaction threshold follows the exact configured model window', () => {
   const catalog = { data: [
@@ -52,8 +52,9 @@ test('container settings fetch the configured model window and fail closed', asy
   await resolveCompaction({ env: { PILATES_MODEL: 'synthetic/model' }, fetch });
   assert.equal(requests.at(-1)?.url, 'https://openrouter.ai/api/v1/models');
   assert.deepEqual(requests.at(-1)?.headers, {});
+  await resolveCompaction({ env: { ...env, PILATES_REASONING_EFFORT: 'xhigh' }, fetch });
   const count = requests.length;
-  for (const invalid of [{ PILATES_IDLE_COMPACT_SECONDS: '0' }, { PILATES_MODEL: '' }, { PILATES_MODEL: 'bad model' }, { OPENROUTER_BASE_URL: 'file:///etc' }]) {
+  for (const invalid of [{ PILATES_REASONING_EFFORT: '' }, { PILATES_REASONING_EFFORT: 'High' }, { PILATES_REASONING_EFFORT: 'extreme' }, { PILATES_IDLE_COMPACT_SECONDS: '0' }, { PILATES_MODEL: '' }, { PILATES_MODEL: 'bad model' }, { OPENROUTER_BASE_URL: 'file:///etc' }]) {
     await assert.rejects(resolveCompaction({ env: { ...env, ...invalid }, fetch }));
   }
   assert.equal(requests.length, count);
@@ -61,4 +62,14 @@ test('container settings fetch the configured model window and fail closed', asy
   await assert.rejects(resolveCompaction({ env, fetch: async () => ({ ok: false, json: async () => catalog }) }));
   await assert.rejects(resolveCompaction({ env, fetch: async () => ({ ok: true, json: async () => { throw new SyntaxError('bad'); } }) }));
   await assert.rejects(resolveCompaction({ env, fetch: async () => { throw new Error('offline'); } }));
+});
+
+test('reasoning effort defaults to medium and accepts only the pinned Hermes levels', () => {
+  assert.equal(DEFAULT_REASONING_EFFORT, 'medium');
+  assert.equal(reasoningEffort(undefined), 'medium');
+  assert.deepEqual([...REASONING_EFFORTS], ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
+  for (const level of REASONING_EFFORTS) assert.equal(reasoningEffort(level), level);
+  for (const invalid of ['', ' high', 'high ', 'HIGH', 'false', 'disabled', 'extreme', 'synthetic-secret-value', null, 3]) {
+    assert.throws(() => reasoningEffort(invalid), (error: Error) => error.message === 'Invalid reasoning effort');
+  }
 });

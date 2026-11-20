@@ -69,12 +69,13 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     for (const [invalid, message] of [
       [config.replace('+1 (555) 555-0102', '15555550109'), /PILATES_MANAGER_PHONE non valido/],
       [`${config}WHATSAPP_ALLOWED_USERS=15555550109\n`, /chiavi non più usate: WHATSAPP_ALLOWED_USERS/],
+      [`${config}PILATES_REASONING_EFFORT=synthetic-private-model-token\n`, /PILATES_REASONING_EFFORT non valido/],
     ] as const) {
       await writeFile(join(dir, 'private.env'), invalid);
       const result = startResult();
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, message);
-      assert.doesNotMatch(result.stdout + result.stderr, /1555555010[29]|555-0102/);
+      assert.doesNotMatch(result.stdout + result.stderr, /1555555010[29]|555-0102|synthetic-private/);
       assert.equal(await readFile(managerPath, 'utf8'), '+15555550102\n');
       assert.equal(compose('ps', '--status', 'running', '-q', 'hermes').trim(), originalGateway);
     }
@@ -99,6 +100,8 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     const hermes = compose('ps', '-q', 'hermes').trim();
     const compactionSettings = (container: string) => execFileSync('docker', ['exec', container, 'sh', '-c', 'for f in /proc/[0-9]*/environ; do { tr "\\0" "\\n" < "$f"; } 2>/dev/null | grep -E "^PILATES_(COMPACTION_THRESHOLD_TOKENS|IDLE_COMPACT_SECONDS)="; done | sort -u'], { encoding: 'utf8' }).trim().split('\n');
     assert.deepEqual(compactionSettings(hermes), ['PILATES_COMPACTION_THRESHOLD_TOKENS=26214', 'PILATES_IDLE_COMPACT_SECONDS=1800']);
+    // Without a configured level the documented default applies.
+    execFileSync('docker', ['exec', hermes, 'sh', '-c', 'test "$PILATES_REASONING_EFFORT" = medium'], { stdio: 'pipe' });
     const mounts = execFileSync('docker', ['inspect', '--format', '{{json .Mounts}}', hermes], { encoding: 'utf8' });
     assert.doesNotMatch(mounts, /db-admin|db-migrator|\.env/);
     execFileSync('docker', ['exec', '--user', 'root', hermes, 'sh', '-c', 'printf synthetic-volume-marker > /opt/data/start-probe']);
@@ -136,7 +139,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       .replace('+1 (555) 555-0102', '0015555550103')
       .replace('123456789', '987654321')
       .replace('synthetic/test-model', 'synthetic/updated-model')
-      .concat('WHATSAPP_WEBHOOK_PATH=/whatsapp/updated\n');
+      .concat('WHATSAPP_WEBHOOK_PATH=/whatsapp/updated\nPILATES_REASONING_EFFORT=low\n');
     await writeFile(join(dir, 'replacement.env'), changed, { mode: 0o600 });
     await rename(join(dir, 'replacement.env'), join(dir, 'private.env'));
     start();
@@ -148,7 +151,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     // A changed model updates the compaction threshold at the next start (TEC-025).
     assert.deepEqual(compactionSettings(gatewayId), ['PILATES_COMPACTION_THRESHOLD_TOKENS=52428', 'PILATES_IDLE_COMPACT_SECONDS=1800']);
-    execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_manager_phone)" = +15555550103 && test ! -e /run/secrets/whatsapp_home_channel && test "$PILATES_MODEL" = synthetic/updated-model'], { stdio: 'pipe' });
+    execFileSync('docker', ['exec', '--user', 'root', gatewayId, 'sh', '-c', 'test "$(cat /run/secrets/openrouter_key)" = synthetic-new-model-token && test "$(cat /run/secrets/whatsapp_access_token)" = synthetic-new-access-token && test "$(cat /run/secrets/whatsapp_verify_token)" = synthetic-new-verify-token && test "$(cat /run/secrets/whatsapp_manager_phone)" = +15555550103 && test ! -e /run/secrets/whatsapp_home_channel && test "$PILATES_MODEL" = synthetic/updated-model && test "$PILATES_REASONING_EFFORT" = low'], { stdio: 'pipe' });
     const homes = execFileSync('docker', ['exec', gatewayId, 'sh', '-c', 'for f in /proc/[0-9]*/environ; do tr "\\0" "\\n" < "$f" 2>/dev/null; done | grep "^WHATSAPP_CLOUD_HOME_CHANNEL=" | sort -u'], { encoding: 'utf8' }).trim();
     assert.equal(homes, 'WHATSAPP_CLOUD_HOME_CHANNEL=15555550103');
     const gateway = `http://${address('hermes')}:8090/whatsapp/updated`;

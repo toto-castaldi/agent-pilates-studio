@@ -1,7 +1,12 @@
-// Pure compaction policy shared by the host start command and the Hermes container.
-// Callers inject network access; a missing or ambiguous model entry must never fall
-// back to an assumed context window.
+// Pure model settings policy shared by the host start command and the Hermes
+// container: compaction trigger and reasoning effort. Callers inject network
+// access; a missing or ambiguous model entry must never fall back to an assumed
+// context window.
 export const DEFAULT_IDLE_SECONDS = 4 * 60 * 60;
+// Levels accepted by agent.reasoning_effort in the pinned Hermes v0.22.7
+// (hermes_constants.VALID_REASONING_EFFORTS plus "none", which disables it).
+export const REASONING_EFFORTS = Object.freeze(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
+export const DEFAULT_REASONING_EFFORT = 'medium';
 const DEFAULT_CATALOG_BASE = 'https://openrouter.ai/api/v1';
 
 export function contextWindow(catalog, model) {
@@ -30,11 +35,21 @@ export function idleSeconds(value) {
   return seconds;
 }
 
+// Exact lowercase level only: Hermes would silently ignore a typo and fall back
+// to the provider default.
+export function reasoningEffort(value) {
+  if (value === undefined) return DEFAULT_REASONING_EFFORT;
+  if (typeof value !== 'string' || !REASONING_EFFORTS.includes(value)) throw new Error('Invalid reasoning effort');
+  return value;
+}
+
 // Container settings: Compose interpolates an unset optional value as an empty
 // string, so only there an empty value means "use the default". The host command
 // rejects an explicitly empty setting before reaching Compose.
 export async function resolveCompaction({ env, fetch }) {
   const idle = idleSeconds(env.PILATES_IDLE_COMPACT_SECONDS === '' ? undefined : env.PILATES_IDLE_COMPACT_SECONDS);
+  // Compose supplies the default; an empty or unknown level stops the gateway.
+  reasoningEffort(env.PILATES_REASONING_EFFORT);
   const model = env.PILATES_MODEL;
   if (typeof model !== 'string' || !/^[A-Za-z0-9._/:-]+$/.test(model)) throw new Error('Invalid model');
   const base = (env.OPENROUTER_BASE_URL || DEFAULT_CATALOG_BASE).replace(/\/+$/, '');

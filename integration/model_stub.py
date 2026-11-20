@@ -17,6 +17,9 @@ async def models(request):
     return web.json_response({'object': 'list', 'data': [
         {'id': 'synthetic/test-model', 'object': 'model', 'context_length': 65536},
         {'id': 'synthetic/updated-model', 'object': 'model', 'context_length': 131072},
+        # Reasoning-capable synthetic ids: Hermes sends the level to OpenRouter only for these.
+        {'id': 'openai/synthetic-reasoning-model', 'object': 'model', 'context_length': 65536, 'supported_parameters': ['tools', 'reasoning']},
+        {'id': 'openai/synthetic-reasoning-updated', 'object': 'model', 'context_length': 131072, 'supported_parameters': ['tools', 'reasoning']},
     ]})
 
 
@@ -28,6 +31,7 @@ async def chat(request):
     has_studio_tool = any(tool.get('function', {}).get('name') == 'studio_sql_query' for tool in body.get('tools', []))
     wire = json.dumps(body, ensure_ascii=False)
     observations.append({'user': last_user, 'system': system, 'last_role': messages[-1].get('role') if messages else None,
+                         'model': body.get('model'), 'reasoning': body.get('reasoning'), 'reasoning_effort': body.get('reasoning_effort'),
                          'has_studio_tool': has_studio_tool,
                          'tools': [tool.get('function', {}).get('name') for tool in body.get('tools', [])],
                          'has_sender_number': any(re.search(r'[ .()+\-\u00a0]*'.join(number), wire)

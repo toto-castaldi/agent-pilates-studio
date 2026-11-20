@@ -47,11 +47,15 @@ load_settings() {
     [[ -z $line || $line == \#* ]] && continue
     key=${line%%=*}; value=${line#*=}
     case $key in
-      POSTGRES_PORT|WHATSAPP_WEBHOOK_PORT|WHATSAPP_WEBHOOK_PATH|PILATES_MODEL|PILATES_IDLE_COMPACT_SECONDS) export "$key=$value" ;;
+      POSTGRES_PORT|WHATSAPP_WEBHOOK_PORT|WHATSAPP_WEBHOOK_PATH|PILATES_MODEL|PILATES_IDLE_COMPACT_SECONDS|PILATES_REASONING_EFFORT) export "$key=$value" ;;
       *) fail 'Unsupported key in prod.env: credentials belong in the secrets directory.' ;;
     esac
   done < "$file"
   [[ ${POSTGRES_PORT:-} =~ ^[0-9]+$ && ${WHATSAPP_WEBHOOK_PORT:-} =~ ^[0-9]+$ ]] || fail 'Ports are not configured.'
+  # Same levels as scripts/compaction-policy.mjs; absent means the Compose default (medium).
+  if [[ -v PILATES_REASONING_EFFORT && ! $PILATES_REASONING_EFFORT =~ ^(none|minimal|low|medium|high|xhigh|max|ultra)$ ]]; then
+    fail 'PILATES_REASONING_EFFORT must be one of: none, minimal, low, medium, high, xhigh, max, ultra.'
+  fi
   export SECRETS_DIR="$ROOT_DIR/secrets"
   if [[ -f $ROOT_DIR/state/volume-prefix ]]; then
     PILATES_VOLUME_PREFIX=$(<"$ROOT_DIR/state/volume-prefix")

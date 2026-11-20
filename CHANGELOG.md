@@ -8,6 +8,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ### Changed
 
+- Il livello di thinking dell'assistente si sceglie con `PILATES_REASONING_EFFORT` accanto a `PILATES_MODEL`, in `.env` e in `prod.env` (predefinito `medium`); un valore non valido arresta l'avvio e il cambio vale al successivo riavvio del gateway, senza ricostruire le immagini. Da WhatsApp `/model`, `/reasoning`, `/fast` e `/codex-runtime` ricevono un rifiuto fisso, anche per il gestore (TEC-051).
 - Il menu di `/anagrafica` descrive brevemente ogni operazione e chiarisce che «correggi» cambia solo nome e cognome mentre «numero» cambia il telefono; comandi, passaggi e conferme restano invariati (US-018).
 ### Added
 

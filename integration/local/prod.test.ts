@@ -50,6 +50,16 @@ test('production requires one canonical manager number and refuses the former id
       assert.doesNotMatch(result.stdout + result.stderr, /5555550/);
       await rm(join(root, 'secrets', name));
     }
+    // The reasoning effort is accepted in prod.env and validated before Docker.
+    const settings = await readFile(join(root, 'prod.env'), 'utf8');
+    for (const value of ['', 'HIGH', 'synthetic-private-level']) {
+      await writeFile(join(root, 'prod.env'), `${settings}PILATES_REASONING_EFFORT=${value}\n`, { mode: 0o600 });
+      const result = invoke(['update', commit]);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /PILATES_REASONING_EFFORT must be one of: none, minimal, low, medium, high, xhigh, max, ultra/);
+      assert.doesNotMatch(result.stdout + result.stderr, /synthetic-private/);
+    }
+    await writeFile(join(root, 'prod.env'), `${settings}PILATES_MODEL=synthetic/test-model\nPILATES_REASONING_EFFORT=high\n`, { mode: 0o600 });
     const upgrade = invoke(['update', commit]);
     assert.notEqual(upgrade.status, 0);
     assert.match(upgrade.stderr, /No installed release/);

@@ -28,7 +28,7 @@ sudo install -d -m 0700 -o "$USER" -g "$USER" /opt/agent-pilates-prod
 ops init
 ```
 
-`init` crea `prod.env` (porte `55433` e `18190`, solo loopback), le directory e i segreti interni, senza sovrascrivere quelli presenti. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-manager-phone`, `whatsapp-phone-number-id`. Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include.
+`init` crea `prod.env` (porte `55433` e `18190`, solo loopback), le directory e i segreti interni, senza sovrascrivere quelli presenti. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-manager-phone`, `whatsapp-phone-number-id`. Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include. Oltre a porte e percorso del webhook, `prod.env` accetta soltanto `PILATES_MODEL`, `PILATES_IDLE_COMPACT_SECONDS` e `PILATES_REASONING_EFFORT` (livello di thinking, predefinito `medium`); dopo averli cambiati, `update` verso la release in esercizio li applica ricreando il gateway.
 
 ```bash
 ops install "$COMMIT"
