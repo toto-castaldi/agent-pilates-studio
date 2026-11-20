@@ -1,0 +1,32 @@
+{
+  "id": "US-020",
+  "title": "Dashboard Grafana delle metriche d'uso",
+  "version": "v0.5.0",
+  "epic": "EPIC-007",
+  "module": "MOD-001",
+  "type": "User Story",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-052"
+  ],
+  "requirements": [
+    "REQ-OPS-012",
+    "REQ-OPS-011"
+  ],
+  "design_references": [
+    "design/production",
+    "design/configuration",
+    "design/security",
+    "design/test-strategy"
+  ],
+  "description": "Come operatore voglio una dashboard Grafana, aperta dal mio portatile con un tunnel SSH, per capire chi usa l'agente, quanto, con quali tempi di risposta, contesto e costi.",
+  "acceptance_criteria": [
+    "Grafana, a versione fissata, si avvia con start:local in sviluppo e con il launcher in produzione, in ascolto solo su loopback; l'hostname pubblico continua a esporre solo il webhook e la procedura documenta l'accesso con ssh -L.",
+    "L'accesso richiede le credenziali Grafana della configurazione privata (.env e prod.env), documentate senza valori in .env.example e README; l'avvio senza credenziali si arresta con un errore che non espone segreti.",
+    "Sorgente dati e dashboard sono provisioning versionato incluso nelle immagini pubblicate dalla pipeline; una modifica dall'interfaccia non sopravvive alla ricreazione del servizio.",
+    "La dashboard, filtrabile per periodo e utilizzatore, mostra i pannelli di REQ-OPS-012: messaggi per utilizzatore e giorno, mediana e 95° percentile dei tempi complessivi e del modello, token e contesto in percentuale della finestra con la soglia di compattazione, compattazioni, costi per utilizzatore, giorno e modello, invii rifiutati; gli utilizzatori compaiono con nome e cognome, mai con il telefono.",
+    "Il ruolo PostgreSQL di Grafana legge solo le metriche e nome e cognome degli insegnanti ed è rifiutato su ogni altra tabella, sui telefoni e su qualsiasi scrittura, verificato su PostgreSQL reale.",
+    "Una suite separata verifica con dati sintetici avvio, autenticazione, provisioning e risposta delle query dei pannelli; backup, aggiornamento e CI restano verdi; design, README e CHANGELOG sono aggiornati."
+  ]
+}
