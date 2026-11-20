@@ -1,0 +1,33 @@
+{
+  "id": "TEC-052",
+  "title": "Registrazione protetta delle metriche d'uso per turno",
+  "version": "v0.5.0",
+  "epic": "EPIC-007",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "SPIKE-004"
+  ],
+  "requirements": [
+    "REQ-OPS-011"
+  ],
+  "design_references": [
+    "design/data-model",
+    "design/invariants",
+    "design/integrations",
+    "design/production",
+    "design/continuity",
+    "design/test-strategy"
+  ],
+  "description": "Schema delle metriche, migrazione, ruoli e raccolta nel gateway secondo le scelte di SPIKE-004.",
+  "acceptance_criteria": [
+    "Una migrazione Prisma crea lo schema degli eventi di REQ-OPS-011 con i soli campi ammessi (nessun telefono, testo, riassunto o nome) e con aggiornamento e cancellazione rifiutati dal database, verificato su PostgreSQL reale.",
+    "Ogni messaggio autenticato gestito dal gateway (risposta dell'agente, percorso gestionale, risposta fissa, comando rifiutato) produce un evento con i dati di REQ-OPS-011 disponibili, utilizzatore come insegnante censito, valori ricavati dal sistema e mai dal modello; i dati non restituiti dal provider restano vuoti.",
+    "Il ruolo dell'agente non può leggere, inserire, modificare o cancellare gli eventi e le credenziali di scrittura non sono raggiungibili dall'agente, verificato su PostgreSQL reale e con il gateway reale.",
+    "Se la scrittura dell'evento fallisce, il turno si completa con la stessa risposta e il log riporta un messaggio fisso senza dati personali; i log non contengono nuovi dati personali (REQ-NFR-002).",
+    "Gli eventi persistono tra riavvii e aggiornamenti e sono inclusi in backup a caldo, backup quiescente e ripristino, verificato nelle suite esistenti.",
+    "Test di unità coprono il calcolo di tempi, percentuale del contesto e classificazione del turno; una suite separata (test:hermes, test:author o nuova) con gateway reale e provider sintetico verifica gli eventi dei quattro tipi di turno, compattazione e costo; design, configurazione, README e CHANGELOG sono aggiornati."
+  ]
+}
