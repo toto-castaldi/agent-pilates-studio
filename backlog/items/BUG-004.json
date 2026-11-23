@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "fix/BUG-004-gateway-non-riparte-dopo-riavvio",
   "dependencies": [],
   "requirements": [
@@ -27,7 +27,11 @@
     "La causa è riprodotta con un container sonda senza dati di produzione e la correzione scelta è registrata nel design (production) e tolta dalle decisioni aperte, concordata con l'utente prima dell'implementazione se introduce un automatismo sul server (REQ-OPS-005, AGENTS.md §3).",
     "SOUL.md, configurazione, plugin e skill restano in sola lettura per l'agente, provenienti dall'immagine della release e non sostituibili dal volume Hermes.",
     "Un test di regressione automatico in una suita separata (test:images o equivalente) esercita la ripartenza del gateway dopo l'arresto del demone e dei container in condizioni equivalenti al reboot, fallisce senza la correzione e passa con essa; se la condizione non è riproducibile in CI, il limite è documentato e la prova è manuale.",
-    "Su jarvis, con un reboot reale concordato con l'utente, PostgreSQL, broker e gateway ripartono healthy senza intervento, sulla stessa release; l'esito è registrato in docs/operations senza dati personali.",
     "La procedura di produzione documenta il ripristino manuale dopo un riavvio finché la correzione non è rilasciata, e il quality gate e le suite della CI passano sul branch del bug."
-  ]
+  ],
+  "remarks": [
+    "Split concordato con l'utente il 2026-11-23: il criterio del reboot reale su jarvis (PostgreSQL, broker e gateway healthy senza intervento sulla stessa release, esito in docs/operations) è spostato in TEC-053, che dipende da BUG-004 perché richiede la correzione pubblicata da main e installata in produzione."
+  ],
+  "outcome": "Causa riprodotta con container sonda in Docker-in-Docker (mount type: image con subpath non risolti al riavvio del demone dopo la perdita dei mount, Exited con cannot access path). Correzione senza automatismi sul server: niente mount type: image; un hook cont-init (hermes/release-links.sh) collega a ogni avvio SOUL.md, config.yaml, plugins e skills dell'immagine (root, sola lettura) con link di root in /opt/data root:hermes 1770 sticky, e il launcher del gateway rifiuta percorsi diversi. Regressione integration/reboot.test.ts in test:images: fallisce senza correzione (gateway exited, PostgreSQL e broker healthy) e passa con essa, con controllo sonda image mount; images-only verifica link, permessi e tentativi di manomissione come uid 10000. Design production e README design aggiornati (decisione aperta chiusa), ripristino manuale e verifica post-riavvio in TEC-035. Gate, tutte le suite Docker locali e CI del branch verdi. Reboot reale su jarvis spostato in TEC-053.",
+  "closed_at": "2026-11-23"
 }
