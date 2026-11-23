@@ -1,0 +1,30 @@
+{
+  "id": "TEC-053",
+  "title": "Verifica del riavvio reale di jarvis con la correzione in esercizio",
+  "version": "v0.4.0",
+  "epic": "EPIC-003",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [
+    "BUG-004"
+  ],
+  "requirements": [
+    "REQ-OPS-002",
+    "REQ-OPS-005",
+    "REQ-NFR-002"
+  ],
+  "design_references": [
+    "design/production"
+  ],
+  "description": "Criterio del reboot reale separato da BUG-004: le immagini con la correzione si pubblicano solo da main, quindi la prova su jarvis è possibile solo dopo merge di BUG-004 e aggiornamento manuale della produzione. Il reboot lo esegue soltanto l'utente, quando lo decide.",
+  "acceptance_criteria": [
+    "La produzione su jarvis è aggiornata a mano con il launcher alla release di main che contiene la correzione di BUG-004, e PostgreSQL, broker e gateway sono healthy prima del riavvio.",
+    "L'utente esegue un reboot reale di jarvis; dopo il boot PostgreSQL, broker e gateway ripartono healthy senza intervento, sulla stessa release e con gli stessi dati, e l'agente risponde a un messaggio di prova.",
+    "L'esito, con release, versioni di Docker e containerd e stato dei servizi, è registrato in docs/operations senza dati personali, numeri o credenziali; se la ripartenza fallisce, l'item resta aperto e si apre un bug con i passi osservati."
+  ],
+  "remarks": [
+    "Split di BUG-004 concordato con l'utente il 2026-11-23: l'utente al momento non può eseguire il reboot; nessun agente esegue reboot o aggiorna la produzione."
+  ]
+}
