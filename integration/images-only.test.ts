@@ -61,21 +61,28 @@ test('stack runs from images alone and each image provides its own read-only rel
     const soul = await readFile('hermes/SOUL.md', 'utf8');
     assert.equal(inContainer(first, 'cat /opt/data/SOUL.md'), soul);
     const mounts = JSON.parse(execFileSync('docker', ['inspect', '--format', '{{json .Mounts}}', first], { encoding: 'utf8' })) as { Type: string; Source?: string; Destination: string; RW: boolean }[];
-    for (const target of ['/opt/data/SOUL.md', '/opt/data/config.yaml', '/opt/data/plugins/pilates-postgres', '/opt/data/skills']) {
-      const mount = mounts.find((entry) => entry.Destination === target);
-      assert.equal(mount?.Type, 'image', target);
-      assert.equal(mount?.RW, false, target);
+    // No image mounts (BUG-004): root-owned links to the image's release files
+    // in a root-owned sticky volume root that the agent cannot rewrite.
+    assert.deepEqual(mounts.filter((entry) => entry.Type === 'image'), []);
+    for (const name of ['SOUL.md', 'config.yaml', 'plugins', 'skills']) {
+      assert.equal(inContainer(first, `stat -c '%u %F' /opt/data/${name}; readlink /opt/data/${name}`), `0 symbolic link\n/opt/pilates/release/${name}\n`, name);
     }
+    assert.equal(inContainer(first, "stat -c '%u %g %a' /opt/data /opt/pilates/release/SOUL.md /opt/pilates/release/skills/studio-presenze/SKILL.md"), '0 10000 1770\n0 0 644\n0 0 644\n');
+    assert.equal(inContainer(first, 'ls /opt/data/plugins'), 'pilates-postgres\n');
     // Secrets are the only host files; nothing comes from a checkout.
     assert.deepEqual(mounts.filter((entry) => entry.Type === 'bind' && !entry.Destination.startsWith('/run/secrets/')), []);
     assert.throws(() => inContainer(first, 'echo tampered >> /opt/data/SOUL.md'));
-    assert.throws(() => inContainer(first, 'mv /opt/data/SOUL.md /opt/data/SOUL.old'));
+    for (const command of ['mv /opt/data/SOUL.md /opt/data/SOUL.old', 'rm /opt/data/SOUL.md', 'ln -sfn /tmp /opt/data/SOUL.md',
+      'rm /opt/data/config.yaml', 'mv /opt/data/plugins /opt/data/old-plugins', 'touch /opt/data/plugins/pilates-postgres/TAMPERED',
+      'echo tampered >> /opt/data/config.yaml', 'chmod 0777 /opt/data']) assert.throws(() => inContainer(first, command), command);
     const skill = await readFile('hermes/skills/studio-presenze/SKILL.md', 'utf8');
     assert.equal(inContainer(first, 'cat /opt/data/skills/studio-presenze/SKILL.md'), skill);
     for (const command of ['echo tampered >> /opt/data/skills/studio-presenze/SKILL.md',
       'touch /opt/data/skills/TAMPERED', 'mv /opt/data/skills /opt/data/old-skills',
       'rm /opt/data/skills/studio-presenze/SKILL.md']) assert.throws(() => inContainer(first, command));
     inContainer(first, 'echo synthetic-volume-marker > /opt/data/images-probe');
+    // A copy left in the volume (here by root, as an older release could) is replaced at the next start.
+    execFileSync('docker', ['exec', first, 'sh', '-c', 'rm /opt/data/SOUL.md && echo SYNTHETIC_STALE_SOUL > /opt/data/SOUL.md && chown 10000:10000 /opt/data/SOUL.md'], { stdio: 'pipe' });
 
     // A new image must reach an existing volume, which keeps its own state.
     await writeFile(join(directory, 'Dockerfile.updated'), `FROM ${hermes}\nRUN echo SYNTHETIC_UPDATED_SOUL >> /opt/pilates/release/SOUL.md && echo SYNTHETIC_UPDATED_SKILL >> /opt/pilates/release/skills/studio-presenze/SKILL.md\n`);
@@ -84,6 +91,7 @@ test('stack runs from images alone and each image provides its own read-only rel
     const second = compose(updated, 'ps', '-q', 'hermes').trim();
     assert.notEqual(second, first);
     assert.match(inContainer(second, 'cat /opt/data/SOUL.md'), /SYNTHETIC_UPDATED_SOUL/);
+    assert.doesNotMatch(inContainer(second, 'cat /opt/data/SOUL.md'), /SYNTHETIC_STALE_SOUL/);
     assert.match(inContainer(second, 'cat /opt/data/images-probe'), /synthetic-volume-marker/);
     assert.match(inContainer(second, 'cat /opt/data/skills/studio-presenze/SKILL.md'), /SYNTHETIC_UPDATED_SKILL/);
   } finally {

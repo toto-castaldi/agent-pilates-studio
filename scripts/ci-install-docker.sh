@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# CI only: run the Docker version used in production, because the stack mounts
-# several files from one image and the version on the runner rejects that.
+# CI only: run the Docker version used in production, which the integration
+# suites and the simulated host reboot (integration/reboot.test.ts) rely on.
 set -euo pipefail
 
 readonly DOCKER_VERSION='5:29.9.2-1~ubuntu.24.04~noble'

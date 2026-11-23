@@ -111,28 +111,10 @@ services:
       - "127.0.0.1:${WHATSAPP_WEBHOOK_PORT:-18090}:8090"
     volumes:
       - hermes_data:/opt/data
-      # Read-only from the image: the agent owns /opt/data but cannot replace
-      # these files, and a new image reaches an existing volume.
-      - type: image
-        source: *hermes-image
-        target: /opt/data/SOUL.md
-        image:
-          subpath: opt/pilates/release/SOUL.md
-      - type: image
-        source: *hermes-image
-        target: /opt/data/config.yaml
-        image:
-          subpath: opt/pilates/release/config.yaml
-      - type: image
-        source: *hermes-image
-        target: /opt/data/plugins/pilates-postgres
-        image:
-          subpath: opt/pilates/release/plugins/pilates-postgres
-      - type: image
-        source: *hermes-image
-        target: /opt/data/skills
-        image:
-          subpath: opt/pilates/release/skills
+      # SOUL.md, configuration, plugin and skills are not mounted: the image
+      # links its own read-only copies into the volume at every start
+      # (hermes/release-links.sh), so a restart after a reboot needs no image
+      # mount and a new image reaches an existing volume (BUG-004).
     tmpfs:
       - /run/pilates-agent:mode=0700
     logging:

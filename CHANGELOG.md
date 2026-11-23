@@ -17,6 +17,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 - Backup a caldo pianificato della produzione: lo script `backup-agent-pilates.sh`, installato a mano su `jarvis` e avviato dalla crontab dell'operatore alle 14:30 e alle 22:30 (Europe/Rome), esegue la copia a caldo con l'immagine `ops` della release in esercizio, impedisce esecuzioni sovrapposte, registra l'esito in un log locale senza dati sensibili e conserva per 30 giorni le sole copie pianificate complete, senza toccare backup manuali, quiescenti o incompleti (TEC-050).
 ### Fixed
 
+- Dopo un riavvio del server il gateway di produzione riparte da solo con PostgreSQL e broker, sulla stessa release e con gli stessi dati: `SOUL.md`, configurazione, plugin e skill non sono più montati dall'immagine con mount `type: image`, che Docker non risolveva al riavvio del container, ma esposti in sola lettura dall'immagine con collegamenti che l'agente non può sostituire. La guida di produzione descrive il ripristino manuale per le release precedenti (BUG-004).
 - PostgreSQL risulta sano solo quando il server definitivo accetta connessioni TCP: la configurazione dei ruoli non fallisce più in modo intermittente con «Database role setup failed.» al primo avvio di un volume vuoto, dopo un ripristino o con più progetti di prova in parallelo (BUG-005).
 
 ## [0.3.0] - 2026-11-17

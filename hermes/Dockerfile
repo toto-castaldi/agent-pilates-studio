@@ -14,5 +14,9 @@ RUN mkdir -p /opt/pilates/release
 COPY --chmod=0644 hermes/SOUL.md hermes/config.yaml /opt/pilates/release/
 COPY hermes/plugins/pilates-postgres /opt/pilates/release/plugins/pilates-postgres
 COPY hermes/skills /opt/pilates/release/skills
+# Root-owned and read-only for everybody else, whatever the checkout's umask.
+RUN chown -R root:root /opt/pilates/release && chmod -R u=rwX,go=rX /opt/pilates/release
+# Links the release files into the volume after the Hermes setup (BUG-004).
+COPY --chmod=0755 hermes/release-links.sh /etc/cont-init.d/016-pilates-release
 ENTRYPOINT ["/opt/pilates/entrypoint.sh"]
 CMD ["gateway", "run"]

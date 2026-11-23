@@ -274,6 +274,37 @@ PG_IMAGE='postgres:17.10@sha256:5f050f770b427fbd477edee6c3968a72e5c6be97e050a7e3
 
 La consultazione in `psql` può mostrare dati sensibili nel terminale e nella sua cronologia: proteggerli ed evitare copie, log e condivisioni. `--no-owner --no-privileges` non ricrea ruoli, proprietari e permessi di produzione: il risultato è per consultazione isolata, **non** un ambiente sicuro da esporre o collegare al gateway. Se il ripristino fallisce, il container parziale resta per ispezione e non va usato. Alla fine, verificato che il nome indichi proprio il container temporaneo creato sopra, eliminarlo con `docker rm -fv "$PG_CONTAINER"`; il comando elimina anche il suo volume anonimo, non quello di produzione. Gestire e rimuovere intenzionalmente anche la copia locale secondo le esigenze di conservazione; la cancellazione non garantisce la distruzione sicura su ogni supporto.
 
+## Riavvio del server
+
+Dalle release che includono BUG-004 il gateway non usa mount `type: image`: dopo un riavvio di `jarvis` Docker riavvia da solo, con `unless-stopped`, gli stessi container PostgreSQL, broker e gateway, sulla stessa release e con gli stessi volumi. Non servono comandi né automatismi sul server (unità systemd, `@reboot`).
+
+### Ripristino manuale per le release precedenti
+
+Con una release precedente il gateway resta `Exited (128)` e `docker inspect` riporta `cannot access path /var/lib/docker/rootfs/overlayfs/<id>/opt/pilates/release/...`; PostgreSQL e broker ripartono. Il solo ripristino è rieseguire il launcher **sulla release in esercizio**, che ricrea i servizi (con backup quiescente e interruzione dei turni come ogni aggiornamento):
+
+```bash
+~/update-agent-pilates.sh "$(cat /opt/agent-pilates-prod/state/release)"
+```
+
+`docker start` o `docker compose start` falliscono sempre con lo stesso errore; non rimuovere volumi.
+
+### Verifica dopo un riavvio
+
+Il riavvio reale si esegue solo con l'accordo dell'operatore, in un momento senza turni in corso. Prima del riavvio annotare release e container:
+
+```bash
+cat /opt/agent-pilates-prod/state/release
+docker compose -p agent-pilates-prod ps --format '{{.Service}} {{.ID}} {{.Image}} {{.Status}}'
+```
+
+Dopo `sudo reboot` e il nuovo accesso, attendere qualche minuto senza lanciare comandi Docker che modificano lo stato, poi ripetere i due comandi: release, ID e immagini devono coincidere e i tre servizi devono risultare `healthy`. Per il gateway:
+
+```bash
+docker inspect --format '{{.State.Status}} {{.State.Health.Status}} {{.RestartCount}} {{.State.Error}}' agent-pilates-prod-hermes-1
+```
+
+L'esito atteso è `running healthy` con errore vuoto. Se il gateway è fermo, applicare il ripristino manuale sopra e registrare l'esito.
+
 ## Stato e diagnostica
 
 ```bash
