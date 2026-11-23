@@ -1,7 +1,7 @@
 import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseEnv } from 'node:util';
-import { idleSeconds } from './compaction-policy.mjs';
+import { idleSeconds, reasoningEffort, REASONING_EFFORTS } from './compaction-policy.mjs';
 import { normalizeManagerPhone, OBSOLETE_IDENTITY_FILES, OBSOLETE_IDENTITY_KEYS } from './manager-phone.mjs';
 
 class SafeError extends Error {}
@@ -90,6 +90,12 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     } catch {
       throw new SafeError('PILATES_IDLE_COMPACT_SECONDS non valido: indicare secondi interi positivi.');
     }
+    let effort;
+    try {
+      effort = reasoningEffort(config.PILATES_REASONING_EFFORT);
+    } catch {
+      throw new SafeError(`PILATES_REASONING_EFFORT non valido: indicare uno tra ${REASONING_EFFORTS.join(', ')}.`);
+    }
     const directory = resolve(config.SECRETS_DIR || '.local/secrets');
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
@@ -110,7 +116,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (databaseKeys.has(key)) missingDatabaseFile = true;
       }
     }
-    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle), ...(volumePrefix ? { PILATES_VOLUME_PREFIX: volumePrefix } : {}) };
+    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle), PILATES_REASONING_EFFORT: effort, ...(volumePrefix ? { PILATES_VOLUME_PREFIX: volumePrefix } : {}) };
     for (const key of Object.keys(required)) delete env[key];
     const compose = (...args) => ['compose', '--env-file', '/dev/null', ...args];
     // Never reconstruct missing internal credentials over an existing volume.

@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P2",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-051-configurazione-modello-thinking",
   "dependencies": [],
   "requirements": [
     "REQ-AGENT-002"
@@ -15,12 +16,14 @@
     "design/configuration",
     "design/integrations"
   ],
-  "description": "Oggi il modello si sceglie con PILATES_MODEL e il livello di thinking non è configurabile (vale il predefinito di Hermes). Aggiungere PILATES_REASONING_EFFORT accanto a PILATES_MODEL, applicato a agent.reasoning_effort di Hermes, con cambio effettivo al riavvio del gateway. Verificare e, se necessario, bloccare i comandi /model e /reasoning sul canale WhatsApp.",
+  "description": "Oggi il modello si sceglie con PILATES_MODEL e il livello di thinking non è configurabile (vale il predefinito di Hermes). Aggiungere PILATES_REASONING_EFFORT accanto a PILATES_MODEL, applicato a agent.reasoning_effort di Hermes, con cambio effettivo al riavvio del gateway. Bloccare sul canale WhatsApp i comandi /model e /reasoning e, su decisione dell'utente del 2026-11-20, anche /fast e /codex-runtime.",
   "acceptance_criteria": [
-    "PILATES_REASONING_EFFORT è accettata in .env da start:local e in prod.env da scripts/prod.sh, documentata in .env.example, README e design; senza valore vale un predefinito documentato.",
+    "PILATES_REASONING_EFFORT è accettata in .env da start:local e in prod.env da scripts/prod.sh, documentata in .env.example, README e design; senza valore vale il predefinito documentato medium (decisione dell'utente del 2026-11-20).",
     "Il valore configurato è applicato a agent.reasoning_effort di Hermes per le risposte del modello; un valore fuori dai livelli ammessi arresta l'avvio con un errore che non espone segreti.",
     "Cambiare PILATES_MODEL o PILATES_REASONING_EFFORT e riavviare o ricreare il gateway applica i nuovi valori senza ricostruire le immagini, senza perdere dati o cronologia e aggiornando la soglia di compattazione del modello.",
-    "I comandi /model e /reasoning, comprese varianti e alias, inviati via WhatsApp da qualunque utilizzatore, gestore incluso, non cambiano modello né livello di thinking e non raggiungono il modello; gli altri comandi slash restano invariati.",
+    "I comandi /model, /reasoning, /fast e /codex-runtime, comprese varianti e alias, inviati via WhatsApp da qualunque utilizzatore, gestore incluso, non cambiano modello, livello di thinking, modalità veloce o runtime e non raggiungono il modello; gli altri comandi slash restano invariati. /fast e /codex-runtime sono aggiunti su decisione dell'utente del 2026-11-20.",
     "Test di unità coprono validazione e propagazione della configurazione; test:start o test:author verificano con gateway reale e sostituti sintetici l'applicazione dopo il riavvio e il rifiuto dei comandi."
-  ]
+  ],
+  "outcome": "PILATES_REASONING_EFFORT (none|minimal|low|medium|high|xhigh|max|ultra, predefinito medium) accanto a PILATES_MODEL in .env e prod.env, validata da start:local, prod.sh e dal gateway (hermes_preflight_failed) e applicata a agent.reasoning_effort; /model, /reasoning, /fast e /codex-runtime con varianti e alias ricevono un rifiuto fisso via WhatsApp, gestore incluso, senza raggiungere il modello. Verificato con gate rapido, test:local, test:start, test:author (richieste al modello con medium e poi high dopo la ricreazione senza rebuild, soglia di compattazione aggiornata, cronologia conservata, 15 varianti di comando rifiutate per gestore e insegnante, valore non valido che arresta il gateway), test:hermes, test:compaction, test:upgrade e test:images. Limite: OpenRouter riceve il livello solo per i modelli che il catalogo indica capaci di ragionamento; nessuna prova reale con OpenRouter.",
+  "closed_at": "2026-11-20"
 }

@@ -92,6 +92,7 @@ services:
         condition: service_healthy
     environment:
       PILATES_MODEL: ${PILATES_MODEL:-openai/gpt-6.1-terra}
+      PILATES_REASONING_EFFORT: ${PILATES_REASONING_EFFORT:-medium}
       # Empty means the documented default; the start command rejects an explicit empty value.
       PILATES_IDLE_COMPACT_SECONDS: ${PILATES_IDLE_COMPACT_SECONDS:-}
       HERMES_TIMEZONE: Europe/Rome

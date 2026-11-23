@@ -270,3 +270,29 @@ test('configuration validation and reading use the same opened file', async () =
   };
   assert.equal(await startLocal(system), 0);
 });
+
+test('model and reasoning effort reach Compose, default to medium and are validated before any change', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const recreate = (from: number) => system.calls.slice(from).filter((call) => call.args.includes('--force-recreate') && call.args.includes('hermes'));
+  assert.ok(recreate(0).every((call) => call.env.PILATES_REASONING_EFFORT === 'medium' && call.env.PILATES_MODEL === 'openai/gpt-6.1-terra'));
+  let start = system.calls.length;
+  system.put('.env', `${configuration}PILATES_MODEL=synthetic/updated-model\nPILATES_REASONING_EFFORT=high\n`);
+  assert.equal(await startLocal(system), 0);
+  assert.ok(recreate(start).length > 0);
+  assert.ok(recreate(start).every((call) => call.env.PILATES_REASONING_EFFORT === 'high' && call.env.PILATES_MODEL === 'synthetic/updated-model'));
+  // A value inherited from the shell never overrides the private configuration.
+  (system.processEnv as Record<string, string>).PILATES_REASONING_EFFORT = 'ultra';
+  start = system.calls.length;
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  assert.ok(recreate(start).every((call) => call.env.PILATES_REASONING_EFFORT === 'medium'));
+  for (const value of ['', 'HIGH', 'extreme', 'synthetic-sensitive-model-token']) {
+    system.put('.env', `${configuration}PILATES_REASONING_EFFORT=${value}\n`);
+    const calls = system.calls.length;
+    assert.equal(await startLocal(system), 1);
+    assert.equal(system.calls.length, calls, 'validation must precede service changes');
+    assert.equal(system.errors.at(-1), 'Avvio non riuscito: PILATES_REASONING_EFFORT non valido: indicare uno tra none, minimal, low, medium, high, xhigh, max, ultra.');
+  }
+});
