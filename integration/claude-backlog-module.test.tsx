@@ -16,6 +16,7 @@ function backend(on) {
     let store = fixtures.base
     if (state.mode === 'empty') store = { versions: [], epics: [], items: [] }
     else if (state.mode === 'viewer') store = extra.length ? fixtures.viewerBranches : fixtures.viewer
+    else if (state.mode === 'dependencies') store = extra.length ? fixtures.dependenciesBranches : fixtures.dependencies
     else if (state.mode === 'working') store = extra.length ? fixtures.working : fixtures.workingBase
     else if (!extra.length) store = fixtures.base
     else if (extra.includes('--no-fetch')) store = fixtures.cached
@@ -145,5 +146,26 @@ test('shows focus guidance, errors and empty results while keeping local control
   expect(await shown(view)).toContain('Synthetic first')
   await press(view, 'close')
   expect(host.closed.map((pane) => pane.id)).toEqual(['backlog'])
+  await view.unmount()
+})
+
+test('dims Done dependencies and the ID of an item while a dependency is not Done', async ($, on) => {
+  const host = backend(on)
+  host.mode = 'dependencies'
+  await $.command.run({ command: 'backlog', args: '' })
+  const view = await mount($)
+  await press(view, 'reload')
+  const color = async (pattern) => (await view.find({ type: 'Text', text: pattern }))?.props.color
+  let display = await shown(view)
+  expect(display).toContain('TEC-011 — Synthetic unmet dependencies')
+  expect(display).toContain('Dependencies: TEC-013, TEC-012')
+  expect(await color(/^TEC-011$/)).toBe('inactive')
+  expect(await color(/^ TEC-013$/)).toBe('inactive')
+  expect(await color(/^, TEC-012$/)).toBeUndefined()
+  await press(view, 'next')
+  display = await shown(view)
+  expect(display).toContain('TEC-012 — Synthetic met dependencies')
+  expect(await color(/^TEC-012$/)).toBeUndefined()
+  expect(await color(/^ TEC-013$/)).toBe('inactive')
   await view.unmount()
 })

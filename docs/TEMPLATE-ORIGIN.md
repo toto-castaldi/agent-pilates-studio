@@ -1,6 +1,6 @@
 # Origine e confronto del template
 
-Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0, TEC-028 processo e skill alla v1.6.1, TEC-029 alla v1.7.0, TEC-030 alla v1.7.1, TEC-031 alla v2.0.0, TEC-038 alla v2.1.0, TEC-044 alla v2.2.1 e TEC-047 alla v3.0.0, passando per la v2.3.0; TEC-048 adotta la v4.0.0, incluse le modifiche v3.0.1 e v3.1.0. Nei resoconti precedenti le sezioni del processo conservano la numerazione storica della versione descritta.
+Questa registrazione è versionata nel progetto: non dipende dai remote Git configurati nel clone dell'operatore. Un riferimento solo confrontato non equivale a un'adozione; ogni aggiornamento richiede una decisione e un'attività separate secondo il processo del progetto. TEC-023 adotta le risorse indicate sotto, non il template indiscriminatamente; TEC-024 ne aggiorna alcune alla v1.5.0, TEC-028 processo e skill alla v1.6.1, TEC-029 alla v1.7.0, TEC-030 alla v1.7.1, TEC-031 alla v2.0.0, TEC-038 alla v2.1.0, TEC-044 alla v2.2.1 e TEC-047 alla v3.0.0, passando per la v2.3.0; TEC-048 adotta la v4.0.0, incluse le modifiche v3.0.1 e v3.1.0, e TEC-054 la v4.2.0, passando per la v4.1.0. Nei resoconti precedenti le sezioni del processo conservano la numerazione storica della versione descritta.
 
 ## Personalizzazione Pi dopo TEC-045
 
@@ -121,6 +121,25 @@ I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`. `
 ## Verifica di TEC-048
 
 Le prove `integration/local/process-docs.test.ts` usano una CLI reale e file sintetici per risoluzione dei documenti, sezioni inesistenti, dry run senza scritture, mapping, preservazione dei record e rifiuto della migrazione ripetuta. I controlli delle guide e del wrapper usano sostituti di `hc` e Pi: **non dimostrano Herdr reale, Claude Code headless o il comportamento di un modello**. Nessun worker avviato. Ambiente del **2026-11-16**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**; Pi **1.5.0** e Claude Code **2.1.323** selezionati con PATH temporaneo, senza cambiare i runtime personali. Superati lint, typecheck, **100 test unitari**, build, `test:local` (**50**), `test:pi` (**7**) e `test:claude` (**2**). Le prime due nuove prove avevano fixture non valide (README mancante e sezioni volutamente inesistenti già all'aggiunta, rifiutate correttamente dalla CLI); corrette predisponendo documenti validi prima dell'aggiunta e alterando poi soltanto i documenti sintetici per verificare il rifiuto. Nessuna modifica agli strumenti upstream per far passare i test. Resta il limite del validatore Claude `--strict` già documentato per il plugin originale (autore mancante), non modificato dall'aggiornamento. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti a questo aggiornamento e restano richieste alla chiusura della versione.
+
+## Inventario dopo TEC-054
+
+Riferimenti verificati il **2026-11-24** nel clone pubblico temporaneo isolato: tag annotati `v4.1.0` → `6b4490ab37a3431101657075674d18e09945ea1c` e `v4.2.0` → `f8865eea054c12a801d98249e13e188bd5411260`; `main` del template indicava la v4.2.0. Verificati tipo dei tag, commit completi e diff completo dalla v4.0.0 (`b642da351cc848df6af89242fd31872b80c38a66`): 9 file, di cui 6 già nella v4.1.0; non è una verifica di firma crittografica.
+
+| Risorsa | Base adottata dimostrata prima di TEC-054 | Confronto e adozione |
+| --- | --- | --- |
+| `docs/PROCESS.md`, `docs/PROCESS-PARALLEL.md`, `orchestrate/{SKILL,herdr,claude-code}.md` | Blob verificati identici alla v4.0.0 prima della copia | Adottati v4.2.0 senza divergenze: Process version 4.2.0; dalla v4.1.0 il lancio vale come via, il worker riferisce `started` e implementa, oppure `ready` e attende il via se ha domande aperte o se l'utente chiede al lancio di rivedere i piani; il rilascio vale solo per i worker in attesa del via; in modalità Herdr l'orchestratore conferma senza chiedere la finestra di fiducia di Claude Code nei clone appena creati, salvo richiesta contraria dell'utente. L'adozione così com'è è stata scelta dall'utente il 2026-11-24, senza deroghe. |
+| Plugin Claude `backlog-overlay` (`hooks/register.tsx`, `types/index.d.ts`) | Blob verificati identici alla v4.0.0 | Adottati v4.2.0 senza divergenze: dipendenze `Done` attenuate e ID attenuato finché una dipendenza non è `Done`. |
+| Visualizzatore Pi | v4.0.0 con l'unica divergenza TEC-031 | Applicata la patch v4.0.0 → v4.2.0 (stessa resa attenuata); conservato il solo adattamento concordato del catch del refresh, unica differenza dal target. |
+| CLI, `docs/process/`, altre skill, `manual.md`, attributi, ignore, symlink e `_TEMPLATE.md` | Basi dell'inventario TEC-048 | Invariati fra v4.0.0 e v4.2.0 e verificati identici al target. |
+| `README.md` generico | Personalizzato | Solo confrontato: riportate a mano in italiano le modifiche su lavoro parallelo, fiducia dei clone e dipendenze attenuate. |
+| AGENTS, design, `backlog/` e altre risorse | Personalizzati o propri | AGENTS §10 resta coerente senza modifiche; aggiornati a mano design e test. Nessun seed adottato, nessun record migrato, nessuna configurazione privata letta, nessun worker avviato. |
+
+I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`.
+
+## Verifica di TEC-054
+
+VERIFICA_TEC_054
 
 ## Procedura manuale per un nuovo confronto
 

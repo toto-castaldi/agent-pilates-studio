@@ -61,6 +61,15 @@ def viewer_items():
     ]
 
 
+def dependency_items():
+    """An item with a Done and an unmet dependency, one with only Done dependencies, and the Done item."""
+    first = item('TEC-011', 'Synthetic unmet dependencies')
+    first['dependencies'] = ['TEC-013', 'TEC-012']
+    second = item('TEC-012', 'Synthetic met dependencies')
+    second['dependencies'] = ['TEC-013']
+    return [first, second, item('TEC-013', 'Synthetic done dependency', status='Done')]
+
+
 def write_store(project, items):
     """Write only a disposable viewer fixture, never the project's canonical store."""
     base = project / 'backlog'
@@ -133,6 +142,10 @@ if __name__ == '__main__':
     elif mode == 'viewer':
         copy_tool(root)
         write_store(root, viewer_items())
+        print(cli(root, 'export', '--json'))
+    elif mode == 'dependencies':
+        copy_tool(root)
+        write_store(root, dependency_items())
         print(cli(root, 'export', '--json'))
     else:
         raise ValueError(f'Unknown synthetic fixture: {mode}')

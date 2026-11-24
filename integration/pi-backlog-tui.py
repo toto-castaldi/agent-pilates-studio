@@ -3,6 +3,7 @@
 import fcntl
 import json
 import os
+import re
 import pty
 import select
 import shutil
@@ -14,7 +15,7 @@ import time
 from pathlib import Path
 
 from backlog_fixture import (cli as fixture_cli, copy_tool, create_branch_fixture, git as fixture_git,
-                             isolated_env, item, snapshot, viewer_items, write_store)
+                             dependency_items, isolated_env, item, snapshot, viewer_items, write_store)
 
 SOURCE = Path('.pi/extensions/backlog/index.ts').resolve()
 
@@ -273,10 +274,34 @@ def exercise_refresh_failure(root):
         pi.close()
 
 
+def exercise_dependencies(root):
+    project, agent = make_project(root, 'dependencies')
+    write_store(project, dependency_items())
+    before = snapshot(project)
+    pi = Pi(project, root, agent)
+    try:
+        output = open_command(pi, b'Synthetic unmet dependencies') + pi.drain(1)
+        # The muted style is read from the Done dependency, not assumed from the theme.
+        line = re.search(rb'Dependencies:\x1b\[39m ((?:\x1b\[[0-9;]*m)+)TEC-013((?:\x1b\[[0-9;]*m)+), TEC-012 ', output)
+        assert line, f'Dependencies line missing; synthetic tail: {output[-3000:]!r}'
+        muted = line.group(1)
+        assert re.search(rb'\x1b\[(?:[0-9]+;)*2(?:;[0-9]+)*m', muted), muted
+        assert muted + b'TEC-011' in output, 'ID with an unmet dependency is not muted'
+        pi.send(b'\x1b[C')
+        output = pi.wait_for(b'Synthetic met dependencies') + pi.drain(1)
+        assert b'\x1b[1mTEC-012 ' in output and muted + b'TEC-012' not in output, 'ID with Done dependencies is muted'
+        assert re.search(rb'Dependencies:\x1b\[39m ' + re.escape(muted) + rb'TEC-013', output)
+        close_view(pi)
+        assert snapshot(project) == before
+    finally:
+        pi.close()
+
+
 if __name__ == '__main__':
     assert subprocess.check_output(['pi', '--version'], text=True).strip() == '1.5.0'
     with tempfile.TemporaryDirectory(prefix='pilates-pi-backlog-') as temporary:
         exercise(Path(temporary))
         exercise_branches(Path(temporary))
         exercise_refresh_failure(Path(temporary))
+        exercise_dependencies(Path(temporary))
     print('Synthetic isolated Pi backlog TUI checks passed')
