@@ -139,7 +139,9 @@ I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`.
 
 ## Verifica di TEC-054
 
-VERIFICA_TEC_054
+Le prove usano soltanto fixture sintetiche. `integration/backlog_fixture.py` aggiunge una fixture comune con un item a dipendenza `Done` e non `Done`, uno con sole dipendenze `Done` e l'item completato. Su questa fixture verificano la resa attenuata la quarta prova nativa del plugin Claude Code, sul colore `inactive` di ID e dipendenze, e la TUI Pi offline, sulla sequenza SGR ricavata dalla dipendenza `Done` e non fissata dal tema. Entrambe falliscono con i file v4.0.0, controllato ripristinandoli temporaneamente. `parallel-work.test.ts` simula rapporti `started` e `ready`, via implicito nel lancio, attesa per domande o revisione dei piani e rilascio dei soli worker in attesa. Verifica inoltre le frasi adottate su domande, via e finestra di fiducia Herdr. I sostituti di `hc` e Pi **non dimostrano Herdr reale, Claude Code headless, l'invio reale di tasti alla finestra di fiducia o il comportamento di un modello**. Nessun worker avviato.
+
+Ambiente del **2026-11-24**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**. Pi **1.5.0** e Claude Code **2.1.323** sono stati selezionati con PATH temporaneo, senza cambiare i runtime personali (Pi 1.5.2 e Claude Code 2.1.331). `test:claude` è passato anche con Claude Code 2.1.331. Superati lint, typecheck, **108 test unitari**, build, `test:local` (**56**), `test:pi` (**7**) e `test:claude` (**2**, con **4** prove native). Prima del commit le due prove su un clone del commit corrente vedevano ancora i file precedenti: sono passate dopo il commit, senza modifiche. Resta il limite del validatore Claude `--strict` già documentato. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti e restano richieste alla chiusura della versione.
 
 ## Procedura manuale per un nuovo confronto
 
