@@ -37,6 +37,8 @@ test('Claude Code 2.1.287+ validates and exercises the actual module with shared
     const source = process.cwd();
     const viewer = join(root, 'viewer');
     const viewerData = JSON.parse(run('python3', [resolve('integration/backlog_fixture.py'), 'viewer', viewer]));
+    const dependencies = join(root, 'dependencies');
+    const dependencyData = JSON.parse(run('python3', [resolve('integration/backlog_fixture.py'), 'dependencies', dependencies]));
     const fixtureRoot = join(root, 'branches');
     mkdirSync(fixtureRoot);
     const fixture = JSON.parse(run('python3', [resolve('integration/backlog_fixture.py'), 'branches', fixtureRoot])) as { project: string; second: string };
@@ -45,6 +47,7 @@ test('Claude Code 2.1.287+ validates and exercises the actual module with shared
     const git = (...args: string[]) => run('git', ['-C', fixture.project, ...args]);
     const snapshots = {
       viewer: viewerData, viewerBranches: exported(viewer, '--branches', '--no-fetch'),
+      dependencies: dependencyData, dependenciesBranches: exported(dependencies, '--branches', '--no-fetch'),
       base: exported(fixture.project), cached: exported(fixture.project, '--branches', '--no-fetch'),
       fetched: exported(fixture.project, '--branches'), failed: undefined, workingBase: undefined, working: undefined,
     };
@@ -60,7 +63,7 @@ test('Claude Code 2.1.287+ validates and exercises the actual module with shared
     const native = spawnSync('claude', ['plugin', 'test', plugin], { cwd: root, env, encoding: 'utf8', timeout: 60_000 });
     const output = `${native.stdout}\n${native.stderr}`;
     assert.equal(native.status, 0, `${native.error?.message ?? ''}\n${output}`);
-    assert.match(output, /3 pass/);
+    assert.match(output, /4 pass/);
     assert.match(output, /0 fail/);
   } finally {
     rmSync(root, { recursive: true, force: true });

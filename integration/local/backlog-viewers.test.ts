@@ -8,19 +8,20 @@ function blob(text: string): string {
   return createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 }
 
-test('shared resources match the pinned v4.0.0 blobs, with only the agreed Pi refresh adaptation', () => {
-  // Public template commit b642da351cc848df6af89242fd31872b80c38a66 (tag v4.0.0), verified for TEC-048.
+test('shared resources match the pinned v4.2.0 blobs, with only the agreed Pi refresh adaptation', () => {
+  // Public template commit f8865eea054c12a801d98249e13e188bd5411260 (tag v4.2.0), verified for TEC-054;
+  // files unchanged since v4.0.0 (b642da351cc848df6af89242fd31872b80c38a66, TEC-048) keep their blobs.
   const hashes: Record<string, string> = {
-    'docs/PROCESS.md': 'f72bb6ccd438d174f0d6e14c3b91d2bb2aee15e3',
-    'docs/PROCESS-PARALLEL.md': 'a59075dc9503ce1e11685be88511478b494153f5',
+    'docs/PROCESS.md': '79b23ba7be37497d30db5de888953fa607622691',
+    'docs/PROCESS-PARALLEL.md': 'ae671d2023dd38a06c397e6489d298ad6a654257',
     'docs/process/backlog.md': '2b7042d43533b3a5f6540ecebc696bfe5d437860',
     'docs/process/docs.md': '8eeeade8783a51c1b9e778a904ce4b4473a27d4d',
     'docs/process/git.md': '568dd279891ada8c39dbcc581f962f14927563af',
     'docs/process/release.md': '583edc900552e6b2feaa3d8e2e03e9d9bd7259ae',
     '.agents/tools/backlog.py': '0392a6588f98d5bfe292751326f7f498788bf289',
-    '.agents/skills/orchestrate/SKILL.md': '1c5907180bd22820fe769d7f67fa2d9496455f56',
-    '.agents/skills/orchestrate/herdr.md': 'f3de0e9afa2a1341db4b42e9f68cb9eddbb1e1ca',
-    '.agents/skills/orchestrate/claude-code.md': 'b5ec4ae987c1c75ac829a8c3382970a71cfb12e3',
+    '.agents/skills/orchestrate/SKILL.md': 'ceac6f3c0ba51daab6bee193e5a366d6aa3811fb',
+    '.agents/skills/orchestrate/herdr.md': '37e89c38280cd2fb58154428a0e524a7f314cff6',
+    '.agents/skills/orchestrate/claude-code.md': '91151f34a3b659ab811279e02416e4e5f36e2ce8',
     '.agents/skills/orchestrate/manual.md': '62431d3d14b222ff0dc0ce568782a4ef5ca70403',
     '.agents/skills/add-item/SKILL.md': '624ad3dc8ed0fd99282cc83179dcfddb6f01569b',
     '.agents/skills/start-task/SKILL.md': 'de4a8c4d813c12e38b73caa8b21a44aca0d24674',
@@ -32,14 +33,14 @@ test('shared resources match the pinned v4.0.0 blobs, with only the agreed Pi re
     'docs/design/_TEMPLATE.md': 'f166771727b13bb74dfdd78d2805ea9930862838',
     '.agents/skills/backlog-overlay/.claude-plugin/plugin.json': '0953298a0c504bbfc7c3bb4ab5757b566c08f77c',
     '.agents/skills/backlog-overlay/hooks/hooks.json': '5a63f649593a5d89af8775a8e3d12db0f0940b12',
-    '.agents/skills/backlog-overlay/hooks/register.tsx': '00eb24701eddc868e61e166df0f4a004d0848350',
-    '.agents/skills/backlog-overlay/types/index.d.ts': 'db0296efdf55632732b25b09ff70090f3b7a35fe',
+    '.agents/skills/backlog-overlay/hooks/register.tsx': '79f4f670ebd057b21fe1a7794db9f5232827f05d',
+    '.agents/skills/backlog-overlay/types/index.d.ts': 'd4c86c45b66bd511d1dcd9ddee84ef1e5e4a9934',
   };
   for (const [path, expected] of Object.entries(hashes)) assert.equal(blob(readFileSync(path, 'utf8')), expected, path);
   const pi = readFileSync('.pi/extensions/backlog/index.ts', 'utf8');
   const adapted = '\t\t// Never break the overlay: it keeps showing what it has and reports the failure.\n\t\tif (!isClosed()) overlay.setFetchState("failed");';
   assert.equal(pi.split(adapted).length, 2);
-  assert.equal(blob(pi.replace(adapted, '\t\t// Never break the overlay: it keeps showing what it has.')), 'db6b75e5c9bc4af9c99e0e435af3454a50b24cfc');
+  assert.equal(blob(pi.replace(adapted, '\t\t// Never break the overlay: it keeps showing what it has.')), 'f2188c43c842786ac9e71c1693330595e786b18e');
 });
 
 test('Claude backlog is a project plugin, not a new skill, and both viewers only delegate Git resolution to the CLI', () => {
