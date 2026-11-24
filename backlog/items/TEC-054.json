@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-054-allineamento-template-v4-2-0",
   "dependencies": [],
   "requirements": [
@@ -27,5 +27,7 @@
   ],
   "remarks": [
     "Utente: confermata aggiunta P0 EPIC-001 in v0.4.0 come cambio di scope."
-  ]
+  ],
+  "outcome": "Adottato template v4.2.0 f8865eea054c12a801d98249e13e188bd5411260 passando per v4.1.0 6b4490ab37a3431101657075674d18e09945ea1c, tag annotati e commit verificati nel clone pubblico isolato; diff completo di 9 file dalla v4.0.0. Basi del progetto verificate identiche alla v4.0.0 prima della copia. PROCESS.md (Process version 4.2.0), PROCESS-PARALLEL.md, orchestrate SKILL/herdr/claude-code e plugin backlog-overlay identici al target; visualizzatore Pi aggiornato con patch e sola divergenza concordata del refresh. Adottato cosi com'e su scelta dell'utente, senza deroghe: lancio come via con rapporti started/ready, rilascio dei soli worker in attesa, conferma Herdr della fiducia dei clone appena creati. README generico solo confrontato, modifiche riportate a mano in italiano; aggiornati process-tooling, test-strategy, TEMPLATE-ORIGIN e CHANGELOG; AGENTS §10 coerente senza modifiche. Nuova fixture sintetica delle dipendenze con quarta prova nativa Claude e prova TUI Pi della resa attenuata, entrambe fallite con i file v4.0.0; parallel-work simula started/ready, via implicito, attesa e rilascio; blob v4.2.0 fissati. Superati lint, typecheck, 108 test unitari, build, test:local 56, test:pi 7 con Pi 1.5.0 e test:claude 2 (4 prove native) con Claude Code 2.1.323 in PATH temporaneo, anche con 2.1.331. Herdr, Claude Code headless e invio reale di tasti simulati, nessun worker o modello reale; suite Docker, test:pi-package e Meta/OpenRouter non pertinenti. Nessuna configurazione privata, stack o produzione toccati; nessun merge.",
+  "closed_at": "2026-11-24"
 }
