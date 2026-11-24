@@ -1,0 +1,30 @@
+{
+  "id": "TEC-054",
+  "title": "Allineamento al template v4.2.0",
+  "version": "v0.4.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "PROCESS-PARALLEL §2",
+    "AGENTS §10",
+    "design/process-tooling",
+    "design/test-strategy",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare la release v4.2.0 di agile-project-template (commit f8865eea054c12a801d98249e13e188bd5411260, tag annotato v4.2.0), inclusa la v4.1.0 (6b4490ab37a3431101657075674d18e09945ea1c). Il diff da v4.0.0 tocca 9 file: PROCESS.md (Process version), PROCESS-PARALLEL.md, la skill orchestrate con le guide herdr e claude-code (conferma della fiducia del worker e via al lancio), l'overlay backlog-overlay e il visualizzatore Pi (dipendenze Done e ID bloccati attenuati) e README.md generico. Preservare personalizzazioni, dati del backlog e protezioni dello studio, inclusa la divergenza concordata del visualizzatore Pi sulla segnalazione degli errori di refresh. Nessun worker, deploy, modifica dello stack o configurazione personale; nessun merge su main.",
+  "acceptance_criteria": [
+    "Tag e commit target e intermedio verificati nel clone pubblico isolato; basi del progetto dimostrate identiche alla v4.0.0 prima della copia e registrazione in docs/TEMPLATE-ORIGIN.md di adozioni, soli confronti e divergenze, senza sovrascrivere file personalizzati o seed del backlog.",
+    "Process version 4.2.0; PROCESS.md, PROCESS-PARALLEL.md, skill orchestrate con le sue guide e overlay backlog-overlay identici al target; visualizzatore Pi aggiornato mantenendo la sola divergenza concordata di refresh; README.md generico solo confrontato, con le modifiche pertinenti riportate a mano in italiano; AGENTS §10 coerente con il nuovo lancio dei worker.",
+    "Test locali aggiornati per le guide orchestrate e per le viste del backlog con dipendenze Done e ID bloccati, con fixture sintetiche; passano gate rapido, backlog check e suite separate pertinenti test:local, test:pi e test:claude; limiti delle prove simulabili espliciti."
+  ],
+  "remarks": [
+    "Utente: confermata aggiunta P0 EPIC-001 in v0.4.0 come cambio di scope."
+  ]
+}
