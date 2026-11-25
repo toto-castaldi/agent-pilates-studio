@@ -1,5 +1,5 @@
 {
   "id": "v0.5.0",
   "goal": "Osservabilità dell'uso dell'agente: metriche per turno su utilizzatori, tempi di risposta, token, contesto e costi, registrate nel database senza dati personali e consultabili dall'operatore in una dashboard Grafana raggiungibile solo via SSH, in produzione e in sviluppo (REQ-OPS-011, REQ-OPS-012). Senza avvisi automatici e senza ricostruzione dello storico.",
-  "state": "Planned"
+  "state": "Open"
 }
