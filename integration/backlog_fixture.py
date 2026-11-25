@@ -134,10 +134,48 @@ def create_branch_fixture(root, project=None):
             'branch_only': BRANCH_ONLY, 'first_commit': first_commit}
 
 
+def create_template_project(root, name, current='1.2.3', tags=('v1.2.3',), template=None, template_line=True):
+    """A synthetic project whose `Template` line names a local synthetic template with the given tags."""
+    env = isolated_env(root)
+    project = root / name
+    copy_tool(project)
+    if template is None:
+        source = root / (name + '-template-source')
+        source.mkdir(parents=True)
+        git(source, 'init', '-q', '-b', 'main', env=env)
+        (source / 'README.md').write_text('Synthetic template\n')
+        git(source, 'add', '.', env=env)
+        git(source, 'commit', '-qm', 'Synthetic template', env=env)
+        for tag in tags:
+            git(source, 'tag', '-a', tag, '-m', f'Synthetic {tag}', env=env)
+        template = str(root / (name + '-template.git'))
+        git(root, 'clone', '-q', '--bare', str(source), template, env=env)
+        shutil.rmtree(source)
+    lines = ['# Synthetic process', '', f'**Process version:** {current}', '']
+    if template_line:
+        lines += [f'**Template:** {template}', '']
+    (project / 'docs').mkdir(parents=True, exist_ok=True)
+    (project / 'docs/PROCESS.md').write_text('\n'.join(lines + ['Synthetic body.', '']))
+    return project, template
+
+
+def tree(project):
+    """Every file of a synthetic project with its bytes: the template check must leave it unchanged."""
+    return sorted((str(path.relative_to(project)), path.read_bytes()) for path in project.rglob('*') if path.is_file())
+
+
 if __name__ == '__main__':
-    mode, target = sys.argv[1:]
+    mode, target, *rest = sys.argv[1:]
     root = Path(target).resolve()
-    if mode == 'branches':
+    if mode == 'template':
+        # template ROOT NAME CURRENT LINE TEMPLATE|- TAG...: LINE is `yes` or `no`, `-` builds a local template.
+        name, current, line, template, *tags = rest
+        project, template = create_template_project(root, name, current, tags, None if template == '-' else template,
+                                                    line == 'yes')
+        print(json.dumps({'project': str(project), 'template': template}))
+    elif rest:
+        raise ValueError(f'Unexpected arguments: {rest}')
+    elif mode == 'branches':
         print(json.dumps(create_branch_fixture(root)))
     elif mode == 'viewer':
         copy_tool(root)

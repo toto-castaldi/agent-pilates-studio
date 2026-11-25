@@ -14,10 +14,13 @@ import termios
 import time
 from pathlib import Path
 
-from backlog_fixture import (cli as fixture_cli, copy_tool, create_branch_fixture, git as fixture_git,
-                             dependency_items, isolated_env, item, snapshot, viewer_items, write_store)
+from backlog_fixture import (cli as fixture_cli, copy_tool, create_branch_fixture, create_template_project,
+                             git as fixture_git, dependency_items, isolated_env, item, snapshot, tree, viewer_items,
+                             write_store)
 
 SOURCE = Path('.pi/extensions/backlog/index.ts').resolve()
+TEMPLATE_CHECK = Path('.pi/extensions/template-check/index.ts').resolve()
+TEMPLATE_NOTICE = b'Template update available'
 
 
 class Pi:
@@ -35,9 +38,9 @@ class Pi:
         )
         os.close(slave)
         try:
-            self.wait_for(b'Press ctrl+o to show full startup help', 30)
+            self.startup = self.wait_for(b'Press ctrl+o to show full startup help', 30)
             time.sleep(0.5)
-            self.drain()
+            self.startup += self.drain()
         except BaseException:
             self.close()
             raise
@@ -297,6 +300,58 @@ def exercise_dependencies(root):
         pi.close()
 
 
+def exercise_template_check(root):
+    """The startup notice appears only when the synthetic project is behind its synthetic template."""
+    base = root / 'template-check'
+    base.mkdir()
+    cases = [
+        ('behind', dict(tags=('v1.2.3', 'v2.0.0'))),
+        ('aligned', dict(tags=('v1.2.3',))),
+        ('no-line', dict(tags=('v2.0.0',), template_line=False)),
+        ('offline', dict(template='https://127.0.0.1:9/synthetic-template.git')),
+    ]
+    for name, options in cases:
+        project, _ = create_template_project(base, name, **options)
+        extension = project / '.pi/extensions/template-check/index.ts'
+        extension.parent.mkdir(parents=True)
+        shutil.copyfile(TEMPLATE_CHECK, extension)
+        agent = base / (name + '-agent')
+        agent.mkdir()
+        # Trace the real CLI invocations outside the project, without replacing their behavior.
+        calls = base / (name + '-calls.jsonl')
+        tool = project / '.agents/tools/backlog.py'
+        actual = project / '.agents/tools/backlog_actual.py'
+        tool.rename(actual)
+        tool.write_text('import json, subprocess, sys\n'
+                        f'with open({str(calls)!r}, "a") as log:\n'
+                        '    log.write(json.dumps(sys.argv[1:]) + "\\n")\n'
+                        f'sys.exit(subprocess.call([sys.executable, {str(actual)!r}, *sys.argv[1:]]))\n')
+        before = tree(project)
+        pi = Pi(project, base, agent)
+        try:
+            if name == 'behind':
+                output = pi.startup if TEMPLATE_NOTICE in pi.startup else pi.startup + pi.wait_for(TEMPLATE_NOTICE, 20)
+                text = re.sub(rb'\x1b\[[0-9;?]*[A-Za-z]|\s+', b'', output)
+                assert b'processversion2.0.0(major,itneedsamigration' in text, output[-3000:]
+                assert b'thisprojectuses1.2.3' in text, output[-3000:]
+                # A reload is not a startup: the check does not run again.
+                pi.drain()
+                pi.send(b'/reload\r')
+                pi.wait_for(b'Reloaded keybindings', 15)
+                pi.drain(3)
+            else:
+                output = pi.startup + pi.drain(4)
+                assert TEMPLATE_NOTICE not in output, f'{name}: {output[-3000:]!r}'
+                # The session stays usable: the prompt still accepts input.
+                pi.send(b'/')
+                pi.wait_for(b'Open settings menu', 10)
+        finally:
+            pi.close()
+        after = [entry for entry in tree(project) if not entry[0].startswith('.pi/') or entry[0].startswith('.pi/extensions/')]
+        assert after == before, f'{name}: the template check changed project files'
+        assert [json.loads(line) for line in calls.read_text().splitlines()] == [['template-check', '--format', 'json']], name
+
+
 if __name__ == '__main__':
     assert subprocess.check_output(['pi', '--version'], text=True).strip() == '1.5.0'
     with tempfile.TemporaryDirectory(prefix='pilates-pi-backlog-') as temporary:
@@ -304,4 +359,5 @@ if __name__ == '__main__':
         exercise_branches(Path(temporary))
         exercise_refresh_failure(Path(temporary))
         exercise_dependencies(Path(temporary))
-    print('Synthetic isolated Pi backlog TUI checks passed')
+        exercise_template_check(Path(temporary))
+    print('Synthetic isolated Pi backlog TUI and template check notice checks passed')

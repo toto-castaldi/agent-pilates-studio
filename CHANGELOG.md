@@ -6,6 +6,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+### Changed
+
+- Processo e strumenti allineati al template v4.3.0: all'avvio di Pi o di Claude Code un controllo in sola lettura confronta la versione del processo con l'ultima release del template e, se il progetto è indietro, mostra un avviso con le due versioni e le note di rilascio, senza bloccare l'avvio e restando silenzioso senza rete; il comando `backlog template-check` mostra a richiesta lo stesso confronto (TEC-055).
+
 ## [0.4.0] - 2026-11-25
 
 ### Changed

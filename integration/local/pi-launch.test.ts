@@ -35,9 +35,10 @@ test('approved prompts and backlog extension are present in a clean clone of the
       assert.equal(prompt, readFileSync(`.pi/prompts/${name}.md`, 'utf8'));
       check(prompt);
     }
-    const extension = '.pi/extensions/backlog/index.ts';
-    assert.ok(lstatSync(join(checkout, extension)).isFile());
-    assert.equal(readFileSync(join(checkout, extension), 'utf8'), readFileSync(extension, 'utf8'));
+    for (const extension of ['.pi/extensions/backlog/index.ts', '.pi/extensions/template-check/index.ts', '.claude/settings.json']) {
+      assert.ok(lstatSync(join(checkout, extension)).isFile(), extension);
+      assert.equal(readFileSync(join(checkout, extension), 'utf8'), readFileSync(extension, 'utf8'));
+    }
     assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'avvio.md')), false);
     assert.equal(existsSync(join(checkout, '.pi', 'prompts', 'start.md')), false);
   } finally {
