@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-053-verifica-riavvio-reale-jarvis",
   "dependencies": [
     "BUG-004"
@@ -27,5 +27,7 @@
   ],
   "remarks": [
     "Split di BUG-004 concordato con l'utente il 2026-11-23: l'utente al momento non può eseguire il reboot; nessun agente esegue reboot o aggiorna la produzione."
-  ]
+  ],
+  "outcome": "Produzione su jarvis aggiornata a mano dall'operatore alla release ce55d7f (contiene BUG-004), servizi healthy; dopo un reboot reale eseguito dall'operatore PostgreSQL, broker e gateway sono ripartiti healthy senza intervento con stessa release, stessi container e volumi, e l'agente ha risposto al messaggio di prova. Evidenze in docs/operations/TEC-053-prove.md (Docker 29.10.0, containerd v2.4.2).",
+  "closed_at": "2026-11-25"
 }
