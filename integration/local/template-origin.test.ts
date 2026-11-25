@@ -22,6 +22,7 @@ test('template origin is available in a clean project clone', () => {
     assert.match(text, /b642da351cc848df6af89242fd31872b80c38a66/);
     assert.match(text, /6b4490ab37a3431101657075674d18e09945ea1c/);
     assert.match(text, /f8865eea054c12a801d98249e13e188bd5411260/);
+    assert.match(text, /73f4dd3810a035b07e15197ebe00fa5cce4d2628/);
     assert.match(text, /base sconosciuta/i);
     assert.match(text, /solo confrontato/i);
     assert.equal(execFileSync('git', ['-C', clone, 'status', '--porcelain'], { encoding: 'utf8', env }), '');

@@ -8,17 +8,19 @@ function blob(text: string): string {
   return createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 }
 
-test('shared resources match the pinned v4.2.0 blobs, with only the agreed Pi refresh adaptation', () => {
-  // Public template commit f8865eea054c12a801d98249e13e188bd5411260 (tag v4.2.0), verified for TEC-054;
-  // files unchanged since v4.0.0 (b642da351cc848df6af89242fd31872b80c38a66, TEC-048) keep their blobs.
+test('shared resources match the pinned v4.3.0 blobs, with only the agreed Pi refresh adaptation', () => {
+  // Public template commit 73f4dd3810a035b07e15197ebe00fa5cce4d2628 (tag v4.3.0), verified for TEC-055;
+  // files unchanged since v4.2.0 (f8865eea054c12a801d98249e13e188bd5411260, TEC-054) or v4.0.0 (b642da351cc848df6af89242fd31872b80c38a66, TEC-048) keep their blobs.
   const hashes: Record<string, string> = {
-    'docs/PROCESS.md': '79b23ba7be37497d30db5de888953fa607622691',
+    'docs/PROCESS.md': '9aa1584582c182bef44e37072bb288580edc80b6',
     'docs/PROCESS-PARALLEL.md': 'ae671d2023dd38a06c397e6489d298ad6a654257',
     'docs/process/backlog.md': '2b7042d43533b3a5f6540ecebc696bfe5d437860',
     'docs/process/docs.md': '8eeeade8783a51c1b9e778a904ce4b4473a27d4d',
     'docs/process/git.md': '568dd279891ada8c39dbcc581f962f14927563af',
     'docs/process/release.md': '583edc900552e6b2feaa3d8e2e03e9d9bd7259ae',
-    '.agents/tools/backlog.py': '0392a6588f98d5bfe292751326f7f498788bf289',
+    '.agents/tools/backlog.py': 'f0dde5067ac3429d112dc2a91b9a4798d203497a',
+    '.claude/settings.json': '2606966b9d8d39bf155a1bc7cb2c5bd5f3c84768',
+    '.pi/extensions/template-check/index.ts': '3d11519af02259a103c09fd1c3879368dea1b575',
     '.agents/skills/orchestrate/SKILL.md': 'ceac6f3c0ba51daab6bee193e5a366d6aa3811fb',
     '.agents/skills/orchestrate/herdr.md': '37e89c38280cd2fb58154428a0e524a7f314cff6',
     '.agents/skills/orchestrate/claude-code.md': '91151f34a3b659ab811279e02416e4e5f36e2ce8',

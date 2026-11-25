@@ -21,7 +21,8 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
     }
 
     for (const path of [
-      '.pi/workflow.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.agents/skills/start-task/SKILL.md',
+      '.pi/workflow.json', '.pi/prompts/work-alone.md', '.pi/extensions/backlog/index.ts', '.pi/extensions/template-check/index.ts',
+      '.claude/settings.json', '.agents/skills/start-task/SKILL.md',
       '.agents/skills/backlog-overlay/.claude-plugin/plugin.json', '.agents/skills/backlog-overlay/hooks/hooks.json',
       '.agents/skills/backlog-overlay/hooks/register.tsx', '.agents/skills/backlog-overlay/types/index.d.ts',
     ]) {
@@ -53,6 +54,8 @@ test('Pi ignore rules expose only approved files and protect local state', () =>
       '.pi/extensions/backlog/private.ts',
       '.pi/extensions/backlog/auth.json',
       '.pi/extensions/backlog/nested/index.ts',
+      '.pi/extensions/template-check/private.ts',
+      '.pi/extensions/template-check/nested/index.ts',
       '.pi/skills/private/SKILL.md',
       '.env',
       '.local/secrets/db-admin',

@@ -9,6 +9,9 @@
 !.pi/extensions/backlog/
 .pi/extensions/backlog/*
 !.pi/extensions/backlog/index.ts
+!.pi/extensions/template-check/
+.pi/extensions/template-check/*
+!.pi/extensions/template-check/index.ts
 .claude/settings.local.json
 
 # Claude Code module types generated locally when the plugin loads

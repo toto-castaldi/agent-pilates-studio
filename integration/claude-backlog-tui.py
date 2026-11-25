@@ -16,12 +16,14 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from backlog_fixture import (cli, copy_tool, create_branch_fixture, git, isolated_env,
-                             item, snapshot, viewer_items, write_store)
+from backlog_fixture import (cli, copy_tool, create_branch_fixture, create_template_project, git, isolated_env,
+                             item, snapshot, tree, viewer_items, write_store)
 from terminal_fixture import Screen
 
 PLUGIN = Path('.agents/skills/backlog-overlay').resolve()
 FOCUS_HINT = 'ctrl+x tab gives the keys to the backlog pane'
+SETTINGS = Path('.claude/settings.json').resolve()
+TEMPLATE_NOTICE = 'Template update available'
 
 
 class Claude:
@@ -223,6 +225,44 @@ def exercise_branches(root, base_url, version):
         app.close()
 
 
+def exercise_template_check(root, base_url, version):
+    """The SessionStart hook shows the notice after trust, only when the project is behind its template."""
+    cases = [
+        ('behind', dict(tags=('v1.2.3', 'v1.3.0'))),
+        ('aligned', dict(tags=('v1.2.3',))),
+        ('no-line', dict(tags=('v1.3.0',), template_line=False)),
+        ('offline', dict(template='https://127.0.0.1:9/synthetic-template.git')),
+    ]
+    for name, options in cases:
+        case = root / name
+        case.mkdir()
+        project, _ = create_template_project(case, 'project', **options)
+        (project / '.claude').mkdir()
+        shutil.copyfile(SETTINGS, project / '.claude/settings.json')
+        tool = project / '.agents/tools/backlog.py'
+        actual = project / '.agents/tools/backlog_actual.py'
+        tool.rename(actual)
+        tool.write_text('import json, subprocess, sys\n'
+                        f'with open({str(case / "cli-calls.jsonl")!r}, "a") as log:\n'
+                        '    log.write(json.dumps(sys.argv[1:]) + "\\n")\n'
+                        f'sys.exit(subprocess.call([sys.executable, {str(actual)!r}, *sys.argv[1:]]))\n')
+        before = tree(project)
+        app = Claude(project, case, base_url, version)
+        try:
+            if name == 'behind':
+                app.wait_for(TEMPLATE_NOTICE, 20)
+                app.wait_for('process version 1.3.0 (minor, backwards compatible); this project uses 1.2.3.')
+            else:
+                app.drain(4)
+                assert not app.screen.contains(TEMPLATE_NOTICE), f'{name}:\n{app.screen.text()}'
+                assert not app.screen.contains('hook error'), f'{name}:\n{app.screen.text()}'
+        finally:
+            app.close()
+        assert tree(project) == before, f'{name}: the template check changed project files'
+        calls = [json.loads(line) for line in (case / 'cli-calls.jsonl').read_text().splitlines()]
+        assert calls == [['template-check', '--format', 'claude-hook']], (name, calls)
+
+
 if __name__ == '__main__':
     with tempfile.TemporaryDirectory(prefix='pilates-claude-tui-') as temporary:
         root = Path(temporary)
@@ -251,7 +291,8 @@ if __name__ == '__main__':
         thread.start()
         try:
             base_url = f'http://127.0.0.1:{server.server_port}'
-            for name, exercise in [('viewer', exercise_viewer), ('branches', exercise_branches)]:
+            for name, exercise in [('viewer', exercise_viewer), ('branches', exercise_branches),
+                                   ('template-check', exercise_template_check)]:
                 directory = root / name
                 directory.mkdir()
                 exercise(directory, base_url, version)
@@ -260,4 +301,4 @@ if __name__ == '__main__':
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
-    print(f'Synthetic isolated Claude Code {version} project trust, CLI and TUI checks passed; no model requests')
+    print(f'Synthetic isolated Claude Code {version} project trust, CLI, TUI and template check notice checks passed; no model requests')
