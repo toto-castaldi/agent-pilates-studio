@@ -1,0 +1,28 @@
+{
+  "id": "TEC-055",
+  "title": "Allineamento al template v4.3.0",
+  "version": "v0.5.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "design/process-tooling",
+    "design/test-strategy",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare la release v4.3.0 di agile-project-template (commit 73f4dd3, tag v4.3.0), che introduce il controllo all'avvio della versione del template. Il diff da v4.2.0 tocca 5 file: PROCESS.md (Process version 4.3.0, riga Template e frase in §3), .agents/tools/backlog.py (comando template-check), il nuovo hook SessionStart in .claude/settings.json, la nuova estensione Pi .pi/extensions/template-check/ e README.md generico. Preservare personalizzazioni, dati del backlog e protezioni dello studio; il controllo non blocca il lavoro, non scrive file e resta silenzioso senza rete. Nessun worker, deploy, modifica dello stack o configurazione personale; nessun merge su main.",
+  "acceptance_criteria": [
+    "Tag e commit target verificati nel clone pubblico isolato; basi del progetto dimostrate identiche alla v4.2.0 prima della copia e registrazione in docs/TEMPLATE-ORIGIN.md di adozioni, soli confronti e divergenze, senza sovrascrivere file personalizzati o seed del backlog.",
+    "Process version 4.3.0 con la riga Template; PROCESS.md, backlog.py, .claude/settings.json e l'estensione Pi template-check identici al target, coerenti con la sincronizzazione del launcher Pi e con .pi/settings.json locale non toccato; README.md generico solo confrontato, con le modifiche pertinenti riportate a mano in italiano.",
+    "Test locali con fixture sintetiche per template-check (progetto allineato, indietro, senza riga Template, senza rete) e per l'avviso all'avvio in Pi e Claude Code; passano gate rapido, backlog check e suite separate pertinenti test:local, test:pi e test:claude; limiti delle prove simulabili espliciti."
+  ],
+  "remarks": [
+    "Utente: confermata aggiunta P0 EPIC-001 in v0.5.0 come cambio di scope."
+  ]
+}
