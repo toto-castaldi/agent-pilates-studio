@@ -437,7 +437,7 @@ test('parallel work settings and instructions keep the studio protections', () =
     assert.ok(`${skill}\n${guides}`.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 4\.2\.0/);
+  assert.match(processDoc, /\*\*Process version:\*\* 4\.3\.0/);
   for (const phrase of ['**only** through the CLI', 'read with `date +%F`', 'The merge commit contains only the merge and its conflict resolution']) {
     assert.ok(`${processDoc}\n${readFileSync('docs/process/git.md', 'utf8')}`.includes(phrase), phrase);
   }
