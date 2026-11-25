@@ -14,7 +14,7 @@ Dopo un riavvio di `jarvis` Docker riavvia con `unless-stopped` gli stessi conta
 
 ## Condizione di pronto
 
-Sviluppo e produzione condividono il healthcheck di PostgreSQL in `compose.yaml`: `pg_isready -h 127.0.0.1 -U studio_admin -d studio`, cioè il server definitivo raggiungibile via TCP. Il server temporaneo che l'entrypoint ufficiale avvia durante initdb su un volume vuoto, nuovo o dopo un ripristino, ascolta solo sul socket Unix e non è considerato sano; `--wait` di Compose, `db-bootstrap` e le procedure che attendono la salute partono quindi solo dal server definitivo (BUG-005), con la stessa regola del PostgreSQL di consultazione (`continuity`). L'aggiornamento applica il nuovo healthcheck ricreando PostgreSQL con `compose.yaml` dell'immagine `ops`, senza passi aggiuntivi dell'operatore.
+Sviluppo e produzione condividono il healthcheck di PostgreSQL in `compose.yaml`: `pg_isready -h 127.0.0.1 -U studio_admin -d studio`, cioè il server definitivo raggiungibile via TCP. Il server temporaneo che l'entrypoint ufficiale avvia durante initdb su un volume vuoto, nuovo o dopo un ripristino, ascolta solo sul socket Unix e non è considerato sano; `--wait` di Compose, `db-bootstrap` e le procedure che attendono la salute partono quindi solo dal server definitivo, con la stessa regola del PostgreSQL di consultazione (`continuity`). L'aggiornamento applica il nuovo healthcheck ricreando PostgreSQL con `compose.yaml` dell'immagine `ops`, senza passi aggiuntivi dell'operatore.
 
 ## Aggiornamento manuale
 

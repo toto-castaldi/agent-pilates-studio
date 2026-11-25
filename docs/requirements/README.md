@@ -1,6 +1,6 @@
 # Requirements — agent-pilates-studio
 
-**Target version:** v0.4.0
+**Target version:** v0.5.0
 
 **State:** baseline
 
@@ -30,17 +30,13 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 
 ## Scope
 
-### In scope for v0.4.0
+### In scope for v0.5.0
 
-- Esito degli invii WhatsApp rifiutati o non accettati, per le risposte fisse, gestionali e dell'agente, registrato nei log con il codice d'errore e senza dati personali, per diagnosticare la mancata consegna (REQ-OPS-003, REQ-NFR-002).
-- Menu della gestione guidata dell'anagrafica con una breve descrizione di ogni operazione, che distingua la correzione di nome e cognome dal cambio del numero (REQ-STUDIO-016).
-- Backup a caldo del database di produzione pianificato due volte al giorno, alle 14:30 e alle 22:30, con conservazione di 30 giorni dei soli backup pianificati, solo sul server (REQ-OPS-010).
-- Ripartenza automatica e sana dei servizi di produzione dopo un riavvio del server, senza intervento dell'operatore (REQ-OPS-002).
-- Partecipazioni previste di un cliente a una lezione puntuale fuori dalle sue regole, come lezioni extra e recuperi, programmabili anche prima dell'inizio e annullabili con storico; il cliente risulta atteso a quella lezione (REQ-STUDIO-018).
-- Scelta rapida del modello e del livello di thinking dell'assistente nella configurazione privata, effettiva al riavvio del gateway e non modificabile dalla chat (REQ-AGENT-002).
+- Metriche d'uso dell'agente per ogni messaggio autenticato, in produzione e in sviluppo: utilizzatore come insegnante censito, tipo di turno, tempi di risposta complessivi e del modello, modello e livello di thinking, token, contesto inviato rispetto alla finestra, compattazioni, chiamate ai tool, costo riportato da OpenRouter ed esito dell'invio; registrate nel database senza dati personali, non modificabili né leggibili dall'agente e conservate senza limite (REQ-OPS-011).
+- Dashboard Grafana delle metriche per l'operatore, filtrabile per periodo e utilizzatore, raggiungibile solo dal server tramite tunnel SSH, con credenziali nella configurazione privata, sola lettura sulle metriche e su nome e cognome degli insegnanti, e provisioning versionato incluso nelle immagini (REQ-OPS-012).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
-### Out of scope for v0.4.0
+### Out of scope for v0.5.0
 
 Non introdurre queste capacità senza concordare e registrare un cambio di scope:
 
@@ -50,7 +46,8 @@ Non introdurre queste capacità senza concordare e registrare un cambio di scope
 - Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale diverse dalle partecipazioni previste di REQ-STUDIO-018.
 - Anagrafica degli utilizzatori separata dagli insegnanti, più gestori, ruoli configurabili e uso dell'agente da parte di clienti o altre categorie di persone.
 - Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
-- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server e installazione dei suoi prerequisiti Docker/Compose, DNS, certificati, deploy automatico e monitoraggio avanzato.
+- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server e installazione dei suoi prerequisiti Docker/Compose, DNS, certificati e deploy automatico.
+- Avvisi automatici e monitoraggio oltre alle metriche d'uso di REQ-OPS-011; accesso alla dashboard dall'hostname pubblico; ricostruzione dello storico delle metriche precedente alla loro attivazione.
 
 ## Areas
 

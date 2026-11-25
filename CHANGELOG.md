@@ -6,16 +6,20 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-25
+
 ### Changed
 
 - Il livello di thinking dell'assistente si sceglie con `PILATES_REASONING_EFFORT` accanto a `PILATES_MODEL`, in `.env` e in `prod.env` (predefinito `medium`); un valore non valido arresta l'avvio e il cambio vale al successivo riavvio del gateway, senza ricostruire le immagini. Da WhatsApp `/model`, `/reasoning`, `/fast` e `/codex-runtime` ricevono un rifiuto fisso, anche per il gestore (TEC-051).
 - Il menu di `/anagrafica` descrive brevemente ogni operazione e chiarisce che «correggi» cambia solo nome e cognome mentre «numero» cambia il telefono; comandi, passaggi e conferme restano invariati (US-018).
 - Processo e strumenti allineati al template v4.2.0: nel lavoro parallelo il lancio di un worker vale come via, il worker implementa subito e si ferma in attesa solo se ha domande aperte o se si chiede al lancio di rivedere i piani; in modalità Herdr l'orchestratore conferma da solo la finestra di fiducia dei worker Claude Code nei clone appena creati. Le viste `/backlog` di Pi e Claude Code attenuano le dipendenze già completate e l'ID degli item con dipendenze non completate (TEC-054).
+
 ### Added
 
 - Partecipazioni previste di lezioni extra e recuperi: un messaggio come «oggi alle 18 si allenerà Mario Rossi» programma, anche in anticipo, la partecipazione di un cliente fuori dalle sue regole; il cliente risulta atteso solo a quella lezione, distinto dagli attesi per regola, conta per «c'erano tutti», per le registrazioni mancanti e le statistiche, e la partecipazione si annulla una sola volta con storico, senza registrare presenze prima dell'inizio (US-019).
 - Il log del gateway registra con la riga fissa `whatsapp_send_failed` ogni invio WhatsApp rifiutato da Meta o rimasto senza risposta, per le risposte fisse, gestionali e dell'agente, con il solo stato HTTP e il codice d'errore Meta e senza numeri, testi, nomi o credenziali. La guida di produzione spiega come riconoscere un destinatario assente dall'elenco del numero di test (codice 131030) (TEC-049).
 - Backup a caldo pianificato della produzione: lo script `backup-agent-pilates.sh`, installato a mano su `jarvis` e avviato dalla crontab dell'operatore alle 14:30 e alle 22:30 (Europe/Rome), esegue la copia a caldo con l'immagine `ops` della release in esercizio, impedisce esecuzioni sovrapposte, registra l'esito in un log locale senza dati sensibili e conserva per 30 giorni le sole copie pianificate complete, senza toccare backup manuali, quiescenti o incompleti (TEC-050).
+
 ### Fixed
 
 - Dopo un riavvio del server il gateway di produzione riparte da solo con PostgreSQL e broker, sulla stessa release e con gli stessi dati: `SOUL.md`, configurazione, plugin e skill non sono più montati dall'immagine con mount `type: image`, che Docker non risolveva al riavvio del container, ma esposti in sola lettura dall'immagine con collegamenti che l'agente non può sostituire. La guida di produzione descrive il ripristino manuale per le release precedenti (BUG-004).
