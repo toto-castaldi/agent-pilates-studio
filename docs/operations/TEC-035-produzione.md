@@ -276,7 +276,7 @@ La consultazione in `psql` può mostrare dati sensibili nel terminale e nella su
 
 ## Riavvio del server
 
-Dalle release che includono BUG-004 il gateway non usa mount `type: image`: dopo un riavvio di `jarvis` Docker riavvia da solo, con `unless-stopped`, gli stessi container PostgreSQL, broker e gateway, sulla stessa release e con gli stessi volumi. Non servono comandi né automatismi sul server (unità systemd, `@reboot`).
+Dalle release che includono BUG-004 il gateway non usa mount `type: image`: dopo un riavvio di `jarvis` Docker riavvia da solo, con `unless-stopped`, gli stessi container PostgreSQL, broker e gateway, sulla stessa release e con gli stessi volumi. Non servono comandi né automatismi sul server (unità systemd, `@reboot`). Verificato con un riavvio reale il 2026-11-25 sulla release `ce55d7f` ([evidenze](TEC-053-prove.md)).
 
 ### Ripristino manuale per le release precedenti
 
