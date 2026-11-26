@@ -1,6 +1,6 @@
 # Requirements — agent-pilates-studio
 
-**Target version:** v0.5.0
+**Target version:** nessuna (v0.5.0 rilasciata)
 
 **State:** baseline
 
@@ -30,25 +30,7 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 
 ## Scope
 
-### In scope for v0.5.0
-
-- Metriche d'uso dell'agente per ogni messaggio autenticato, in produzione e in sviluppo: utilizzatore come insegnante censito, tipo di turno, tempi di risposta complessivi e del modello, modello e livello di thinking, token, contesto inviato rispetto alla finestra, compattazioni, chiamate ai tool, costo riportato da OpenRouter ed esito dell'invio; registrate nel database senza dati personali, non modificabili né leggibili dall'agente e conservate senza limite (REQ-OPS-011).
-- Dashboard Grafana delle metriche per l'operatore, filtrabile per periodo e utilizzatore, raggiungibile solo dal server tramite tunnel SSH, con credenziali nella configurazione privata, sola lettura sulle metriche e su nome e cognome degli insegnanti, e provisioning versionato incluso nelle immagini (REQ-OPS-012).
-- CI GitHub limitata al gate rapido, con tutte le suite di integrazione eseguite in locale durante gli item e alla chiusura della versione (REQ-NFR-003, REQ-NFR-008).
-- Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
-
-### Out of scope for v0.5.0
-
-Non introdurre queste capacità senza concordare e registrare un cambio di scope:
-
-- Richiesta automatica delle presenze da parte dell'agente dopo la lezione, job cron e messaggi pianificati diversi dal backup di REQ-OPS-010; copia dei backup fuori dal server.
-- Disattivazione degli insegnanti dalla pianificazione, dati di profilo oltre a nome, cognome e telefono, compensi e ore lavorate, permessi differenziati sulle operazioni dello studio; sale, attrezzature e capienza. La sola revoca dell'accesso e la gestione dell'anagrafica riservata al gestore sono invece in scope.
-- Pacchetti di lezioni, conteggio delle lezioni residue e pagamenti.
-- Presenze future, assenze future non giustificate, collegamento tra un recupero e l'assenza che compensa, chiusure e altre eccezioni della pianificazione settimanale diverse dalle partecipazioni previste di REQ-STUDIO-018.
-- Anagrafica degli utilizzatori separata dagli insegnanti, più gestori, ruoli configurabili e uso dell'agente da parte di clienti o altre categorie di persone.
-- Dati dei clienti oltre a nome, cognome, regole di allenamento, presenze e assenze.
-- Modifica del nome visualizzato del profilo WhatsApp Business su Meta, creazione del server e installazione dei suoi prerequisiti Docker/Compose, DNS, certificati e deploy automatico.
-- Avvisi automatici e monitoraggio oltre alle metriche d'uso di REQ-OPS-011; accesso alla dashboard dall'hostname pubblico; ricostruzione dello storico delle metriche precedente alla loro attivazione.
+Nessuna versione aperta: scope e accettazione della prossima versione si concordano e si registrano qui prima della pianificazione. Le capacità delle versioni rilasciate restano disponibili e i loro requisiti restano vincolanti.
 
 ## Areas
 
