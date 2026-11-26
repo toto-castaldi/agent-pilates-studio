@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Spike",
   "priority": "P0",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "spike/SPIKE-004-fonti-metriche-uso",
   "dependencies": [],
   "requirements": [
     "REQ-OPS-011",
