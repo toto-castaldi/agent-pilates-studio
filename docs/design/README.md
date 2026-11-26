@@ -38,9 +38,9 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 | Contesto dell'agente | Nucleo `SOUL.md` entro 15.000 caratteri e sette skill native di sola lettura caricate solo con `skill_view`; funzioni SQL per le ricostruzioni | Ridurre il contesto stabile senza trasferire regole di comportamento nel codice (ADR-004). |
 | Canale | API WhatsApp Business tramite il gateway nativo di Hermes e un'app Meta per ambiente | Usare l'integrazione nativa con autenticazione dei webhook. |
 | Rilascio | Versioni fissate, immagini pubblicate dalla CI, aggiornamento avviato esplicitamente | Riproducibilità e controllo operativo, senza deploy automatico. |
+| Metriche d'uso | Misura nel gateway, costo da `usage.cost` di OpenRouter, scrittura tramite il broker in una tabella privata append-only, Grafana fissata con provisioning nell'immagine e ruolo di sola lettura | L'agente non legge, non scrive e non dichiara le metriche; consultazione riproducibile solo via SSH (`usage-metrics`). |
 | CI | GitHub Actions | Verificare il quality gate e tutte le suite senza deploy automatico. |
 
 ## Open decisions
 
-- **Raccolta e consultazione delle metriche d'uso** — punto di misura di tempi, token, contesto e costi negli hook di Hermes o nel broker, origine del costo OpenRouter, ruolo di scrittura non accessibile all'agente, schema delle metriche e immagine e provisioning di Grafana; in carico allo SPIKE della v0.5.0 (REQ-OPS-011, REQ-OPS-012).
 - **Job cron e messaggi pianificati** — abilitazione, permessi di creazione e accesso al database dei turni senza mittente autenticato; nessun item pianificato, fuori scope della v0.5.0.

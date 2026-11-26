@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Spike",
   "priority": "P0",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "spike/SPIKE-004-fonti-metriche-uso",
   "dependencies": [],
   "requirements": [
     "REQ-OPS-011",
@@ -27,5 +28,7 @@
     "Il rapporto propone immagine e versione fissata di Grafana, provisioning versionato di sorgente dati e dashboard, ruolo di sola lettura, credenziali nella configurazione privata e porta solo loopback per produzione e sviluppo, con l'impatto su launcher, backup e CI.",
     "Il rapporto verifica che misurazione e scrittura non aggiungano al log, al modello o alla cronologia numeri di telefono, testi o nomi (REQ-NFR-002) e stima il ritardo aggiunto al turno.",
     "Le scelte sono registrate nel design, la decisione aperta è chiusa o ridotta a quanto resta, e le attività successive sono aggiornate se il rapporto lo richiede, previo accordo con l'utente."
-  ]
+  ],
+  "outcome": "Rapporto docs/spikes/SPIKE-004-fonti-metriche-uso.md: fonti e punti di misura di ogni dato di REQ-OPS-011 verificati il 2026-11-26 con gateway, broker e PostgreSQL reali, Meta e modello sintetici (14 turni agent, 2 rejected_command, rifiuti, percorso guidato, compattazioni per inattività e soglia, tool, invii rifiutati e interrotti); costo da usage.cost (24/24 richieste) raccomandato rispetto all'endpoint delle generazioni; scrittura tramite broker in tabella privata append-only con credenziali fuori dal processo dell'agente; Grafana 13.3.2 fissata per digest con provisioning nell'immagine, ruolo di sola lettura e porta loopback; nessun dato personale nei log o nella sonda, overhead ~0,02 ms per intercettazione e scrittura dopo l'invio. Scelte in design/usage-metrics, decisione aperta chiusa. Limiti: nessuna prova con OpenRouter reale; accorpamento di messaggi in un turno da verificare in TEC-052; osservata compattazione per soglia ritardata con messaggi da ~40K token (fuori scope).",
+  "closed_at": "2026-11-26"
 }
