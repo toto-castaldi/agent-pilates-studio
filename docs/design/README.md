@@ -39,7 +39,7 @@ Per aggiungere un argomento copiare `_TEMPLATE.md` in `<topic>.md` (kebab-case m
 | Canale | API WhatsApp Business tramite il gateway nativo di Hermes e un'app Meta per ambiente | Usare l'integrazione nativa con autenticazione dei webhook. |
 | Rilascio | Versioni fissate, immagini pubblicate dalla CI, aggiornamento avviato esplicitamente | Riproducibilità e controllo operativo, senza deploy automatico. |
 | Metriche d'uso | Misura nel gateway, costo da `usage.cost` di OpenRouter, scrittura tramite il broker in una tabella privata append-only, Grafana fissata con provisioning nell'immagine e ruolo di sola lettura | L'agente non legge, non scrive e non dichiara le metriche; consultazione riproducibile solo via SSH (`usage-metrics`). |
-| CI | GitHub Actions | Verificare il quality gate e tutte le suite senza deploy automatico. |
+| CI | GitHub Actions | Verificare il solo gate rapido, con esito dipendente solo dal commit, senza deploy automatico; suite di integrazione in locale. |
 
 ## Open decisions
 
