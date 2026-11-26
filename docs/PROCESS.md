@@ -1,6 +1,6 @@
 # Development Process
 
-**Process version:** 4.3.0
+**Process version:** 4.4.0
 
 **Template:** https://github.com/toto-castaldi/agile-project-template
 
@@ -25,13 +25,13 @@ This file holds the rules every session needs. The detailed rules of a topic are
 
 | File | Owner of |
 | --- | --- |
-| `AGENTS.md` | project-specific rules: stack, architecture, domain, quality gate, language |
+| `AGENTS.md` | project-specific rules: stack, architecture, domain, quality gate, language; short, since it is loaded at every session: details go to `docs/design/` and `docs/requirements/` |
 | `docs/PROCESS.md`, `docs/process/`, `docs/PROCESS-PARALLEL.md` | workflow rules |
 | `docs/requirements/` | the *what*: one file per requirement |
 | `docs/design/` | the *how*: one file per topic, optional module catalog in `modules.md` |
 | `docs/adr/`, `docs/spikes/` | decisions and research outcomes |
 | `backlog/` | canonical work state |
-| `CHANGELOG.md` | user-visible changes per released version |
+| `CHANGELOG.md` | user-visible changes per released version, generated from the items when the version closes |
 | `README.md` | presentation, setup and usage; no process rules, item states or agent instructions |
 
 Detailed rules, read when the work touches their topic:
@@ -41,12 +41,11 @@ Detailed rules, read when the work touches their topic:
 | `docs/process/backlog.md` | changing versions, epics or item fields, or reading the project status in detail |
 | `docs/process/docs.md` | writing or changing requirements, design, ADRs or spike reports |
 | `docs/process/git.md` | adding an item, using a grooming branch, merging or resolving a conflict |
-| `docs/process/release.md` | closing a version |
+| `docs/process/release.md` | closing a version or adopting a new template version |
 
-- Agents read and change `backlog/` **only** through the CLI (`python3 .agents/tools/backlog.py`, written `backlog` here and in the skills; Python 3.10+) and never read, search or edit its files directly. The only exception is resolving a merge conflict (`docs/process/git.md` §3).
-- Requirements and design are split into small files so that agents load only what a task needs: `backlog docs` lists them, `backlog docs --for <ID>` lists the files an item references, and an agent reads those files, never whole folders.
+- Agents read and change `backlog/` **only** through the CLI (`python3 .agents/tools/backlog.py`, written `backlog` here and in the skills; Python 3.10+) and never read, search or edit its files directly; `backlog --help` gives the syntax of every command. The only exception is resolving a merge conflict (`docs/process/git.md` §3).
+- Requirements and design are one small file each, listed by `backlog docs`; agents read the files they need, never whole folders (§7).
 - A requirement change is recorded first in `docs/requirements/`, then in `backlog/` and, if needed, in the design. Design choices are recorded together with the item that introduces them.
-- Adopting a new version of the template (process, skills, tools) is a `task/` item that references the process sections it adopts; it needs no requirement, because the process is not part of the product. The adopted version is the `Process version` of this file. When pi or Claude Code starts, `backlog template-check` compares it with the latest release of the `Template` above and shows a notice if the project is behind; the notice never blocks work.
 
 ## 4. Backlog model
 
@@ -71,7 +70,7 @@ Versions (Semantic Versioning, from `v0.1.0`; one `Open` at a time) contain item
 
 An item whose dependencies are not `Done` is not started. If the user explicitly asks to start it anyway, use `backlog start --override-dependencies`.
 
-Every state change goes through a CLI command in the same commit as the work that causes it. Dates in `backlog/` come from the CLI; dates in `CHANGELOG.md` are read with `date +%F`. Never estimate or infer a date.
+Every state change goes through a CLI command in the same commit as the work that causes it. Dates in `backlog/` and in `CHANGELOG.md` come from the CLI; any other date is read with `date +%F`. Never estimate or infer a date.
 
 ### 4.3 Priorities
 
@@ -102,7 +101,7 @@ An item is `Done` only when:
 3. new behavior is covered by tests at the cheapest level that proves it, bugs have a regression test, and integration and end-to-end suites are run separately, during the item, whenever needed to prove the criteria; they are not part of the closing gate;
 4. no secrets are in files, commits or logs;
 5. requirements, design, ADRs, configuration examples and README are updated where needed, requirements and design describing the current state (`docs/process/docs.md` §3);
-6. a line is added under `[Unreleased]` in `CHANGELOG.md` for user-visible changes;
+6. a user-visible change is recorded in the item's changelog entry (`backlog done --changelog`), not in `CHANGELOG.md`;
 7. the item is `Done` with its `outcome`, and `backlog check` passes;
 8. all the work is committed in the item's branch;
 9. the additions in `AGENTS.md` are satisfied.
@@ -117,18 +116,4 @@ If a criterion cannot be met, the item is not `Done`: keep working, mark it `Blo
 4. If a request is ambiguous, conflicts with documents or changes the scope of the version, ask before acting.
 5. Report outcomes faithfully: failing tests, skipped steps and unverified behavior are stated explicitly.
 
-### Skills
-
-Procedures in `.agents/skills/`. The rules apply even when work is requested in natural language.
-
-| Skill | Procedure |
-| --- | --- |
-| `kickoff` | Initialize a new project (item `TEC-001`) |
-| `add-item` | Add a requirement and/or backlog item |
-| `start-task` | Start an item: branch and state |
-| `finish-task` | Verify the Definition of Done and complete an item in its branch |
-| `merge-task` | Merge a completed item into `main` (explicit request only) |
-| `close-version` | Close a version (explicit request only) |
-| `orchestrate` | Run items in parallel through worker agents (explicit request only, `docs/PROCESS-PARALLEL.md` §2) |
-
-Other agent tooling, such as read-only viewers, never changes these rules.
+The procedures are the skills in `.agents/skills/`; their rules apply even when work is requested in natural language. Other agent tooling, such as read-only viewers, never changes these rules.

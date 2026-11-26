@@ -100,7 +100,7 @@ test('template-check reports a project behind the template with its semver level
       const out = formats(directory, env);
       const message =
         `Template update available: process version ${latest} (${name}, ${upgrade}); this project uses 1.2.3. ` +
-        `Release notes: ${template}. Adopt it in a task/ item (docs/PROCESS.md §3).`;
+        `Release notes: ${template}. Adopt it in a task/ item (docs/process/release.md §2).`;
       assert.deepEqual(out.json, { state: 'behind', current: '1.2.3', latest, level: name, template, message });
       assert.equal(out.text, `${message}\n`);
       assert.equal(out.quiet, `${message}\n`);
@@ -143,7 +143,7 @@ test('template-check stays silent at startup without a Template line, without PR
 
 test('the adopted startup hooks and the project process point at the template check', () => {
   const process = readFileSync('docs/PROCESS.md', 'utf8').split('\n');
-  assert.equal(process[2], '**Process version:** 4.3.0');
+  assert.equal(process[2], '**Process version:** 4.4.0');
   assert.equal(process[4], '**Template:** https://github.com/toto-castaldi/agile-project-template');
   assert.deepEqual(JSON.parse(readFileSync('.claude/settings.json', 'utf8')), {
     hooks: {
