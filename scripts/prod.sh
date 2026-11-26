@@ -83,8 +83,12 @@ check_secrets() {
     && grep -Eqx '\+[1-9][0-9]{7,14}' "$SECRETS_DIR/whatsapp-manager-phone" \
     || fail 'The manager phone must be one canonical international number (+ and 8-15 digits).'
   # Same rule as the Grafana entrypoint; the value is never printed.
+  # BusyBox grep in the ops image rejects repetition bounds above 255: check the length apart.
+  local length
+  length=$(tr -d '\n' < "$SECRETS_DIR/grafana-admin-password" | wc -c)
   [[ $(grep -c '' "$SECRETS_DIR/grafana-admin-password") == 1 ]] \
-    && LC_ALL=C grep -Eqx '[!-~]{16,512}' "$SECRETS_DIR/grafana-admin-password" \
+    && LC_ALL=C grep -Eqx '[!-~]+' "$SECRETS_DIR/grafana-admin-password" \
+    && (( length >= 16 && length <= 512 )) \
     || fail 'The Grafana admin password must be one line of 16-512 printable characters without spaces.'
   for name in "${OBSOLETE_SECRETS[@]}"; do
     [[ ! -e $SECRETS_DIR/$name && ! -L $SECRETS_DIR/$name ]] || fail "Obsolete identity file present: remove secrets/$name."
