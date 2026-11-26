@@ -437,13 +437,15 @@ test('parallel work settings and instructions keep the studio protections', () =
     assert.ok(`${skill}\n${guides}`.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 4\.3\.0/);
+  assert.match(processDoc, /\*\*Process version:\*\* 4\.4\.0/);
   for (const phrase of ['**only** through the CLI', 'read with `date +%F`', 'The merge commit contains only the merge and its conflict resolution']) {
     assert.ok(`${processDoc}\n${readFileSync('docs/process/git.md', 'utf8')}`.includes(phrase), phrase);
   }
   const parallelDoc = readFileSync('docs/PROCESS-PARALLEL.md', 'utf8');
-  for (const phrase of ['the orchestrator does not block while workers run', 'by default the launch is the **go**',
-    'it reports `ready` with the plan and the questions, stops', 'they report `started`, `ready`, `done` or `blocked`', 'before launching, `main` must not be ahead of `origin/main`', 'apart from adding items, pushing `main` stays an explicit user request']) {
+  // From v4.4.0 the orchestrator rules (not blocking, main not ahead of origin/main) live in the orchestrate skill, checked above.
+  for (const phrase of ['Its procedure and rules are the `orchestrate` skill', 'By default the launch is the **go**',
+    'it reports `ready` with the plan and the questions, stops', 'They report `started`, `ready`, `done` or `blocked`',
+    'Workers never merge, never push `main`, never remove clones and never start other agents']) {
     assert.ok(parallelDoc.includes(phrase), phrase);
   }
   const merge = readFileSync('.agents/skills/merge-task/SKILL.md', 'utf8');
