@@ -25,7 +25,7 @@ test('operational transition keeps snapshots, completes identities in chat and r
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-key',
     'whatsapp-access-token': 'synthetic-access', 'whatsapp-app-secret': 'synthetic-secret',
     'whatsapp-verify-token': 'synthetic-verify', 'whatsapp-manager-phone': `+${manager}`,
-    'whatsapp-phone-number-id': '123456789012345',
+    'whatsapp-phone-number-id': '123456789012345', 'grafana-admin-password': 'synthetic-grafana-admin',
   };
   const override = join(root, 'override.yaml');
   const envFile = join(root, 'local.env');
