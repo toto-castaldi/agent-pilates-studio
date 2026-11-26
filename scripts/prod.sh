@@ -70,9 +70,19 @@ use_release() {
   MIGRATOR_IMAGE="$REGISTRY/migrator:$1"
 }
 
+# The only internal secret an existing installation may lack (before US-020):
+# the bootstrap sets the read-only Grafana role's password from it at every
+# start, so creating it never rotates a credential in use. Never overwritten.
+ensure_grafana_role_secret() {
+  local file="$SECRETS_DIR/db-grafana"
+  [[ -e $file || -L $file ]] && return 0
+  (umask 077; openssl rand -hex 32 > "$file") || fail 'Could not create secrets/db-grafana.'
+}
+
 check_secrets() {
   local name file
   [[ -z $(find "$SECRETS_DIR" -maxdepth 0 -perm /077 -print) ]] || fail 'Secrets directory has insecure permissions.'
+  ensure_grafana_role_secret
   for name in "${INTERNAL_SECRETS[@]}" "${EXTERNAL_SECRETS[@]}"; do
     file="$SECRETS_DIR/$name"
     [[ -f $file && ! -L $file && -s $file ]] || fail "Secret is missing or empty: $name."

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -116,6 +116,26 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       assert.notEqual(missing.status, 0);
       assert.match(missing.stderr, /Segreto database mancante/);
     } finally { await rename(`${agentFile}.saved`, agentFile); }
+    // Regression (US-020): secrets from before Grafana on an existing volume.
+    // db-grafana is created before the credential probe, nothing else rotates,
+    // and the read-only role receives the new password from the bootstrap.
+    const secretNames = ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token'];
+    const previous = await Promise.all(secretNames.map((name) => readFile(join(dir, '.local/secrets', name), 'utf8')));
+    const oldGrafanaPassword = (await readFile(join(dir, '.local/secrets/db-grafana'), 'utf8')).trim();
+    await unlink(join(dir, '.local/secrets/db-grafana'));
+    start();
+    assert.deepEqual(await Promise.all(secretNames.map((name) => readFile(join(dir, '.local/secrets', name), 'utf8'))), previous);
+    const newGrafanaPassword = (await readFile(join(dir, '.local/secrets/db-grafana'), 'utf8')).trim();
+    assert.match(newGrafanaPassword, /^[a-f0-9]{64}$/);
+    assert.notEqual(newGrafanaPassword, oldGrafanaPassword);
+    assert.equal(((await lstat(join(dir, '.local/secrets/db-grafana'))).mode & 0o077), 0);
+    const grafanaRole = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_grafana', password: newGrafanaPassword });
+    await grafanaRole.connect();
+    try { assert.equal((await grafanaRole.query('SELECT count(*)::int AS n FROM studio_metrics.teachers')).rows[0].n, 2); } finally { await grafanaRole.end(); }
+    const grafanaHealth = await fetch(`http://127.0.0.1:${grafanaPort}/api/health`);
+    assert.equal(grafanaHealth.status, 200);
+    const grafanaSource = await fetch(`http://127.0.0.1:${grafanaPort}/api/datasources/uid/pilates-metrics/health`, { headers: { Authorization: `Basic ${Buffer.from(`admin:${grafanaAdmin}`).toString('base64')}` } });
+    assert.equal(grafanaSource.status, 200, 'Grafana must authenticate with the new role password');
     const postgresId = compose('ps', '-q', 'postgres').trim();
     const soulPath = join(dir, 'hermes/SOUL.md');
     await writeFile(`${soulPath}.new`, `${await readFile(soulPath, 'utf8')}\nSYNTHETIC_UPDATED_SOUL\n`);

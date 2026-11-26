@@ -133,6 +133,17 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         missingDatabaseFile = true;
       }
     }
+    // db-grafana is the only internal credential that may be created over an
+    // existing volume (secrets from before US-020): the bootstrap sets the
+    // read-only role's password from it at every start. It must exist before the
+    // credential probe, which runs db-bootstrap and therefore mounts it.
+    const grafanaRole = resolve(directory, 'db-grafana');
+    try {
+      await writeFile(grafanaRole, `${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+    await privateFile(grafanaRole);
     const resolved = spawnSync('docker', compose('config', '--format', 'json'), { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (resolved.error || resolved.status !== 0) throw new SafeError('Impossibile verificare il volume PostgreSQL.');
     let volume;
@@ -222,9 +233,8 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (error.code !== 'ENOENT') throw error;
       }
     }
-    // Additional service credentials are generated once and never silently rotated.
-    // db-grafana may be created over an existing volume: the bootstrap sets the
-    // password of its read-only role from this file at every start.
+    // Additional service credentials are generated once and never silently rotated;
+    // db-grafana was already created if missing and is only validated here.
     for (const name of ['db-broker', 'bridge-token', 'db-grafana']) {
       const path = resolve(directory, name);
       try {

@@ -342,3 +342,33 @@ test('Grafana requires the private admin password, listens on loopback and is re
   assert.deepEqual(system.calls.slice(start).slice(-2).map((call) => call.args.slice(-2)), [['SIGKILL', 'hermes'], ['stop', 'author-broker']]);
   assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive/);
 });
+
+test('secrets from before US-020 on an existing volume: db-grafana exists before the credential probe, nothing else rotates', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  const names = ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token'];
+  const before = Object.fromEntries(names.map((name) => [name, system.content(`.local/secrets/${name}`)]));
+  await system.unlink('.local/secrets/db-grafana');
+  const spawn = system.spawnSync;
+  let probed = false;
+  system.spawnSync = (command, args, options) => {
+    const result = spawn(command, args, options);
+    if (args.includes('volume')) return { ...result, stdout: 'synthetic_postgres_data\n' };
+    if (args.includes('db-bootstrap')) {
+      // Compose refuses to run db-bootstrap when a mounted secret file is missing.
+      if (system.content('.local/secrets/db-grafana') === undefined) return { ...result, status: 1 };
+      if (args.includes('--entrypoint')) probed = true;
+    }
+    return result;
+  };
+  assert.equal(await startLocal(system), 0, system.errors.at(-1));
+  assert.ok(probed, 'the credential probe must run on the existing volume');
+  assert.match(system.content('.local/secrets/db-grafana') ?? '', /^[a-f0-9]{64}\n$/);
+  assert.equal((await system.lstat('.local/secrets/db-grafana')).mode & 0o077, 0);
+  for (const name of names) assert.equal(system.content(`.local/secrets/${name}`), before[name], name);
+  // Once created it is preserved like the other internal credentials.
+  const created = system.content('.local/secrets/db-grafana');
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/db-grafana'), created);
+});

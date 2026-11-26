@@ -57,6 +57,21 @@ test('production requires one canonical manager number and refuses the former id
       assert.doesNotMatch(result.stdout + result.stderr, /synthetic-|synthetic grafana/);
     }
     await writeFile(grafanaAdmin, 'synthetic-grafana-admin-password\n', { mode: 0o600 });
+    // Regression (US-020): an installation from before Grafana has no db-grafana.
+    // update creates it privately before the checks; other secrets never rotate
+    // and an existing db-grafana is never overwritten.
+    const internal = ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token'];
+    const internalBefore = await Promise.all(internal.map((name) => readFile(join(root, 'secrets', name), 'utf8')));
+    await rm(join(root, 'secrets/db-grafana'));
+    const upgraded = invoke(['update', commit]);
+    assert.notEqual(upgraded.status, 0, 'the synthetic Docker stops the update later');
+    assert.doesNotMatch(upgraded.stderr, /db-grafana|Grafana admin password/);
+    const generated = await readFile(join(root, 'secrets/db-grafana'), 'utf8');
+    assert.match(generated, /^[0-9a-f]{64}\n$/);
+    assert.equal((await stat(join(root, 'secrets/db-grafana'))).mode & 0o077, 0);
+    assert.deepEqual(await Promise.all(internal.map((name) => readFile(join(root, 'secrets', name), 'utf8'))), internalBefore);
+    invoke(['update', commit]);
+    assert.equal(await readFile(join(root, 'secrets/db-grafana'), 'utf8'), generated);
     for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
       await writeFile(join(root, 'secrets', name), '15555550102\n', { mode: 0o600 });
       const result = invoke(['update', commit]);
