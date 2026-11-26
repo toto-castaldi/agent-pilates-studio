@@ -603,6 +603,17 @@ def observe_usage(cls):
     cls._pilates_usage_observed = True
 
 
+def usage_parked(adapter, event):
+    """True if the runner parked the event until its startup gate opens.
+
+    Before the inbound gate opens (startup restore and warm-up) the runner's
+    message handler queues the event and returns without a turn; the drain
+    replays the same event later through a new processing task.
+    """
+    runner = getattr(adapter, 'gateway_runner', None) or getattr(getattr(adapter, '_message_handler', None), '__self__', None)
+    return any(item is event for item in (getattr(runner, '_startup_restore_queue', None) or ()))
+
+
 def observe_usage_processing(base):
     original = base._process_message_background
 
@@ -624,8 +635,18 @@ def observe_usage_processing(base):
                 return await original(self, event, session_key)
             finally:
                 usage_current.reset(token)
-                if record is not None and record.transition(('claimed',), 'done'):
-                    schedule_usage(record)
+                if record is not None:
+                    parked = False
+                    try:
+                        parked = usage_parked(self, event)
+                    except Exception:
+                        pass
+                    # A parked event keeps its record for the replay, which claims
+                    # it again; one never replayed closes as stale (usage_admit).
+                    if parked:
+                        record.transition(('claimed',), 'new')
+                    elif record.transition(('claimed',), 'done'):
+                        schedule_usage(record)
 
         return run()
 
