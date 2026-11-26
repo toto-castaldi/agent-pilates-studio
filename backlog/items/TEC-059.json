@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-059-ci-limitata-al-gate-rapido",
   "dependencies": [],
   "requirements": [
@@ -27,5 +27,8 @@
   ],
   "remarks": [
     "Decisione dell'utente del 2026-11-26 durante la preparazione della chiusura della v0.5.0: rimuovere dalla CI tutte le suite di integrazione, non solo quelle Docker; lasciare invariata la pubblicazione su GHCR senza ritentativi per unknown blob."
-  ]
+  ],
+  "outcome": "ci.yml: il job quality (ora «Quality gate», timeout 15 minuti) esegue solo npm ci, lint, typecheck, npm test e build; rimossi test:local, test:pi, test:pi-package, test:claude, le installazioni globali di Pi e Claude Code, l'allineamento di Docker (scripts/ci-install-docker.sh eliminato, non più usato) e le suite Docker. Il job publish è invariato: solo push su main, needs quality, nessun ritentativo per unknown blob; publish-images.sh non avvia lo stack e non richiede Docker 29.9.2. Contratto test/ci-contract.ts: sette passi esatti, nessun test:, docker o --global; test unitario con workflow sintetici che rifiuta la rimozione di ogni comando del gate, l'aggiunta o sostituzione con suite, Docker e installazioni globali, un if su un passo e la pubblicazione senza needs. AGENTS.md §6, README, design test-strategy, production, context e README del design aggiornati. Verifiche: gate locale (120 test unitari), test:local 65/65 con il contratto sul ci.yml reale, CI del branch 45851501962 verde in 28 secondi con pubblicazione saltata fuori da main. Prima dell'item le suite locali su main 2827ebb erano passate tutte tranne test:pi e test:pi-package, per Pi 1.5.2 installato invece del 1.5.0 fissato.",
+  "changelog": "Changed: la CI esegue solo il gate rapido; le suite di integrazione si eseguono in locale durante il lavoro e al rilascio",
+  "closed_at": "2026-11-26"
 }
