@@ -1,0 +1,29 @@
+{
+  "id": "TEC-056",
+  "title": "Allineamento al template v4.4.0",
+  "version": "v0.5.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "design/process-tooling",
+    "design/test-strategy",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare la release v4.4.0 di agile-project-template (commit 2b71966, tag v4.4.0). Il diff da v4.3.0 tocca 16 file: PROCESS.md (Process version 4.4.0, AGENTS.md breve, CHANGELOG generato dal backlog, DoD §6 punto 6 con backlog done --changelog, tabella skill rimossa), PROCESS-PARALLEL.md ridotto a quanto serve ai worker, docs/process/backlog.md e release.md (adozione del template e condensazione di AGENTS.md alla chiusura), backlog.py (comando changelog, --changelog su done, show breve per item chiusi, tre item recenti in status, --help con la sintassi di ogni comando), skill add-item, close-version, finish-task, kickoff, merge-task e orchestrate, overlay backlog Claude Code ed estensione Pi backlog, AGENTS.md, CHANGELOG.md e README.md generici. Preservare personalizzazioni, dati del backlog e protezioni dello studio; nessun worker, deploy, modifica dello stack o configurazione personale; nessun merge su main.",
+  "acceptance_criteria": [
+    "Tag e commit target verificati nel clone pubblico isolato; basi del progetto dimostrate identiche alla v4.3.0 prima della copia e registrazione in docs/TEMPLATE-ORIGIN.md di adozioni, soli confronti e divergenze, senza sovrascrivere file personalizzati o seed del backlog.",
+    "Process version 4.4.0; PROCESS.md, PROCESS-PARALLEL.md, docs/process/, backlog.py, skill, overlay ed estensione Pi backlog identici al target salvo divergenze motivate; AGENTS.md (riferimenti ai paragrafi e deroghe del §8 riallineati alla nuova numerazione), README.md e CHANGELOG.md generici solo confrontati, con le modifiche pertinenti riportate a mano in italiano.",
+    "Voci di [Unreleased] del CHANGELOG per la v0.5.0 migrate nel changelog dei rispettivi item Done tramite CLI e [Unreleased] svuotato; backlog changelog mostra per la versione aperta contenuti equivalenti a quelli precedenti, senza perdite.",
+    "Test locali con fixture sintetiche per i nuovi comandi e opzioni di backlog.py (changelog, done --changelog, show breve, status, --help); passano gate rapido, backlog check e suite separate pertinenti test:local, test:pi e test:claude; limiti delle prove simulabili espliciti."
+  ],
+  "remarks": [
+    "Utente: confermata aggiunta P0 EPIC-001 in v0.5.0 come cambio di scope e migrazione delle voci di [Unreleased] negli item."
+  ]
+}
