@@ -128,6 +128,54 @@ test('usage events: one protected event per handled message, measured by the tru
     const environments = execFileSync('docker', ['exec', gatewayId(), 'sh', '-c', 'cat /proc/[0-9]*/environ 2>/dev/null | tr "\\0" "\\n"'], { encoding: 'utf8' });
     assert.ok(!environments.includes(secrets['db-broker']) && !environments.includes(secrets['db-migrator']), 'write credential reachable from the gateway');
 
+    // 2b. Regression (TEC-057): before the startup gate opens, Hermes' runner
+    // parks an inbound event and replays the same event after warm-up. The
+    // parked pass must not close the event: the replayed turn is measured.
+    // The gate cannot be held closed deterministically on a live gateway, so
+    // the wrapper runs on a stand-in adapter, after checking the runner contract.
+    const parked = [
+      'import asyncio, inspect, json, time',
+      'from types import SimpleNamespace',
+      'import pilates_trusted as trusted',
+      'from gateway.run import GatewayRunner',
+      "contract = all(hasattr(GatewayRunner, name) for name in ('_queue_startup_restore_event', '_drain_startup_restore_queue')) and '_startup_restore_queue' in inspect.getsource(GatewayRunner._queue_startup_restore_event)",
+      'sent = []',
+      'async def submit(body): sent.append(body)',
+      'trusted.submit_usage = submit',
+      'class Base:',
+      '    async def _process_message_background(self, event, session_key):',
+      '        if not getattr(event, "_hermes_startup_restore_replay", False):',
+      '            self.gateway_runner._startup_restore_queue.append(event)',
+      '            return',
+      '        record = trusted.usage_current.get()',
+      '        if record is None:',
+      '            return',
+      '        trusted.mark_usage("agent_turn")',
+      "        record.add_request(trusted.usage_request('main', 0.5, {'usage': {'prompt_tokens': 7, 'completion_tokens': 3, 'cost': 0.25}, 'model': 'openai/synthetic-usage-served'}, 0, 'high'))",
+      "        record.note_send('sent')",
+      'class WhatsAppCloudAdapter(Base): pass',
+      'trusted.observe_usage_processing(Base)',
+      'async def main():',
+      "    trusted.usage_admit([{'message_id': 'wamid.synthetic.parked', 'sender': '15555550109'}], time.time(), time.monotonic())",
+      "    event = SimpleNamespace(message_id='wamid.synthetic.parked', source=SimpleNamespace(user_id='15555550109'))",
+      '    adapter = WhatsAppCloudAdapter()',
+      '    adapter.gateway_runner = SimpleNamespace(_startup_restore_queue=[])',
+      "    await adapter._process_message_background(event, 'synthetic-session')",
+      '    await asyncio.sleep(1)',
+      '    early = len(sent)',
+      '    event = adapter.gateway_runner._startup_restore_queue.pop(0)',
+      '    event._hermes_startup_restore_replay = True',
+      "    await adapter._process_message_background(event, 'synthetic-session')",
+      '    for _ in range(50):',
+      '        if sent: break',
+      '        await asyncio.sleep(0.1)',
+      "    print(json.dumps({'contract': contract, 'early': early, 'events': [[body['measurement']['agent_turn'], len(body['measurement']['requests']), body['measurement']['send']['outcome']] for body in sent]}))",
+      'asyncio.run(main())',
+    ].join('\n');
+    const parkedResult = JSON.parse(execFileSync('docker', ['exec', '--user', '10000', gatewayId(), '/opt/hermes/.venv/bin/python', '-c', parked],
+      { encoding: 'utf8', stdio: 'pipe', timeout: 60_000 }).trim().split('\n').at(-1) as string) as { contract: boolean; early: number; events: unknown[] };
+    assert.deepEqual(parkedResult, { contract: true, early: 0, events: [[true, 1, 'sent']] });
+
     const modelObservations = async () => await (await fetch(`${model}/observations`)).json() as ModelObservation[];
     const metaObservations = async () => await (await fetch(`${metaBase}/observations`)).json() as MetaObservation[];
     const control = async (body: object) => assert.equal((await fetch(`${model}/control`, { method: 'POST', body: JSON.stringify(body) })).status, 200);

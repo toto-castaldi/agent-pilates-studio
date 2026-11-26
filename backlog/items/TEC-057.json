@@ -6,7 +6,7 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P1",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-057-verifica-metriche-openrouter-reale",
   "dependencies": [
     "TEC-052"
@@ -26,5 +26,8 @@
     "Esiti, configurazione usata (senza segreti) e scostamenti sono documentati in un rapporto in docs/operations/ con l'ID dell'item; la sezione Limiti di design/usage-metrics è aggiornata con quanto confermato o smentito.",
     "Se un valore non corrisponde, la raccolta nel gateway è corretta con un test di regressione al livello più economico che lo dimostra, e test:usage resta verde.",
     "Nessun dato personale, telefono reale o segreto entra in rapporto, log, commit o eventi (REQ-NFR-002)."
-  ]
+  ],
+  "outcome": "Prova con OpenRouter reale (z-ai/glm-5.2) su stack locale separato, mittenti sintetici e proxy di sola osservazione: 37 richieste (36 in streaming, titolo non in streaming, compattazione applicata). usage.cost nell'ultimo blocco SSE o nel corpo JSON, uguale al total_cost di OpenRouter; modello della risposta = slug richiesto (versione datata solo nel record OpenRouter); livello registrato = livello inviato (medium->high per GLM-5.2, none). Scostamento trovato e corretto: i messaggi parcheggiati dalla porta d'avvio di Hermes perdevano la misura del turno; regressione in test:usage (2b), verificata anche dal vivo. Rapporto docs/operations/TEC-057-prove.md, Limiti di design/usage-metrics aggiornati. Gate rapido e test:usage verdi.",
+  "changelog": "Fixed: le metriche d'uso misurano anche i messaggi ricevuti nei primi secondi dopo l'avvio del gateway",
+  "closed_at": "2026-11-26"
 }
