@@ -1,0 +1,29 @@
+{
+  "id": "TEC-057",
+  "title": "Verifica delle metriche d'uso con OpenRouter reale",
+  "version": "v0.5.0",
+  "epic": "EPIC-007",
+  "module": "MOD-001",
+  "type": "Task",
+  "priority": "P1",
+  "status": "Todo",
+  "dependencies": [
+    "TEC-052"
+  ],
+  "requirements": [
+    "REQ-OPS-011"
+  ],
+  "design_references": [
+    "design/usage-metrics",
+    "design/integrations",
+    "design/configuration"
+  ],
+  "description": "TEC-052 lascia da confermare con OpenRouter reale la forma di usage.cost in streaming, il modello servito e il livello di thinking inviato (design/usage-metrics, Limiti). Prova esterna sullo stack locale; la configurazione con la chiave reale è copiata nel clone dall'utente quando serve.",
+  "acceptance_criteria": [
+    "Sullo stack locale (start:local), con la configurazione OpenRouter reale fornita dall'utente e mittenti sintetici, si inviano alcuni messaggi che comprendono almeno una risposta in streaming, una non in streaming se Hermes la usa, e una compattazione; nessuna esecuzione in produzione.",
+    "Gli eventi registrati riportano il costo usage.cost restituito da OpenRouter per ogni richiesta del turno, in streaming e non, il modello effettivamente servito e il livello di thinking effettivamente inviato, confrontati con quanto riportato da OpenRouter.",
+    "Esiti, configurazione usata (senza segreti) e scostamenti sono documentati in un rapporto in docs/operations/ con l'ID dell'item; la sezione Limiti di design/usage-metrics è aggiornata con quanto confermato o smentito.",
+    "Se un valore non corrisponde, la raccolta nel gateway è corretta con un test di regressione al livello più economico che lo dimostra, e test:usage resta verde.",
+    "Nessun dato personale, telefono reale o segreto entra in rapporto, log, commit o eventi (REQ-NFR-002)."
+  ]
+}
