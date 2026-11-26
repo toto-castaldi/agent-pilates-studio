@@ -19,7 +19,8 @@
     "design/integrations",
     "design/production",
     "design/continuity",
-    "design/test-strategy"
+    "design/test-strategy",
+    "design/usage-metrics"
   ],
   "description": "Schema delle metriche, migrazione, ruoli e raccolta nel gateway secondo le scelte di SPIKE-004.",
   "acceptance_criteria": [
