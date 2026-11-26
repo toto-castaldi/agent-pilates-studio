@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Task",
   "priority": "P0",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "task/TEC-052-metriche-uso-per-turno",
   "dependencies": [
     "SPIKE-004"
   ],
@@ -30,5 +31,8 @@
     "Se la scrittura dell'evento fallisce, il turno si completa con la stessa risposta e il log riporta un messaggio fisso senza dati personali; i log non contengono nuovi dati personali (REQ-NFR-002).",
     "Gli eventi persistono tra riavvii e aggiornamenti e sono inclusi in backup a caldo, backup quiescente e ripristino, verificato nelle suite esistenti.",
     "Test di unità coprono il calcolo di tempi, percentuale del contesto e classificazione del turno; una suite separata (test:hermes, test:author o nuova) con gateway reale e provider sintetico verifica gli eventi dei quattro tipi di turno, compattazione e costo; design, configurazione, README e CHANGELOG sono aggiornati."
-  ]
+  ],
+  "outcome": "Migrazione 20261126000000_usage_events: tabella privata studio_private.usage_events con soli campi numerici/enumerati e modello vincolato, trigger che rifiutano UPDATE/DELETE/TRUNCATE anche al migratore, scrittura solo tramite record_usage_event (SECURITY DEFINER, EXECUTE al solo broker). Il gateway raccoglie per messaggio (registro per ID, ContextVar su ingresso, task e turno; avvolgimenti di _fire_post_api_request_hook, run_with_aux_hooks, build_api_kwargs, post_compaction, _post_messages) e invia dopo la risposta a POST /v1/usage del broker, che ricava l'insegnante da ricevuta o biglietto monouso e calcola la riga con la politica pura src/usage-event.ts; un errore scrive solo usage_event_failed. Messaggi accorpati o inseriti in un turno occupato hanno un proprio evento, con i dati del modello contati una volta. Verifiche: gate (lint, typecheck, 114 test unitari, build), test:usage nuovo (gateway, broker e PostgreSQL reali, modello sintetico con usage.cost e livello high inviato su host OpenRouter sintetico: quattro tipi di turno, tool, compattazione, costo assente, esiti refused/network, privilegi agente e broker, credenziali assenti dal gateway, ricevute e biglietti monouso, fallimento scrittura con risposta invariata, persistenza dopo riavvio e ricreazione), test:hermes (riavvio, ricreazione, backup quiescente e ripristino degli eventi), test:images (backup a caldo), test:db, test:author, test:compaction, test:upgrade, test:start, test:local passati. Limiti: forma di usage.cost in streaming e livello con OpenRouter reale da confermare con prova esterna; finestra registrata quella del compressore di Hermes; richieste interrotte non contabilizzate.",
+  "changelog": "Added: metriche d'uso per ogni messaggio WhatsApp (tempi, token, contesto, costo OpenRouter, esito d'invio) protette nel database",
+  "closed_at": "2026-11-26"
 }

@@ -101,6 +101,12 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     await admin.query('COMMIT');
     await ownerContext(admin, admin, '15555550102', { pid: 1, txid: '1' }, '1 hour');
     await admin.query("INSERT INTO studio_private.consumed_messages (message_hash, expires_at) VALUES ('synthetic-replay-hash', clock_timestamp() + interval '1 hour')");
+    // A usage event (TEC-052) written through the broker's function is part of the hot dump.
+    await admin.query('SELECT studio_private.record_usage_event(NULL, $1::jsonb)', [JSON.stringify({ turn_kind: 'fixed',
+      received_at: '2026-11-26T09:00:00.000Z', replied_at: '2026-11-26T09:00:00.075Z', total_ms: 75, model_ms: null, model: null,
+      reasoning_effort: null, input_tokens: null, output_tokens: null, context_tokens: null, context_window: null, context_percent: null,
+      compaction_threshold_tokens: null, compactions: 0, tool_calls: 0, model_requests: 0, cost_usd: null, send_outcome: 'sent',
+      send_http_status: null, send_error_code: null })]);
     compose('up', '-d', '--no-build', '--wait', '--wait-timeout', '120', 'author-broker', 'hermes');
     const gatewayId = compose('ps', '-q', 'hermes').trim();
     const brokerId = compose('ps', '-q', 'author-broker').trim();
@@ -206,6 +212,7 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     assert.equal(query('SELECT count(*) FROM studio_private.author_context'), '0');
     assert.equal(query("SELECT count(*) FROM studio_private.consumed_messages WHERE message_hash = 'synthetic-replay-hash'"), '1');
     assert.equal(query("SELECT count(*) FROM app.clients WHERE first_name = 'Backup' AND last_name = 'Synthetic'"), '1');
+    assert.equal(query("SELECT count(*) FROM studio_private.usage_events WHERE total_ms = 75 AND send_outcome = 'sent'"), '1');
     assert.equal(query("SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid = 'app.clients'::regclass"), 'postgres');
     assert.equal(query("SELECT count(*) FROM pg_roles WHERE rolname IN ('studio_admin', 'studio_migrator', 'studio_agent', 'studio_broker')"), '0');
     inspectServices();

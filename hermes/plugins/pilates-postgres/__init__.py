@@ -6,7 +6,7 @@ from pathlib import Path
 
 import asyncpg
 from aiohttp import ClientSession, ClientTimeout
-from pilates_trusted import BROKER_URL, bridge_token, current_turn
+from pilates_trusted import BROKER_URL, bridge_token, current_turn, usage_compaction
 
 
 async def broker_request(path, data):
@@ -65,7 +65,13 @@ async def execute_query(args, **kwargs):
                 pass
 
 
+def count_compaction(**kwargs):
+    # Usage metrics: committed compactions of the current message (REQ-OPS-011).
+    usage_compaction()
+
+
 def register(ctx):
+    ctx.register_hook("post_compaction", count_compaction)
     ctx.register_tool(
         name="studio_sql_query",
         toolset="studio-postgres",

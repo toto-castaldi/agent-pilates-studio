@@ -6,6 +6,7 @@
 - I ruoli PostgreSQL sono distinti per amministrazione, migrazione, broker e agente; credenziali e privilegi delle migrazioni non sono disponibili all'agente e solo quest'ultimo riceve DML nello schema applicativo. Il ruolo agente non possiede schemi né può creare tabelle temporanee; `pg_hba.conf` limita il suo accesso al database applicativo.
 - PostgreSQL consente al ruolo di login di cambiare la propria password anche senza `CREATEROLE`: è un'eccezione standard accettata, che non consente DDL. Il bootstrap eseguito dall'operatore ripristina la password a partire dal file esterno.
 - Il login `studio_broker` non ha DML sulle tabelle applicative né DDL; esegue gli ingressi privati dell'identità, che registrano il contesto autore protetto, e gestisce soltanto lo stato privato del percorso guidato, i proprietari delle chat e delle sessioni e le impronte anti-replay.
+- Le metriche d'uso (`studio_private.usage_events`) non sono accessibili al ruolo agente in nessun modo; il broker le scrive soltanto tramite `record_usage_event`, senza leggerle; UPDATE, DELETE e TRUNCATE sono rifiutati anche al migratore (`usage-metrics`).
 - Tutte le funzioni fidate usano `SECURITY DEFINER` con `search_path` fisso (`pg_catalog` per quelle dell'identità) e nomi qualificati; l'agente non ha USAGE sullo schema privato né EXECUTE sugli ingressi privati.
 
 ## Autore e storico

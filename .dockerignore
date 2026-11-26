@@ -8,6 +8,7 @@
 !hermes/entrypoint.sh
 !src/
 !src/identity-flow.ts
+!src/usage-event.ts
 !src/teacher-identity.ts
 !package.json
 !package-lock.json
