@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P1",
-  "status": "Todo",
+  "status": "Done",
+  "branch": "fix/BUG-006-compattazione-soglia-ritardata",
   "dependencies": [],
   "requirements": [
     "REQ-AGENT-004"
@@ -17,12 +18,18 @@
   "description": "Osservato in SPIKE-004 (docs/spikes/SPIKE-004-fonti-metriche-uso.md, Limits): con messaggi da ~40K token la compattazione per soglia scatta solo dopo che il contesto inviato ha superato il 40% della finestra per tre turni consecutivi, arrivando all'83,1%. Causa non indagata.",
   "found_in": "v0.4.0",
   "steps_to_reproduce": "Gateway reale con Hermes 0.22.7, modello sintetico derivato da integration/compaction_stub.py con finestra di 200K token e soglia del 40% (80K); un mittente censito invia in sequenza otto messaggi sintetici da ~40K token ciascuno; si osservano i prompt_tokens di ogni richiesta principale e gli eventi post_compaction.",
-  "expected": "La compattazione per soglia scatta al turno in cui il contesto inviato raggiunge il 40% della finestra; i superamenti sono solo temporanei, fino alla compattazione (REQ-AGENT-004), come avviene con i messaggi da ~10K di test:compaction (36–47%).",
+  "expected": "La compattazione per soglia scatta al più tardi al turno successivo al primo superamento del 40% della finestra, con un solo superamento temporaneo (REQ-AGENT-004); con i messaggi da ~10K di test:compaction resta al primo turno oltre la soglia (36–47%).",
   "actual": "Il contesto arriva al 42,7%, 62,9% e 83,1% della finestra in tre turni consecutivi prima della prima compattazione per soglia, seguita da due compattazioni nello stesso turno.",
   "acceptance_criteria": [
     "La causa del ritardo è individuata e documentata in design/compaction, distinguendo stima dei token di Hermes, momento del controllo della soglia e dimensione dei messaggi.",
-    "Con messaggi sintetici da ~40K token la compattazione per soglia scatta al primo turno in cui il contesto inviato raggiunge il 40% della finestra, senza turni successivi oltre la soglia; con i messaggi di test:compaction il comportamento resta invariato.",
+    "Con messaggi sintetici da ~40K token la compattazione per soglia scatta al più tardi al turno successivo al primo in cui il contesto inviato raggiunge il 40% della finestra, con un solo turno temporaneamente oltre la soglia e senza turni successivi oltre la soglia; con i messaggi di test:compaction il comportamento resta invariato.",
     "Un test di regressione nella suite test:compaction, con dati sintetici, riproduce lo scenario dei messaggi da ~40K token e fallisce senza la correzione.",
-    "Se la correzione richiede punti interni di Hermes 0.22.7 diversi da quelli già documentati, sono elencati in design/compaction; nessun dato personale entra in log, modello o cronologia oltre a quanto già previsto (REQ-NFR-002)."
-  ]
+    "La correzione usa solo configurazione documentata di Hermes 0.22.7 (compression.protect_first_n: 0), senza nuovi punti interni; REQ-AGENT-004 e design/compaction sono aggiornati; nessun dato personale entra in log, modello o cronologia oltre a quanto già previsto (REQ-NFR-002)."
+  ],
+  "remarks": [
+    "2026-11-26, decisione dell'utente dopo il rapporto ready: accettato compression.protect_first_n: 0 con aggiornamento di REQ-AGENT-004; opzione A (sola configurazione, compattazione al più un turno dopo con un solo superamento temporaneo, criterio riformulato, nessun wrapper sui punti interni di Hermes)."
+  ],
+  "outcome": "Causa: con il valore predefinito di Hermes 0.22.7 protect_first_n=3 (che decade a 0 solo dopo la prima compattazione), più la coda protetta (almeno 3 messaggi, ultimo utente e ultima risposta), con messaggi da ~40K token la soglia veniva superata con 3, 5 e 7 messaggi tutti protetti e il compressore non aveva nulla da riassumere; stima dei token (ancorata all'uso reale) e momento del controllo (should_compress già vero al 42%) risultano corretti, verificato con una sonda numerica sul gateway reale. Correzione: compression.protect_first_n: 0 in hermes/config.yaml, nessun nuovo punto interno; aggiornati REQ-AGENT-004 e design/compaction. Regressione 1b in test:compaction (mittente sintetico Gamma, 6 messaggi da ~40K): con la correzione la suite passa, compattazione al turno successivo al primo superamento (22,4% → 42,4% → ~24%), sezione da ~10K invariata; senza la correzione fallisce con 22,4% 42,4% 62,4% 82,4% 43,9%+summary. Gate rapido superato (lint, typecheck, 108 test, build).",
+  "changelog": "Fixed: la compattazione per soglia non si ritarda più con pochi messaggi molto lunghi",
+  "closed_at": "2026-11-26"
 }
