@@ -5,4 +5,4 @@
 - La dashboard Grafana si apre in sviluppo e in produzione solo tramite tunnel SSH, con le credenziali della configurazione privata; l'hostname pubblico continua a esporre solo il webhook. Filtrabile per periodo e utilizzatore, mostra i pannelli di REQ-OPS-012 con gli utilizzatori indicati per nome e cognome, mai con il telefono; il suo ruolo PostgreSQL è rifiutato su ogni altro dato e su qualsiasi scrittura e le modifiche dall'interfaccia non sopravvivono alla ricreazione del servizio.
 - Su `jarvis`, aggiornata con il launcher alla release della versione, la dashboard mostra le metriche dei messaggi reali scambiati dopo l'aggiornamento.
 - I log non contengono nomi, messaggi, numeri o credenziali.
-- Il quality gate e le suite di integrazione passano in CI.
+- Il quality gate passa in CI e tutte le suite di integrazione passano in locale sul commit della release.

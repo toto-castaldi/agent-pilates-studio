@@ -1,0 +1,30 @@
+{
+  "id": "TEC-059",
+  "title": "CI limitata al gate rapido",
+  "version": "v0.5.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-003",
+    "REQ-NFR-008",
+    "REQ-OPS-007"
+  ],
+  "design_references": [
+    "design/test-strategy",
+    "AGENTS §6"
+  ],
+  "description": "La CI GitHub fallisce in modo intermittente per cause estranee al codice: il gateway Hermes non diventa healthy entro il timeout di Compose in suite diverse (test:usage, test:author, test:compaction). Per decisione dell'utente la CI non deve dipendere da Docker, rete o installazioni esterne: esegue solo lint, controllo dei tipi, test di unità in memoria e build; tutte le suite di integrazione restano obbligatorie in locale durante gli item quando servono e alla chiusura della versione.",
+  "acceptance_criteria": [
+    "Il workflow .github/workflows/ci.yml esegue nel job di verifica solo npm ci, npm run lint, npm run typecheck, npm test e npm run build: nessuna suite test:*, nessuna installazione di Pi o Claude Code, nessun allineamento di Docker né preparazione di immagini di integrazione.",
+    "Il job di pubblicazione delle immagini resta solo per i push su main, dipende dal successo del job di verifica e non è modificato nella logica di pubblicazione; nessun ritentativo aggiunto per errori del registry.",
+    "Il test di contratto del workflow verifica il nuovo insieme di comandi, l'assenza delle suite di integrazione e delle installazioni esterne, trigger, permessi e assenza di condizioni che permettano di saltare il gate.",
+    "AGENTS.md §6, docs/design/test-strategy.md, README e ogni altro documento che indica le suite di integrazione in CI descrivono il nuovo stato: suite in locale durante gli item e alla chiusura della versione, CI con il solo gate.",
+    "Gate rapido e test:local passano in locale; una run della CI su GitHub per il branch dell'item completa il solo gate con esito positivo."
+  ],
+  "remarks": [
+    "Decisione dell'utente del 2026-11-26 durante la preparazione della chiusura della v0.5.0: rimuovere dalla CI tutte le suite di integrazione, non solo quelle Docker; lasciare invariata la pubblicazione su GHCR senza ritentativi per unknown blob."
+  ]
+}

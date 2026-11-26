@@ -34,6 +34,7 @@ Gli utilizzatori registrano, consultano e aggiornano via WhatsApp le abitudini s
 
 - Metriche d'uso dell'agente per ogni messaggio autenticato, in produzione e in sviluppo: utilizzatore come insegnante censito, tipo di turno, tempi di risposta complessivi e del modello, modello e livello di thinking, token, contesto inviato rispetto alla finestra, compattazioni, chiamate ai tool, costo riportato da OpenRouter ed esito dell'invio; registrate nel database senza dati personali, non modificabili né leggibili dall'agente e conservate senza limite (REQ-OPS-011).
 - Dashboard Grafana delle metriche per l'operatore, filtrabile per periodo e utilizzatore, raggiungibile solo dal server tramite tunnel SSH, con credenziali nella configurazione privata, sola lettura sulle metriche e su nome e cognome degli insegnanti, e provisioning versionato incluso nelle immagini (REQ-OPS-012).
+- CI GitHub limitata al gate rapido, con tutte le suite di integrazione eseguite in locale durante gli item e alla chiusura della versione (REQ-NFR-003, REQ-NFR-008).
 - Le capacità delle versioni precedenti restano disponibili e i loro requisiti restano vincolanti.
 
 ### Out of scope for v0.5.0
