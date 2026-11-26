@@ -1,6 +1,6 @@
 # Technical design — agent-pilates-studio
 
-**Target version:** v0.5.0
+**Target version:** nessuna (v0.5.0 rilasciata)
 
 Il *come* del progetto, un file per argomento (`docs/process/docs.md` §2). I requisiti sono in `docs/requirements/`. Gli item citano un argomento come `design/<topic>` (il file `docs/design/<topic>.md`); le decisioni con alternative rilevanti sono in `docs/adr/`. L'elenco degli argomenti si ottiene con `python3 .agents/tools/backlog.py docs`; `docs --for <ID>` elenca i file necessari per un item.
 

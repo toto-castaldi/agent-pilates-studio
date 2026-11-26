@@ -6,6 +6,25 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) e il p
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-26
+
+### Added
+
+- dashboard Grafana delle metriche d'uso, raggiungibile solo con tunnel SSH, con accesso protetto e dati di sola lettura (US-020)
+- metriche d'uso per ogni messaggio WhatsApp (tempi, token, contesto, costo OpenRouter, esito d'invio) protette nel database (TEC-052)
+
+### Changed
+
+- Processo e strumenti allineati al template v4.3.0: all'avvio di Pi o di Claude Code un controllo in sola lettura confronta la versione del processo con l'ultima release del template e, se il progetto è indietro, mostra un avviso con le due versioni e le note di rilascio, senza bloccare l'avvio e restando silenzioso senza rete; il comando `backlog template-check` mostra a richiesta lo stesso confronto (TEC-055)
+- Processo allineato al template v4.4.0: CHANGELOG generato dal backlog alla chiusura della versione, help compatto della CLI (TEC-056)
+- Processo allineato al template v4.5.0: l'orchestratore rimuove il clone di un worker subito dopo il merge del suo item (TEC-058)
+- la CI esegue solo il gate rapido; le suite di integrazione si eseguono in locale durante il lavoro e al rilascio (TEC-059)
+
+### Fixed
+
+- le metriche d'uso misurano anche i messaggi ricevuti nei primi secondi dopo l'avvio del gateway (TEC-057)
+- la compattazione per soglia non si ritarda più con pochi messaggi molto lunghi (BUG-006)
+
 ## [0.4.0] - 2026-11-25
 
 ### Changed
