@@ -189,6 +189,26 @@ Migrazione verificata: prima della modifica `backlog changelog` restituiva per l
 
 Ambiente del **2026-11-26**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**. Pi **1.5.0** e Claude Code **2.1.323** installati in una directory temporanea e selezionati con PATH, senza cambiare i runtime personali. Superati lint, typecheck, **108 test unitari**, build, `backlog check`, `test:local` (**65**), `test:pi` (**7**) e `test:claude` (**2**). Le prove su clone del commit corrente sono state eseguite dopo il commit delle modifiche. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti e restano richieste alla chiusura della versione.
 
+## Inventario dopo TEC-058
+
+Riferimenti verificati il **2026-11-26** nel clone pubblico temporaneo isolato: tag annotato `v4.5.0` (oggetto tag `72f0f2ba1f30794eacb051c6ac0799da9c36d833`) → `12fb9bcd6741d03d9af1e123eb149cf240c364ee`, indicato anche da `main` del template; `v4.4.0` → `2b7196651efa8b18c6c564b06e686a0ce54f8130` invariato. Verificati tipo del tag, commit completi e diff completo dalla v4.4.0: 4 file, nessun passo di migrazione. Prima della copia i 3 file condivisi cambiati erano identici ai blob v4.4.0; `README.md` è personalizzato. Tutti gli altri file restano invariati fra v4.4.0 e v4.5.0. Non è una verifica di firma crittografica.
+
+| Risorsa | Base adottata dimostrata prima di TEC-058 | Confronto e adozione |
+| --- | --- | --- |
+| `docs/PROCESS.md`, `docs/PROCESS-PARALLEL.md` | Blob verificati identici alla v4.4.0 prima della copia | Adottati v4.5.0 senza divergenze: Process version 4.5.0; l'orchestratore rimuove ogni clone integrato subito dopo il suo merge senza chiedere, salvo lavoro non committato o non pubblicato. |
+| Skill `orchestrate` (`SKILL.md`) | Blob verificato identico alla v4.4.0 | Adottata senza divergenze: pulizia del §7 eseguita subito dopo ogni merge del §6, perché la richiesta di merge la comprende; attesa dell'utente solo se il clone contiene modifiche non committate o commit non pubblicati; pulizia su richiesta dei clone integrati rimasti. Guide `herdr.md`, `claude-code.md` e `manual.md` invariate. |
+| `README.md` generico | Personalizzato | Solo confrontato: riportata in italiano la rimozione del clone subito dopo il merge nella sezione «Merge e pulizia»; versione allineata aggiornata a v4.5.0. |
+| `AGENTS.md` | Personalizzato, non cambiato upstream | Verificato coerente: il §10 non richiede conferma per la pulizia dei clone integrati e mantiene le protezioni dei clone; il divieto di rimozioni di clone della deroga TEC-046 vale solo per quella chiusura. Nessuna modifica. |
+| Altre risorse condivise | Basi dell'inventario TEC-056 | Invariate fra v4.4.0 e v4.5.0. Nessun seed adottato, nessuna configurazione privata letta, nessun worker avviato e nessun clone rimosso. |
+
+I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`; `docs/design/process-tooling.md` descrive la nuova pulizia.
+
+## Verifica di TEC-058
+
+Aggiornati i blob attesi, la Process version controllata in `template-check.test.ts` e `parallel-work.test.ts` e, in quest'ultimo, le frasi della skill e di PROCESS-PARALLEL che fissano la pulizia subito dopo il merge e l'unico caso di attesa dell'utente. `backlog template-check` riporta lo stato `current` (4.5.0 è l'ultima release). **Non sono dimostrati** la rimozione reale di un clone da parte di un orchestratore con un modello, in Herdr, in Claude Code headless o in modalità manuale: le prove verificano i testi delle istruzioni e le procedure con repository sintetici, non il comportamento del modello.
+
+Ambiente del **2026-11-26**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**. Pi **1.5.0** e Claude Code **2.1.323** installati in una directory temporanea e selezionati con PATH, senza cambiare i runtime personali (con il Pi 1.5.2 personale `test:pi` fallisce solo il controllo della versione fissata). Superati lint, typecheck, **120 test unitari**, build, `backlog check`, `test:local` (**65**), `test:pi` (**7**) e `test:claude` (**2**). Le prove su clone del commit corrente sono state eseguite dopo il commit delle modifiche. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti e restano richieste alla chiusura della versione.
+
 ## Procedura manuale per un nuovo confronto
 
 Servono Git e accesso in lettura al repository pubblico. Eseguire da un clone pulito del progetto; non confrontare file locali privati, credenziali o configurazioni personali. I diff possono contenere tutto il testo dei file confrontati: rivederli prima di condividerli. Usare esclusivamente percorsi versionati e non sensibili.
