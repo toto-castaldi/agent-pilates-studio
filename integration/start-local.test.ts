@@ -25,10 +25,13 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const databasePort = await freePort();
   let webhookPort = await freePort();
   while (webhookPort === databasePort) webhookPort = await freePort();
+  let grafanaPort = await freePort();
+  while (grafanaPort === databasePort || grafanaPort === webhookPort) grafanaPort = await freePort();
+  const grafanaAdmin = `synthetic-private-grafana-${randomBytes(8).toString('hex')}`;
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nPILATES_MANAGER_PHONE=+1 (555) 555-0102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nPILATES_MANAGER_PHONE=+1 (555) 555-0102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nGRAFANA_PORT=${grafanaPort}\nGRAFANA_ADMIN_PASSWORD=${grafanaAdmin}\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   // start:local starts services with --no-deps; the synthetic model catalog read by
@@ -47,7 +50,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   try {
     await mkdir(join(dir, 'scenarios'));
     await mkdir(join(dir, 'integration'));
-    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes', 'src', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
+    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'grafana', 'hermes', 'src', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.

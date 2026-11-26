@@ -33,9 +33,10 @@ test('manager recovery compensation does not consume an earlier change when alig
     'exec /bin/mv "$@"',
     '',
   ].join('\n'), { mode: 0o755 });
-  for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'openrouter-key', 'whatsapp-access-token', 'whatsapp-app-secret', 'whatsapp-verify-token', 'whatsapp-phone-number-id']) {
+  for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'db-grafana', 'bridge-token', 'openrouter-key', 'whatsapp-access-token', 'whatsapp-app-secret', 'whatsapp-verify-token', 'whatsapp-phone-number-id']) {
     await writeFile(join(root, 'secrets', name), 'synthetic\n', { mode: 0o600 });
   }
+  await writeFile(join(root, 'secrets', 'grafana-admin-password'), 'synthetic-grafana-admin\n', { mode: 0o600 });
   await writeFile(secret, '+15555550103\n', { mode: 0o600 });
   await writeFile(envFile, 'OTHER=synthetic\nPILATES_MANAGER_PHONE=+15555550103\n', { mode: 0o600 });
   await writeFile(join(root, 'prod.env'), 'POSTGRES_PORT=55433\nWHATSAPP_WEBHOOK_PORT=18190\nWHATSAPP_WEBHOOK_PATH=/whatsapp/webhook\n', { mode: 0o600 });
