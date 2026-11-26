@@ -6,7 +6,8 @@
   "module": "MOD-001",
   "type": "Bug",
   "priority": "P1",
-  "status": "Todo",
+  "status": "In Progress",
+  "branch": "fix/BUG-006-compattazione-soglia-ritardata",
   "dependencies": [],
   "requirements": [
     "REQ-AGENT-004"
