@@ -2,7 +2,7 @@
 
 ## 0. Process
 
-Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicite nella sezione 8. Il nucleo indica quali guide di `docs/process/` leggere per argomento. All'inizio di ogni sessione eseguire `python3 .agents/tools/backlog.py status` e `show` per gli item pertinenti. Leggere e modificare il backlog solo con questa CLI (`docs/PROCESS.md` §3).
+Seguire [`docs/PROCESS.md`](docs/PROCESS.md), che prevale salvo deroghe esplicite nella sezione 8. Il nucleo indica quali guide di `docs/process/` leggere per argomento. Claude Code lo ha già nel contesto tramite `CLAUDE.md` e non lo rilegge; gli altri agenti lo leggono prima di lavorare. All'inizio di ogni sessione eseguire `python3 .agents/tools/backlog.py status` e `show` per gli item pertinenti. Leggere e modificare il backlog solo con questa CLI (`docs/PROCESS.md` §3).
 
 ## 1. Project
 

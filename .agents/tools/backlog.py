@@ -39,7 +39,7 @@ ITEM_FIELDS = (
     "branch", "dependencies", "dependency_override", "requirements",
     "design_references", "description", "found_in", "steps_to_reproduce",
     "expected", "actual", "acceptance_criteria", "remarks", "blocked_by", "outcome",
-    "closed_at",
+    "changelog", "closed_at",
 )
 ITEM_REQUIRED = (
     "id", "title", "epic", "type", "priority", "status",
@@ -61,7 +61,11 @@ SCOPE_CHANGE_LINE = re.compile(r"^\*\*Scope change \((\d{4}-\d{2}-\d{2})\):\*\*\
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 
+CHANGELOG_SECTIONS = ("Added", "Changed", "Fixed", "Removed")
+CHANGELOG_ENTRY = re.compile(r"^(Added|Changed|Fixed|Removed): (\S.*)$")
 SECTION_LIMIT = 10
+RECENT_LIMIT = 3
+CLOSED_TEXT_LIMIT = 300
 NOTES_LIMIT = 5
 TEXT_LIMIT = 80
 DEFAULT_LIST_LIMIT = 30
@@ -485,6 +489,12 @@ def check_status(store, iid, item, prefix, errors) -> None:
     if status != "Blocked" and item.get("blocked_by"):
         errors.append((iid, f"{status} with blocked_by"))
     check_date(iid, item, "closed_at", errors)
+    changelog = item.get("changelog")
+    if changelog not in (None, ""):
+        if not CHANGELOG_ENTRY.match(str(changelog)):
+            errors.append((iid, f"invalid changelog {changelog!r}: use '<{'|'.join(CHANGELOG_SECTIONS)}>: <text>'"))
+        if status != "Done":
+            errors.append((iid, f"{status} with changelog"))
     if status in ("Done", "Dropped"):
         if not item.get("outcome"):
             errors.append((iid, f"{status} without outcome"))
@@ -638,7 +648,7 @@ def item_branches(root: Path, remotes: list[str]) -> dict[str, list[str]]:
 def overlay_branches(store: Store, fetch: bool = True) -> str:
     """Replace each item with its copy on its unmerged item branch; return the fetch outcome.
 
-    Rules in docs/PROCESS-PARALLEL.md §1. Items that exist only in a branch are not added.
+    Rules in docs/process/backlog.md §5. Items that exist only in a branch are not added.
     The source branch of each replaced item, and any other branch that carries it, are kept
     in store.branch_sources, the remotes in store.remotes. The outcome is "done", "failed",
     "skipped" (not asked or no remote) or "none" (not a git repository).
@@ -787,7 +797,9 @@ def cmd_status(store: Store, args) -> int:
     print_section("In progress", data["in_progress"], lambda i: f"{summary_line(i)} [{i.get('branch')}]")
     print_section("Blocked", data["blocked"], lambda i: f"{summary_line(i)} — {shorten(i.get('blocked_by', ''))}")
     print_section("Ready", data["ready"], summary_line)
-    print_section("Recently completed", data["completed"], lambda i: f"{i.get('closed_at')} {summary_line(i)}")
+    print_section(
+        "Recently completed", data["completed"], lambda i: f"{i.get('closed_at')} {summary_line(i)}", RECENT_LIMIT,
+    )
     print_section(
         "Closed versions", data["closed_versions"],
         lambda v: f"{v['id']} closed {v.get('closed_at')}, tag {v['id']}",
@@ -843,23 +855,38 @@ ITEM_LABELS = (
 )
 
 
-def item_lines(item: dict) -> list[str]:
+LONG_FIELDS = {"description", "found_in", "steps_to_reproduce", "expected", "actual"}
+
+
+def item_lines(item: dict, short: bool = False) -> list[str]:
+    """The fields of an item; short shortens the long texts and counts the lists (closed items in show)."""
+    def text(value: str) -> str:
+        return shorten(value, CLOSED_TEXT_LIMIT) if short else value
+
     lines = []
     for label, field in ITEM_LABELS:
         value = item.get(field)
         if field == "dependencies" and not value:
             value = "none"
         if value not in (None, "", []):
-            lines.append(f"- **{label}:** {', '.join(value) if isinstance(value, list) else value}")
-    lines.append("- **Acceptance criteria:**")
-    lines.extend(f"  - {criterion}" for criterion in item.get("acceptance_criteria", []))
-    if item.get("remarks"):
-        lines.append("- **Remarks:**")
-        lines.extend(f"  - {remark}" for remark in item["remarks"])
+            value = ", ".join(value) if isinstance(value, list) else value
+            lines.append(f"- **{label}:** {text(value) if field in LONG_FIELDS else value}")
+    criteria, remarks = item.get("acceptance_criteria", []), item.get("remarks", [])
+    if short:
+        lists = [f"{len(criteria)} acceptance criteria"] + ([f"{len(remarks)} remarks"] if remarks else [])
+        lines.append(f"- **Not shown:** {', '.join(lists)} (show --full)")
+    else:
+        lines.append("- **Acceptance criteria:**")
+        lines.extend(f"  - {criterion}" for criterion in criteria)
+        if remarks:
+            lines.append("- **Remarks:**")
+            lines.extend(f"  - {remark}" for remark in remarks)
     if item.get("blocked_by"):
         lines.append(f"- **Blocked by:** {item['blocked_by']}")
     if item.get("outcome"):
-        lines.append(f"- **Outcome:** {item['outcome']} ({item.get('closed_at')})")
+        lines.append(f"- **Outcome:** {text(item['outcome'])} ({item.get('closed_at')})")
+    if item.get("changelog"):
+        lines.append(f"- **Changelog:** {item['changelog']}")
     return lines
 
 
@@ -872,7 +899,7 @@ def cmd_show(store: Store, args) -> int:
         print(json.dumps(item, ensure_ascii=False, indent=2))
         return 0
     print(f"{item['id']} — {item.get('title')}")
-    print("\n".join(item_lines(item)))
+    print("\n".join(item_lines(item, short=item.get("status") in ("Done", "Dropped") and not args.full)))
     origin = store.branch_sources.get(item["id"])
     if origin:
         print(f"- **From branch:** {origin['source']}")
@@ -964,6 +991,17 @@ def apply_item_arguments(item: dict, args) -> None:
         item["acceptance_criteria"] = args.criterion
     if args.remark is not None:
         item["remarks"] = args.remark
+    if getattr(args, "changelog", None) is not None:
+        if args.changelog and item.get("status") != "Done":
+            raise BacklogError(f"{item['id']} is not Done: the changelog is set with done --changelog")
+        item["changelog"] = changelog_entry(args.changelog) if args.changelog else ""
+
+
+def changelog_entry(value: str) -> str:
+    entry = " ".join(value.split())
+    if not CHANGELOG_ENTRY.match(entry):
+        raise BacklogError(f"invalid changelog {value!r}: use '<{'|'.join(CHANGELOG_SECTIONS)}>: <one line>'")
+    return entry
 
 
 def cmd_add(store: Store, args) -> int:
@@ -1054,6 +1092,8 @@ def cmd_done(store: Store, args) -> int:
     item = dict(store.item(args.id))
     require_status(item, ("In Progress",), "complete")
     item.update(status="Done", outcome=args.outcome, closed_at=today())
+    if args.changelog:
+        item["changelog"] = changelog_entry(args.changelog)
     save(store, "items", item)
     print(f"{item['id']} Done")
     return 0
@@ -1065,6 +1105,7 @@ def cmd_reopen(store: Store, args) -> int:
     require_status(item, ("Done",), "reopen")
     item["status"] = "In Progress" if item.get("branch") else "Todo"
     item.pop("outcome", None)
+    item.pop("changelog", None)
     item.pop("closed_at", None)
     save(store, "items", item)
     print(f"{item['id']} {item['status']}")
@@ -1143,6 +1184,36 @@ def cmd_epic_edit(store: Store, args) -> int:
         epic["scope"] = args.scope
     save(store, "epics", epic)
     print(args.id)
+    return 0
+
+
+def changelog_section(store: Store, version_id: str) -> str:
+    """The Keep a Changelog section of a version, from the changelog field of its Done items."""
+    version = store.versions[version_id]
+    entries = {section: [] for section in CHANGELOG_SECTIONS}
+    for item in sorted(store.items.values(), key=lambda i: item_key(i["id"])):
+        match = CHANGELOG_ENTRY.match(str(item.get("changelog") or ""))
+        if item.get("version") == version_id and item.get("status") == "Done" and match:
+            entries[match[1]].append(f"- {match[2]} ({item['id']})")
+    title = f"[{version_id[1:]}] - {version['closed_at']}" if version.get("state") == "Closed" else "[Unreleased]"
+    out = [f"## {title}"]
+    for section, lines in entries.items():
+        if lines:
+            out += ["", f"### {section}", "", *lines]
+    return "\n".join(out) + "\n"
+
+
+def cmd_changelog(store: Store, args) -> int:
+    store.require_loaded()
+    version_id = args.id
+    if version_id is None:
+        open_versions = sorted((v["id"] for v in store.open_versions()), key=version_key)
+        if not open_versions:
+            raise BacklogError("no open version: name one")
+        version_id = open_versions[0]
+    if version_id not in store.versions:
+        raise BacklogError(f"version {version_id} not found")
+    print(changelog_section(store, version_id), end="")
     return 0
 
 
@@ -2037,7 +2108,7 @@ def template_check(root: Path) -> dict:
     report["message"] = (
         f"Template update available: process version {report['latest']} ({level}, {upgrade}); "
         f"this project uses {report['current']}. Release notes: {releases}. "
-        f"Adopt it in a task/ item ({PROCESS_FILE} §3)."
+        "Adopt it in a task/ item (docs/process/release.md §2)."
     )
     return report
 
@@ -2065,19 +2136,48 @@ def add_item_options(parser: argparse.ArgumentParser, creating: bool) -> None:
     parser.add_argument("--epic", required=creating)
     parser.add_argument("--priority", required=creating, choices=None if not creating else PRIORITIES)
     parser.add_argument("--module")
-    parser.add_argument("--dependencies", help="comma-separated item IDs")
-    parser.add_argument("--requirements", help="comma-separated requirement IDs")
-    parser.add_argument("--design-references", dest="design_references", help="comma-separated references")
+    parser.add_argument("--dependencies", metavar="IDS", help="comma-separated item IDs")
+    parser.add_argument("--requirements", metavar="IDS", help="comma-separated requirement IDs")
+    parser.add_argument("--design-references", dest="design_references", metavar="REFS", help="comma-separated references")
     parser.add_argument("--description")
     parser.add_argument("--found-in", dest="found_in")
     parser.add_argument("--steps-to-reproduce", dest="steps_to_reproduce")
     parser.add_argument("--expected")
     parser.add_argument("--actual")
     parser.add_argument(
-        "--criterion", action="append", required=creating,
+        "--criterion", action="append", required=creating, metavar="TEXT",
         help="acceptance criterion, repeatable; with edit the given list replaces the existing one",
     )
-    parser.add_argument("--remark", action="append", help="free remark, repeatable; with edit the given list replaces the existing one")
+    parser.add_argument("--remark", action="append", metavar="TEXT", help="free remark, repeatable; with edit the given list replaces the existing one")
+    if not creating:
+        parser.add_argument("--changelog", metavar="ENTRY", help="of a Done item: '<Added|Changed|Fixed|Removed>: <one line>'")
+
+
+COMPACT_HELP_INTRO = (
+    "Read and change the backlog store. One line per command; `<command> --help` explains its options.\n"
+    "IDS and REFS are comma-separated. --criterion and --remark are repeatable; with edit the given list replaces "
+    "the existing one. With edit an empty value clears an optional field."
+)
+
+
+def command_lines(parser: argparse.ArgumentParser, prefix: tuple[str, ...] = ()):
+    """Yield (command words, parser) for every leaf command, in definition order."""
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            for name, child in action.choices.items():
+                yield from command_lines(child, prefix + (name,))
+            return
+    yield prefix, parser
+
+
+def compact_help(parser: argparse.ArgumentParser) -> str:
+    # One call gives the syntax of every command, so agents need not run --help per command.
+    lines = []
+    for words, child in command_lines(parser):
+        usage = re.sub(r"\s+", " ", child.format_usage()).strip()
+        usage = usage.removeprefix(f"usage: {child.prog}").replace(" [-h]", "").strip()
+        lines.append(f"  {' '.join(words)} {usage}".rstrip())
+    return f"usage: {parser.prog} <command> [options]\n\n{COMPACT_HELP_INTRO}\n\n" + "\n".join(lines) + "\n"
 
 
 def reading(subparsers, name: str, handler, help_text: str, branches: bool = True):
@@ -2125,8 +2225,9 @@ def build_parser() -> argparse.ArgumentParser:
     listing.add_argument("--limit", type=int, default=DEFAULT_LIST_LIMIT, help="0 means no limit")
     ready = reading(commands, "ready", cmd_ready, "Todo items of open versions with all dependencies Done")
     ready.add_argument("--limit", type=int, default=SECTION_LIMIT, help="0 means no limit")
-    show = reading(commands, "show", cmd_show, "one item in full")
+    show = reading(commands, "show", cmd_show, "one item; Done and Dropped ones in short unless --full")
     show.add_argument("id")
+    show.add_argument("--full", action="store_true", help="every field in full, also for Done and Dropped items")
     reading(commands, "export", cmd_export, "whole backlog on stdout, never committed")
     reading(commands, "check", cmd_check, "validate the store and the references to docs/", branches=False)
     docs = reading(commands, "docs", cmd_docs, "list requirements and design topics of docs/", branches=False)
@@ -2154,6 +2255,7 @@ def build_parser() -> argparse.ArgumentParser:
     done = writing(commands, "done", cmd_done, "In Progress to Done")
     done.add_argument("id")
     done.add_argument("--outcome", required=True)
+    done.add_argument("--changelog", metavar="ENTRY", help="user-visible change: '<Added|Changed|Fixed|Removed>: <one line>'")
     reopen = writing(commands, "reopen", cmd_reopen, "leave Done")
     reopen.add_argument("id")
     drop = writing(commands, "drop", cmd_drop, "set Dropped; the file is kept so the ID is never reused")
@@ -2200,6 +2302,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     process.add_argument("--dry-run", action="store_true", help="report the rewrites, write nothing")
 
+    changelog = writing(commands, "changelog", cmd_changelog, "the CHANGELOG section of a version from its Done items")
+    changelog.add_argument("id", nargs="?", help="default: the open version")
     close = writing(commands, "close-version", cmd_close_version, "close a version whose items are finished")
     close.add_argument("id")
 
@@ -2209,6 +2313,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check_template.add_argument("--format", choices=("text", "json", "claude-hook"), default="text")
     check_template.add_argument("--quiet", action="store_true", help="with text, print only when an update is available")
+    parser.format_help = lambda: compact_help(parser)
+    parser.format_usage = lambda: f"usage: {parser.prog} <command> [options] (--help lists the commands)\n"
     return parser
 
 

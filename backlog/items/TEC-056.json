@@ -13,6 +13,8 @@
   ],
   "design_references": [
     "PROCESS §3",
+    "process/release §2",
+    "process/backlog §5",
     "design/process-tooling",
     "design/test-strategy",
     "docs/TEMPLATE-ORIGIN.md"

@@ -21,7 +21,7 @@
  * dependency of the item is not Done (the rule of `backlog ready` and `start`).
  *
  * Item branches: states are resolved by the backlog CLI
- * (`export --json --branches`, rules in docs/PROCESS-PARALLEL.md §1), exactly as
+ * (`export --json --branches`, rules in docs/process/backlog.md §5), exactly as
  * in the pi overlay (.pi/extensions/backlog/). The pane shows the current
  * directory at once, then the states from the local refs and, when the
  * repository has a remote, the states after `git fetch --prune`.
@@ -114,6 +114,7 @@ function toItem(record: BacklogRecord, store: ExportedStore): BacklogItem {
   if (strings(record.remarks).length > 0) fields.push({ label: 'Remarks', list: strings(record.remarks) })
   if (record.blocked_by) fields.push({ label: 'Blocked by', value: text(record.blocked_by) })
   if (record.outcome) fields.push({ label: 'Outcome', value: `${text(record.outcome)} (${text(record.closed_at)})` })
+  if (record.changelog) fields.push({ label: 'Changelog', value: text(record.changelog) })
 
   const id = text(record.id)
   const versionId = text(record.version)

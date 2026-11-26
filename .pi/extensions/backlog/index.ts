@@ -20,7 +20,7 @@
  * dependency of the item is not Done (the rule of `backlog ready` and `start`).
  *
  * Item branches: states are resolved by the backlog CLI
- * (`export --json --branches`, rules in docs/PROCESS-PARALLEL.md §1): each item
+ * (`export --json --branches`, rules in docs/process/backlog.md §5): each item
  * is shown as it is on its unmerged item branch, local or remote-tracking, and the
  * header shows `from <ref>` and `also in: …`. The overlay opens at once with the
  * current directory, then asks the CLI for the states from the local refs and,
@@ -187,6 +187,7 @@ function toBacklogItem(record: BacklogRecord, lookup: Lookup, done: ReadonlySet<
 	if (strings(record.remarks).length > 0) body.push("- **Remarks:**", ...strings(record.remarks).map((r) => `  - ${r}`));
 	if (record.blocked_by) body.push(`- **Blocked by:** ${String(record.blocked_by)}`);
 	if (record.outcome) body.push(`- **Outcome:** ${String(record.outcome)} (${String(record.closed_at)})`);
+	if (record.changelog) body.push(`- **Changelog:** ${String(record.changelog)}`);
 
 	const versionId = record.version ? String(record.version) : undefined;
 	const epicId = record.epic ? String(record.epic) : undefined;

@@ -66,7 +66,7 @@ Le prove end-to-end con servizi e credenziali reali si eseguono separatamente co
 
 ## Template di origine
 
-La [registrazione del template](docs/TEMPLATE-ORIGIN.md) distingue basi adottate, riferimenti solo confrontati e personalizzazioni dello studio. Processo e risorse condivise sono allineati alla **v4.3.0**, con il solo adattamento Pi documentato; i dati del backlog e i documenti personalizzati non sono sostituiti dal template. Il processo ha un nucleo in `docs/PROCESS.md` e guide su richiesta in `docs/process/` (backlog, documentazione, Git e release). La procedura manuale permette di valutare aggiornamenti senza adottarli automaticamente; la prova isolata è inclusa in `npm run test:local`.
+La [registrazione del template](docs/TEMPLATE-ORIGIN.md) distingue basi adottate, riferimenti solo confrontati e personalizzazioni dello studio. Processo e risorse condivise sono allineati alla **v4.4.0**, con il solo adattamento Pi documentato; i dati del backlog e i documenti personalizzati non sono sostituiti dal template. Il processo ha un nucleo in `docs/PROCESS.md` e guide su richiesta in `docs/process/` (backlog, documentazione, Git e release). La procedura manuale permette di valutare aggiornamenti senza adottarli automaticamente; la prova isolata è inclusa in `npm run test:local`.
 
 ### Controllo del template all'avvio
 
@@ -90,6 +90,10 @@ python3 .agents/tools/backlog.py export --json --branches --no-fetch
 ```
 
 `python3 .agents/tools/backlog.py docs --for <ID>` elenca i file necessari per un item, incluse sezioni del processo, ADR e voce del modulo; `--json` espone anche i riferimenti non risolti. `backlog check` valida file e sezioni dei riferimenti `PROCESS §N` e `process/<nome> §N`.
+
+`python3 .agents/tools/backlog.py --help` riporta in una sola chiamata la sintassi di tutti i comandi; `<comando> --help` ne spiega le opzioni. `show` riassume gli item `Done` e `Dropped` (testi lunghi abbreviati, criteri e note solo contati), `--full` li mostra per intero; `status` elenca i tre item completati più di recente.
+
+I branch degli item non modificano `CHANGELOG.md`: alla chiusura di un item la modifica visibile all'utente si registra con `backlog done <ID> --outcome … --changelog "<Added|Changed|Fixed|Removed>: <riga>"` (correggibile con `backlog edit <ID> --changelog …` su un item `Done`) e alla chiusura della versione `backlog changelog vX.Y.Z` genera la sezione del CHANGELOG; senza argomento mostra quella della versione aperta.
 
 Senza `--branches` si consulta solo il checkout corrente. `status`, `list`, `ready`, `show` ed `export` accettano `--branches` e `--no-fetch`: gli stati sono risolti dai branch item locali e remote-tracking non integrati in `main` locale o nel branch predefinito di un remote. Il locale prevale sull'omonimo remoto; sul branch dell'item prevale la sua copia di lavoro; fra branch concorrenti prevale il commit più recente. Un item presente solo in un branch non viene aggiunto alla vista. `show` testuale indica provenienza e altri branch; `export --json` li espone in `branches.items`, insieme all'esito del fetch e ai remoti. `show --json` restituisce invece il solo record, senza metadati di provenienza, come nel template.
 
