@@ -8,12 +8,12 @@ function blob(text: string): string {
   return createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 }
 
-test('shared resources match the pinned v4.4.0 blobs, with only the agreed Pi refresh adaptation', () => {
-  // Public template commit 2b7196651efa8b18c6c564b06e686a0ce54f8130 (tag v4.4.0), verified for TEC-056;
-  // files unchanged since v4.3.0 (73f4dd3810a035b07e15197ebe00fa5cce4d2628, TEC-055), v4.2.0 (f8865eea054c12a801d98249e13e188bd5411260, TEC-054) or v4.0.0 (b642da351cc848df6af89242fd31872b80c38a66, TEC-048) keep their blobs.
+test('shared resources match the pinned v4.5.0 blobs, with only the agreed Pi refresh adaptation', () => {
+  // Public template commit 12fb9bcd6741d03d9af1e123eb149cf240c364ee (tag v4.5.0), verified for TEC-058;
+  // files unchanged since v4.4.0 (2b7196651efa8b18c6c564b06e686a0ce54f8130, TEC-056), v4.3.0 (73f4dd3810a035b07e15197ebe00fa5cce4d2628, TEC-055), v4.2.0 (f8865eea054c12a801d98249e13e188bd5411260, TEC-054) or v4.0.0 (b642da351cc848df6af89242fd31872b80c38a66, TEC-048) keep their blobs.
   const hashes: Record<string, string> = {
-    'docs/PROCESS.md': 'a9c33f2cfa9e1258e98d64943afb30fea007724e',
-    'docs/PROCESS-PARALLEL.md': '4032a2fde687373d48d3874f06de7dae94331017',
+    'docs/PROCESS.md': '18406b675385b49f5ad040f12d95cdfd5ca6804d',
+    'docs/PROCESS-PARALLEL.md': '6626e1c23579f7647c88da8a8681388076db302d',
     'docs/process/backlog.md': 'b7667292b11dc814688b0370a212da694a17f94e',
     'docs/process/docs.md': '8eeeade8783a51c1b9e778a904ce4b4473a27d4d',
     'docs/process/git.md': '568dd279891ada8c39dbcc581f962f14927563af',
@@ -21,7 +21,7 @@ test('shared resources match the pinned v4.4.0 blobs, with only the agreed Pi re
     '.agents/tools/backlog.py': '0dc8f7d900b3ef8b54c312379b1fa16f70c7d50d',
     '.claude/settings.json': '2606966b9d8d39bf155a1bc7cb2c5bd5f3c84768',
     '.pi/extensions/template-check/index.ts': '3d11519af02259a103c09fd1c3879368dea1b575',
-    '.agents/skills/orchestrate/SKILL.md': '36efbda5ac9231b398a2d2361e749014e646e1b5',
+    '.agents/skills/orchestrate/SKILL.md': 'f3111f1fe2ac54ef9f2b4ea80eb1cfe5b8614b0a',
     '.agents/skills/orchestrate/herdr.md': '37e89c38280cd2fb58154428a0e524a7f314cff6',
     '.agents/skills/orchestrate/claude-code.md': '91151f34a3b659ab811279e02416e4e5f36e2ce8',
     '.agents/skills/orchestrate/manual.md': '62431d3d14b222ff0dc0ce568782a4ef5ca70403',

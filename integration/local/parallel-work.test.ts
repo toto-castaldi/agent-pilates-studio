@@ -433,11 +433,14 @@ test('parallel work settings and instructions keep the studio protections', () =
     'Workers have no parent (**Start**), so hc types no note', 'At the start of every turn, whatever the input',
     'that is not completion', 'never implementation and never a branch switch',
     'check that `git log --oneline origin/main..main` is empty', 'push only on their explicit request',
+    // From v4.5.0 a successful merge removes the clone at once; only a clone with unsaved work waits for the user.
+    'After a successful merge, clean up the item at once (§7) without asking for confirmation: the merge request covers it.',
+    'Run it right after each merge (§6), without asking the user', 'This is the only case in which the clean up waits for the user.',
   ]) {
     assert.ok(`${skill}\n${guides}`.includes(phrase), phrase);
   }
   const processDoc = readFileSync('docs/PROCESS.md', 'utf8');
-  assert.match(processDoc, /\*\*Process version:\*\* 4\.4\.0/);
+  assert.match(processDoc, /\*\*Process version:\*\* 4\.5\.0/);
   for (const phrase of ['**only** through the CLI', 'read with `date +%F`', 'The merge commit contains only the merge and its conflict resolution']) {
     assert.ok(`${processDoc}\n${readFileSync('docs/process/git.md', 'utf8')}`.includes(phrase), phrase);
   }
@@ -445,7 +448,8 @@ test('parallel work settings and instructions keep the studio protections', () =
   // From v4.4.0 the orchestrator rules (not blocking, main not ahead of origin/main) live in the orchestrate skill, checked above.
   for (const phrase of ['Its procedure and rules are the `orchestrate` skill', 'By default the launch is the **go**',
     'it reports `ready` with the plan and the questions, stops', 'They report `started`, `ready`, `done` or `blocked`',
-    'Workers never merge, never push `main`, never remove clones and never start other agents']) {
+    'Workers never merge, never push `main`, never remove clones and never start other agents',
+    'removes each merged clone right after its merge without asking (unless it holds uncommitted or unpushed work)']) {
     assert.ok(parallelDoc.includes(phrase), phrase);
   }
   const merge = readFileSync('.agents/skills/merge-task/SKILL.md', 'utf8');

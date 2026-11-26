@@ -143,7 +143,7 @@ test('template-check stays silent at startup without a Template line, without PR
 
 test('the adopted startup hooks and the project process point at the template check', () => {
   const process = readFileSync('docs/PROCESS.md', 'utf8').split('\n');
-  assert.equal(process[2], '**Process version:** 4.4.0');
+  assert.equal(process[2], '**Process version:** 4.5.0');
   assert.equal(process[4], '**Template:** https://github.com/toto-castaldi/agile-project-template');
   assert.deepEqual(JSON.parse(readFileSync('.claude/settings.json', 'utf8')), {
     hooks: {
