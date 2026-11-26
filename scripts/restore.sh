@@ -13,7 +13,7 @@ backup=$(cd -- "$backup" && pwd -P)
 case "${SECRETS_DIR:-}" in /*) ;; *) fail 'Set SECRETS_DIR to an absolute private directory.' ;; esac
 [[ -d "$SECRETS_DIR" && ! -L "$SECRETS_DIR" ]] || fail 'Secrets directory is invalid.'
 [[ -z $(find "$SECRETS_DIR" -maxdepth 0 -perm /077 -print) ]] || fail 'Secrets directory has insecure permissions.'
-for name in db-admin db-migrator db-agent db-broker; do
+for name in db-admin db-migrator db-agent db-broker db-grafana; do
   file="$SECRETS_DIR/$name"
   [[ -f "$file" && ! -L "$file" && -s "$file" ]] || fail 'A database secret is missing or invalid.'
   [[ -z $(find "$file" -maxdepth 0 -perm /077 -print) ]] || fail 'A database secret has insecure permissions.'

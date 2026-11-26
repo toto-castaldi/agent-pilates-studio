@@ -15,6 +15,7 @@ WHATSAPP_APP_SECRET=synthetic-sensitive-app-secret
 WHATSAPP_VERIFY_TOKEN=synthetic-sensitive-verify-token
 PILATES_MANAGER_PHONE=+1 (555) 555-0102
 WHATSAPP_PHONE_NUMBER_ID=123456789
+GRAFANA_ADMIN_PASSWORD=synthetic-sensitive-grafana-admin
 `;
 
 test('local start validates configuration, preserves secrets and suppresses child output in memory', async () => {
@@ -295,4 +296,49 @@ test('model and reasoning effort reach Compose, default to medium and are valida
     assert.equal(system.calls.length, calls, 'validation must precede service changes');
     assert.equal(system.errors.at(-1), 'Avvio non riuscito: PILATES_REASONING_EFFORT non valido: indicare uno tra none, minimal, low, medium, high, xhigh, max, ultra.');
   }
+});
+
+test('Grafana requires the private admin password, listens on loopback and is recreated last', async () => {
+  const system = memorySystem();
+  system.put('.env', configuration);
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/grafana-admin-password'), 'synthetic-sensitive-grafana-admin\n');
+  assert.match(system.content('.local/secrets/db-grafana') ?? '', /^[a-f0-9]{64}\n$/);
+  assert.equal((await system.lstat('.local/secrets/db-grafana')).mode & 0o077, 0);
+  const grafana = system.calls.filter((call) => call.args.includes('--force-recreate') && call.args.at(-1) === 'grafana');
+  assert.equal(grafana.length, 1);
+  assert.equal(system.calls.at(-1), grafana[0], 'Grafana starts after the gateway');
+  assert.ok(system.calls.every((call) => call.env.GRAFANA_ADMIN_PASSWORD === undefined));
+  assert.ok(system.calls.filter((call) => call.command === 'docker').every((call) => call.env.GRAFANA_PORT === '13000'));
+  assert.match(system.logs.at(-1) ?? '', /127\.0\.0\.1:13000/);
+  // The internal role password is generated once and preserved.
+  const role = system.content('.local/secrets/db-grafana');
+  system.put('.env', `${configuration}GRAFANA_PORT=13999\n`);
+  let start = system.calls.length;
+  assert.equal(await startLocal(system), 0);
+  assert.equal(system.content('.local/secrets/db-grafana'), role);
+  assert.ok(system.calls.slice(start).filter((call) => call.command === 'docker').every((call) => call.env.GRAFANA_PORT === '13999'));
+  // Missing or invalid credentials stop the start before any change, without echoing them.
+  for (const value of [undefined, '', 'short-pass', 'with spaces in the password', 'synthetic-admin-password']) {
+    const text = value === undefined
+      ? configuration.replace('GRAFANA_ADMIN_PASSWORD=synthetic-sensitive-grafana-admin\n', '')
+      : configuration.replace('synthetic-sensitive-grafana-admin', value);
+    system.put('.env', text);
+    start = system.calls.length;
+    assert.equal(await startLocal(system), 1);
+    assert.equal(system.calls.length, start, 'validation must precede service changes');
+    assert.match(system.errors.at(-1) ?? '', /GRAFANA_ADMIN_PASSWORD/);
+    if (value) assert.ok(!(system.errors.at(-1) ?? '').includes(value));
+  }
+  assert.equal(system.content('.local/secrets/grafana-admin-password'), 'synthetic-sensitive-grafana-admin\n');
+  system.put('.env', `${configuration}GRAFANA_PORT=70000\n`);
+  assert.equal(await startLocal(system), 1);
+  assert.equal(system.errors.at(-1), 'Avvio non riuscito: GRAFANA_PORT non valida.');
+  // A failed Grafana start stops gateway and broker like any other failure.
+  system.put('.env', configuration);
+  system.failCommand('grafana');
+  start = system.calls.length;
+  assert.equal(await startLocal(system), 1);
+  assert.deepEqual(system.calls.slice(start).slice(-2).map((call) => call.args.slice(-2)), [['SIGKILL', 'hermes'], ['stop', 'author-broker']]);
+  assert.doesNotMatch([...system.logs, ...system.errors].join(' '), /synthetic-sensitive/);
 });

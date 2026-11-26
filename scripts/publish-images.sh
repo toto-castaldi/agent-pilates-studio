@@ -11,7 +11,7 @@ push=${3:-}
 [[ -z $push || $push == --push ]] || { printf 'Unknown option.\n' >&2; exit 1; }
 cd -- "$(dirname -- "$0")/.."
 
-declare -A dockerfiles=([hermes]=hermes/Dockerfile [postgres]=db/Dockerfile [migrator]=scripts/migrator.Dockerfile [ops]=scripts/ops.Dockerfile)
+declare -A dockerfiles=([hermes]=hermes/Dockerfile [postgres]=db/Dockerfile [migrator]=scripts/migrator.Dockerfile [ops]=scripts/ops.Dockerfile [grafana]=grafana/Dockerfile)
 for name in "${!dockerfiles[@]}"; do
   docker build --quiet --file "${dockerfiles[$name]}" \
     --label "org.opencontainers.image.source=https://github.com/toto-castaldi/agent-pilates-studio" \

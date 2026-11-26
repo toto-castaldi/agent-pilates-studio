@@ -20,6 +20,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
     migrator: randomBytes(32).toString('hex'),
     agent: randomBytes(32).toString('hex'),
     broker: randomBytes(32).toString('hex'),
+    grafana: randomBytes(32).toString('hex'),
   };
   const project = `pilates-test-${randomBytes(8).toString('hex')}`;
   const env = { ...process.env, COMPOSE_ENV_FILES: '/dev/null', SECRETS_DIR: directory, POSTGRES_PORT: '0' };

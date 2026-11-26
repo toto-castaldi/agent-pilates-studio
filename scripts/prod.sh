@@ -11,8 +11,8 @@ REGISTRY=${PILATES_REGISTRY:-ghcr.io/toto-castaldi/agent-pilates-studio}
 SCRIPTS=$(dirname -- "${BASH_SOURCE[0]}")
 validate_project "$PROJECT"
 
-readonly INTERNAL_SECRETS=(db-admin db-migrator db-agent db-broker bridge-token)
-readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-secret whatsapp-verify-token whatsapp-manager-phone whatsapp-phone-number-id)
+readonly INTERNAL_SECRETS=(db-admin db-migrator db-agent db-broker db-grafana bridge-token)
+readonly EXTERNAL_SECRETS=(openrouter-key whatsapp-access-token whatsapp-app-secret whatsapp-verify-token whatsapp-manager-phone whatsapp-phone-number-id grafana-admin-password)
 # Former identity sources (ADR-003): they authorize nobody and must be removed.
 readonly OBSOLETE_SECRETS=(whatsapp-allowed-users whatsapp-home-channel whatsapp-teacher-links)
 
@@ -47,11 +47,13 @@ load_settings() {
     [[ -z $line || $line == \#* ]] && continue
     key=${line%%=*}; value=${line#*=}
     case $key in
-      POSTGRES_PORT|WHATSAPP_WEBHOOK_PORT|WHATSAPP_WEBHOOK_PATH|PILATES_MODEL|PILATES_IDLE_COMPACT_SECONDS|PILATES_REASONING_EFFORT) export "$key=$value" ;;
+      POSTGRES_PORT|WHATSAPP_WEBHOOK_PORT|GRAFANA_PORT|WHATSAPP_WEBHOOK_PATH|PILATES_MODEL|PILATES_IDLE_COMPACT_SECONDS|PILATES_REASONING_EFFORT) export "$key=$value" ;;
       *) fail 'Unsupported key in prod.env: credentials belong in the secrets directory.' ;;
     esac
   done < "$file"
-  [[ ${POSTGRES_PORT:-} =~ ^[0-9]+$ && ${WHATSAPP_WEBHOOK_PORT:-} =~ ^[0-9]+$ ]] || fail 'Ports are not configured.'
+  # Installations before US-020 have no Grafana port: it defaults to 13100.
+  export GRAFANA_PORT=${GRAFANA_PORT:-13100}
+  [[ ${POSTGRES_PORT:-} =~ ^[0-9]+$ && ${WHATSAPP_WEBHOOK_PORT:-} =~ ^[0-9]+$ && $GRAFANA_PORT =~ ^[0-9]+$ ]] || fail 'Ports are not configured.'
   # Same levels as scripts/compaction-policy.mjs; absent means the Compose default (medium).
   if [[ -v PILATES_REASONING_EFFORT && ! $PILATES_REASONING_EFFORT =~ ^(none|minimal|low|medium|high|xhigh|max|ultra)$ ]]; then
     fail 'PILATES_REASONING_EFFORT must be one of: none, minimal, low, medium, high, xhigh, max, ultra.'
@@ -64,7 +66,7 @@ load_settings() {
 }
 
 use_release() {
-  export PILATES_HERMES_IMAGE="$REGISTRY/hermes:$1" PILATES_POSTGRES_IMAGE="$REGISTRY/postgres:$1"
+  export PILATES_HERMES_IMAGE="$REGISTRY/hermes:$1" PILATES_POSTGRES_IMAGE="$REGISTRY/postgres:$1" PILATES_GRAFANA_IMAGE="$REGISTRY/grafana:$1"
   MIGRATOR_IMAGE="$REGISTRY/migrator:$1"
 }
 
@@ -80,6 +82,10 @@ check_secrets() {
   [[ $(grep -c '' "$SECRETS_DIR/whatsapp-manager-phone") == 1 ]] \
     && grep -Eqx '\+[1-9][0-9]{7,14}' "$SECRETS_DIR/whatsapp-manager-phone" \
     || fail 'The manager phone must be one canonical international number (+ and 8-15 digits).'
+  # Same rule as the Grafana entrypoint; the value is never printed.
+  [[ $(grep -c '' "$SECRETS_DIR/grafana-admin-password") == 1 ]] \
+    && LC_ALL=C grep -Eqx '[!-~]{16,512}' "$SECRETS_DIR/grafana-admin-password" \
+    || fail 'The Grafana admin password must be one line of 16-512 printable characters without spaces.'
   for name in "${OBSOLETE_SECRETS[@]}"; do
     [[ ! -e $SECRETS_DIR/$name && ! -L $SECRETS_DIR/$name ]] || fail "Obsolete identity file present: remove secrets/$name."
   done
@@ -87,7 +93,7 @@ check_secrets() {
 
 pull_images() {
   step 'Pulling images'
-  quiet compose --profile tools pull postgres db-bootstrap author-broker hermes || fail 'Image pull failed.'
+  quiet compose --profile tools pull postgres db-bootstrap author-broker hermes grafana || fail 'Image pull failed.'
   quiet docker pull "$MIGRATOR_IMAGE" || fail 'Image pull failed.'
 }
 
@@ -112,6 +118,9 @@ start_stack() {
   step 'Starting broker and gateway'
   quiet compose up -d --no-build --no-deps --force-recreate --wait --wait-timeout 180 author-broker || fail 'Broker did not become healthy.'
   quiet compose up -d --no-build --no-deps --force-recreate --wait --wait-timeout 180 hermes || fail 'Gateway did not become healthy.'
+  # No volume: recreation discards changes made in the Grafana interface.
+  step 'Starting Grafana'
+  quiet compose up -d --no-build --no-deps --force-recreate --wait --wait-timeout 180 grafana || fail 'Grafana did not become healthy.'
 }
 
 record_release() { printf '%s\n' "$1" > "$ROOT_DIR/state/release.new"; mv "$ROOT_DIR/state/release.new" "$ROOT_DIR/state/release"; }
@@ -169,7 +178,7 @@ case $command in
     mkdir -p "$ROOT_DIR/secrets" "$ROOT_DIR/backups" "$ROOT_DIR/state"
     chmod 700 "$ROOT_DIR" "$ROOT_DIR/secrets" "$ROOT_DIR/backups" "$ROOT_DIR/state"
     if [[ ! -e $ROOT_DIR/prod.env ]]; then
-      printf 'POSTGRES_PORT=55433\nWHATSAPP_WEBHOOK_PORT=18190\nWHATSAPP_WEBHOOK_PATH=/whatsapp/webhook\n' > "$ROOT_DIR/prod.env"
+      printf 'POSTGRES_PORT=55433\nWHATSAPP_WEBHOOK_PORT=18190\nGRAFANA_PORT=13100\nWHATSAPP_WEBHOOK_PATH=/whatsapp/webhook\n' > "$ROOT_DIR/prod.env"
     fi
     for name in "${INTERNAL_SECRETS[@]}"; do
       [[ -e $ROOT_DIR/secrets/$name ]] || openssl rand -hex 32 > "$ROOT_DIR/secrets/$name"

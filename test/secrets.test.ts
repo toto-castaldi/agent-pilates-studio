@@ -12,7 +12,7 @@ test('secret initialization uses private files and preserves existing passwords 
   const first = system.content('/synthetic/secrets/db-admin');
   assert.match(first ?? '', /^[a-f0-9]{64}\n$/);
   assert.equal((await system.lstat('/synthetic/secrets')).mode & 0o077, 0);
-  for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token', 'whatsapp-verify-token']) {
+  for (const name of ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'db-grafana', 'bridge-token', 'whatsapp-verify-token']) {
     assert.equal((await system.lstat(`/synthetic/secrets/${name}`)).mode & 0o077, 0);
   }
   // No personal number or identity mapping is generated: identities live in the database.

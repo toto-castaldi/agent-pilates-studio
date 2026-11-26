@@ -21,7 +21,7 @@ test('operational transition keeps snapshots, completes identities in chat and r
   const REFUSAL = /^Accesso non abilitato\. Per usare l.assistente dello studio rivolgiti al gestore\.$/u;
   const secrets: Record<string, string> = {
     'db-admin': randomBytes(32).toString('hex'), 'db-migrator': randomBytes(32).toString('hex'),
-    'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'),
+    'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'), 'db-grafana': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-key',
     'whatsapp-access-token': 'synthetic-access', 'whatsapp-app-secret': 'synthetic-secret',
     'whatsapp-verify-token': 'synthetic-verify', 'whatsapp-manager-phone': `+${manager}`,

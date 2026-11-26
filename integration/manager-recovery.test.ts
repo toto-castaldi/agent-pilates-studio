@@ -16,7 +16,7 @@ test('ops recovery compensates only the latest recovery when alignment fails', {
   const password = randomBytes(24).toString('hex');
   const secrets: Record<string, string> = {
     'db-admin': randomBytes(24).toString('hex'), 'db-migrator': password, 'db-agent': randomBytes(24).toString('hex'),
-    'db-broker': randomBytes(24).toString('hex'), 'bridge-token': randomBytes(24).toString('hex'),
+    'db-broker': randomBytes(24).toString('hex'), 'db-grafana': randomBytes(24).toString('hex'), 'bridge-token': randomBytes(24).toString('hex'),
     'openrouter-key': 'synthetic', 'whatsapp-access-token': 'synthetic', 'whatsapp-app-secret': 'synthetic',
     'whatsapp-verify-token': 'synthetic', 'whatsapp-manager-phone': phones.c, 'whatsapp-phone-number-id': '123456789012345',
   };

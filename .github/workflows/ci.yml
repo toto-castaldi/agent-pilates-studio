@@ -57,6 +57,8 @@ jobs:
         run: npm run test:compaction
       - name: Test metriche d'uso
         run: npm run test:usage
+      - name: Test dashboard Grafana
+        run: npm run test:grafana
       - name: Test aggiornamento isolato tra versioni
         run: npm run test:upgrade
       - name: Test avvio locale con un comando

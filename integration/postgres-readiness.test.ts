@@ -18,7 +18,7 @@ test('PostgreSQL is healthy only when the final server accepts TCP during first 
   const compose = (...args: string[]) =>
     execFileSync('docker', ['compose', ...files, ...args], { env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   try {
-    for (const name of ['admin', 'migrator', 'agent', 'broker']) {
+    for (const name of ['admin', 'migrator', 'agent', 'broker', 'grafana']) {
       await writeFile(join(directory, `db-${name}`), `${randomBytes(32).toString('hex')}\n`, { mode: 0o600 });
     }
     // Holds the entrypoint at its temporary server, which listens on the Unix socket only.

@@ -1,0 +1,13 @@
+# Versioned dashboards: not editable or deletable from the interface.
+apiVersion: 1
+providers:
+  - name: pilates-metrics
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 3600
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

@@ -2,6 +2,8 @@
 !compose.yaml
 !db/
 !db/**
+!grafana/
+!grafana/**
 !hermes/
 !hermes/Dockerfile
 !hermes/gateway-launcher.sh
