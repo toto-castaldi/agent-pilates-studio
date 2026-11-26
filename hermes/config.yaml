@@ -46,6 +46,10 @@ compression:
   # Computed at container start from the configured model (40% of its window).
   # Hermes uses the lower of this cap and its own ratio trigger.
   threshold_tokens: "${PILATES_COMPACTION_THRESHOLD_TOKENS}"
+  # No protected head before the first compaction (Hermes decays it to 0 after
+  # it anyway): with few, very long messages the protected head and tail would
+  # leave nothing to summarise and delay the threshold compaction.
+  protect_first_n: 0
   # Inactivity is enforced by pilates_trusted.py from the persisted transcript.
   idle_compact_after_seconds: 0
   # On a failed summary keep the full context instead of dropping turns.

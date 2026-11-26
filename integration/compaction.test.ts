@@ -21,6 +21,7 @@ const THRESHOLD = 80_000;
 const IDLE_SECONDS = 30;
 const ALPHA = '15555550102';
 const BETA = '15555550103';
+const GAMMA = '15555550104';
 const REPLY = 'Risposta sintetica.';
 
 // Synthetic padding: about `tokens` rough tokens (4 characters each) after the marker.
@@ -69,7 +70,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     database = db;
     await db.connect();
     await seedIdentities({ host: address('postgres'), password: secrets['db-broker'] },
-      { first: 'Alpha', last: 'Synthetic', phone: ALPHA }, [{ first: 'Beta', last: 'Synthetic', phone: BETA }]);
+      { first: 'Alpha', last: 'Synthetic', phone: ALPHA }, [{ first: 'Beta', last: 'Synthetic', phone: BETA }, { first: 'Gamma', last: 'Synthetic', phone: GAMMA }]);
     compose('up', '-d', '--wait', 'model-stub', 'meta-stub');
 
     // Invalid inactivity and an unknown model window stop the gateway with only the fixed event.
@@ -177,6 +178,29 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     assert.equal(kinds(observations, 'summary').length, 0);
     let alphaChars = lastTurn(observations).chars;
 
+    // 1b. Few, very long messages: the threshold is crossed with only a handful of
+    // rows. Without a protected head (protect_first_n: 0) compaction starts at the
+    // latest on the turn after the first crossing, with one temporary overshoot.
+    const longTrace: string[] = [];
+    let firstOver: number | undefined;
+    let compactedAt: number | undefined;
+    let overThreshold = 0;
+    for (let index = 1; index <= 6; index++) {
+      const observations = await turn(GAMMA, message(`MARK-C-${index}`, 40_000));
+      const sent = lastTurn(observations).chars / 4;
+      const summarised = kinds(observations, 'summary').length > 0;
+      longTrace.push(`${index}:${(sent / WINDOW * 100).toFixed(1)}%${summarised ? '+summary' : ''}`);
+      if (summarised && compactedAt === undefined) compactedAt = index;
+      if (sent >= THRESHOLD) {
+        overThreshold++;
+        firstOver ??= index;
+      }
+      if (compactedAt !== undefined) assert.ok(sent < THRESHOLD, `request over the threshold after compaction: ${longTrace.join(' ')}`);
+    }
+    assert.ok(firstOver !== undefined && compactedAt !== undefined, `long messages never compacted: ${longTrace.join(' ')}`);
+    assert.ok(compactedAt <= firstOver + 1, `threshold compaction delayed with long messages: ${longTrace.join(' ')}`);
+    assert.equal(overThreshold, 1, `more than one turn over the threshold: ${longTrace.join(' ')}`);
+
     // 2. Inactivity: beta stays far below the threshold; only a resumed turn compacts.
     let betaChars = 0;
     for (let index = 1; index <= 6; index++) {
@@ -253,7 +277,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
     const delivered = await metaObservations();
     assert.ok(delivered.length > 0);
     for (const item of delivered) {
-      assert.ok([ALPHA, BETA].includes(item.to));
+      assert.ok([ALPHA, BETA, GAMMA].includes(item.to));
       assert.equal(item.text, REPLY);
     }
 
@@ -281,7 +305,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
       "state = b''.join(p.read_bytes() for p in Path('/opt/data').glob('state.db*') if p.is_file())",
       "assert b'synthetic-summary' in state",
       "logs = b''.join(p.read_bytes() for p in Path('/opt/data/logs').rglob('*') if p.is_file()) if Path('/opt/data/logs').exists() else b''",
-      "assert not any(x in logs.lower() for x in [b'mark-a-', b'mark-b-', b'synthetic-summary', b'15555550102', b'15555550103', b'parola sintetica'])",
+      "assert not any(x in logs.lower() for x in [b'mark-a-', b'mark-b-', b'mark-c-', b'synthetic-summary', b'15555550102', b'15555550103', b'15555550104', b'parola sintetica'])",
     ].join('\n'));
     assert.equal(execFileSync('docker', ['logs', gatewayId()], { encoding: 'utf8', stdio: 'pipe' }).trim(), 'hermes_launch');
     compose('stop', 'hermes', 'author-broker');
