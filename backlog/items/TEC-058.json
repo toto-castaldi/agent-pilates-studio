@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-058-allineamento-template-v4-5-0",
   "dependencies": [],
   "requirements": [
@@ -25,5 +25,8 @@
   ],
   "remarks": [
     "Utente: confermata aggiunta P0 EPIC-001 in v0.5.0 come cambio di scope."
-  ]
+  ],
+  "outcome": "Adottato il template v4.5.0 (tag annotato verificato, commit 12fb9bcd6741d03d9af1e123eb149cf240c364ee) dopo aver dimostrato identici ai blob v4.4.0 i 3 file condivisi cambiati: PROCESS.md (4.5.0), PROCESS-PARALLEL.md e skill orchestrate copiati senza divergenze; l'orchestratore rimuove ogni clone integrato subito dopo il merge e chiede solo se il clone contiene lavoro non committato o non pubblicato. README.md solo confrontato e aggiornato a mano in italiano; AGENTS.md verificato coerente, senza modifiche. TEMPLATE-ORIGIN e process-tooling aggiornati; blob, Process version e frasi della nuova pulizia fissati nei test locali. template-check in stato current. Superati gate (120 unitari), backlog check, test:local 65, test:pi 7 e test:claude 2 con Pi 1.5.0 e Claude Code 2.1.323. Non dimostrata la rimozione reale di un clone da un orchestratore con un modello.",
+  "changelog": "Changed: Processo allineato al template v4.5.0: l'orchestratore rimuove il clone di un worker subito dopo il merge del suo item",
+  "closed_at": "2026-11-26"
 }
