@@ -67,6 +67,9 @@ test('provisioning is versioned and not editable, credentials come from files', 
   assert.equal(provider.length, 1);
   assert.equal(provider[0].allowUiUpdates, false);
   assert.equal(provider[0].disableDeletion, true);
+  // The provisioned usage dashboard is the home page, from the image.
+  assert.match(grafana.ini, /^\[users\]\n(?:.*\n)*?home_page = \/d\/pilates-usage$/m);
+  assert.doesNotMatch(grafana.ini, /^default_home_dashboard_path/m);
   assert.match(grafana.ini, /^admin_password = \$__file\{\/run\/pilates-grafana\/admin-password\}$/m);
   for (const line of ['[auth.anonymous]\nenabled = false', 'allow_sign_up = false', 'reporting_enabled = false', 'check_for_updates = false',
     'check_for_plugin_updates = false', 'news_feed_enabled = false', 'preinstall_disabled = true', '[public_dashboards]\nenabled = false']) {

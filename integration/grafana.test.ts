@@ -164,6 +164,19 @@ test('grafana: loopback dashboard with versioned provisioning, private credentia
     const settings = await (await call('/api/frontend/settings')).json() as { anonymousEnabled?: boolean; allowOrgCreate?: boolean };
     assert.equal(settings.anonymousEnabled, false);
     assert.equal((await call('/api/search')).status, 200);
+    // The usage dashboard is the home page opened right after the login.
+    const home = async (get: (path: string) => Promise<Response>) => {
+      const response = await get('/api/dashboards/home');
+      assert.equal(response.status, 200);
+      // The home redirects to the provisioned, read-only dashboard: no saveable copy exists.
+      assert.deepEqual(await response.json(), { redirectUri: '/d/pilates-usage' });
+      const target = await (await get('/api/dashboards/uid/pilates-usage')).json() as { meta: { provisioned: boolean } };
+      assert.equal(target.meta.provisioned, true);
+      const dashboards = await (await get('/api/search?type=dash-db')).json() as { uid: string }[];
+      assert.ok(!dashboards.some((item) => item.uid === 'default-home-dashboard'), 'home dashboard copy created');
+    };
+    await home(call);
+    assert.equal((await fetch(`${base}/api/dashboards/home`)).status, 401);
 
     // 4. Provisioning: fixed datasource and dashboard, not changeable from the interface.
     const datasource = await (await call('/api/datasources/uid/pilates-metrics')).json() as { readOnly: boolean; user: string; jsonData: { database: string }; secureJsonFields: { password?: boolean }; type: string };
@@ -191,6 +204,7 @@ test('grafana: loopback dashboard with versioned provisioning, private credentia
     assert.equal((await recreated('/api/dashboards/uid/synthetic-ui')).status, 404);
     assert.equal((await recreated('/api/users/lookup?loginOrEmail=synthetic-viewer')).status, 404);
     assert.equal(((await (await recreated('/api/dashboards/uid/pilates-usage')).json()) as { dashboard: Dashboard }).dashboard.title, "Metriche d'uso dell'agente");
+    await home(recreated);
     const logs = execFileSync('docker', ['logs', grafanaId()], { encoding: 'utf8', stdio: 'pipe' });
     assert.equal(logs, 'grafana_launch\n');
 
