@@ -18,7 +18,8 @@
     "design/production",
     "design/configuration",
     "design/security",
-    "design/test-strategy"
+    "design/test-strategy",
+    "design/usage-metrics"
   ],
   "description": "Come operatore voglio una dashboard Grafana, aperta dal mio portatile con un tunnel SSH, per capire chi usa l'agente, quanto, con quali tempi di risposta, contesto e costi.",
   "acceptance_criteria": [
