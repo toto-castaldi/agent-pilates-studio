@@ -206,6 +206,15 @@ def send_failure_line(source, status=None, body=None):
     return f'{SEND_FAILURE_EVENT} source={source} status={status_field} code={code_field}'
 
 
+def usage_send_failure(status, body):
+    status = _plain_int(status)
+    if status is None or not 100 <= status <= 599:
+        return 'network', None, None
+    error = body.get('error') if isinstance(body, dict) else None
+    code = _plain_int(error.get('code')) if isinstance(error, dict) else None
+    return 'refused', status, code if code is not None and 0 <= code < 10 ** 7 else None
+
+
 def response_body(response):
     try:
         return response.json()
@@ -247,9 +256,18 @@ def observe_adapter_sends(cls):
             result = await original_post(self, payload, *args, **kwargs)
         finally:
             adapter_send.reset(token)
-        if isinstance(result, tuple) and len(result) == 2 and result[1] is not None:
+        failed = isinstance(result, tuple) and len(result) == 2 and result[1] is not None
+        if failed:
             # No recorded response: the request itself failed.
             emit_send_failure('agent', *(outcome[0] if outcome else (None, None)))
+        record = usage_current.get()
+        if record is not None:
+            if not failed:
+                record.note_send('sent')
+            elif outcome:
+                record.note_send(*usage_send_failure(*outcome[0]))
+            else:
+                record.note_send('network')
         return result
 
     cls._response_error = staticmethod(response_error)
@@ -269,12 +287,373 @@ def observe_platform_adapters(base):
             super(base, cls).__init_subclass__(**kwargs)
         if cls.__name__ == 'WhatsAppCloudAdapter':
             observe_adapter_sends(cls)
+            observe_usage(cls)
 
     base.__init_subclass__ = classmethod(init_subclass)
     for module in list(sys.modules.values()):
         cls = getattr(module, 'WhatsAppCloudAdapter', None)
         if isinstance(cls, type) and issubclass(cls, base):
             observe_adapter_sends(cls)
+            observe_usage(cls)
+
+
+# Usage metrics (REQ-OPS-011, design/usage-metrics). The trusted gateway
+# measures every authenticated message it handles and hands the measurement to
+# the broker after the reply was sent; the broker adds the teacher and the
+# kind of its own replies and writes the event. Only numbers, enumerations and
+# the provider's model identifier are collected: never numbers, texts, names,
+# summaries or message IDs. Collection never changes requests, history or
+# replies, and a failure only writes the fixed event below.
+USAGE_EVENT_FAILED = 'usage_event_failed'
+USAGE_LIFETIME = 840  # below the broker's receipt lifetime (900 s)
+MAX_USAGE_RECORDS = 4096
+REASONING_EFFORTS = ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra')
+usage_current = contextvars.ContextVar('pilates_usage_record', default=None)
+# message ID -> UsageRecord, created only for messages admitted by the broker.
+usage_ledger = OrderedDict()
+usage_lock = threading.Lock()
+usage_tasks = set()
+
+
+def emit_usage_failure():
+    if events_fd is None:
+        return
+    try:
+        os.write(events_fd, (USAGE_EVENT_FAILED + '\n').encode())
+    except (OSError, ValueError):
+        pass
+
+
+def _field(obj, name):
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj.get(name)
+    value = getattr(obj, name, None)
+    if value is None:
+        extra = getattr(obj, 'model_extra', None)
+        if isinstance(extra, dict):
+            value = extra.get(name)
+    return value
+
+
+def _count(value):
+    value = _plain_int(value)
+    return value if value is not None and value >= 0 else None
+
+
+def _cost(value):
+    # OpenRouter usage.cost, as reported; never Hermes' price estimates.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if math.isfinite(value) and value >= 0 else None
+
+
+def _model(value):
+    return value if isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:/@+~-]{0,199}', value) else None
+
+
+def wire_reasoning(kwargs):
+    """The reasoning level actually sent in a request body, None if Hermes sends none."""
+    if not isinstance(kwargs, dict):
+        return None
+    extra = kwargs.get('extra_body')
+    value = extra.get('reasoning') if isinstance(extra, dict) else None
+    if value is None:
+        value = kwargs.get('reasoning')
+    if value is None:
+        value = kwargs.get('reasoning_effort')
+    if isinstance(value, dict):
+        if value.get('enabled') is False:
+            return 'none'
+        value = value.get('effort')
+    return value if isinstance(value, str) and value in REASONING_EFFORTS else None
+
+
+def usage_request(purpose, duration, response, tool_calls=None, reasoning=None):
+    usage = _field(response, 'usage')
+    return {
+        'purpose': purpose,
+        'duration_ms': max(0, round(duration * 1000)) if isinstance(duration, (int, float)) and math.isfinite(duration) else 0,
+        'prompt_tokens': _count(_field(usage, 'prompt_tokens')),
+        'completion_tokens': _count(_field(usage, 'completion_tokens')),
+        'cost': _cost(_field(usage, 'cost')),
+        'model': _model(_field(response, 'model')),
+        'tool_calls': tool_calls,
+        'reasoning': reasoning,
+    }
+
+
+class UsageRecord:
+    """Measurements of one admitted message, shared by its task and turn threads."""
+
+    def __init__(self, message_id, sender, received_wall, received_mono):
+        self.message_id = message_id
+        self.sender = sender
+        self.received_at = int(received_wall * 1000)
+        self.received_mono = received_mono
+        self.created = time.monotonic()
+        # new -> ingesting -> claimed | merged -> done
+        self.state = 'new'
+        self.lock = threading.Lock()
+        self.agent_turn = False
+        self.rejected_command = False
+        self.refused = False
+        self.requests = []
+        self.compactions = 0
+        self.window = None
+        self.threshold = None
+        self.reasoning = {}
+        self.send = None
+        self.replied_mono = None
+        self.absorbed = []
+        self.threads = []
+        self.inflight = 0
+        # Model turns currently running under this message; the event waits for them.
+        self.turns = 0
+        self.submitted = False
+
+    def transition(self, allowed, state):
+        with self.lock:
+            if self.state not in allowed:
+                return False
+            self.state = state
+            return True
+
+    def add_request(self, item):
+        with self.lock:
+            self.requests.append(item)
+
+    def note_send(self, outcome, status=None, code=None):
+        # Last attempt wins: the adapter retries transient failures and stops
+        # the remaining parts of a reply after a refusal.
+        with self.lock:
+            self.send = (outcome, status, code)
+            self.replied_mono = time.monotonic()
+
+    def measurement(self):
+        with self.lock:
+            agent = self.agent_turn and not self.rejected_command and not self.refused
+            outcome, status, code = self.send or ('none', None, None)
+            return {
+                'broker_kind': None, 'agent_turn': self.agent_turn, 'rejected_command': self.rejected_command,
+                'refused': self.refused, 'received_at': self.received_at,
+                'elapsed_ms': None if self.send is None else max(0, round((self.replied_mono - self.received_mono) * 1000)),
+                'requests': list(self.requests) if agent else [],
+                'compactions': self.compactions if agent else 0,
+                'context_window': self.window if agent else None,
+                'compaction_threshold': self.threshold if agent else None,
+                'send': {'outcome': outcome, 'http_status': status, 'error_code': code},
+            }
+
+
+def usage_admit(entries, received_wall, received_mono):
+    with usage_lock:
+        for item in entries:
+            if item['message_id'] not in usage_ledger:
+                usage_ledger[item['message_id']] = UsageRecord(item['message_id'], item['sender'], received_wall, received_mono)
+        stale = [record for record in usage_ledger.values()
+                 if time.monotonic() - record.created >= USAGE_LIFETIME]
+        for record in stale:
+            del usage_ledger[record.message_id]
+        while len(usage_ledger) > MAX_USAGE_RECORDS:
+            stale.append(usage_ledger.popitem(last=False)[1])
+    # A message that never reached its own turn (dropped while busy): record
+    # what is known rather than losing the event.
+    for record in stale:
+        if record.transition(('new', 'ingesting'), 'done'):
+            schedule_usage(record)
+
+
+def usage_record(message_id, sender):
+    with usage_lock:
+        record = usage_ledger.get(str(message_id or ''))
+    return record if record is not None and record.sender == str(sender or '') else None
+
+
+def mark_usage(name):
+    record = usage_current.get()
+    if record is not None:
+        with record.lock:
+            setattr(record, name, True)
+
+
+def usage_compaction():
+    # post_compaction fires only for committed compactions, in the turn thread.
+    record = usage_current.get()
+    if record is not None:
+        with record.lock:
+            record.compactions += 1
+
+
+async def submit_usage(body):
+    try:
+        async with ClientSession(timeout=ClientTimeout(total=10), trust_env=False) as session:
+            async with session.post(BROKER_URL + '/v1/usage', json=body, headers={'X-Pilates-Bridge': bridge_token()}) as response:
+                await response.read()
+                if response.status != 204:
+                    emit_usage_failure()
+    except Exception:
+        emit_usage_failure()
+
+
+def _spawn(coroutine):
+    task = asyncio.get_running_loop().create_task(coroutine)
+    usage_tasks.add(task)
+    task.add_done_callback(usage_tasks.discard)
+
+
+def _settle(record, timeout=60):
+    # Title generation may finish after the reply: it enters tokens and cost.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with record.lock:
+            busy = (record.inflight > 0 or record.turns > 0
+                    or any(thread.ident is None or thread.is_alive() for thread in record.threads))
+        if not busy:
+            return
+        time.sleep(0.2)
+
+
+async def _finish_usage(record):
+    try:
+        await asyncio.to_thread(_settle, record)
+        with record.lock:
+            record.submitted = True
+            absorbed = list(record.absorbed)
+        await submit_usage({'message_id': record.message_id, 'sender': record.sender, 'measurement': record.measurement()})
+        # Messages merged into this turn: own receipt and reception, same reply;
+        # model data stay on the message whose turn ran (counted once).
+        for other in absorbed:
+            with record.lock:
+                flags = (record.agent_turn, record.rejected_command, record.refused)
+                send = (record.send, record.replied_mono)
+            with other.lock:
+                other.agent_turn, other.rejected_command, other.refused = flags
+                other.send, other.replied_mono = send
+                other.submitted = True
+            await submit_usage({'message_id': other.message_id, 'sender': other.sender, 'measurement': other.measurement()})
+    except Exception:
+        emit_usage_failure()
+
+
+def schedule_usage(record):
+    try:
+        _spawn(_finish_usage(record))
+    except Exception:
+        emit_usage_failure()
+
+
+def usage_queued(adapter, message_id):
+    pending = getattr(adapter, '_pending_messages', None) or {}
+    events = list(pending.values())
+    try:
+        events += [getattr(state, 'event', None) for state in adapter._text_debounce_store().values()]
+    except Exception:
+        pass
+    return any(str(getattr(event, 'message_id', '') or '') == message_id for event in events)
+
+
+# Sender -> session key of the adapter, learned from the processed messages.
+usage_sessions = {}
+
+
+async def _finish_inbound(adapter, record):
+    # A message answered on the inbound path while its sender's session is busy
+    # may still be merged into, or steer, the running turn: close its event only
+    # once that session is idle and the message is not queued, unless a task
+    # claimed it meanwhile.
+    deadline = record.created + USAGE_LIFETIME
+    while time.monotonic() < deadline:
+        if record.state != 'ingesting':
+            return
+        key = usage_sessions.get(record.sender)
+        active = key is not None and key in (getattr(adapter, '_active_sessions', None) or {})
+        if not active and not usage_queued(adapter, record.message_id):
+            break
+        await asyncio.sleep(0.5)
+    if record.transition(('ingesting',), 'done'):
+        await _finish_usage(record)
+
+
+def observe_usage(cls):
+    """Per-message usage context for the native WhatsApp Cloud adapter."""
+    if cls.__dict__.get('_pilates_usage_observed') or '_ingest_message' not in cls.__dict__:
+        return
+    original_ingest = cls.__dict__['_ingest_message']
+
+    async def ingest_message(self, raw_message, *args, **kwargs):
+        record = None
+        if isinstance(raw_message, dict):
+            record = usage_record(raw_message.get('id'), raw_message.get('from'))
+        opened = record is not None and record.transition(('new',), 'ingesting')
+        token = usage_current.set(record if opened else None)
+        try:
+            return await original_ingest(self, raw_message, *args, **kwargs)
+        finally:
+            usage_current.reset(token)
+            # Answered or dropped on the inbound path (busy commands, refusals).
+            if opened and record.state == 'ingesting':
+                try:
+                    _spawn(_finish_inbound(self, record))
+                except Exception:
+                    emit_usage_failure()
+
+    cls._ingest_message = ingest_message
+    cls._pilates_usage_observed = True
+
+
+def observe_usage_processing(base):
+    original = base._process_message_background
+
+    def process(self, event, session_key):
+        # Synchronous claim when the task is created, before the inbound path ends.
+        record = None
+        if type(self).__name__ == 'WhatsAppCloudAdapter':
+            record = usage_record(getattr(event, 'message_id', None), getattr(getattr(event, 'source', None), 'user_id', None))
+            if record is not None and not record.transition(('new', 'ingesting'), 'claimed'):
+                record = None
+
+        if record is not None:
+            usage_sessions[record.sender] = session_key
+
+        async def run():
+            # Always reset: a drain task inherits the previous message's context.
+            token = usage_current.set(record)
+            try:
+                return await original(self, event, session_key)
+            finally:
+                usage_current.reset(token)
+                if record is not None and record.transition(('claimed',), 'done'):
+                    schedule_usage(record)
+
+        return run()
+
+    base._process_message_background = process
+
+
+def observe_usage_merges(base_module):
+    original = base_module.merge_pending_message_event
+
+    def merge(pending_messages, session_key, event, **kwargs):
+        existing = pending_messages.get(session_key)
+        result = original(pending_messages, session_key, event, **kwargs)
+        try:
+            survivor = pending_messages.get(session_key)
+            loser = event if survivor is existing else existing if survivor is event else None
+            if loser is not None and survivor is not None and loser is not survivor:
+                kept = usage_record(survivor.message_id, survivor.source.user_id)
+                lost = usage_record(loser.message_id, loser.source.user_id)
+                if kept is not None and lost is not None and lost is not kept and lost.transition(('new', 'ingesting'), 'merged'):
+                    with kept.lock:
+                        kept.absorbed.append(lost)
+                        kept.absorbed.extend(lost.absorbed)
+                    lost.absorbed = []
+        except Exception:
+            pass
+        return result
+
+    base_module.merge_pending_message_event = merge
 
 
 def install(events=None):
@@ -283,6 +662,9 @@ def install(events=None):
     from pilates_skills import install as install_skills
     install_skills()
     from gateway.platforms.base import BasePlatformAdapter
+    import gateway.platforms.base as platform_base
+    observe_usage_processing(BasePlatformAdapter)
+    observe_usage_merges(platform_base)
     observe_platform_adapters(BasePlatformAdapter)
     from gateway.config import Platform
     from gateway.run_turn_runner import TurnRunner
@@ -323,6 +705,7 @@ def install(events=None):
 
     # The configured home is operator-owned, never writable through WhatsApp.
     async def reject_set_home(self, event):
+        mark_usage('rejected_command')
         return 'Il canale principale è gestito dall’operatore.'
 
     GatewaySlashCommandsMixin._handle_set_home_command = reject_set_home
@@ -335,6 +718,7 @@ def install(events=None):
     from gateway.slash_commands_model import GatewayModelCommandsMixin
 
     async def reject_model_settings(self, event):
+        mark_usage('rejected_command')
         return 'Modello e livello di ragionamento sono gestiti dall’operatore.'
 
     for name in ('_handle_model_command', '_handle_reasoning_command', '_handle_fast_command', '_handle_codex_runtime_command'):
@@ -363,6 +747,98 @@ def install(events=None):
 
     assembly.build_api_messages = build_messages
 
+    # Usage metrics of the model requests. Observers only: arguments, results
+    # and exceptions pass through unchanged.
+    import agent.auxiliary_hooks as auxiliary_hooks
+    import agent.chat_completion_helpers as completion_helpers
+    import agent.turn_response_intake as response_intake
+
+    original_build_kwargs = completion_helpers.build_api_kwargs
+
+    def build_api_kwargs(*args, **kwargs):
+        result = original_build_kwargs(*args, **kwargs)
+        record = usage_current.get()
+        if record is not None:
+            try:
+                with record.lock:
+                    record.reasoning[threading.get_ident()] = wire_reasoning(result)
+            except Exception:
+                pass
+        return result
+
+    completion_helpers.build_api_kwargs = build_api_kwargs
+    original_fire = response_intake._fire_post_api_request_hook
+
+    def fire_post_api_request(agent, response, assistant_message, finish_reason, **kwargs):
+        record = usage_current.get()
+        if record is not None:
+            try:
+                with record.lock:
+                    reasoning = record.reasoning.pop(threading.get_ident(), None)
+                compressor = getattr(agent, 'context_compressor', None)
+                window = _count(getattr(compressor, 'context_length', None))
+                threshold = _count(getattr(compressor, 'threshold_tokens', None))
+                record.add_request(usage_request('main', kwargs.get('api_duration'), response,
+                                                 len(getattr(assistant_message, 'tool_calls', None) or []), reasoning))
+                with record.lock:
+                    record.window = window or None
+                    record.threshold = threshold or None
+            except Exception:
+                pass
+        return original_fire(agent, response, assistant_message, finish_reason, **kwargs)
+
+    response_intake._fire_post_api_request_hook = fire_post_api_request
+
+    def aux_purpose(task):
+        task = str(task or '')
+        return 'compression' if task == 'compression' else 'title' if task.startswith('title') else 'other'
+
+    original_aux = auxiliary_hooks.run_with_aux_hooks
+    original_aux_async = auxiliary_hooks.arun_with_aux_hooks
+
+    def run_with_aux_hooks(call, *args, **kwargs):
+        record = usage_current.get()
+        if record is None:
+            return original_aux(call, *args, **kwargs)
+        with record.lock:
+            record.inflight += 1
+        started = time.monotonic()
+        response = None
+        try:
+            response = original_aux(call, *args, **kwargs)
+            return response
+        finally:
+            try:
+                streamed = kwargs.get('streaming', False)
+                record.add_request(usage_request(aux_purpose(kwargs.get('aux_task')), time.monotonic() - started,
+                                                 None if streamed else response))
+            except Exception:
+                pass
+            with record.lock:
+                record.inflight -= 1
+
+    async def arun_with_aux_hooks(call, *args, **kwargs):
+        record = usage_current.get()
+        if record is None:
+            return await original_aux_async(call, *args, **kwargs)
+        with record.lock:
+            record.inflight += 1
+        started = time.monotonic()
+        response = None
+        try:
+            response = await original_aux_async(call, *args, **kwargs)
+            return response
+        finally:
+            try:
+                record.add_request(usage_request(aux_purpose(kwargs.get('aux_task')), time.monotonic() - started, response))
+            except Exception:
+                pass
+            with record.lock:
+                record.inflight -= 1
+
+    auxiliary_hooks.run_with_aux_hooks = run_with_aux_hooks
+    auxiliary_hooks.arun_with_aux_hooks = arun_with_aux_hooks
+
     # Hermes sends compaction prompts through a separate auxiliary-model path,
     # before build_api_messages. Redact that wire copy too; the original
     # transcript stays intact for the gateway and the authenticated broker.
@@ -381,7 +857,12 @@ def install(events=None):
 
     def title(agent, messages, title_user_message=None):
         allowed = redaction_numbers()
-        return original_title(agent, redact_phones(messages, allowed), redact_phones(title_user_message, allowed))
+        thread = original_title(agent, redact_phones(messages, allowed), redact_phones(title_user_message, allowed))
+        record = usage_current.get()
+        if record is not None and isinstance(thread, threading.Thread):
+            with record.lock:
+                record.threads.append(thread)
+        return thread
 
     turn_context._maybe_title_session_at_turn_start = title
     original_side_question = side_question.answer_side_question
@@ -453,6 +934,7 @@ def install(events=None):
             # and model turns. Never fall through on broker failure.
             from aiohttp import web
             from multidict import CIMultiDict
+            received_wall, received_mono = time.time(), time.monotonic()
             try:
                 raw = await request.read()
                 headers = {'X-Pilates-Bridge': bridge_token(),
@@ -463,6 +945,7 @@ def install(events=None):
                             return web.Response(status=response.status)
                         decision = await response.json()
                 admit(decision['admitted'])
+                usage_admit(decision['admitted'], received_wall, received_mono)
                 if decision['admitted']:
                     # Immutable snapshot: worker threads can never observe a
                     # cleared/partially updated set during request assembly.
@@ -475,6 +958,7 @@ def install(events=None):
                         # committed, and a retried webhook is not answered twice.
                         # A refusal stops the remaining chunks and is logged as a
                         # fixed event without recipient or text.
+                        outcome = ('sent', None, None)
                         try:
                             for start in range(0, len(reply['text']), 3500):
                                 sent = await client.post('https://graph.facebook.com/v21.0/' + os.environ['WHATSAPP_CLOUD_PHONE_NUMBER_ID'] + '/messages',
@@ -483,9 +967,19 @@ def install(events=None):
                                           'text': {'body': reply['text'][start:start+3500]}})
                                 if not 200 <= sent.status_code < 300:
                                     emit_send_failure('fixed', sent.status_code, response_body(sent))
+                                    outcome = usage_send_failure(sent.status_code, response_body(sent))
                                     break
                         except httpx.HTTPError:
                             emit_send_failure('fixed')
+                            outcome = ('network', None, None)
+                        # The broker decided kind and teacher of this reply (ticket).
+                        if reply.get('ticket'):
+                            _spawn(submit_usage({'ticket': reply['ticket'], 'measurement': {
+                                'broker_kind': None, 'agent_turn': False, 'rejected_command': False, 'refused': False,
+                                'received_at': int(received_wall * 1000),
+                                'elapsed_ms': max(0, round((time.monotonic() - received_mono) * 1000)),
+                                'requests': [], 'compactions': 0, 'context_window': None, 'compaction_threshold': None,
+                                'send': {'outcome': outcome[0], 'http_status': outcome[1], 'error_code': outcome[2]}}}))
                 payload = decision['payload']
                 if not any((change.get('value') or {}).get('messages') for entry in payload.get('entry', []) for change in entry.get('changes', [])):
                     return web.Response(status=200)
@@ -562,6 +1056,7 @@ def install(events=None):
             async with lock:
                 verdict = await broker_turn(event.message_id, sender, False)
                 if verdict is None:
+                    mark_usage('refused')
                     return ACCESS_REFUSAL
                 if verdict['reset']:
                     try:
@@ -570,6 +1065,7 @@ def install(events=None):
                         return None
                     verdict = await broker_turn(event.message_id, sender, True)
                     if verdict is None or verdict['reset']:
+                        mark_usage('refused')
                         return ACCESS_REFUSAL
             token = current_message.set((event.message_id, sender))
             try:
@@ -591,8 +1087,31 @@ def install(events=None):
                 and not ctx.persist_user_display_kind and ctx.inbound_message_id and source.user_id
                 and admitted(str(ctx.inbound_message_id), str(source.user_id)) is not None):
             identity = (str(ctx.inbound_message_id), str(source.user_id), secrets.token_hex(32))
-            if not ctx.session_id or not bind_session(identity[0], identity[1], ctx.session_id):
+        # The turn's model requests belong to the message it runs for, also when
+        # Hermes runs it from another message's task (busy, steer, drain).
+        record = usage_record(identity[0], identity[1]) if identity is not None else None
+        if record is not None:
+            with record.lock:
+                if record.submitted:
+                    record = None
+                else:
+                    record.turns += 1
+                    record.agent_turn = True
+        usage_token = usage_current.set(record) if record is not None else None
+        try:
+            if identity is not None and (not ctx.session_id or not bind_session(identity[0], identity[1], ctx.session_id)):
+                mark_usage('refused')
                 return {'final_response': ACCESS_REFUSAL, 'messages': agent_history, 'completed': True}
+            return run_turn(self, agent, agent_history, observed_group_context, persist_user_message_override,
+                            persist_user_timestamp_override, ctx, identity)
+        finally:
+            if usage_token is not None:
+                usage_current.reset(usage_token)
+                with record.lock:
+                    record.turns -= 1
+
+    def run_turn(self, agent, agent_history, observed_group_context, persist_user_message_override,
+                 persist_user_timestamp_override, ctx, identity):
         from gateway.run import _last_transcript_timestamp
         last = transcript_epoch(_last_transcript_timestamp(getattr(ctx, 'history', None)))
         agent._pilates_idle_resume = last is not None and time.time() - last >= idle_seconds()

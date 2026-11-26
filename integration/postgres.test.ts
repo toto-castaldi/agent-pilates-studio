@@ -314,7 +314,7 @@ test('Prisma and isolated PostgreSQL roles enforce DML without schema DDL', { ti
       "spec = importlib.util.spec_from_file_location('pilates_test_plugin', '/plugin/__init__.py')",
       'plugin = importlib.util.module_from_spec(spec)',
       'spec.loader.exec_module(plugin)',
-      "context = type('Context', (), {'register_tool': staticmethod(registry.register)})()",
+      "context = type('Context', (), {'register_tool': staticmethod(registry.register), 'register_hook': staticmethod(lambda *args, **kwargs: None)})()",
       'plugin.register(context)',
       "print(json.dumps([json.loads(registry.dispatch('studio_sql_query', item)) for item in json.load(sys.stdin)]))",
     ].join('\n');

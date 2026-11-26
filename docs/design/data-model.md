@@ -67,6 +67,10 @@ Sono funzioni SQL `STABLE`, con diritti dell'invocante e nomi qualificati, senza
 
 Identità, audit e stato gestionale entrano nei backup privati; la guardia è sempre vuota al commit.
 
+## Metriche d'uso
+
+`studio_private.usage_events`: un evento per messaggio WhatsApp autenticato gestito dal gateway (REQ-OPS-011), con insegnante (FK, NULL per i non censiti), tipo di turno, istanti e tempi, modello servito, livello di thinking inviato, token, contesto, finestra, percentuale e soglia, compattazioni, chiamate ai tool, richieste al modello, costo OpenRouter ed esito dell'invio. Solo numeri, enumerazioni e l'identificativo del modello con formato vincolato; nessun numero, testo, nome o ID dei messaggi. Append-only senza scadenza, scritto soltanto dalla funzione `studio_private.record_usage_event` del broker, incluso nei backup a caldo e quiescenti e nei ripristini. Fonti, punti di misura e scrittura: `usage-metrics`.
+
 ## Archivio di Hermes
 
 Hermes usa SQLite per le proprie sessioni, conversazioni, riassunti e cronologia compattata. L'archivio è distinto da PostgreSQL, contiene dati sensibili e persiste nel volume Hermes, incluso nel backup quiescente (`continuity`).

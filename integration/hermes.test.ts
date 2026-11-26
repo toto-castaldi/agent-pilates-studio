@@ -261,6 +261,15 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     compose('stop', 'author-broker');
     // A backup must never restore an ephemeral PID/transaction binding.
     await ownerContext(migrator, broker, '15555550102', { pid: 1, txid: '1' }, '1 hour');
+    // Usage events (TEC-052) survive restart, recreation, backup and restore unchanged.
+    await broker.query('SELECT studio_private.record_usage_event(NULL, $1::jsonb)', [JSON.stringify({ turn_kind: 'fixed',
+      received_at: '2026-11-26T09:00:00.000Z', replied_at: '2026-11-26T09:00:00.250Z', total_ms: 250, model_ms: null, model: null,
+      reasoning_effort: null, input_tokens: null, output_tokens: null, context_tokens: null, context_window: null, context_percent: null,
+      compaction_threshold_tokens: null, compactions: 0, tool_calls: 0, model_requests: 0, cost_usd: null, send_outcome: 'sent',
+      send_http_status: null, send_error_code: null })]);
+    const readUsage = async (client: Client) => (await client.query('SELECT * FROM studio_private.usage_events ORDER BY id')).rows;
+    const usageState = await readUsage(migrator);
+    assert.ok(usageState.length >= 1);
 
     assert.equal(Number((await migrator.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
     await migrator.query("INSERT INTO studio_private.management_sessions (sender_hash, state) VALUES ($1, $2)", ['a'.repeat(64), '{"instance":"stale-synthetic","state":{"step":"confirm","expires":1}}']);
@@ -282,6 +291,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     assert.equal((await migrator.query('SELECT value FROM app.stack_probe WHERE id = 77')).rows[0].value, 'backup-synthetic');
     assert.deepEqual(await readTeacherState(migrator), teacherState);
     assert.deepEqual(await readIdentityState(migrator), identityState);
+    assert.deepEqual(await readUsage(migrator), usageState);
     backup();
     expectFailure(backup, /backup directory must be new/);
     expectFailure(() => restore(project, backupDirectory), /Target project has containers/);
@@ -325,6 +335,8 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await assert.rejects(restored.query('DELETE FROM app.attendance'), { code: '42501' });
     await assert.rejects(restored.query('TRUNCATE studio_private.attendance'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.author_context')).rows[0].count), 0);
+    assert.deepEqual(await readUsage(restored), usageState);
+    await assert.rejects(restored.query('DELETE FROM studio_private.usage_events'), { code: '42501' });
     assert.equal(Number((await restored.query('SELECT count(*) FROM studio_private.chat_owners')).rows[0].count), 1);
     assert.equal((await restored.query('SELECT state FROM studio_private.management_sessions WHERE sender_hash = $1', ['a'.repeat(64)])).rows[0].state.includes('stale-synthetic'), true);
     restoredAgent = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_agent', password: secrets['db-agent'] });
@@ -337,6 +349,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teachers'), { code: '42501' });
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.teacher_identity_changes'), { code: '42501' });
     await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.session_owners'), { code: '42501' });
+    await assert.rejects(restoredAgent.query('SELECT * FROM studio_private.usage_events'), { code: '42501' });
     restoredBroker = new Client({ host: '127.0.0.1', port: restoredPort, database: 'studio', user: 'studio_broker', password: secrets['db-broker'] });
     await restoredBroker.connect();
     const recoveredIdentities = (await restoredBroker.query("SELECT * FROM studio_private.list_teacher_identities('15555550120', '+15555550120')")).rows;

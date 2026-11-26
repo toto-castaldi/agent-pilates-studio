@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import time
 from pathlib import Path
 
@@ -24,6 +25,8 @@ logging.disable(logging.CRITICAL)
 MAX_BODY = 3 * 1024 * 1024
 MAX_RECEIPTS = 4096
 RECEIPT_LIFETIME = 900
+MAX_TICKETS = 4096
+USAGE_RUNNER = '/opt/pilates/usage-event-runner.mjs'
 # Fixed text: no manager number or data, no self-enrollment invitation.
 ACCESS_REFUSAL = ('Accesso non abilitato. Per usare l’assistente dello studio rivolgiti al gestore.')
 SENDER = re.compile(r'[1-9][0-9]{7,14}')
@@ -65,6 +68,9 @@ class Broker:
         self.phone_id = phone_id
         self.manager_phone = manager_phone
         self.receipts = {}
+        # Usage tickets of the replies decided here: kind and teacher, never a number.
+        self.tickets = {}
+        self.usage_slots = asyncio.Semaphore(2)
         self.pool = None
         self.cleanup_task = None
         self.management = None
@@ -82,6 +88,17 @@ class Broker:
         for key, value in list(self.receipts.items()):
             if value['expires'] <= now:
                 del self.receipts[key]
+        for key, value in list(self.tickets.items()):
+            if value['expires'] <= now:
+                del self.tickets[key]
+
+    def reply(self, sender, text, kind, teacher):
+        """A webhook reply with a single-use usage ticket bound to the broker's decision."""
+        ticket = None
+        if len(self.tickets) < MAX_TICKETS:
+            ticket = secrets.token_hex(32)
+            self.tickets[ticket] = {'kind': kind, 'teacher': teacher, 'expires': time.monotonic() + RECEIPT_LIFETIME}
+        return {'to': sender, 'text': text, 'ticket': ticket}
 
     async def refuse(self, message):
         """Fixed refusal once per message ID, also across Meta retries and restarts."""
@@ -129,20 +146,24 @@ class Broker:
                             reply = await self.management.message(sender, message)
                             if reply is not None:
                                 if reply:
-                                    replies.append({'to': sender, 'text': reply})
+                                    # Resolved after the step: a bootstrap may have just enrolled the manager.
+                                    manager = await self.resolve(sender)
+                                    replies.append(self.reply(sender, reply, 'management',
+                                                              int(manager['id']) if manager is not None else None))
                                 continue
                         person = await self.resolve(sender)
                         if person is None or not person['access_enabled']:
                             reply = await self.refuse(message)
                             if reply:
-                                replies.append({'to': sender, 'text': reply})
+                                replies.append(self.reply(sender, reply, 'fixed',
+                                                          int(person['id']) if person is not None else None))
                             continue
                         if '+' + sender != self.manager_phone:
                             # Ordinary users get a fixed refusal for management commands.
                             reply = await self.management.message(sender, message)
                             if reply is not None:
                                 if reply:
-                                    replies.append({'to': sender, 'text': reply})
+                                    replies.append(self.reply(sender, reply, 'rejected_command', int(person['id'])))
                                 continue
                         receipt = {'sender': sender, 'teacher': int(person['id']),
                                    'revision': int(person['identity_revision'])}
@@ -155,7 +176,7 @@ class Broker:
                             if len(self.receipts) >= MAX_RECEIPTS:
                                 return web.Response(status=503)
                             self.receipts[message['id']] = {**receipt, 'expires': time.monotonic() + RECEIPT_LIFETIME,
-                                                            'turn': None, 'lock': asyncio.Lock()}
+                                                            'turn': None, 'lock': asyncio.Lock(), 'usage': False}
                         names[sender] = f"{person['first_name']} {person['last_name']}"
                         admitted.append({'message_id': message['id'], 'sender': sender, 'teacher': str(person['id'])})
                         kept.append(message)
@@ -299,6 +320,65 @@ class Broker:
         except (ValueError, TypeError, KeyError, asyncpg.PostgresError, asyncio.TimeoutError):
             return web.Response(status=400)
 
+    async def usage_row(self, measurement):
+        """Validate a measurement and derive the stored row with the pure TypeScript policy."""
+        async with self.usage_slots:
+            child = await asyncio.create_subprocess_exec(
+                'node', '--disable-warning=ExperimentalWarning', USAGE_RUNNER,
+                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+            try:
+                stdout, _ = await asyncio.wait_for(child.communicate(json.dumps(measurement).encode()), 5)
+                if child.returncode:
+                    raise ValueError('Invalid usage measurement')
+                row = json.loads(stdout)
+                if not isinstance(row, dict):
+                    raise ValueError('Invalid usage measurement')
+                return row
+            finally:
+                if child.returncode is None:
+                    child.kill()
+                    await child.wait()
+
+    async def usage(self, request):
+        """Record one usage event per receipt or ticket; the teacher never comes from the gateway."""
+        if not self.authorized(request):
+            return web.Response(status=403)
+        try:
+            data = await request.json()
+            if not isinstance(data, dict) or set(data) not in ({'ticket', 'measurement'}, {'message_id', 'sender', 'measurement'}):
+                raise ValueError('Invalid request')
+            measurement = data['measurement']
+            # The kind of a webhook reply is the broker's decision, never the gateway's.
+            if not isinstance(measurement, dict) or measurement.get('broker_kind', False) is not None:
+                raise ValueError('Invalid request')
+            self.prune_receipts()
+            if 'ticket' in data:
+                ticket = data['ticket']
+                entry = self.tickets.pop(ticket, None) if isinstance(ticket, str) else None
+                if entry is None:
+                    return web.Response(status=403)
+                measurement = {**measurement, 'broker_kind': entry['kind']}
+                teacher = entry['teacher']
+            else:
+                message_id, sender = data['message_id'], data['sender']
+                if not isinstance(message_id, str) or not isinstance(sender, str):
+                    raise ValueError('Invalid request')
+                receipt = self.current_receipt(message_id, sender)
+                if receipt is None:
+                    return web.Response(status=403)
+                if receipt['usage']:
+                    return web.Response(status=409)
+                # One event per receipt, also if the write below fails.
+                receipt['usage'] = True
+                teacher = receipt['teacher']
+            row = await self.usage_row(measurement)
+            async with self.pool.acquire(timeout=5) as connection:
+                await connection.execute('SELECT studio_private.record_usage_event($1, $2::jsonb)',
+                                         teacher, json.dumps(row), timeout=5)
+            return web.Response(status=204)
+        except (ValueError, TypeError, KeyError, OSError, asyncpg.PostgresError, asyncio.TimeoutError):
+            return web.Response(status=400)
+
     async def release(self, request):
         if not self.authorized(request):
             return web.Response(status=403)
@@ -366,6 +446,7 @@ def main():
     app.router.add_post('/v1/session', broker.session)
     app.router.add_post('/v1/context', broker.context)
     app.router.add_post('/v1/release', broker.release)
+    app.router.add_post('/v1/usage', broker.usage)
     app.router.add_get('/health', broker.health)
     app.on_startup.append(broker.start)
     app.on_cleanup.append(broker.stop)
