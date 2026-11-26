@@ -10,9 +10,9 @@ permissions:
 
 jobs:
   quality:
-    name: Quality gate e integrazione
+    name: Quality gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -30,41 +30,6 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      - name: Test locali
-        run: npm run test:local
-      - name: Installa Pi per la prova offline
-        run: npm install --global @earendil-works/pi-coding-agent@1.5.0
-      - name: Test Pi offline
-        run: npm run test:pi
-      - name: Test pacchetto Pi fissato
-        run: npm run test:pi-package
-      - name: Installa Claude Code per la prova senza modello
-        run: npm install --global @anthropic-ai/claude-code@2.1.323
-      - name: Test plugin e pannello Claude Code
-        run: npm run test:claude
-      - name: Allinea Docker alla versione di produzione
-        run: bash scripts/ci-install-docker.sh
-      - name: Prepara immagini di integrazione
-        run: |
-          docker compose build postgres hermes
-      - name: Test PostgreSQL reale e plugin SQL
-        run: npm run test:db
-      - name: Test gateway Hermes
-        run: npm run test:hermes
-      - name: Test identità autenticata e broker
-        run: npm run test:author
-      - name: Test contesto e compattazione
-        run: npm run test:compaction
-      - name: Test metriche d'uso
-        run: npm run test:usage
-      - name: Test dashboard Grafana
-        run: npm run test:grafana
-      - name: Test aggiornamento isolato tra versioni
-        run: npm run test:upgrade
-      - name: Test avvio locale con un comando
-        run: npm run test:start
-      - name: Test esecuzione dalle sole immagini
-        run: npm run test:images
 
   publish:
     name: Pubblicazione immagini

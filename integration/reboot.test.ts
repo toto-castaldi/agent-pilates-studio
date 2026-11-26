@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-// Same Docker as production and CI (scripts/ci-install-docker.sh).
+// Same Docker as production (29.9.2).
 const dindImage = 'docker:29.9.2-dind@sha256:9e79b879b177fbd72c34376a3dd3d91747da5db49e1f560f76aea59561471977';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
