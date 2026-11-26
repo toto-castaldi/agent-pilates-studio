@@ -1,0 +1,28 @@
+{
+  "id": "TEC-058",
+  "title": "Allineamento al template v4.5.0",
+  "version": "v0.5.0",
+  "epic": "EPIC-001",
+  "type": "Task",
+  "priority": "P0",
+  "status": "Todo",
+  "dependencies": [],
+  "requirements": [
+    "REQ-NFR-013"
+  ],
+  "design_references": [
+    "PROCESS §3",
+    "process/release §2",
+    "design/process-tooling",
+    "docs/TEMPLATE-ORIGIN.md"
+  ],
+  "description": "Adottare la release v4.5.0 di agile-project-template (commit 12fb9bc, tag v4.5.0): l'orchestratore rimuove il clone di un worker subito dopo il merge del suo item, senza chiedere conferma, e si ferma a chiedere solo se il clone contiene lavoro non committato o non pubblicato. Il diff da v4.4.0 tocca 4 file: docs/PROCESS.md (Process version 4.5.0), docs/PROCESS-PARALLEL.md, .agents/skills/orchestrate/SKILL.md e README.md generico; nessun passo di migrazione. Preservare personalizzazioni, dati del backlog e protezioni dello studio; nessun worker, deploy, modifica dello stack o configurazione personale; nessun merge su main.",
+  "acceptance_criteria": [
+    "Tag e commit target verificati nel clone pubblico isolato; basi del progetto dei file condivisi cambiati dimostrate identiche alla v4.4.0 prima della copia e registrazione in docs/TEMPLATE-ORIGIN.md di adozioni, soli confronti e divergenze, senza sovrascrivere file personalizzati.",
+    "Process version 4.5.0; PROCESS.md, PROCESS-PARALLEL.md e skill orchestrate identici al target salvo divergenze motivate; README.md generico solo confrontato, con le modifiche pertinenti riportate a mano in italiano; AGENTS.md verificato coerente con la nuova regola di rimozione dei clone.",
+    "backlog template-check non segnala aggiornamenti disponibili; passano gate rapido, backlog check e le suite separate pertinenti (test:local, test:claude); limiti delle prove simulabili espliciti."
+  ],
+  "remarks": [
+    "Utente: confermata aggiunta P0 EPIC-001 in v0.5.0 come cambio di scope."
+  ]
+}

@@ -3,6 +3,7 @@
   "goal": "Osservabilità dell'uso dell'agente: metriche per turno su utilizzatori, tempi di risposta, token, contesto e costi, registrate nel database senza dati personali e consultabili dall'operatore in una dashboard Grafana raggiungibile solo via SSH, in produzione e in sviluppo (REQ-OPS-011, REQ-OPS-012). Senza avvisi automatici e senza ricostruzione dello storico.",
   "state": "Open",
   "scope_changes": [
-    "2026-11-26: 2026-11-26: aggiunto BUG-006 (compattazione per soglia ritardata con messaggi lunghi, REQ-AGENT-004), osservato in SPIKE-004; concordato con l'utente."
+    "2026-11-26: 2026-11-26: aggiunto BUG-006 (compattazione per soglia ritardata con messaggi lunghi, REQ-AGENT-004), osservato in SPIKE-004; concordato con l'utente.",
+    "2026-11-26: aggiunto TEC-058 (allineamento al template v4.5.0, REQ-NFR-013); concordato con l'utente."
   ]
 }
