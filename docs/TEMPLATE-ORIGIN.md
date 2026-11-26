@@ -183,7 +183,11 @@ I blob del target sono fissati in `integration/local/backlog-viewers.test.ts`.
 
 ## Verifica di TEC-056
 
-VERIFICA_PLACEHOLDER
+Le nuove prove usano soltanto store sintetici in directory temporanee (`integration/local/backlog-changelog.test.ts`): `done --changelog` normalizzato e validato (sezione ignota, testo vuoto o minuscolo rifiutati senza cambiare lo stato), `edit --changelog` rifiutato su item non `Done` e svuotabile, rimozione con `reopen`, rifiuti di `check` per voce non valida o su item `In Progress`, sezione di `changelog` per la versione aperta (ordine delle sezioni e degli ID, esclusi item senza voce, non `Done` o di altre versioni, nessuna scrittura) e per quella chiusa con la data di chiusura, errori per versione assente o senza versione aperta; `show` breve per item `Done` e `Dropped`, `--full` e `--json` completi, item aperti invariati; tre item recenti in `status` con il conteggio dei restanti; `--help` compatto con tutti i comandi e help dei singoli comandi invariato. Aggiornati i blob attesi e i testi di processo nelle prove esistenti. **Non sono dimostrati** l'esecuzione reale di `close-version` con l'inserimento della sezione nel `CHANGELOG.md` del progetto, la resa del campo `Changelog` nelle TUI reali oltre alle prove di caricamento esistenti e il comportamento delle skill con un modello.
+
+Migrazione verificata: prima della modifica `backlog changelog` restituiva per la v0.5.0 la sola intestazione `[Unreleased]`; dopo la migrazione restituisce la sezione `Changed` con la voce di TEC-055 identica a quella rimossa da `CHANGELOG.md`, salvo la posizione del punto finale; nessun'altra voce era presente.
+
+Ambiente del **2026-11-26**: Node.js **24.22.2**, npm **11.19.1**, Python **3.14.4**. Pi **1.5.0** e Claude Code **2.1.323** installati in una directory temporanea e selezionati con PATH, senza cambiare i runtime personali. Superati lint, typecheck, **108 test unitari**, build, `backlog check`, `test:local` (**65**), `test:pi` (**7**) e `test:claude` (**2**). Le prove su clone del commit corrente sono state eseguite dopo il commit delle modifiche. Le suite Docker, `test:pi-package` e le prove Meta/OpenRouter non sono pertinenti e restano richieste alla chiusura della versione.
 
 ## Procedura manuale per un nuovo confronto
 

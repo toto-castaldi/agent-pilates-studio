@@ -5,7 +5,7 @@
   "epic": "EPIC-001",
   "type": "Task",
   "priority": "P0",
-  "status": "In Progress",
+  "status": "Done",
   "branch": "task/TEC-056-allineamento-template-v4-4-0",
   "dependencies": [],
   "requirements": [
@@ -28,5 +28,8 @@
   ],
   "remarks": [
     "Utente: confermata aggiunta P0 EPIC-001 in v0.5.0 come cambio di scope e migrazione delle voci di [Unreleased] negli item."
-  ]
+  ],
+  "outcome": "Adottato il template v4.4.0 (tag annotato verificato, commit 2b7196651efa8b18c6c564b06e686a0ce54f8130) dopo aver dimostrato identici ai blob v4.3.0 i 12 file condivisi cambiati: PROCESS.md (4.4.0), PROCESS-PARALLEL.md, process/backlog e release, backlog.py (changelog, done/edit --changelog, show breve, tre recenti in status, --help compatto), sei skill e overlay Claude Code copiati senza divergenze; estensione Pi backlog con il solo diff upstream e la divergenza esistente. AGENTS.md, README.md e CHANGELOG.md solo confrontati e aggiornati a mano; riferimenti del §8 e §10 verificati, nessuna rinumerazione necessaria. Voce [Unreleased] di TEC-055 migrata nel suo changelog via CLI, [Unreleased] vuota e backlog changelog equivalente. TEMPLATE-ORIGIN, process-tooling e test-strategy aggiornati. Nuovi test sintetici in backlog-changelog.test.ts; superati gate (108 unitari), backlog check, test:local 65, test:pi 7 e test:claude 2 con Pi 1.5.0 e Claude Code 2.1.323. Non dimostrati close-version reale sul CHANGELOG del progetto e resa del campo Changelog nelle TUI.",
+  "changelog": "Changed: Processo allineato al template v4.4.0: CHANGELOG generato dal backlog alla chiusura della versione, help compatto della CLI",
+  "closed_at": "2026-11-26"
 }
