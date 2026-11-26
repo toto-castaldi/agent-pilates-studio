@@ -4,6 +4,7 @@ name: agent-pilates-v010
 # references and never builds, so it needs no checkout.
 x-hermes-image: &hermes-image ${PILATES_HERMES_IMAGE:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-hermes}
 x-postgres-image: &postgres-image ${PILATES_POSTGRES_IMAGE:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-postgres}
+x-grafana-image: &grafana-image ${PILATES_GRAFANA_IMAGE:-${COMPOSE_PROJECT_NAME:-agent-pilates-v010}-grafana}
 x-postgres-build: &postgres-build
   context: .
   dockerfile: db/Dockerfile
@@ -50,6 +51,7 @@ services:
       - db_migrator
       - db_agent
       - db_broker
+      - db_grafana
     logging:
       driver: none
     restart: "no"
@@ -130,6 +132,42 @@ services:
       start_period: 45s
     restart: unless-stopped
 
+  # Usage metrics dashboard (US-020): loopback only, reached with ssh -L; the
+  # public hostname routes only the webhook. No volume: provisioning comes from
+  # the image and changes made in the interface do not survive recreation.
+  grafana:
+    image: *grafana-image
+    build:
+      context: .
+      dockerfile: grafana/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    secrets:
+      - grafana_admin_password
+      - db_grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-13000}:3000"
+    tmpfs:
+      - /run/pilates-grafana:mode=0700
+    cap_drop: [ALL]
+    # Only the entrypoint uses these, as root, before dropping to the grafana user.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: local
+      options:
+        max-size: "1m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
+    restart: unless-stopped
+
 secrets:
   db_admin:
     file: ${SECRETS_DIR:-./.local/secrets}/db-admin
@@ -139,6 +177,10 @@ secrets:
     file: ${SECRETS_DIR:-./.local/secrets}/db-agent
   db_broker:
     file: ${SECRETS_DIR:-./.local/secrets}/db-broker
+  db_grafana:
+    file: ${SECRETS_DIR:-./.local/secrets}/db-grafana
+  grafana_admin_password:
+    file: ${SECRETS_DIR:-./.local/secrets}/grafana-admin-password
   bridge_token:
     file: ${SECRETS_DIR:-./.local/secrets}/bridge-token
   openrouter_key:

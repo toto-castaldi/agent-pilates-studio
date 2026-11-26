@@ -29,9 +29,15 @@ test('production requires one canonical manager number and refuses the former id
     assert.match(init.stdout, /To provide: secrets\/whatsapp-manager-phone/);
     assert.doesNotMatch(init.stdout, /allowed-users|home-channel|teacher-links/);
     assert.deepEqual((await readdir(join(root, 'secrets'))).filter((name) => name.startsWith('whatsapp-')).sort(), []);
+    // init asks for the Grafana admin password and generates the role password.
+    assert.match(init.stdout, /To provide: secrets\/grafana-admin-password/);
+    assert.match(await readFile(join(root, 'secrets/db-grafana'), 'utf8'), /^[0-9a-f]{64}\n$/);
+    assert.match(await readFile(join(root, 'prod.env'), 'utf8'), /^GRAFANA_PORT=13100$/m);
     for (const name of ['openrouter-key', 'whatsapp-access-token', 'whatsapp-app-secret', 'whatsapp-verify-token', 'whatsapp-phone-number-id']) {
       await writeFile(join(root, 'secrets', name), 'synthetic\n', { mode: 0o600 });
     }
+    const grafanaAdmin = join(root, 'secrets/grafana-admin-password');
+    await writeFile(grafanaAdmin, 'synthetic-grafana-admin-password\n', { mode: 0o600 });
     const manager = join(root, 'secrets/whatsapp-manager-phone');
     // Secrets are checked before any release state or Docker operation.
     for (const value of ['15555550102\n', '+1 555 555 0102\n', '+15555550102\n+15555550103\n', 'gestore\n']) {
@@ -42,6 +48,30 @@ test('production requires one canonical manager number and refuses the former id
       assert.doesNotMatch(result.stdout + result.stderr, /5555550/);
     }
     await writeFile(manager, '+15555550102\n', { mode: 0o600 });
+    // The Grafana admin password is validated before any Docker operation and never printed.
+    for (const value of ['synthetic-short\n', 'synthetic grafana with spaces\n', 'synthetic-grafana-one\nsynthetic-grafana-two\n']) {
+      await writeFile(grafanaAdmin, value, { mode: 0o600 });
+      const result = invoke(['update', commit]);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Grafana admin password must be one line/);
+      assert.doesNotMatch(result.stdout + result.stderr, /synthetic-|synthetic grafana/);
+    }
+    await writeFile(grafanaAdmin, 'synthetic-grafana-admin-password\n', { mode: 0o600 });
+    // Regression (US-020): an installation from before Grafana has no db-grafana.
+    // update creates it privately before the checks; other secrets never rotate
+    // and an existing db-grafana is never overwritten.
+    const internal = ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token'];
+    const internalBefore = await Promise.all(internal.map((name) => readFile(join(root, 'secrets', name), 'utf8')));
+    await rm(join(root, 'secrets/db-grafana'));
+    const upgraded = invoke(['update', commit]);
+    assert.notEqual(upgraded.status, 0, 'the synthetic Docker stops the update later');
+    assert.doesNotMatch(upgraded.stderr, /db-grafana|Grafana admin password/);
+    const generated = await readFile(join(root, 'secrets/db-grafana'), 'utf8');
+    assert.match(generated, /^[0-9a-f]{64}\n$/);
+    assert.equal((await stat(join(root, 'secrets/db-grafana'))).mode & 0o077, 0);
+    assert.deepEqual(await Promise.all(internal.map((name) => readFile(join(root, 'secrets', name), 'utf8'))), internalBefore);
+    invoke(['update', commit]);
+    assert.equal(await readFile(join(root, 'secrets/db-grafana'), 'utf8'), generated);
     for (const name of ['whatsapp-allowed-users', 'whatsapp-home-channel', 'whatsapp-teacher-links']) {
       await writeFile(join(root, 'secrets', name), '15555550102\n', { mode: 0o600 });
       const result = invoke(['update', commit]);

@@ -1,0 +1,623 @@
+{
+  "uid": "pilates-usage",
+  "title": "Metriche d'uso dell'agente",
+  "editable": false,
+  "graphTooltip": 1,
+  "schemaVersion": 41,
+  "version": 1,
+  "timezone": "Europe/Rome",
+  "weekStart": "monday",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "refresh": "",
+  "tags": [
+    "pilates",
+    "metriche"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "teacher",
+        "label": "Utilizzatore",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "pilates-metrics"
+        },
+        "query": "SELECT first_name || ' ' || last_name AS __text, id AS __value FROM studio_metrics.teachers ORDER BY first_name, last_name, id",
+        "definition": "SELECT first_name || ' ' || last_name AS __text, id AS __value FROM studio_metrics.teachers ORDER BY first_name, last_name, id",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": "-1",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [],
+        "sort": 0,
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Messaggi per utilizzatore e giorno",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS time, coalesce(teacher_first_name || ' ' || teacher_last_name, 'Non censito') AS metric, count(*) AS value\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher))\nGROUP BY 1, 2\nORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "Messaggi autenticati gestiti, per giorno (Europe/Rome) e utilizzatore."
+    },
+    {
+      "id": 2,
+      "title": "Messaggi per utilizzatore e tipo di turno",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(teacher_first_name || ' ' || teacher_last_name, 'Non censito') AS \"Utilizzatore\", count(*) AS \"Messaggi\",\n  count(*) FILTER (WHERE turn_kind = 'agent') AS \"Risposte dell'agente\",\n  count(*) FILTER (WHERE turn_kind = 'management') AS \"Percorso gestionale\",\n  count(*) FILTER (WHERE turn_kind = 'fixed') AS \"Risposte fisse\",\n  count(*) FILTER (WHERE turn_kind = 'rejected_command') AS \"Comandi rifiutati\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher))\nGROUP BY 1\nORDER BY 2 DESC, 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Tempi di risposta per giorno",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS time,\n  percentile_cont(0.5) WITHIN GROUP (ORDER BY total_ms) AS \"Complessivo, mediana\",\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY total_ms) AS \"Complessivo, 95° percentile\",\n  percentile_cont(0.5) WITHIN GROUP (ORDER BY model_ms) AS \"Modello, mediana\",\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY model_ms) AS \"Modello, 95° percentile\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher))\nGROUP BY 1\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "always",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "Tempo complessivo dalla ricezione all'ultimo invio a Meta e tempo speso nel modello (solo risposte dell'agente)."
+    },
+    {
+      "id": 4,
+      "title": "Tempi di risposta nel periodo",
+      "type": "stat",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  percentile_cont(0.5) WITHIN GROUP (ORDER BY total_ms) AS \"Complessivo, mediana\",\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY total_ms) AS \"Complessivo, 95° percentile\",\n  percentile_cont(0.5) WITHIN GROUP (ORDER BY model_ms) AS \"Modello, mediana\",\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY model_ms) AS \"Modello, 95° percentile\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "none",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Token per giorno",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS time, sum(input_tokens) AS \"Token in ingresso\", sum(output_tokens) AS \"Token in uscita\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent'\nGROUP BY 1\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Contesto inviato e soglia di compattazione",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT received_at AS time, context_percent AS \"Contesto (% della finestra)\",\n  round(compaction_threshold_tokens * 100.0 / context_window, 2) AS \"Soglia di compattazione (% della finestra)\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent' AND context_percent IS NOT NULL\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "always",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "Contesto dell'ultima richiesta principale di ogni risposta dell'agente, in percentuale della finestra del modello, e soglia di compattazione registrata con l'evento."
+    },
+    {
+      "id": 7,
+      "title": "Compattazioni per giorno",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS time, coalesce(teacher_first_name || ' ' || teacher_last_name, 'Non censito') AS metric, sum(compactions) AS value\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent'\nGROUP BY 1, 2\nORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Costi per giorno",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS time, sum(cost_usd) AS \"Costo (USD)\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent'\nGROUP BY 1\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "Somma di usage.cost riportato da OpenRouter; le risposte senza costo riportato non sono stimate."
+    },
+    {
+      "id": 9,
+      "title": "Costi per utilizzatore",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(teacher_first_name || ' ' || teacher_last_name, 'Non censito') AS \"Utilizzatore\", sum(cost_usd) AS \"Costo (USD)\",\n  count(*) AS \"Risposte dell'agente\", count(*) FILTER (WHERE cost_usd IS NULL) AS \"Risposte senza costo\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent'\nGROUP BY 1\nORDER BY 2 DESC NULLS LAST, 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costo (USD)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 10,
+      "title": "Costi per modello",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(model, 'Non riportato') AS \"Modello\", sum(cost_usd) AS \"Costo (USD)\",\n  count(*) AS \"Risposte dell'agente\", count(*) FILTER (WHERE cost_usd IS NULL) AS \"Risposte senza costo\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND turn_kind = 'agent'\nGROUP BY 1\nORDER BY 2 DESC NULLS LAST, 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Costo (USD)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 11,
+      "title": "Invii rifiutati",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "pilates-metrics"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "pilates-metrics"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', received_at, 'Europe/Rome') AS \"Giorno\", coalesce(teacher_first_name || ' ' || teacher_last_name, 'Non censito') AS \"Utilizzatore\", send_outcome AS \"Esito\",\n  send_http_status AS \"Stato HTTP\", send_error_code AS \"Codice Meta\", count(*) AS \"Messaggi\"\nFROM studio_metrics.usage_events\nWHERE $__timeFilter(received_at) AND (-1 IN ($teacher) OR teacher_id IN ($teacher)) AND send_outcome IN ('refused', 'network')\nGROUP BY 1, 2, 3, 4, 5\nORDER BY 1 DESC, 2, 3, 4, 5"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Giorno"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocalNoDateIfToday"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Invii a Meta rifiutati (refused, con stato HTTP e codice d'errore) o senza risposta (network)."
+    }
+  ]
+}

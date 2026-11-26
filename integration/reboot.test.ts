@@ -27,7 +27,7 @@ test('production stack restarts healthy by itself after a simulated host reboot'
     'db-admin': randomBytes(32).toString('hex'),
     'db-migrator': databasePassword,
     'db-agent': randomBytes(32).toString('hex'),
-    'db-broker': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'), 'db-grafana': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'),
     'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token',

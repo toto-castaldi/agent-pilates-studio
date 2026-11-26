@@ -32,7 +32,7 @@ test('per-sender contexts compact silently at 40% of the model window and after 
   const project = `pilates-compaction-${randomBytes(8).toString('hex')}`;
   const secrets: Record<string, string> = {
     'db-admin': randomBytes(32).toString('hex'), 'db-migrator': randomBytes(32).toString('hex'),
-    'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'),
+    'db-agent': randomBytes(32).toString('hex'), 'db-broker': randomBytes(32).toString('hex'), 'db-grafana': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'), 'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token', 'whatsapp-app-secret': 'synthetic-app-secret',
     'whatsapp-verify-token': 'synthetic-verify-token', 'whatsapp-manager-phone': `+${ALPHA}`,

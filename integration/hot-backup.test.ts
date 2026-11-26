@@ -28,7 +28,7 @@ test('ops hot backup preserves a consistent snapshot with live, healthy services
     'db-admin': randomBytes(32).toString('hex'),
     'db-migrator': randomBytes(32).toString('hex'),
     'db-agent': randomBytes(32).toString('hex'),
-    'db-broker': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'), 'db-grafana': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'),
     'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token',

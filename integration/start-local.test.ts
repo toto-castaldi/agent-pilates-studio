@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rename, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,10 +25,13 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   const databasePort = await freePort();
   let webhookPort = await freePort();
   while (webhookPort === databasePort) webhookPort = await freePort();
+  let grafanaPort = await freePort();
+  while (grafanaPort === databasePort || grafanaPort === webhookPort) grafanaPort = await freePort();
+  const grafanaAdmin = `synthetic-private-grafana-${randomBytes(8).toString('hex')}`;
   const admin = randomBytes(24).toString('hex');
   const migrator = `${randomBytes(24).toString('hex')}:@$/#%'`;
   const agentPassword = randomBytes(24).toString('hex');
-  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nPILATES_MANAGER_PHONE=+1 (555) 555-0102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
+  const config = `POSTGRES_PORT=${databasePort}\nWHATSAPP_WEBHOOK_PORT=${webhookPort}\nPILATES_MODEL=synthetic/test-model\nDB_ADMIN_PASSWORD=${admin}\nDB_MIGRATOR_PASSWORD="${migrator}"\nDB_AGENT_PASSWORD=${agentPassword}\nOPENROUTER_API_KEY=synthetic-private-model-token\nWHATSAPP_ACCESS_TOKEN=synthetic-private-access-token\nWHATSAPP_APP_SECRET=synthetic-private-app-secret\nWHATSAPP_VERIFY_TOKEN=synthetic-private-verify-token\nPILATES_MANAGER_PHONE=+1 (555) 555-0102\nWHATSAPP_PHONE_NUMBER_ID=123456789\nGRAFANA_PORT=${grafanaPort}\nGRAFANA_ADMIN_PASSWORD=${grafanaAdmin}\nPILATES_IDLE_COMPACT_SECONDS=1800\n`;
   const env = { ...process.env, COMPOSE_PROJECT_NAME: project, SECRETS_DIR: join(dir, '.local/secrets'), POSTGRES_PORT: String(databasePort), WHATSAPP_WEBHOOK_PORT: String(webhookPort) };
   const compose = (...args: string[]) => execFileSync('docker', ['compose', '--env-file', '/dev/null', ...args], { cwd: dir, env, encoding: 'utf8', stdio: 'pipe', timeout: 180_000 });
   // start:local starts services with --no-deps; the synthetic model catalog read by
@@ -47,7 +50,7 @@ test('one command initializes a clean isolated stack, preserves data and recreat
   try {
     await mkdir(join(dir, 'scenarios'));
     await mkdir(join(dir, 'integration'));
-    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'hermes', 'src', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
+    for (const path of ['compose.yaml', '.dockerignore', 'package.json', 'package-lock.json', 'prisma.config.ts', 'prisma', 'scripts', 'db', 'grafana', 'hermes', 'src', 'scenarios/gateway-launcher.sh', 'scenarios/meta_stub.py', 'integration/model_stub.py']) {
       await cp(path, join(dir, path), { recursive: true });
     }
     // Only the gateway is confined to an internal network; the host must reach PostgreSQL for Prisma.
@@ -113,6 +116,26 @@ test('one command initializes a clean isolated stack, preserves data and recreat
       assert.notEqual(missing.status, 0);
       assert.match(missing.stderr, /Segreto database mancante/);
     } finally { await rename(`${agentFile}.saved`, agentFile); }
+    // Regression (US-020): secrets from before Grafana on an existing volume.
+    // db-grafana is created before the credential probe, nothing else rotates,
+    // and the read-only role receives the new password from the bootstrap.
+    const secretNames = ['db-admin', 'db-migrator', 'db-agent', 'db-broker', 'bridge-token'];
+    const previous = await Promise.all(secretNames.map((name) => readFile(join(dir, '.local/secrets', name), 'utf8')));
+    const oldGrafanaPassword = (await readFile(join(dir, '.local/secrets/db-grafana'), 'utf8')).trim();
+    await unlink(join(dir, '.local/secrets/db-grafana'));
+    start();
+    assert.deepEqual(await Promise.all(secretNames.map((name) => readFile(join(dir, '.local/secrets', name), 'utf8'))), previous);
+    const newGrafanaPassword = (await readFile(join(dir, '.local/secrets/db-grafana'), 'utf8')).trim();
+    assert.match(newGrafanaPassword, /^[a-f0-9]{64}$/);
+    assert.notEqual(newGrafanaPassword, oldGrafanaPassword);
+    assert.equal(((await lstat(join(dir, '.local/secrets/db-grafana'))).mode & 0o077), 0);
+    const grafanaRole = new Client({ host: '127.0.0.1', port: databasePort, database: 'studio', user: 'studio_grafana', password: newGrafanaPassword });
+    await grafanaRole.connect();
+    try { assert.equal((await grafanaRole.query('SELECT count(*)::int AS n FROM studio_metrics.teachers')).rows[0].n, 2); } finally { await grafanaRole.end(); }
+    const grafanaHealth = await fetch(`http://127.0.0.1:${grafanaPort}/api/health`);
+    assert.equal(grafanaHealth.status, 200);
+    const grafanaSource = await fetch(`http://127.0.0.1:${grafanaPort}/api/datasources/uid/pilates-metrics/health`, { headers: { Authorization: `Basic ${Buffer.from(`admin:${grafanaAdmin}`).toString('base64')}` } });
+    assert.equal(grafanaSource.status, 200, 'Grafana must authenticate with the new role password');
     const postgresId = compose('ps', '-q', 'postgres').trim();
     const soulPath = join(dir, 'hermes/SOUL.md');
     await writeFile(`${soulPath}.new`, `${await readFile(soulPath, 'utf8')}\nSYNTHETIC_UPDATED_SOUL\n`);

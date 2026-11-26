@@ -22,7 +22,7 @@ test('Hermes native WhatsApp and SQL tool run with restricted data and logs', { 
     'db-admin': randomBytes(32).toString('hex'),
     'db-migrator': databasePassword,
     'db-agent': randomBytes(32).toString('hex'),
-    'db-broker': randomBytes(32).toString('hex'),
+    'db-broker': randomBytes(32).toString('hex'), 'db-grafana': randomBytes(32).toString('hex'),
     'bridge-token': randomBytes(32).toString('hex'),
     'openrouter-key': 'synthetic-model-token',
     'whatsapp-access-token': 'synthetic-access-token',

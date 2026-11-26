@@ -26,7 +26,7 @@ export function checkCiWorkflow(source: string) {
     assert.equal(step.if, undefined);
     assert.equal(step['continue-on-error'], undefined);
   }
-  assert.equal(job.steps.length, 23);
+  assert.equal(job.steps.length, 24);
   assert.match(job.steps[0].uses ?? '', /^actions\/checkout@[0-9a-f]{40}$/);
   assert.match(job.steps[1].uses ?? '', /^actions\/setup-node@[0-9a-f]{40}$/);
   assert.equal(job.steps[1].with?.['node-version-file'], '.nvmrc');
@@ -50,6 +50,7 @@ export function checkCiWorkflow(source: string) {
     'npm run test:author',
     'npm run test:compaction',
     'npm run test:usage',
+    'npm run test:grafana',
     'npm run test:upgrade',
     'npm run test:start',
     'npm run test:images',

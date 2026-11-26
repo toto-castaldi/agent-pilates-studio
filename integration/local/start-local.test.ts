@@ -17,6 +17,7 @@ WHATSAPP_APP_SECRET=synthetic-sensitive-app-secret
 WHATSAPP_VERIFY_TOKEN=synthetic-sensitive-verify-token
 PILATES_MANAGER_PHONE=+15555550102
 WHATSAPP_PHONE_NUMBER_ID=123456789
+GRAFANA_ADMIN_PASSWORD=synthetic-sensitive-grafana-admin
 `;
 
 test('local start validates private configuration, preserves secrets and suppresses child output', async () => {

@@ -20,6 +20,7 @@
     "test:conversation": "npm run build --silent && node scripts/conversation.mjs",
     "test:compaction": "npm run build --silent && node --test dist/integration/compaction.test.js",
     "test:usage": "npm run build --silent && node --test dist/integration/usage.test.js",
+    "test:grafana": "npm run build --silent && node --test dist/integration/grafana.test.js",
     "test:upgrade": "npm run build --silent && node --test dist/integration/upgrade.test.js",
     "test:pi": "npm run build --silent && node --test dist/integration/pi-settings.test.js dist/integration/pi-backlog.test.js",
     "test:pi-package": "npm run build --silent && node --test dist/integration/pi-package.test.js",

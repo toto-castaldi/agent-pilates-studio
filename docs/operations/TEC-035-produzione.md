@@ -28,7 +28,7 @@ sudo install -d -m 0700 -o "$USER" -g "$USER" /opt/agent-pilates-prod
 ops init
 ```
 
-`init` crea `prod.env` (porte `55433` e `18190`, solo loopback), le directory e i segreti interni, senza sovrascrivere quelli presenti. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-manager-phone`, `whatsapp-phone-number-id`. Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include. Oltre a porte e percorso del webhook, `prod.env` accetta soltanto `PILATES_MODEL`, `PILATES_IDLE_COMPACT_SECONDS` e `PILATES_REASONING_EFFORT` (livello di thinking, predefinito `medium`); dopo averli cambiati, `update` verso la release in esercizio li applica ricreando il gateway.
+`init` crea `prod.env` (porte `55433`, `18190` e `13100` per Grafana, solo loopback), le directory e i segreti interni, compreso `db-grafana`, senza sovrascrivere quelli presenti. Elenca poi i file da fornire in `secrets/`, con permessi `0600`: `openrouter-key`, `whatsapp-access-token`, `whatsapp-app-secret`, `whatsapp-verify-token`, `whatsapp-manager-phone`, `whatsapp-phone-number-id`, `grafana-admin-password` (password dell'utente `admin` di Grafana, una riga di almeno 16 caratteri stampabili senza spazi). Non inserire valori reali in comandi, chat o log. Conservare a parte, in forma cifrata, una copia di `secrets/` e `prod.env`: il backup non li include. Oltre a porte (`POSTGRES_PORT`, `WHATSAPP_WEBHOOK_PORT`, `GRAFANA_PORT`, quest'ultima `13100` se assente) e percorso del webhook, `prod.env` accetta soltanto `PILATES_MODEL`, `PILATES_IDLE_COMPACT_SECONDS` e `PILATES_REASONING_EFFORT` (livello di thinking, predefinito `medium`); dopo averli cambiati, `update` verso la release in esercizio li applica ricreando il gateway.
 
 ```bash
 ops install "$COMMIT"
@@ -304,6 +304,26 @@ docker inspect --format '{{.State.Status}} {{.State.Health.Status}} {{.RestartCo
 ```
 
 L'esito atteso è `running healthy` con errore vuoto. Se il gateway è fermo, applicare il ripristino manuale sopra e registrare l'esito.
+
+## Dashboard delle metriche d'uso
+
+Grafana è avviato da `install`, `update` e `rollback` dopo il gateway, solo su `127.0.0.1:13100` (`GRAFANA_PORT`). Il tunnel Cloudflare e l'hostname pubblico non vanno modificati: continuano a instradare solo `/whatsapp/webhook`. Dal portatile:
+
+```bash
+ssh -N -L 13100:127.0.0.1:13100 jarvis
+```
+
+Poi aprire `http://127.0.0.1:13100` e accedere come `admin` con la password di `secrets/grafana-admin-password`. La dashboard è descritta nel [README](../../README.md#dashboard-grafana-delle-metriche-duso); sorgente dati e dashboard vengono dall'immagine, e ciò che si crea dall'interfaccia si perde alla ricreazione del servizio, a ogni `update`.
+
+**Prima release con Grafana su un'installazione esistente.** Prima di `update` creare privatamente `secrets/grafana-admin-password` (`0600`, una riga di almeno 16 caratteri stampabili senza spazi), senza inserire il valore in comandi o chat; senza di esso `update`, anche dal launcher, si ferma prima di Docker con un messaggio fisso. `secrets/db-grafana` non va preparato: se manca, `install`, `update` e `rollback` lo generano privatamente prima dei controlli, senza toccare gli altri segreti (anche `ops init` lo crea). `prod.env` può restare invariato: la porta predefinita è `13100`.
+
+**Ritorno a una release precedente a Grafana.** L'immagine `ops` precedente non conosce il servizio: dopo il `rollback` il container `agent-pilates-prod-grafana-1` resta attivo ma non può più autenticarsi. Rimuoverlo con `docker rm -f agent-pilates-prod-grafana-1`; nessun dato va perso.
+
+Il log di Grafana contiene solo gli eventi fissi `grafana_launch` e `grafana_preflight_failed` (password mancante o non valida):
+
+```bash
+docker compose -p agent-pilates-prod logs --no-log-prefix grafana
+```
 
 ## Stato e diagnostica
 

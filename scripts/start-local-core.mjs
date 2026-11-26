@@ -50,6 +50,8 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
       PILATES_MANAGER_PHONE: 'whatsapp-manager-phone',
       WHATSAPP_PHONE_NUMBER_ID: 'whatsapp-phone-number-id',
+      // Grafana administrator (US-020): the dashboard requires this login.
+      GRAFANA_ADMIN_PASSWORD: 'grafana-admin-password',
     };
     for (const key of Object.keys(required)) {
       const value = config[key];
@@ -62,6 +64,10 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
       throw new SafeError('Le tre password database devono essere distinte e lunghe almeno 16 caratteri.');
     }
     if (!/^\d+$/.test(config.WHATSAPP_PHONE_NUMBER_ID)) throw new SafeError('Phone Number ID non valido.');
+    // Same rule as the Grafana entrypoint: one printable ASCII word, never echoed.
+    if (!/^[\x21-\x7e]{16,512}$/.test(config.GRAFANA_ADMIN_PASSWORD) || passwords.includes(config.GRAFANA_ADMIN_PASSWORD)) {
+      throw new SafeError('GRAFANA_ADMIN_PASSWORD non valida: almeno 16 caratteri stampabili senza spazi, diversa dalle password database.');
+    }
     // The home channel derives from this single number in gateway and broker.
     try {
       config.PILATES_MANAGER_PHONE = normalizeManagerPhone(config.PILATES_MANAGER_PHONE);
@@ -75,6 +81,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     };
     const postgresPort = port('POSTGRES_PORT', '55432');
     const webhookPort = port('WHATSAPP_WEBHOOK_PORT', '18090');
+    const grafanaPort = port('GRAFANA_PORT', '13000');
     const webhookPath = config.WHATSAPP_WEBHOOK_PATH || '/whatsapp/webhook';
     const model = config.PILATES_MODEL || 'openai/gpt-6.1-terra';
     if (!/^\/[A-Za-z0-9/_-]+$/.test(webhookPath) || webhookPath === '/health' || !/^[A-Za-z0-9._/-]+$/.test(model)) {
@@ -116,7 +123,7 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (databaseKeys.has(key)) missingDatabaseFile = true;
       }
     }
-    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle), PILATES_REASONING_EFFORT: effort, ...(volumePrefix ? { PILATES_VOLUME_PREFIX: volumePrefix } : {}) };
+    const env = { ...processEnv, SECRETS_DIR: directory, POSTGRES_PORT: postgresPort, WHATSAPP_WEBHOOK_PORT: webhookPort, GRAFANA_PORT: grafanaPort, WHATSAPP_WEBHOOK_PATH: webhookPath, PILATES_MODEL: model, PILATES_IDLE_COMPACT_SECONDS: String(idle), PILATES_REASONING_EFFORT: effort, ...(volumePrefix ? { PILATES_VOLUME_PREFIX: volumePrefix } : {}) };
     for (const key of Object.keys(required)) delete env[key];
     const compose = (...args) => ['compose', '--env-file', '/dev/null', ...args];
     // Never reconstruct missing internal credentials over an existing volume.
@@ -126,6 +133,17 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         missingDatabaseFile = true;
       }
     }
+    // db-grafana is the only internal credential that may be created over an
+    // existing volume (secrets from before US-020): the bootstrap sets the
+    // read-only role's password from it at every start. It must exist before the
+    // credential probe, which runs db-bootstrap and therefore mounts it.
+    const grafanaRole = resolve(directory, 'db-grafana');
+    try {
+      await writeFile(grafanaRole, `${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+    }
+    await privateFile(grafanaRole);
     const resolved = spawnSync('docker', compose('config', '--format', 'json'), { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (resolved.error || resolved.status !== 0) throw new SafeError('Impossibile verificare il volume PostgreSQL.');
     let volume;
@@ -215,8 +233,9 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
         if (error.code !== 'ENOENT') throw error;
       }
     }
-    // Additional service credentials are generated once and never silently rotated.
-    for (const name of ['db-broker', 'bridge-token']) {
+    // Additional service credentials are generated once and never silently rotated;
+    // db-grafana was already created if missing and is only validated here.
+    for (const name of ['db-broker', 'bridge-token', 'db-grafana']) {
       const path = resolve(directory, name);
       try {
         await writeFile(path, `${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' });
@@ -240,7 +259,9 @@ export async function startLocal({ lstat, mkdir, open, readFile, rename, unlink,
     // Recreate only the gateway: atomic checkout may replace the bind-mounted
     // SOUL inode, and persisted sessions must adopt the new prompt on startup.
     run('docker', compose('up', '-d', '--build', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '180', 'hermes'), env, 'Avvio Hermes');
-    log('PostgreSQL e Hermes sono sani. La raggiungibilità pubblica non è verificata.');
+    // Grafana has no volume: recreation discards changes made in the interface.
+    run('docker', compose('up', '-d', '--build', '--no-deps', '--force-recreate', '--wait', '--wait-timeout', '180', 'grafana'), env, 'Avvio Grafana');
+    log(`PostgreSQL, Hermes e Grafana sono sani. Grafana ascolta solo su 127.0.0.1:${grafanaPort}. La raggiungibilità pubblica non è verificata.`);
     return 0;
   } catch (error) {
     if (cleanupEnv) {
